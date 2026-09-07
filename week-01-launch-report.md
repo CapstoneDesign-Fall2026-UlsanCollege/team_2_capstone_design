@@ -27,7 +27,7 @@ Each student records their preferred idea and one concern after class.
 
 | Student | Preferred idea | One concern | Evidence link |
 |---|---|---|---|
-| Aditya | Medicine Finder & Coffee PWA | How to integrate Nepal payment gateways effectively. | TBD |
+| Aditya | Medicine Finder & Coffee PWA | How to integrate Nepal payment gateways effectively. | https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/1#issuecomment-5574084996 |
 | Kushan | ArtMarket Hub | Handling the complex workflow of custom commissions. | TBD |
 | Rohit | CodeSecure | Avoiding too many "false positive" security warnings. | TBD |
 | Aanchal | Syllabus to Calendar | Different professors format PDFs weirdly, which could break extraction. | TBD |
