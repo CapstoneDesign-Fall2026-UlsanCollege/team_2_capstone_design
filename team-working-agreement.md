@@ -53,6 +53,6 @@ By signing, each member agrees to follow this plan, raise concerns early, and up
 | Student | Signature or GitHub confirmation | Date |
 | --- | --- | --- |
 | Aditya | @Aditya (confirmed) | 2026-09-06 |
-| Kushan | @Kushan (confirmed) | 2026-09-06 |
+| Kushan | @Kushan2191 (confirmed) | 2026-09-08 |
 | Rohit | @Rohit (confirmed) | 2026-09-06 |
 | Aanchal | @Aanchal (confirmed) | 2026-09-06 |
