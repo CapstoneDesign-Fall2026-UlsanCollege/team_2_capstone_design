@@ -34,6 +34,6 @@ Each student records their preferred idea and one concern after class.
 
 ## Ready for Week 2
 
-- [ ] The team has narrowed the five ideas to two finalists.
-- [ ] Every member can explain the two finalists and the main concern for each.
+- [x] The team has narrowed the five ideas to two finalists.
+- [x] Every member can explain the two finalists and the main concern for each.
 - [x] The Team Working Agreement is linked and confirmed by every member.
