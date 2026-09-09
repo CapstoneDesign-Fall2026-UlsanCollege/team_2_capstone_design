@@ -55,4 +55,4 @@ By signing, each member agrees to follow this plan, raise concerns early, and up
 | Aditya | @Aditya (confirmed) | 2026-09-06 |
 | Kushan | @Kushan2191 (confirmed) | 2026-09-08 |
 | Rohit | @Rohit-coder201 (confirmed) | 2026-09-09|
-| Aanchal | @Aanchal (confirmed) | 2026-09-06 |
+| Aanchal | @jaasly07 (confirmed) | 2026-09-06 |
