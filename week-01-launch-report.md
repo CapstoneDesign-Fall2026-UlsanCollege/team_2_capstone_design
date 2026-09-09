@@ -30,7 +30,7 @@ Each student records their preferred idea and one concern after class.
 | Aditya | Medicine Finder & Coffee PWA | How to integrate Nepal payment gateways effectively. | https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/1#issuecomment-5574084996 |
 | Kushan | ArtMarket Hub | Handling the complex workflow of custom commissions. | https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/1#issuecomment-5574249543 |
 | Rohit | CodeSecure | Avoiding too many "false positive" security warnings. | https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/1#issuecomment-5594803077 |
-| Aanchal | Syllabus to Calendar | Different professors format PDFs weirdly, which could break extraction. | TBD |
+| Aanchal | Syllabus to Calendar | Different professors format PDFs weirdly, which could break extraction. | https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/1#issuecomment-5596004904 |
 
 ## Ready for Week 2
 
