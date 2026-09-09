@@ -11,7 +11,7 @@ assignees: "Aditya, kushan, rohit, Aanchal"
 **Team:** Team 2
 **Date:** 2026-09-06
 
-This is the Week 1 report. It replaces the standard Weekly Report for this week.
+This is the Week 1 report. 
 
 ## Team setup
 
@@ -25,13 +25,13 @@ This is the Week 1 report. It replaces the standard Weekly Report for this week.
 
 ## Five candidate project ideas
 
-Link the completed [Five Project Ideas](five-project-ideas.md) document or Issue:
+Link of the completed [Five Project Ideas](five-project-ideas.md) document :
 
 - [five-project-ideas.md](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/blob/main/five-project-ideas.md)
 
 ## Individual Week 1 actions
 
-Each student records their preferred idea and one concern after class.
+Each student records their preferred idea and one concern about the ideas.
 
 | Student | Preferred idea | One concern | Evidence link |
 |---|---|---|---|
