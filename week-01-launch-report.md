@@ -1,3 +1,11 @@
+---
+name: Week 1 Launch Report
+about: Team setup, five project ideas, and individual Week 1 evidence
+title: "Week 1 Launch Report — Team 2"
+labels: weekly-report, week-01
+assignees: "Aditya, kushan, rohit, Aanchal"
+---
+
 # Week 1 Launch Report
 
 **Team:** Team 2
