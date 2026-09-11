@@ -27,7 +27,7 @@ Draw or describe the smallest user journey you can demonstrate. Put the user's a
 
 `Start → Select Coffee Plan → Complete Payment → Generate Delivery Order → Order Visible to Partner`
 
-Evidence / sketch link: [To be added]
+Evidence / sketch link: ![User Flow Sketch](user-flow-sketch.jpg)
 
 ## 4. In scope
 
