@@ -36,7 +36,7 @@ If it is not linked, it does not count.
 |---|---|---|
 | notyouradhee | Investigated Payment Gateway options | [#5 Payment Gateway](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/5) |
 | Kushan2191 | Investigated Local Delivery APIs | [#7 Delivery API](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/7) |
-| Teammate 3 | *Pending Tech Stack Investigation* | |
+| Rohit-coder201 | Investigated Tech Stack for MVP | [#11 Tech Stack](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/11) |
 | Teammate 4 | *Pending Database Investigation* | |
 
 ## Blockers or risks
@@ -54,6 +54,7 @@ Record only decisions that change scope, approach, ownership, or the next plan.
 | We will build a Coffee Subscription App | Strongest MVP potential with clear users | Team | [Idea Table](idea-selection-table.md) |
 | We will use Khalti for payments | Easier API widget for our MVP timeline | notyouradhee | [#5](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/5) |
 | We will use Upaya CityCargo (B2B Logistics) | Better suited for scheduled monthly deliveries | Kushan2191 | [#7](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/7) |
+| We will use Python (Backend) + HTML/JS PWA | Fastest way to build backend logic without heavy frontend build tools | Rohit-coder201 | [#11](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/11) |
 
 ## Next week's bridge task
 
