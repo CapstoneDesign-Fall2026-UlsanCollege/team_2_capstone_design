@@ -4,11 +4,7 @@
 **Week:** 2  
 **Date:** 2026-09-11  
 
-Use this template in Weeks 2-3, 5-14, and 16. Weeks 1, 4, and 15 have special reports.
-
 ## This week's goal
-
-What did your team try to improve this week?
 
 > We worked on narrowing down our project scope, finalizing our midterm demo idea, and investigating key technical risks like payment integration and logistics.
 
@@ -19,8 +15,6 @@ What did your team try to improve this week?
 - [x] Draft Design Doc v1 and the 3-5 step user flow sketch.
 
 ## Evidence links
-
-If it is not linked, it does not count.
 
 | Evidence | Link |
 |---|---|
@@ -47,8 +41,6 @@ If it is not linked, it does not count.
 | Connecting Python backend to MongoDB | Rohit-coder201 | Set up a free MongoDB Atlas cluster and test connection |
 
 ## Decision record
-
-Record only decisions that change scope, approach, ownership, or the next plan.
 
 | Decision | Why we chose it | Owner | Evidence / Issue link |
 |---|---|---|---|
