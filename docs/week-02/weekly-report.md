@@ -37,7 +37,7 @@ If it is not linked, it does not count.
 | notyouradhee | Investigated Payment Gateway options | [#5 Payment Gateway](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/5) |
 | Kushan2191 | Investigated Local Delivery APIs | [#7 Delivery API](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/7) |
 | Rohit-coder201 | Investigated Tech Stack for MVP | [#11 Tech Stack](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/11) |
-| Teammate 4 | *Pending Database Investigation* | |
+| Aanchal | Investigated Database options | [#15 Database](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/15) |
 
 ## Blockers or risks
 
