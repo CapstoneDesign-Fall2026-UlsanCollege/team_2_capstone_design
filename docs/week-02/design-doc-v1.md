@@ -56,22 +56,22 @@ Our midterm demo will show:
 
 Our final demo will prove:
 
-> [To be added later]
+> That our PWA can successfully manage recurring coffee subscriptions, process monthly Khalti payments automatically, and dispatch delivery requests to the Upaya CityCargo API.
 
 ## 8. MVP features
 
 | Feature | Required for MVP? | Owner | Issue link |
 |---|---|---|---|
-| User Auth | Yes | Rohit-coder201 | |
-| Subscription Selection | Yes | Kushan2191 | |
+| User Auth | Yes | Rohit-coder201 | [#11](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/11) |
+| Subscription Selection | Yes | Kushan2191 | [#7](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/7) |
 | Payment Integration | Yes | notyouradhee | [#5](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/5) |
 
 ## 9. Risks and unknowns
 
 | Risk / unknown | Why it matters | Plan |
 |---|---|---|
-| Payment Integration | Need a reliable gateway | Research local options (e.g., eSewa, Khalti) |
-| Local Delivery Logistics | Unreliable tracking | Partner with existing local couriers |
+| Payment Integration | Need a reliable gateway | Use Khalti API checkout widget |
+| Local Delivery Logistics | Unreliable tracking | Partner with Upaya CityCargo API |
 
 ## 10. Evidence links
 
