@@ -6,24 +6,18 @@
 
 ## 1. Project purpose
 
-What problem are you solving?
 Providing a seamless way for people to get high-quality coffee delivered regularly without the hassle of manually ordering it every time.
 
 ## 2. Target users
-
-Who is this for?
 
 - Primary user: Regular coffee drinkers in Nepal.
 - Secondary user, if any: Local delivery partners who handle the logistics.
 
 ## 3. Smallest useful version
 
-What is the smallest version that would still be useful?
 A simple web application where a user can select a subscription tier, enter payment/shipping details, and generate an order ticket for a local delivery partner.
 
 ### Rough user flow — 3–5 steps
-
-Draw or describe the smallest user journey you can demonstrate. Put the user's action on each arrow and end with a visible result.
 
 `Start → Select Coffee Plan → Complete Payment → Generate Delivery Order → Order Visible to Partner`
 
@@ -31,16 +25,12 @@ Evidence / sketch link: ![User Flow Sketch](user-flow-sketch.jpg)
 
 ## 4. In scope
 
-What are you building this semester?
-
 - User registration and login.
 - Coffee subscription tier selection.
 - Mock payment integration.
 - Dashboard for viewing active subscriptions and upcoming deliveries.
 
 ## 5. Out of scope
-
-What are you **not** building this semester?
 
 - Complex logistics routing (we will hand off to local delivery partners).
 - An advanced inventory management system for roasters.
