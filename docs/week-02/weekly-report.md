@@ -43,7 +43,8 @@ If it is not linked, it does not count.
 
 | Blocker/risk | Owner | Next action |
 |---|---|---|
-| Waiting on remaining teammate investigations | Team | Remind teammates to open issues |
+| Integrating Khalti API widget in plain HTML | notyouradhee | Create a simple test page to prove the widget loads |
+| Connecting Python backend to MongoDB | Rohit-coder201 | Set up a free MongoDB Atlas cluster and test connection |
 
 ## Decision record
 
