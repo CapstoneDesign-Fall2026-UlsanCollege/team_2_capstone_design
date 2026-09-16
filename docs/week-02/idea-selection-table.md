@@ -1,9 +1,7 @@
 # Idea Selection Table
 
-**Team:**  
+**Team:** Group 5
 **Week:** 2  
-
-Use this to choose one project direction. Do not choose the biggest idea. Choose the idea your team can actually build and demo.
 
 | Idea | Clear user? | Small MVP? | Demo by midterm? | Team interest? | Risk |
 |---|---|---|---|---|---|
@@ -28,4 +26,3 @@ We are **not** building:
 
 - Complex automated logistics tracking (we will use local delivery partners).
 - International shipping/payments.
-- 
