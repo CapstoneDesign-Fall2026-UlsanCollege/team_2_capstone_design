@@ -1,6 +1,6 @@
 # Weekly Report
 
-**Team:** Group 5  
+**Team:** Team 2  
 **Week:** 2  
 **Date:** 2026-09-11  
 

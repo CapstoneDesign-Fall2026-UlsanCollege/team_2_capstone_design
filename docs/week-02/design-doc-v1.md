@@ -1,6 +1,6 @@
 # Design Doc v1
 
-**Team:** Group 5
+**Team:** Team 2
 **Project name:** Coffee Subscription Nepal
 **Last updated:** 2026-09-10
 

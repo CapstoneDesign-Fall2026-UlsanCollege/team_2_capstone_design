@@ -1,6 +1,6 @@
 # Idea Selection Table
 
-**Team:** Group 5
+**Team:** Team 2
 **Week:** 2  
 
 | Idea | Clear user? | Small MVP? | Demo by midterm? | Team interest? | Risk |
