@@ -6,7 +6,7 @@
 
 ## 1. Project purpose
 
-Providing a seamless way for people to get high-quality coffee delivered regularly without the hassle of manually ordering it every time.
+Providing a seamless, automated Progressive Web App (PWA) for people to get high-quality coffee delivered regularly in Nepal, removing the friction of manual ordering while helping local roasters build predictable recurring revenue.
 
 ## 2. Target users
 
@@ -25,16 +25,17 @@ Evidence / sketch link: ![User Flow Sketch](user-flow-sketch.jpg)
 
 ## 4. In scope
 
-- User registration and login.
-- Coffee subscription tier selection.
-- Mock payment integration.
-- Dashboard for viewing active subscriptions and upcoming deliveries.
+- Secure user registration and authentication.
+- Coffee subscription tier selection (e.g., Weekly, Bi-weekly, Monthly).
+- Automated payment processing integration via Khalti API.
+- Customer dashboard for viewing active subscriptions and tracking Upaya deliveries.
 
 ## 5. Out of scope
 
-- Complex logistics routing (we will hand off to local delivery partners).
+- Complex automated logistics routing (we will rely entirely on Upaya CityCargo).
 - An advanced inventory management system for roasters.
-- International shipping support.
+- International shipping support (Nepal only).
+- Credit card processing (using local Khalti digital wallets only).
 
 ## 6. Midterm demo sentence
 
