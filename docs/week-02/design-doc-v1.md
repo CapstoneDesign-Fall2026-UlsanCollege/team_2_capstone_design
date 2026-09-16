@@ -62,9 +62,9 @@ Our final demo will prove:
 
 | Feature | Required for MVP? | Owner | Issue link |
 |---|---|---|---|
-| User Auth | Yes | | |
-| Subscription Selection | Yes | | |
-| Payment Integration | Yes | | |
+| User Auth | Yes | Rohit-coder201 | |
+| Subscription Selection | Yes | Kushan2191 | |
+| Payment Integration | Yes | notyouradhee | [#5](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/5) |
 
 ## 9. Risks and unknowns
 
@@ -75,6 +75,6 @@ Our final demo will prove:
 
 ## 10. Evidence links
 
-- Planning Issue:
-- Weekly Report:
-- Demo/proof links:
+- Planning Issue: [#6 Finalize week 2 report](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/6)
+- Weekly Report: [Week 2 Weekly Report](weekly-report.md)
+- Demo/proof links: [User Flow Sketch](user-flow-sketch.jpg)
