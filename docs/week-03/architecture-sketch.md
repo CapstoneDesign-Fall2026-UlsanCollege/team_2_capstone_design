@@ -46,42 +46,40 @@ This project uses:
 ## System diagram
 
 ```mermaid
-flowchart TB
-    subgraph Users ["👤 Users"]
-        A["Customer (Browser/PWA)"]
-        B["Admin (Django Panel)"]
-        C["Delivery Partner (Email)"]
+flowchart TD
+    subgraph Users
+        Customer["Customer (Browser / PWA)"]
+        Admin["Admin (Django Panel)"]
+        Partner["Delivery Partner"]
     end
 
-    subgraph Frontend ["🖥️ Frontend — Next.js (Vercel, Free)"]
-        D["Landing Page"]
-        E["Auth (Email + Phone)"]
-        F["Origin & Plan Selection"]
-        G["Checkout + Khalti Payment"]
-        H["Customer Dashboard"]
+    subgraph Frontend ["Next.js Frontend (Vercel - Free)"]
+        LP["Landing Page"]
+        Auth["Login / Register"]
+        Plans["Origin and Plan Selection"]
+        Checkout["Checkout + Payment"]
+        Dashboard["Customer Dashboard"]
     end
 
-    subgraph Backend ["⚙️ Backend — Django + DRF (DigitalOcean, $200 credits)"]
-        I["REST API"]
-        J["Admin Panel"]
-        K["Email Service"]
+    subgraph Backend ["Django Backend (DigitalOcean - $200 credits)"]
+        API["REST API"]
+        AdminPanel["Admin Panel"]
+        Email["Email Service"]
     end
 
-    subgraph Data ["🗄️ Data Layer"]
-        L["PostgreSQL (Neon, Free)"]
-    end
+    DB["PostgreSQL (Neon - Free)"]
+    Khalti["Khalti API"]
 
-    subgraph External ["🔌 External APIs"]
-        M["Khalti (Payments)"]
-    end
-
-    A --> D & E & F & G & H
-    B --> J
-    D & E & F & G & H --> I
-    I --> L
-    I --> K --> C
-    G --> M --> I
-    J --> L
+    Customer --> LP --> Auth --> Plans --> Checkout --> Dashboard
+    Admin --> AdminPanel
+    Checkout --> Khalti
+    Khalti --> API
+    Dashboard --> API
+    Auth --> API
+    Plans --> API
+    API --> DB
+    AdminPanel --> DB
+    API --> Email --> Partner
 ```
 
 ## Main parts
