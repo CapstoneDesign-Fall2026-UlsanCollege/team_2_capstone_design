@@ -43,21 +43,45 @@ This project uses:
 | **Scarcity** | If an origin lot runs out mid-subscription: customer is informed in advance with a discount offer on alternatives, OR asked to wait with a 20g extra pack as compensation. |
 | **Origin availability** | All 4 origins in stock at launch. Adjusted later based on demand and availability. |
 
-## Simple diagram
+## System diagram
 
-```text
-Customer (Browser / PWA)
-        ↓
-Landing Page → Sign Up → Pick Origin → Pick Weight → Pick Plan → Pick Monday → Pay
-        ↓
-Next.js Frontend (Vercel — Free)
-        ↓  REST API calls
-Django + DRF Backend (DigitalOcean — $200 Student Pack)
-        ↓                    ↓                    ↓
-PostgreSQL (Neon)     Django Admin Panel     Khalti API (Payments)
-                      (manage origins,            ↓
-                       orders, pricing,     Email to delivery
-                       scarcity, users)     partner on new order
+```mermaid
+flowchart TB
+    subgraph Users ["👤 Users"]
+        A["Customer (Browser/PWA)"]
+        B["Admin (Django Panel)"]
+        C["Delivery Partner (Email)"]
+    end
+
+    subgraph Frontend ["🖥️ Frontend — Next.js (Vercel, Free)"]
+        D["Landing Page"]
+        E["Auth (Email + Phone)"]
+        F["Origin & Plan Selection"]
+        G["Checkout + Khalti Payment"]
+        H["Customer Dashboard"]
+    end
+
+    subgraph Backend ["⚙️ Backend — Django + DRF (DigitalOcean, $200 credits)"]
+        I["REST API"]
+        J["Admin Panel"]
+        K["Email Service"]
+    end
+
+    subgraph Data ["🗄️ Data Layer"]
+        L["PostgreSQL (Neon, Free)"]
+    end
+
+    subgraph External ["🔌 External APIs"]
+        M["Khalti (Payments)"]
+    end
+
+    A --> D & E & F & G & H
+    B --> J
+    D & E & F & G & H --> I
+    I --> L
+    I --> K --> C
+    G --> M --> I
+    J --> L
 ```
 
 ## Main parts
