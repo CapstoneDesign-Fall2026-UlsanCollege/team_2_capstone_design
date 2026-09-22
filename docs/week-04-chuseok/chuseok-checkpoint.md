@@ -1,28 +1,41 @@
-# Chuseok Checkpoint — Midterm Demo Sketch
+# 🍂 Week 4: Chuseok Checkpoint & Midterm Scope
 
-**Team:** Team 2  
-**Week:** 4 (Homework from Week 3)
+**Team:** Team 2 (Coffee Subscription Nepal)  
+**Date:** September 23, 2026  
+**Status:** ✅ Completed
 
-This is the Week 4 report. It replaces the standard Weekly Report for this week.
+*Note: Week 4 is the Chuseok holiday. This document serves as a lightweight checkpoint to solidify our midterm demo goals before we resume heavy development in Week 5.*
 
-This should be light. No required coding. No required team meeting.
+---
 
-## Rough sketch or photo
+## 🖼️ 1. Initial UI Sketch
 
-Upload or link one sketch/photo here:
+We have finalized the rough wireframes for the core application flow. Our immediate focus will be the user onboarding and selection process.
 
-- [Landing Page Wireframe](wireframe-landing-page.jpg)
+- **Primary Interface:** [Landing Page Wireframe](../week-03/wireframe-landing-page.jpg)
+- **Selection Interfaces:** Origin Selection, Plan Configuration, Checkout
 
-## Midterm demo sentence
+---
 
-Our midterm demo will show:
+## 🎯 2. Midterm Demo Objective
 
-> A user selecting a Nepali coffee origin, choosing a weight and delivery frequency (plan), picking a Monday for delivery, and completing a test payment through Khalti.
+Our midterm demo (Vertical Slice) will prove that our Django/Next.js/Neon architecture successfully connects end-to-end. 
 
-## One blocker or question for Week 5
+**Our midterm demo will show:**
+> A user selecting a Nepali coffee origin, choosing a subscription weight and delivery frequency, picking a valid Monday for delivery, and successfully completing a test checkout through the Khalti API.
 
-- Integrating and testing the Khalti payment sandbox, as we need to make sure it functions exactly like the production API before continuing with the rest of the backend architecture.
+---
 
-## Optional: easiest first screen or interaction
+## 🚧 3. Key Blocker / Risk for Week 5
 
-- **The Landing Page**: It has no backend or database dependencies and can be built purely with Next.js/React components to establish our frontend structure and PWA setup.
+**Risk:** Khalti Sandbox API Verification 
+- **Trigger:** We are relying on the Khalti test environment to validate payments. If their test API behaves differently than documented, or if we cannot parse the verification token in Django, our checkout flow will fail.
+- **Action Plan:** Before building the React checkout components, `@notyouradhee` will write an isolated Python script to manually ping the Khalti verification endpoint and confirm the response structure.
+
+---
+
+## 🚀 4. Post-Holiday Immediate Action
+
+When we return from the Chuseok break, our first sprint will begin with:
+- **Frontend:** Initializing the Next.js `frontend` directory with Tailwind and `next-pwa`.
+- **Backend:** Connecting our initialized Django `backend` directory to the Neon PostgreSQL database.
