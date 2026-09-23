@@ -1,6 +1,6 @@
-{
-  "name": "Coffee Subscription Nepal",
-  "short_name": "Coffee NP",
+﻿{
+  "name": "BrewMellow: The Himalayan Coffee",
+  "short_name": "BrewMellow",
   "description": "Seamless subscription service for authentic Himalayan coffee.",
   "start_url": "/",
   "display": "standalone",

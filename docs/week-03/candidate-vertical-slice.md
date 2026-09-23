@@ -1,7 +1,7 @@
-# Candidate Vertical Slice
+﻿# Candidate Vertical Slice
 
 **Team:** Team 2  
-**Project:** Coffee Subscription Nepal  
+**Project:** BrewMellow: The Himalayan Coffee  
 **Week:** 3  
 
 ## The Slice

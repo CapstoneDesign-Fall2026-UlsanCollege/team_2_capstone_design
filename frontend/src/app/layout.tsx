@@ -1,4 +1,4 @@
-import type { Metadata } from "next";
+﻿import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
 
@@ -13,14 +13,14 @@ const geistMono = Geist_Mono({
 });
 
 export const metadata: Metadata = {
-  title: "Coffee Subscription Nepal",
+  title: "BrewMellow: The Himalayan Coffee",
   description: "Seamless subscription service for authentic Himalayan coffee.",
   manifest: "/manifest.json",
   themeColor: "#5b21b6",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "Coffee NP",
+    title: "BrewMellow",
   },
 };
 

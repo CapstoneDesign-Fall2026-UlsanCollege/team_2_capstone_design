@@ -1,7 +1,7 @@
-# Architecture Sketch
+﻿# Architecture Sketch
 
 **Team:** Team 2  
-**Project:** Coffee Subscription Nepal  
+**Project:** BrewMellow: The Himalayan Coffee  
 **Last updated:** 2026-09-19  
 
 ## One-sentence architecture

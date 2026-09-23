@@ -1,7 +1,7 @@
-# Design Doc v1
+﻿# Design Doc v1
 
 **Team:** Team 2
-**Project name:** Coffee Subscription Nepal
+**Project name:** BrewMellow: The Himalayan Coffee
 **Last updated:** 2026-09-10
 
 ## 1. Project purpose

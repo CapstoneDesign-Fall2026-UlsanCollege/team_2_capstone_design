@@ -1,4 +1,4 @@
-# Sprint 0 Report — Launch and Scope
+﻿# Sprint 0 Report — Launch and Scope
 
 **Team:** Team 2  
 **Sprint:** Sprint 0 — Launch and Scope  
@@ -9,7 +9,7 @@
 
 In one or two sentences, what is your team now ready to build next?
 
-> We have fully defined our architecture, tech stack, and initial design for Coffee Subscription Nepal, and are ready to begin the repository setup and the first vertical slice after the Chuseok break.
+> We have fully defined our architecture, tech stack, and initial design for BrewMellow: The Himalayan Coffee, and are ready to begin the repository setup and the first vertical slice after the Chuseok break.
 
 ## Project snapshot
 
