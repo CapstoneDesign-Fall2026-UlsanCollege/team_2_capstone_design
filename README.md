@@ -1,4 +1,4 @@
-﻿# ☕ BrewMellow: The Himalayan Coffee (Team 2 Capstone)
+# ☕ BrewMellow: The Himalayan Coffee (Team 2 Capstone)
 
 Welcome to the **BrewMellow: The Himalayan Coffee** repository! This project is being built for the Ulsan College Capstone Design course (Fall 2026).
 
@@ -44,10 +44,20 @@ cd team_2_capstone_design
 ```
 
 ### 2. Backend Setup (Django)
-*Coming soon!*
+```bash
+cd backend
+python -m venv venv
+.\venv\Scripts\activate   # On Windows
+pip install -r requirements.txt
+python manage.py runserver
+```
 
 ### 3. Frontend Setup (Next.js)
-*Coming soon!*
+```bash
+cd frontend
+npm install
+npm run dev
+```
 
 ---
 
