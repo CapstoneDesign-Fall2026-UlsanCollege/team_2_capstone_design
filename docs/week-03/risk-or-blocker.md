@@ -1,24 +1,43 @@
 # Risks and Blockers
 
-**Team:** Team 2 (BrewMellow: The Himalayan Coffee)  
-**Week:** 3  
+## Risk/Blocker: Khalti Sandbox behavior mismatch
 
-## Primary Risk: Khalti Sandbox Integration
+**What is the risk or blocker?**  
+The Khalti Sandbox API behavior might behave differently than expected or documented when connected to our frontend.
 
-| Field | Detail |
-|---|---|
-| **Risk / Blocker** | Khalti Sandbox behavior mismatch (API might behave differently than expected or documented). |
-| **Owner** | `@notyouradhee` |
-| **Trigger** | Attempting to integrate frontend Khalti token with Django backend verification. |
-| **Next Action** | Create a standalone test payment script in Python, isolated from the frontend, to verify the exact API response format. |
-| **Review Point** | Week 5 |
+**Why does it matter?**  
+If the frontend token cannot be properly verified by the Django backend, our candidate vertical slice (the checkout flow) fails.
 
-## Secondary Risk: Next.js / React
+**What have we tried?**  
+We have read the documentation but have not yet executed live test calls against the sandbox.
 
-| Field | Detail |
-|---|---|
-| **Risk / Blocker** | Next.js and React learning curve for the frontend team. |
-| **Owner** | Aanchal / `@Kushan2191` |
-| **Trigger** | Starting development on the subscription plan selector and UI. |
-| **Next Action** | Set up base React boilerplate (completed) and complete basic Next.js routing tutorials. |
-| **Review Point** | Week 5 |
+**What decision or help do we need?**  
+We need to confirm the exact API response format using isolated scripts before wiring it into the frontend and backend.
+
+**Owner**  
+@notyouradhee
+
+**Next action**  
+- [ ] Create a standalone test payment script in Python, isolated from the frontend, to verify the exact API response format.
+
+---
+
+## Risk/Blocker: Next.js and React learning curve
+
+**What is the risk or blocker?**  
+The frontend team is still learning Next.js App Router and React patterns.
+
+**Why does it matter?**  
+It could slow down the implementation of the subscription plan selector and customer dashboard if we get stuck on routing or state management.
+
+**What have we tried?**  
+We set up the base React boilerplate and initialized the PWA.
+
+**What decision or help do we need?**  
+We need to finish basic Next.js routing tutorials before diving into complex state.
+
+**Owner**  
+Aanchal / @Kushan2191
+
+**Next action**  
+- [ ] Complete basic Next.js routing tutorials.
