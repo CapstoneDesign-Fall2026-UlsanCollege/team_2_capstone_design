@@ -20,6 +20,7 @@ We completed all Week 3 planning deliverables: comparing tech stacks, defining t
 | Evidence | Link |
 |---|---|
 | Issue(s) | [Week 3 Sprint 0 Issues](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues) |
+| Chuseok Checkpoint | [Week 4 Checkpoint Issue #38](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/38) |
 | PR(s) / commits | [Frontend PWA Setup PR #37](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/37) |
 | Screenshot / demo | [UI Wireframe Notes](wireframe-notes.md) |
 | Test/check note | [Dashboard Check / Done criteria](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/28#issuecomment-5847758590) |
