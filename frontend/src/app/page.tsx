@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-
+import Link from "next/link";
 const ORIGINS = [
   { id: 1, name: "Gulmi Reserve", price: 1200, desc: "Bright acidity with citrus notes." },
   { id: 2, name: "Ilam Estate", price: 1500, desc: "Smooth body with chocolate and caramel." },
@@ -108,9 +108,12 @@ export default function Home() {
               Rs. {selectedOrigin.price * (1 - selectedPlan.discount / 100)}
             </span>
           </div>
-          <button className="w-full md:w-auto px-10 bg-amber-900 hover:bg-amber-800 active:bg-amber-950 text-white py-4 rounded-2xl font-bold text-lg transition-transform active:scale-[0.98]">
+          <Link 
+            href="/checkout"
+            className="w-full text-center md:w-auto px-10 bg-amber-900 hover:bg-amber-800 active:bg-amber-950 text-white py-4 rounded-2xl font-bold text-lg transition-transform active:scale-[0.98]"
+          >
             Checkout with Khalti
-          </button>
+          </Link>
         </div>
       </div>
     </div>
