@@ -1,42 +1,57 @@
 # Weekly Report
 
-**Team:** Team 2  
+**Team:** Team 2 (BrewMellow)
 **Week:** 3  
+**Date:** September 26, 2026
 
-## 1. Goal
+## This week's goal
 
-**What was the team's primary goal this week?**  
-To complete all Week 3 planning deliverables: comparing tech stacks, defining the system architecture, sketching UI wireframes, creating GitHub issues for the first sprint, and completing the Chuseok checkpoint homework.
+What did your team try to improve this week?
 
-**Did you meet the goal?**  
-Yes. We have completed all the planning, documentation, and the final Chuseok checkpoint.
+> Complete all Week 3 planning deliverables: comparing tech stacks, defining the system architecture, sketching UI wireframes, creating GitHub issues for the first sprint, and explicitly scoping down our Candidate Vertical Slice for the midterm.
 
-## 2. Evidence
+## What we committed to do
 
-**Provide links and a brief explanation of what the team accomplished.**
+- [x] Finalize the tech stack choice and document it.
+- [x] Draw wireframes for the core selection and checkout flow.
+- [x] Scope the midterm vertical slice and cut unnecessary features.
+- [x] Set up initial GitHub issues with clear owners and Definitions of Done.
 
-- **[GitHub Issues](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues):** Created initial tasks with distributed owners and Definitions of Done.
-- **[Candidate Vertical Slice](candidate-vertical-slice.md):** Defined our narrow end-to-end path (Origin -> Weight -> Plan -> Summary).
-- **[Tech Stack Comparison](tech-stack-comparison.md):** Decided on Django + Next.js + PostgreSQL over Flask + Vanilla JS for better scalability and free admin panel.
-- **[Architecture Sketch](architecture-sketch.md):** Defined the data flow.
-- **[Wireframe Notes](wireframe-notes.md):** Mapped out key screens.
-- **[Sprint 0 Checklist](sprint-quality-quick-checks.md):** Verified repository setup and scope requirements.
+## Evidence links
 
-## 3. Contribution Receipts
+| Evidence | Link |
+|---|---|
+| Issue(s) | [Week 3 Sprint 0 Issues](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues) |
+| PR(s) / commits | [Frontend PWA Setup PR #37](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/37) |
+| Screenshot / demo | [UI Wireframe Notes](wireframe-notes.md) |
+| Test/check note | [Dashboard Check / Done criteria](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/28#issuecomment-5847758590) |
+| Document update | [Architecture Sketch](architecture-sketch.md) |
 
-*(Every team member must edit this file and replace the `[LINK REQUIRED]` placeholders with actual evidence links to pass the Week 3 requirements.)*
+## Individual contribution entries — one row per student
 
-| Team Member | Contribution | Evidence |
+| Student | What they did | Evidence link |
 |---|---|---|
 | **@notyouradhee** | Led tech stack decision, defined architecture, explicitly cut the vertical slice scope. | [Candidate Slice](candidate-vertical-slice.md) |
 | **@jaasly07** | Setup Next.js/PWA and checkout implementation. | [Issue #21 Setup](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/21) |
 | **@Kushan2191** | Built frontend plan selection UI and managed README/setup. | [Plan Selection UI](../../frontend/src/app/page.tsx) |
-| **@Rohit-coder201** | Implemented test/check for the dashboard path. | [Issue #28 Definition of Done](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/28#issuecomment-5847758590) |
+| **@Rohit-coder201** | Implemented test/check for the dashboard path. | [Issue #28 Done Definition](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/28#issuecomment-5847758590) |
 
-## 4. Blockers and Risks
+## Blockers or risks
 
-**What is blocking the team from moving forward?**
+| Blocker/risk | Owner | Next action |
+|---|---|---|
+| **Learning Curve** | @jaasly07 | The frontend team must spend time learning Next.js/React fundamentals. |
+| **Khalti Payment Sandbox** | @notyouradhee | Verify the Khalti test environment matches production documentation before coding checkout. |
+| **Chuseok Coordination** | @notyouradhee | Distribute clear, independent tasks so work continues despite the holiday. |
 
-- **Risk - Learning Curve:** The frontend team needs to learn Next.js/React. This might slow down the initial repository setup for the frontend.
-- **Risk - Khalti Payment Sandbox:** We need to verify if the Khalti test environment behaves exactly like production. If not, it could block backend payment verification.
-- **Blocker - Chuseok Break:** Coordination will be harder during the holiday, so we need to ensure everyone knows what to work on independently.
+## Decision record
+
+| Decision | Why we chose it | Owner | Evidence / Issue link |
+|---|---|---|---|
+| Use Django/PostgreSQL over Flask | Django provides a free, built-in admin panel which the business owner requires immediately. | @notyouradhee | [Tech Stack](tech-stack-comparison.md) |
+| Restrict Midterm Demo Scope | The architecture is too large. We cut login and emails to focus solely on the checkout flow. | @notyouradhee | [Candidate Slice](candidate-vertical-slice.md) |
+
+## Next week's bridge task
+
+- Build the Django REST API endpoints for Origins and Plans (Issue #24).
+- Connect the frontend selection UI to the live Django backend (Issue #25).
