@@ -6,9 +6,7 @@
 
 ## This week's goal
 
-What did your team try to improve this week?
-
-> Complete all Week 3 planning deliverables: comparing tech stacks, defining the system architecture, sketching UI wireframes, creating GitHub issues for the first sprint, and explicitly scoping down our Candidate Vertical Slice for the midterm.
+We completed all Week 3 planning deliverables: comparing tech stacks, defining the system architecture, sketching UI wireframes, creating GitHub issues for the first sprint, and explicitly scoping down our Candidate Vertical Slice for the midterm.
 
 ## What we committed to do
 
@@ -27,7 +25,7 @@ What did your team try to improve this week?
 | Test/check note | [Dashboard Check / Done criteria](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/28#issuecomment-5847758590) |
 | Document update | [Architecture Sketch](architecture-sketch.md) |
 
-## Individual contribution entries — one row per student
+## Individual contributions
 
 | Student | What they did | Evidence link |
 |---|---|---|
