@@ -29,9 +29,9 @@ Yes. We have completed all the planning, documentation, and the final Chuseok ch
 | Team Member | Contribution | Evidence |
 |---|---|---|
 | **@notyouradhee** | Led tech stack decision, defined architecture, explicitly cut the vertical slice scope. | [Candidate Slice](candidate-vertical-slice.md) |
-| **@jaasly07** | Setup Next.js/PWA and checkout implementation. | [LINK REQUIRED: Add link to your PR or setup note here] |
-| **@Kushan2191** | Built frontend plan selection UI and managed README/setup. | [LINK REQUIRED: Add link to your code or README here] |
-| **@Rohit-coder201** | Implemented test/check for the dashboard path. | [LINK REQUIRED: Add link to your dashboard check here] |
+| **@jaasly07** | Setup Next.js/PWA and checkout implementation. | [Issue #21 Setup](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/21) |
+| **@Kushan2191** | Built frontend plan selection UI and managed README/setup. | [Plan Selection UI](../../frontend/src/app/page.tsx) |
+| **@Rohit-coder201** | Implemented test/check for the dashboard path. | [Issue #28 Definition of Done](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/28#issuecomment-5847758590) |
 
 ## 4. Blockers and Risks
 
