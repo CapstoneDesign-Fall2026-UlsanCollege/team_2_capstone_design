@@ -17,6 +17,7 @@ const PLANS = [
 
 export default function Home() {
   const [selectedOrigin, setSelectedOrigin] = useState(ORIGINS[0]);
+  const [selectedWeight, setSelectedWeight] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0]);
 
   return (
@@ -63,40 +64,67 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Plan Selection */}
-        <section>
-          <h2 className="text-xl md:text-2xl font-bold text-stone-800 mb-6 border-b-2 border-stone-200 pb-2">2. Choose your plan</h2>
-          <div className="space-y-4">
-            {PLANS.map((plan) => {
-              const discountedPrice = selectedOrigin.price * (1 - plan.discount / 100);
-              return (
+        {/* Right Column: Weight and Plan */}
+        <div className="flex flex-col gap-8 md:gap-12">
+          {/* Weight Selection */}
+          <section>
+            <h2 className="text-xl md:text-2xl font-bold text-stone-800 mb-6 border-b-2 border-stone-200 pb-2">2. Choose your weight</h2>
+            <div className="grid grid-cols-2 gap-4">
+              {[0.5, 1, 2, 5].map((weight) => (
                 <label
-                  key={plan.id}
-                  className={`flex flex-col md:flex-row md:items-center p-5 rounded-2xl border-2 cursor-pointer transition-all shadow-sm ${
-                    selectedPlan.id === plan.id ? "border-amber-600 bg-amber-50" : "border-stone-200 bg-white hover:border-amber-300"
+                  key={weight}
+                  className={`flex items-center justify-center p-4 rounded-2xl border-2 cursor-pointer transition-all shadow-sm ${
+                    selectedWeight === weight ? "border-amber-600 bg-amber-50 font-bold" : "border-stone-200 bg-white hover:border-amber-300"
                   }`}
                 >
-                  <div className="flex-1 mb-2 md:mb-0">
-                    <div className="font-bold text-lg">{plan.name}</div>
-                    {plan.discount > 0 && (
-                      <div className="text-sm font-semibold text-green-600 mt-1">Saves {plan.discount}% per delivery</div>
-                    )}
-                  </div>
-                  <div className="md:text-right flex justify-between items-center md:block">
-                    <div className="font-bold text-amber-800 text-lg">Rs. {discountedPrice} / kg</div>
-                  </div>
+                  <span className="text-lg">{weight} kg</span>
                   <input
                     type="radio"
-                    name="plan"
+                    name="weight"
                     className="hidden"
-                    checked={selectedPlan.id === plan.id}
-                    onChange={() => setSelectedPlan(plan)}
+                    checked={selectedWeight === weight}
+                    onChange={() => setSelectedWeight(weight)}
                   />
                 </label>
-              );
-            })}
-          </div>
-        </section>
+              ))}
+            </div>
+          </section>
+
+          {/* Plan Selection */}
+          <section>
+            <h2 className="text-xl md:text-2xl font-bold text-stone-800 mb-6 border-b-2 border-stone-200 pb-2">3. Choose your plan</h2>
+            <div className="space-y-4">
+              {PLANS.map((plan) => {
+                const discountedPrice = selectedOrigin.price * selectedWeight * (1 - plan.discount / 100);
+                return (
+                  <label
+                    key={plan.id}
+                    className={`flex flex-col md:flex-row md:items-center p-5 rounded-2xl border-2 cursor-pointer transition-all shadow-sm ${
+                      selectedPlan.id === plan.id ? "border-amber-600 bg-amber-50" : "border-stone-200 bg-white hover:border-amber-300"
+                    }`}
+                  >
+                    <div className="flex-1 mb-2 md:mb-0">
+                      <div className="font-bold text-lg">{plan.name}</div>
+                      {plan.discount > 0 && (
+                        <div className="text-sm font-semibold text-green-600 mt-1">Saves {plan.discount}% per delivery</div>
+                      )}
+                    </div>
+                    <div className="md:text-right flex justify-between items-center md:block">
+                      <div className="font-bold text-amber-800 text-lg">Rs. {discountedPrice}</div>
+                    </div>
+                    <input
+                      type="radio"
+                      name="plan"
+                      className="hidden"
+                      checked={selectedPlan.id === plan.id}
+                      onChange={() => setSelectedPlan(plan)}
+                    />
+                  </label>
+                );
+              })}
+            </div>
+          </section>
+        </div>
       </main>
 
       {/* Responsive Bottom Action Bar */}
@@ -105,7 +133,7 @@ export default function Home() {
           <div className="flex justify-between items-center w-full md:w-auto md:gap-6">
             <span className="text-stone-500 font-medium md:text-lg">Total per delivery:</span>
             <span className="text-2xl md:text-4xl font-black text-amber-900">
-              Rs. {selectedOrigin.price * (1 - selectedPlan.discount / 100)}
+              Rs. {selectedOrigin.price * selectedWeight * (1 - selectedPlan.discount / 100)}
             </span>
           </div>
           <Link 
