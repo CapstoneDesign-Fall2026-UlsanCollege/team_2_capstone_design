@@ -34,7 +34,7 @@ We completed all Week 3 planning deliverables: comparing tech stacks, defining t
 | Student | What they did | Evidence link |
 |---|---|---|
 | **@notyouradhee** | Led tech stack decision, defined architecture, explicitly cut the vertical slice scope. | [Candidate Slice](candidate-vertical-slice.md) |
-| **@jaasly07** | Setup Next.js/PWA and checkout implementation. | [Issue #21 Setup](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/21) |
+| **@jaasly07** | Setup Next.js/PWA and global styling. | [Commit: Update globals.css](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/d4d9c51e43594012ae6a1b397c9b577375747da3) |
 | **@Kushan2191** | Built frontend plan selection UI and managed README/setup. | [Plan Selection UI](../../frontend/src/app/page.tsx) |
 | **@Rohit-coder201** | Implemented test/check for the dashboard path. | [Issue #28 Done Definition](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/28#issuecomment-5847758590) |
 
