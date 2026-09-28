@@ -17,7 +17,7 @@ export default function CheckoutPage() {
 
   return (
     <div className="min-h-screen p-8 bg-gray-50 flex flex-col items-center">
-      <h1 className="text-3xl font-bold mb-8">Checkout</h1>
+      <h1 className="text-3xl font-bold mb-6">Checkout</h1>
       
       <div className="bg-white p-6 rounded-lg shadow-md w-full max-w-md">
         <h2 className="text-xl font-semibold mb-4">Order Summary</h2>
