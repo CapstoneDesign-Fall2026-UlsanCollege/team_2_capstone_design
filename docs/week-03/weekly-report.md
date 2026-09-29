@@ -22,6 +22,7 @@ We completed all Week 3 planning deliverables: comparing tech stacks, defining t
 | Issue(s) | [Week 3 Sprint 0 Issues](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues) |
 | Vertical Slice | [Candidate Slice](candidate-vertical-slice.md) |
 | Data Contract (Stretch) | [Fake Data Contract](fake-data-contract.md) |
+| Boundary Note (Stretch) | [Fake Payment Boundary](fake-payment-boundary-note.md) |
 | Sprint 0 Report | [Sprint 0 Report](sprint-0-report.md) |
 | Chuseok Checkpoint | [Week 4 Checkpoint Issue #38](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/38) |
 | PR(s) / commits | [Frontend PWA Setup PR #37](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/37) |
