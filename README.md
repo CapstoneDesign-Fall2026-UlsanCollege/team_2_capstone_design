@@ -73,6 +73,21 @@ You can find all of our planning and design documents in the `docs/` folder:
 
 ---
 
+## 🧪 Repeatable Smoke Test (Week 5)
+
+Any teammate can verify the core checkout flow is working by running this repeatable smoke test locally:
+
+1. **Prerequisites:** Ensure both the Django backend (`python manage.py runserver`) and Next.js frontend (`npm run dev`) are running.
+2. **Action:** Open `http://localhost:3000`.
+3. **Action:** Select *Ilam Estate*, *2 kg*, and *6 Months*.
+4. **Expected Result 1:** Total price should dynamically calculate to `Rs. 2700`.
+5. **Action:** Click "Review Order", then on the next page click "Pay with Khalti".
+6. **Expected Result 2:** The button should pulse "Connecting to Khalti Secure Gateway..." for ~1.5s.
+7. **Expected Result 3:** The UI should change to "Payment Successful".
+8. **Expected Result 4:** Check the Django admin or terminal to verify a `POST /api/orders/` request returned `HTTP 201 Created`.
+
+---
+
 ## 👥 Meet the Team
 
 | Name | Role / Focus | GitHub |
