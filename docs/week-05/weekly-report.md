@@ -2,7 +2,7 @@
 
 **Team:** Team 2 (BrewMellow)
 **Week:** 5  
-**Date:** October 1, 2026
+**Date:** October 5, 2026
 
 ## This week's goal
 
@@ -11,7 +11,7 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 ## What we committed to do
 
 - [x] Confirm the tech stack and vertical slice.
-- [x] Create the Week 5 implementation issues.
+- [x] Create the Week 5 implementation issues ([#39](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/39), [#40](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/40), [#41](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/41)).
 - [x] Set up the Neon PostgreSQL database.
 - [x] Build the Django backend `Order` model and API endpoints.
 
@@ -19,33 +19,30 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 
 | Evidence | Link |
 |---|---|
-| Issue(s) | [Week 3 Sprint 0 Issues](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues) |
-| Vertical Slice | [Candidate Slice](candidate-vertical-slice.md) |
-| Data Contract (Stretch) | [Fake Data Contract](fake-data-contract.md) |
-| Boundary Note (Stretch) | [Fake Payment Boundary](fake-payment-boundary-note.md) |
-| Sprint 0 Report | [Sprint 0 Report](sprint-0-report.md) |
-| Chuseok Checkpoint | [Week 4 Checkpoint Issue #38](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/38) |
-| PR(s) / commits | [Frontend PWA Setup PR #37](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/37) |
-| Screenshot / demo | [UI Wireframe Notes](wireframe-notes.md) (and [Error State](wireframe-error.jpg)) |
-| Test/check note | [Dashboard Check / Done criteria](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/28#issuecomment-5847758590) |
-| Document update | [Architecture Sketch](architecture-sketch.md) |
+| Issue(s) | [#39 Backend Init](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/39), [#40 Order API](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/40), [#41 UI Integration](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/41) |
+| Vertical Slice | [Sprint 1 Vertical Slice Plan](sprint-1-vertical-slice-plan.md) |
+| Boundary Note (Stretch) | **Simulated Payment Boundary:** Khalti payments are bypassed via an `is_fake_payment` flag for the midterm. Authentication is postponed entirely. |
+| End-to-End Test Record | [API Test Record](api-test-record.md) |
+| PR(s) / commits | [Commit: UI Polishing & API Integration](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/4b60bd8) |
+| Test/check note | [Accessibility Check](accessibility-check.md) |
+| Document update | [Repeatable Smoke Test (README)](../README.md) |
 
 ## Individual contributions
 
 | Student | What they did | Evidence link |
 |---|---|---|
-| **Aditya (@notyouradhee)** | Led tech stack decision, defined architecture, explicitly cut the vertical slice scope. | [Candidate Slice](candidate-vertical-slice.md) |
-| **Aanchal (@jaasly07)** | Setup Next.js/PWA and global styling. | [Commit: Update globals.css](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/d4d9c51e43594012ae6a1b397c9b577375747da3) |
-| **Kushan (@Kushan2191)** | Built frontend plan selection UI and managed README/setup. | [Plan Selection UI](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/f01f015c94c48c6e5e9973b5c7afbe8cebbf2cc8) |
-| **Rohit (@Rohit-coder201)** | Implemented test/check for the dashboard path. | [Issue #28 Done Definition](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/28#issuecomment-5874481073) |
+| **Aditya (@notyouradhee)** | Implemented exact API endpoints, built UI styling pass, and ran end-to-end API tests including failure states. | [API Test Record](api-test-record.md) |
+| **Aanchal (@jaasly07)** | Executed and documented accessibility and mobile responsiveness checks for the new checkout flow. | [Commit: A11y Check](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/ca35b07) |
+| **Kushan (@Kushan2191)** | Added polished loading states and error states for API unavailability during checkout. | [Commit: Loading/Error UI](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/5d61dd6) |
+| **Rohit (@Rohit-coder201)** | Turned the initial checkout testing into a repeatable end-to-end smoke test in the README. | [Commit: Smoke Test](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/e25efce) |
 
 ## Blockers or risks
 
 | Blocker/risk | Owner | Next action |
 |---|---|---|
-| **Learning Curve** | @jaasly07 | The frontend team must spend time learning Next.js/React fundamentals. |
+| **CORS Issues** | @notyouradhee | Configured `django-cors-headers` to allow Next.js to hit the Django API securely. |
 | **Khalti Payment Sandbox** | @notyouradhee | Verify the Khalti test environment matches production documentation before coding checkout. |
-| **Chuseok Coordination** | @notyouradhee | Distribute clear, independent tasks so work continues despite the holiday. |
+| **Learning Curve** | @jaasly07 | The frontend team must spend time learning Next.js/React fundamentals. |
 
 ## Decision record
 
@@ -56,5 +53,5 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 
 ## Next week's bridge task
 
-- Build the Django REST API endpoints for Origins and Plans (Issue #24).
-- Connect the frontend selection UI to the live Django backend (Issue #25).
+- Prove the "Ugly Slice" Definition of Done (Week 6).
+- Rehearse the Midterm Presentation script.
