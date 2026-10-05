@@ -93,8 +93,8 @@ export default function CheckoutPage() {
             )}
 
             {paymentStatus === "processing" && (
-              <div className="text-center py-8 text-[#5C5042]">
-                <p className="text-sm uppercase tracking-widest font-bold animate-pulse">Connecting to Khalti...</p>
+              <div className="text-center py-10 text-[#5C5042] bg-[#F5F2EB] rounded-lg border border-[#E6DEC8] mb-6">
+                <p className="text-sm uppercase tracking-widest font-bold animate-pulse">Connecting to Khalti Secure Gateway...</p>
               </div>
             )}
 
