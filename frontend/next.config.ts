@@ -9,7 +9,15 @@ const withPWA = withPWAInit({
 });
 
 const nextConfig: NextConfig = {
-  /* config options here */
+  allowedDevOrigins: ['optimize-overnight-electric-centres.trycloudflare.com', 'localhost:3000'],
+  async rewrites() {
+    return [
+      {
+        source: '/api/:path*',
+        destination: 'http://127.0.0.1:8000/api/:path*', // Proxy to Django Backend
+      },
+    ]
+  },
 };
 
 export default withPWA(nextConfig);
