@@ -44,9 +44,9 @@ A vertical slice is one small, visible user path through your project. It can be
 
 | Issue link/title | First owner | Definition of Done / proof |
 |---|---|---|
-| [#39 Backend Initialization](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/39) | @notyouradhee | Django project running, Neon DB connected |
-| [#40 Order API Endpoint](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/40) | @notyouradhee | `POST /api/orders/` successfully writes to Neon DB |
-| [#41 Frontend Checkout UI](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/41) | @notyouradhee | Beautiful UI implemented, POST request integrated |
+| [#40 Backend Initialization](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/40) | @notyouradhee | Django project running, Neon DB connected |
+| [#41 Order API Endpoint](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/41) | @notyouradhee | `POST /api/orders/` successfully writes to Neon DB |
+| [#42 Frontend Checkout UI](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42) | @notyouradhee | Beautiful UI implemented, POST request integrated |
 
 ## Roles this week
 
@@ -64,3 +64,4 @@ A vertical slice is one small, visible user path through your project. It can be
 
 - **Weekly Report:** [Week 5 Weekly Report](./weekly-report.md)
 - **First visible proof:** PR for UI upgrade and backend integration.
+

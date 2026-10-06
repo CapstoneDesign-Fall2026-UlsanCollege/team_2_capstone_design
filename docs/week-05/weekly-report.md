@@ -11,7 +11,7 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 ## What we committed to do
 
 - [x] Confirm the tech stack and vertical slice.
-- [x] Create the Week 5 implementation issues ([#42](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42), [#42](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42), [#42](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42)).
+- [x] Create the Week 5 implementation issues ([#40](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/40), [#41](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/41), [#42](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42)).
 - [x] Set up the Neon PostgreSQL database.
 - [x] Build the Django backend `Order` model and API endpoints.
 
@@ -19,7 +19,7 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 
 | Evidence | Link |
 |---|---|
-| Issue(s) | [#42 Backend Init](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42), [#42 Order API](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42), [#42 UI Integration](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42) |
+| Issue(s) | [#40 Backend Init](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/40), [#41 Order API](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/41), [#42 UI Integration](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42) |
 | Vertical Slice | [Sprint 1 Vertical Slice Plan](sprint-1-vertical-slice-plan.md) |
 | Boundary Note (Stretch) | **Simulated Payment Boundary:** Khalti payments are bypassed via an `is_fake_payment` flag for the midterm. Authentication is postponed entirely. |
 | End-to-End Test Record | [API Test Record](api-test-record.md) |
@@ -48,11 +48,12 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 
 | Decision | Why we chose it | Owner | Evidence / Issue link |
 |---|---|---|---|
-| Use Django/PostgreSQL over Flask | Django provides a free, built-in admin panel which the business owner requires immediately. | @notyouradhee | [Tech Stack](tech-stack-comparison.md) |
-| Restrict Midterm Demo Scope | The architecture is too large. We cut login and emails to focus solely on the checkout flow. | @notyouradhee | [Candidate Slice](candidate-vertical-slice.md) |
+| Use Django/PostgreSQL over Flask | Django provides a free, built-in admin panel which the business owner requires immediately. | @notyouradhee | [Tech Stack](../week-03/tech-stack-comparison.md) |
+| Restrict Midterm Demo Scope | The architecture is too large. We cut login and emails to focus solely on the checkout flow. | @notyouradhee | [Candidate Slice](../week-03/candidate-vertical-slice.md) |
 
 ## Next week's bridge task
 
 - Prove the "Ugly Slice" Definition of Done (Week 6).
 - Rehearse the Midterm Presentation script.
+
 
