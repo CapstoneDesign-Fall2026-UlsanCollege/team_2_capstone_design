@@ -11,7 +11,7 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 ## What we committed to do
 
 - [x] Confirm the tech stack and vertical slice.
-- [x] Create the Week 5 implementation issues ([#39](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/39), [#40](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/40), [#41](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/41)).
+- [x] Create the Week 5 implementation issues ([#42](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42), [#42](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42), [#42](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42)).
 - [x] Set up the Neon PostgreSQL database.
 - [x] Build the Django backend `Order` model and API endpoints.
 
@@ -19,11 +19,11 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 
 | Evidence | Link |
 |---|---|
-| Issue(s) | [#39 Backend Init](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/39), [#40 Order API](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/40), [#41 UI Integration](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/41) |
+| Issue(s) | [#42 Backend Init](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42), [#42 Order API](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42), [#42 UI Integration](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42) |
 | Vertical Slice | [Sprint 1 Vertical Slice Plan](sprint-1-vertical-slice-plan.md) |
 | Boundary Note (Stretch) | **Simulated Payment Boundary:** Khalti payments are bypassed via an `is_fake_payment` flag for the midterm. Authentication is postponed entirely. |
 | End-to-End Test Record | [API Test Record](api-test-record.md) |
-| PR(s) / commits | [Commit: UI Polishing & API Integration](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/4b60bd8) |
+| PR(s) / commits | [Commit: UI Polishing & API Integration](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/a05a49e) |
 | Test/check note | [Accessibility Check](accessibility-check.md) |
 | Document update | [Repeatable Smoke Test (README)](../README.md) |
 
@@ -55,3 +55,4 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 
 - Prove the "Ugly Slice" Definition of Done (Week 6).
 - Rehearse the Midterm Presentation script.
+
