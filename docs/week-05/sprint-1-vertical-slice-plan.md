@@ -29,10 +29,10 @@ A vertical slice is one small, visible user path through your project. It can be
 ## Stack and supporting design
 
 - **Stack status:** Confirmed (Next.js + Tailwind + Django REST + Neon Postgres)
-- **Decision or approval note:** [Architecture and Setup](../week-03/team2-architecture-notes.md)
-- **Wireframe notes:** [Wireframes](../week-03/team-2-wireframes.md)
-- **Design Doc v1:** [MVP Features](../week-03/team2-mvp-features.md)
-- **Architecture sketch:** [Data Flow](../week-03/team2-architecture-notes.md)
+- **Decision or approval note:** [Architecture and Setup](../week-03/architecture-sketch.md)
+- **Wireframe notes:** [Wireframes](../week-03/wireframe-notes.md)
+- **Design Doc v1:** [MVP Features](../week-03/candidate-vertical-slice.md)
+- **Architecture sketch:** [Data Flow](../week-03/architecture-sketch.md)
 
 ## Shared preview or test path
 
@@ -64,4 +64,5 @@ A vertical slice is one small, visible user path through your project. It can be
 
 - **Weekly Report:** [Week 5 Weekly Report](./weekly-report.md)
 - **First visible proof:** PR for UI upgrade and backend integration.
+
 

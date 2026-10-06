@@ -25,7 +25,7 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 | End-to-End Test Record | [API Test Record](api-test-record.md) |
 | PR(s) / commits | [Commit: UI Polishing & API Integration](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/a05a49e) |
 | Test/check note | [Accessibility Check](accessibility-check.md) |
-| Document update | [Repeatable Smoke Test (README)](../README.md) |
+| Document update | [Repeatable Smoke Test (README)](../../README.md) |
 
 ## Individual contributions
 
@@ -55,5 +55,6 @@ We confirmed our tech stack and vertical slice, generated the implementation iss
 
 - Prove the "Ugly Slice" Definition of Done (Week 6).
 - Rehearse the Midterm Presentation script.
+
 
 
