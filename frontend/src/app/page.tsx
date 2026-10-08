@@ -34,6 +34,12 @@ export default function Home() {
           <p className="text-lg text-[#5C5042] uppercase tracking-[0.2em] text-sm">
             Himalayan Coffee Subscription
           </p>
+          <Link
+            href="/origins"
+            className="inline-block mt-6 px-8 py-3 border border-[#2C2420] text-[#2C2420] text-sm uppercase tracking-widest font-bold hover:bg-[#2C2420] hover:text-[#F5F2EB] transition-colors"
+          >
+            Browse Origins
+          </Link>
         </div>
       </header>
 
