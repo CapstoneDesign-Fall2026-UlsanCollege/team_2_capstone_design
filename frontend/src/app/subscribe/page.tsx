@@ -50,7 +50,7 @@ function SubscribeContent() {
         </p>
       </div>
 
-      <main className="flex-1 w-full max-w-4xl mx-auto p-6 grid grid-cols-1 md:grid-cols-2 gap-16">
+      <main className="flex-1 w-full max-w-4xl mx-auto p-6 pb-56 md:pb-32 grid grid-cols-1 md:grid-cols-2 gap-16">
         
         {/* Origin Selection */}
         <section>
@@ -184,7 +184,7 @@ function SubscribeContent() {
       </main>
 
       {/* Elegant Bottom Action Bar */}
-      <div className="fixed bottom-0 left-0 right-0 bg-[#F5F2EB] border-t border-[#E6DEC8] p-6 z-50">
+      <div className="fixed bottom-16 md:bottom-0 left-0 right-0 bg-[#F5F2EB] border-t border-[#E6DEC8] p-6 z-50 shadow-[0_-10px_40px_rgba(0,0,0,0.05)]">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex justify-between w-full md:w-auto md:gap-8 items-center">
             
