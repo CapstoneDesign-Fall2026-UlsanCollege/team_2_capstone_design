@@ -10,7 +10,9 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
 
-  // Read from URL params (passed from /origins), or fall back to defaults
+  const hasSelection = searchParams.has("origin");
+
+  // Read from URL params (passed from /subscribe), or fall back to defaults
   const originName = searchParams.get("name") || "Gulmi Reserve";
   const originId = Number(searchParams.get("origin")) || 1;
   const weightKg = Number(searchParams.get("weight")) || 1;
@@ -48,11 +50,30 @@ function CheckoutContent() {
     }
   };
 
+  if (!hasSelection) {
+    return (
+      <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center p-6 font-sans justify-center">
+        <div className="w-full max-w-md text-center bg-white p-12 shadow-sm border border-[#E6DEC8]">
+          <h1 className="text-3xl font-serif font-bold text-[#1A1512] mb-4">Your Cart is Empty</h1>
+          <p className="text-[#5C5042] text-sm mb-8 leading-relaxed">
+            It looks like you haven't built your coffee subscription plan yet. 
+          </p>
+          <Link
+            href="/subscribe"
+            className="inline-block w-full bg-[#1A1512] text-white py-4 text-sm uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors"
+          >
+            Build Your Plan
+          </Link>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center p-6 font-sans">
       <div className="w-full max-w-md mt-16">
 
-        <Link href="/origins" className="inline-flex items-center gap-2 text-[#8A7966] hover:text-[#2C2420] transition-colors mb-8 text-sm uppercase tracking-widest font-bold">
+        <Link href="/subscribe" className="inline-flex items-center gap-2 text-[#8A7966] hover:text-[#2C2420] transition-colors mb-8 text-sm uppercase tracking-widest font-bold">
           <ArrowLeft size={16} /> Change Selection
         </Link>
 
