@@ -33,7 +33,7 @@ export default function RootLayout({
 
             {/* Desktop Navigation Links */}
             <div className="hidden md:flex items-center gap-8 text-xs uppercase tracking-widest font-bold text-[#5C5042]">
-              <Link href="/" className="hover:text-[#1A1512] transition-colors">Subscribe</Link>
+              <Link href="/subscribe" className="hover:text-[#1A1512] transition-colors">Subscribe</Link>
               <Link href="/origins" className="hover:text-[#1A1512] transition-colors">Our Origins</Link>
               <Link href="#" className="hover:text-[#1A1512] transition-colors">Our Story</Link>
             </div>
