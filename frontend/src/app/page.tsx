@@ -8,11 +8,11 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-[#F5F2EB] text-[#2C2420]">
       
       {/* Hero Section */}
-      <section className="relative pt-40 pb-32 px-6 flex items-center justify-center min-h-[80vh] overflow-hidden">
-        {/* Full-bleed background image of a coffee farm/nature */}
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1501747315-124a0eaca060?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center"></div>
-        {/* Dark overlay for text readability */}
-        <div className="absolute inset-0 bg-[#1A1512]/70"></div>
+      <section className="relative pt-40 pb-32 px-6 flex items-center justify-center min-h-[80vh] overflow-hidden bg-[#1A1512]">
+        {/* Macro coffee beans texture blended into the dark background */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-40 mix-blend-overlay"></div>
+        {/* Subtle gradient to ensure text readability */}
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1A1512] to-transparent opacity-80"></div>
         
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tight text-white mb-6">
