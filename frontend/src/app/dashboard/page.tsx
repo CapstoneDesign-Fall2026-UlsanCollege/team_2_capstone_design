@@ -65,7 +65,7 @@ export default function DashboardPage() {
                         Active
                       </span>
                     </div>
-                    <p className="text-[#5C5042] text-sm mb-6">1 kg â€¢ Every 3 Months</p>
+                    <p className="text-[#5C5042] text-sm mb-6">1 kg/month • 3-Month Prepaid Plan</p>
                     
                     <div className="grid grid-cols-2 gap-6">
                       <div>

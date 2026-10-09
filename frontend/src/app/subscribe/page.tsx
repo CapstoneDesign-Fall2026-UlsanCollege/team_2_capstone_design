@@ -12,10 +12,10 @@ const ORIGINS = [
 ];
 
 const PLANS = [
-  { id: "PAYG", name: "Pay-per-delivery", discount: 0, months: 1 },
-  { id: "3M", name: "3 Months", discount: 5, months: 3 },
-  { id: "6M", name: "6 Months", discount: 10, months: 6 },
-  { id: "12M", name: "12 Months", discount: 15, months: 12 },
+  { id: "PAYG", name: "Pay Monthly", discount: 0, months: 1 },
+  { id: "3M", name: "3-Month Prepay", discount: 5, months: 3 },
+  { id: "6M", name: "6-Month Prepay", discount: 10, months: 6 },
+  { id: "12M", name: "12-Month Prepay", discount: 15, months: 12 },
 ];
 
 function SubscribeContent() {
@@ -144,7 +144,7 @@ function SubscribeContent() {
                     <div className="flex justify-between items-center">
                       <div>
                         <div className={`text-lg font-serif font-bold ${selectedPlan.id === plan.id ? "text-white" : "text-[#1A1512]"}`}>
-                          {plan.name}
+                          {plan.name}</div><div className="text-[10px] mt-0.5 uppercase tracking-widest opacity-80">Delivered Monthly
                         </div>
                         {plan.discount > 0 && (
                           <div className={`text-xs mt-1 uppercase tracking-wider ${selectedPlan.id === plan.id ? "text-[#D3C7B1]" : "text-[#5C5042]"}`}>
