@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { Check } from "lucide-react";
+import { Check, Coffee, Flame, Truck, ArrowDown } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 const ORIGINS = [
@@ -44,26 +44,70 @@ function HomeContent() {
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F2EB] text-[#2C2420] pb-32">
       
-      {/* Boutique Header */}
-      <header className="pt-16 pb-12 px-6 border-b border-[#E6DEC8]">
-        <div className="max-w-4xl mx-auto text-center">
-          <h1 className="text-5xl md:text-6xl font-serif font-bold tracking-tight text-[#1A1512] mb-4">
-            BrewMellow.
+      {/* Hero Section */}
+      <section className="bg-[#1A1512] text-[#F5F2EB] pt-32 pb-24 px-6 relative overflow-hidden">
+        {/* Decorative background overlay */}
+        <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay"></div>
+        <div className="max-w-4xl mx-auto text-center relative z-10">
+          <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tight text-white mb-6">
+            Peak Altitude.<br />Peak Flavor.
           </h1>
-          <p className="text-lg text-[#5C5042] uppercase tracking-[0.2em] text-sm">
-            Himalayan Coffee Subscription
+          <p className="text-[#D3C7B1] text-lg max-w-2xl mx-auto leading-relaxed mb-10">
+            A premium subscription service delivering sustainably sourced, meticulously roasted Himalayan coffee directly to your door, exactly when you need it.
           </p>
-          <Link
-            href="/origins"
-            className="inline-block mt-6 px-8 py-3 border border-[#2C2420] text-[#2C2420] text-sm uppercase tracking-widest font-bold hover:bg-[#2C2420] hover:text-[#F5F2EB] transition-colors"
-          >
-            Browse Origins
-          </Link>
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <button
+              onClick={() => document.getElementById('subscription-builder')?.scrollIntoView({ behavior: 'smooth' })}
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 bg-[#A3432A] text-white text-sm uppercase tracking-widest font-bold hover:bg-[#8A3722] transition-colors"
+            >
+              Build Your Plan <ArrowDown size={16} />
+            </button>
+            <Link
+              href="/origins"
+              className="inline-flex items-center justify-center gap-2 px-8 py-4 border border-[#5C5042] text-[#E6DEC8] text-sm uppercase tracking-widest font-bold hover:bg-[#2C2420] hover:border-[#2C2420] transition-colors"
+            >
+              Explore Our Origins
+            </Link>
+          </div>
         </div>
-      </header>
+      </section>
+
+      {/* How it Works Section */}
+      <section className="bg-[#EAE4D3] py-20 px-6 border-b border-[#E6DEC8]">
+        <div className="max-w-5xl mx-auto">
+          <div className="text-center mb-16">
+            <h2 className="text-xs uppercase tracking-widest text-[#8A7966] font-bold mb-2">The Process</h2>
+            <h3 className="text-3xl font-serif font-bold text-[#1A1512]">How Your Subscription Works</h3>
+          </div>
+          
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-12">
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto bg-[#F5F2EB] rounded-full flex items-center justify-center mb-6 text-[#1A1512]">
+                <Coffee size={28} />
+              </div>
+              <h4 className="text-lg font-serif font-bold text-[#1A1512] mb-3">1. Select Your Bean</h4>
+              <p className="text-[#5C5042] text-sm leading-relaxed">Choose from our single-origin harvests in Gulmi, Ilam, or Nuwakot, each offering a distinct flavor profile.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto bg-[#F5F2EB] rounded-full flex items-center justify-center mb-6 text-[#1A1512]">
+                <Flame size={28} />
+              </div>
+              <h4 className="text-lg font-serif font-bold text-[#1A1512] mb-3">2. Roasted to Order</h4>
+              <p className="text-[#5C5042] text-sm leading-relaxed">We small-batch roast your beans within 48 hours of your scheduled delivery date to guarantee peak freshness.</p>
+            </div>
+            <div className="text-center">
+              <div className="w-16 h-16 mx-auto bg-[#F5F2EB] rounded-full flex items-center justify-center mb-6 text-[#1A1512]">
+                <Truck size={28} />
+              </div>
+              <h4 className="text-lg font-serif font-bold text-[#1A1512] mb-3">3. Delivered Fresh</h4>
+              <p className="text-[#5C5042] text-sm leading-relaxed">Your coffee arrives right at your door on your preferred schedule. Adjust, pause, or cancel anytime.</p>
+            </div>
+          </div>
+        </div>
+      </section>
 
       {/* Main Content */}
-      <main className="flex-1 w-full max-w-4xl mx-auto p-6 mt-8 grid grid-cols-1 md:grid-cols-2 gap-16">
+      <main id="subscription-builder" className="flex-1 w-full max-w-4xl mx-auto p-6 mt-16 grid grid-cols-1 md:grid-cols-2 gap-16 pt-8">
         
         {/* Origin Selection */}
         <section>
