@@ -38,10 +38,10 @@ export default function RootLayout({
               <Link href="#" className="hover:text-[#1A1512] transition-colors">Our Story</Link>
             </div>
 
-            {/* Icons (Login & Cart) */}
+            {/* Icons (Account & Cart) */}
             <div className="flex items-center gap-6 text-[#2C2420]">
-              <Link href="#" className="hidden md:flex items-center gap-2 text-xs uppercase tracking-widest font-bold hover:text-[#5C5042] transition-colors">
-                <User size={16} /> Sign In
+              <Link href="/dashboard" className="hidden md:flex items-center gap-2 text-xs uppercase tracking-widest font-bold hover:text-[#5C5042] transition-colors">
+                <User size={16} /> Account
               </Link>
               <Link href="/checkout" className="relative hover:text-[#5C5042] transition-colors">
                 <ShoppingBag size={20} />
