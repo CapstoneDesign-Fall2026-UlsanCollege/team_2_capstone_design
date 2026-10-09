@@ -8,14 +8,17 @@ export default function Home() {
     <div className="flex flex-col min-h-screen bg-[#F5F2EB] text-[#2C2420]">
       
       {/* Hero Section */}
-      <section className="bg-[#1A1512] text-[#F5F2EB] pt-32 pb-24 px-6 relative overflow-hidden">
-        {/* Decorative background overlay */}
-        <div className="absolute inset-0 opacity-20 bg-[url('https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=2071&auto=format&fit=crop')] bg-cover bg-center mix-blend-overlay"></div>
+      <section className="relative pt-40 pb-32 px-6 flex items-center justify-center min-h-[80vh] overflow-hidden">
+        {/* Full-bleed background image of a coffee farm/nature */}
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1501747315-124a0eaca060?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center"></div>
+        {/* Dark overlay for text readability */}
+        <div className="absolute inset-0 bg-[#1A1512]/70"></div>
+        
         <div className="max-w-4xl mx-auto text-center relative z-10">
           <h1 className="text-5xl md:text-7xl font-serif font-bold tracking-tight text-white mb-6">
             Peak Altitude.<br />Peak Flavor.
           </h1>
-          <p className="text-[#D3C7B1] text-lg max-w-2xl mx-auto leading-relaxed mb-10">
+          <p className="text-[#F5F2EB] text-lg md:text-xl max-w-2xl mx-auto leading-relaxed mb-10 opacity-90">
             A premium subscription service delivering sustainably sourced, meticulously roasted Himalayan coffee directly to your door, exactly when you need it.
           </p>
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
