@@ -138,7 +138,10 @@ function HomeContent() {
             <h2 className="text-sm uppercase tracking-widest text-[#8A7966] font-bold mb-6">03. Delivery Plan</h2>
             <div className="space-y-4">
               {PLANS.map((plan) => {
-                const discountedPrice = Math.round(selectedOrigin.price * selectedWeight * (1 - plan.discount / 100) * plan.months);
+                const originalPrice = selectedOrigin.price * selectedWeight * plan.months;
+                const discountedPrice = Math.round(originalPrice * (1 - plan.discount / 100));
+                const savings = originalPrice - discountedPrice;
+
                 return (
                   <label
                     key={plan.id}
@@ -155,12 +158,19 @@ function HomeContent() {
                         </div>
                         {plan.discount > 0 && (
                           <div className={`text-xs mt-1 uppercase tracking-wider ${selectedPlan.id === plan.id ? "text-[#D3C7B1]" : "text-[#8A7966]"}`}>
-                            Saves {plan.discount}% — Billed Upfront
+                            Saves {plan.discount}% (Rs. {savings}) — Billed Upfront
                           </div>
                         )}
                       </div>
-                      <div className="text-xl font-medium">
-                        Rs. {discountedPrice}
+                      <div className="text-right">
+                        {plan.discount > 0 && (
+                          <div className={`text-xs line-through mb-1 ${selectedPlan.id === plan.id ? "text-[#A89F91]" : "text-[#A89F91]"}`}>
+                            Rs. {originalPrice}
+                          </div>
+                        )}
+                        <div className="text-xl font-medium">
+                          Rs. {discountedPrice}
+                        </div>
                       </div>
                     </div>
                     <input
