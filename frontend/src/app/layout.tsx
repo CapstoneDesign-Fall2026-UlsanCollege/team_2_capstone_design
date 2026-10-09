@@ -35,7 +35,7 @@ export default function RootLayout({
             <div className="hidden md:flex items-center gap-8 text-xs uppercase tracking-widest font-bold text-[#5C5042]">
               <Link href="/subscribe" className="hover:text-[#1A1512] transition-colors">Subscribe</Link>
               <Link href="/origins" className="hover:text-[#1A1512] transition-colors">Our Origins</Link>
-              <Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-[#1A1512] transition-colors">Our Story</Link>
+              <Link href="#"  className="hover:text-[#1A1512] transition-colors">Our Story</Link>
             </div>
 
             {/* Icons (Account & Cart) */}
@@ -72,25 +72,25 @@ export default function RootLayout({
               <ul className="space-y-4 text-sm text-[#8A7966]">
                 <li><Link href="/" className="hover:text-white transition-colors">Subscriptions</Link></li>
                 <li><Link href="/origins" className="hover:text-white transition-colors">Single Origins</Link></li>
-                <li><Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-white transition-colors">Brewing Gear</Link></li>
+                <li><Link href="#"  className="hover:text-white transition-colors">Brewing Gear</Link></li>
               </ul>
             </div>
 
             <div>
               <h3 className="text-xs uppercase tracking-widest text-[#5C5042] font-bold mb-6">About</h3>
               <ul className="space-y-4 text-sm text-[#8A7966]">
-                <li><Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-white transition-colors">Our Story</Link></li>
-                <li><Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-white transition-colors">Sustainability</Link></li>
-                <li><Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-white transition-colors">The Roastery</Link></li>
+                <li><Link href="#"  className="hover:text-white transition-colors">Our Story</Link></li>
+                <li><Link href="#"  className="hover:text-white transition-colors">Sustainability</Link></li>
+                <li><Link href="#"  className="hover:text-white transition-colors">The Roastery</Link></li>
               </ul>
             </div>
 
             <div>
               <h3 className="text-xs uppercase tracking-widest text-[#5C5042] font-bold mb-6">Support</h3>
               <ul className="space-y-4 text-sm text-[#8A7966]">
-                <li><Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-white transition-colors">FAQ</Link></li>
-                <li><Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-white transition-colors">Shipping & Returns</Link></li>
-                <li><Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-white transition-colors">Contact Us</Link></li>
+                <li><Link href="#"  className="hover:text-white transition-colors">FAQ</Link></li>
+                <li><Link href="#"  className="hover:text-white transition-colors">Shipping & Returns</Link></li>
+                <li><Link href="#"  className="hover:text-white transition-colors">Contact Us</Link></li>
               </ul>
             </div>
           </div>
@@ -98,8 +98,8 @@ export default function RootLayout({
           <div className="max-w-6xl mx-auto px-6 pt-8 border-t border-[#2C2420] flex flex-col md:flex-row justify-between items-center text-xs text-[#5C5042]">
             <p>© 2026 BrewMellow. Capstone Design Team 2.</p>
             <div className="flex gap-6 mt-4 md:mt-0">
-              <Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-[#8A7966] transition-colors">Privacy Policy</Link>
-              <Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="hover:text-[#8A7966] transition-colors">Terms of Service</Link>
+              <Link href="#"  className="hover:text-[#8A7966] transition-colors">Privacy Policy</Link>
+              <Link href="#"  className="hover:text-[#8A7966] transition-colors">Terms of Service</Link>
             </div>
           </div>
         </footer>
