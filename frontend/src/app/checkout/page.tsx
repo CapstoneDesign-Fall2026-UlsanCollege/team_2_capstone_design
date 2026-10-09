@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, AlertTriangle } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertTriangle, Loader2 } from "lucide-react";
 import { Suspense } from "react";
 
 function CheckoutContent() {
@@ -33,6 +33,9 @@ function CheckoutContent() {
   const handleFakePayment = async () => {
     setPaymentStatus("processing");
 
+    // Simulate network delay for better UX
+    await new Promise((resolve) => setTimeout(resolve, 2000));
+
     try {
       const res = await fetch("http://localhost:8000/api/orders/", {
         method: "POST",
@@ -49,6 +52,26 @@ function CheckoutContent() {
       setPaymentStatus("error");
     }
   };
+
+  if (paymentStatus === "success") {
+    return (
+      <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center p-6 font-sans justify-center">
+        <div className="w-full max-w-md text-center bg-white p-12 shadow-sm border border-[#E6DEC8]">
+          <CheckCircle size={48} className="text-[#2E6B34] mx-auto mb-6" />
+          <h1 className="text-3xl font-serif font-bold text-[#1A1512] mb-4">Payment Successful!</h1>
+          <p className="text-[#5C5042] text-sm mb-8 leading-relaxed">
+            Your Himalayan Coffee subscription is confirmed. Your first order is being prepared for roasting.
+          </p>
+          <Link
+            href="/dashboard"
+            className="inline-block w-full bg-[#1A1512] text-white py-4 text-sm uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors"
+          >
+            Go to Dashboard
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   if (!hasSelection) {
     return (
