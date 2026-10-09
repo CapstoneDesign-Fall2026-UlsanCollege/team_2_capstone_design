@@ -16,7 +16,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className="antialiased bg-[#F5F2EB] text-[#2C2420] min-h-screen flex flex-col font-sans">
+      <body suppressHydrationWarning className="antialiased bg-[#F5F2EB] text-[#2C2420] min-h-screen flex flex-col font-sans">
         {/* GLOBAL NAVBAR */}
         <nav className="sticky top-0 z-50 bg-[#F5F2EB]/90 backdrop-blur-md border-b border-[#E6DEC8]">
           <div className="max-w-6xl mx-auto px-6 h-20 flex items-center justify-between">
