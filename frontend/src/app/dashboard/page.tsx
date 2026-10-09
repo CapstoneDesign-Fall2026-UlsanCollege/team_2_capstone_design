@@ -82,13 +82,13 @@ export default function DashboardPage() {
                   </div>
 
                   <div className="flex flex-col gap-3 justify-center md:border-l md:border-[#E6DEC8] md:pl-8">
-                    <button className="w-full text-center px-6 py-2 border border-[#E6DEC8] text-[#1A1512] text-xs uppercase tracking-widest font-bold hover:bg-[#F5F2EB] transition-colors">
+                    <button onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="w-full text-center px-6 py-2 border border-[#E6DEC8] text-[#1A1512] text-xs uppercase tracking-widest font-bold hover:bg-[#F5F2EB] transition-colors">
                       Edit Plan
                     </button>
-                    <button className="w-full text-center px-6 py-2 border border-[#E6DEC8] text-[#1A1512] text-xs uppercase tracking-widest font-bold hover:bg-[#F5F2EB] transition-colors">
+                    <button onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="w-full text-center px-6 py-2 border border-[#E6DEC8] text-[#1A1512] text-xs uppercase tracking-widest font-bold hover:bg-[#F5F2EB] transition-colors">
                       Skip Delivery
                     </button>
-                    <button className="w-full text-center px-6 py-2 text-[#A3432A] text-xs uppercase tracking-widest font-bold hover:bg-red-50 transition-colors">
+                    <button onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="w-full text-center px-6 py-2 text-[#A3432A] text-xs uppercase tracking-widest font-bold hover:bg-red-50 transition-colors">
                       Cancel
                     </button>
                   </div>
@@ -97,7 +97,7 @@ export default function DashboardPage() {
 
               <div className="flex items-center justify-between pt-8">
                 <h2 className="text-lg font-serif font-bold text-[#1A1512]">Recent Orders</h2>
-                <Link href="#" className="text-xs uppercase tracking-widest text-[#8A7966] font-bold hover:text-[#1A1512]">
+                <Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="text-xs uppercase tracking-widest text-[#8A7966] font-bold hover:text-[#1A1512]">
                   View All
                 </Link>
               </div>
@@ -131,7 +131,7 @@ export default function DashboardPage() {
                         </td>
                         <td className="px-6 py-4 text-[#1A1512]">{order.total}</td>
                         <td className="px-6 py-4 text-right">
-                          <button className="text-[#8A7966] hover:text-[#1A1512] transition-colors">
+                          <button onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="text-[#8A7966] hover:text-[#1A1512] transition-colors">
                             <Download size={16} />
                           </button>
                         </td>
@@ -152,7 +152,7 @@ export default function DashboardPage() {
                   <h3 className="text-xs uppercase tracking-widest text-[#5C5042] font-bold flex items-center gap-2">
                     <MapPin size={14} /> Default Address
                   </h3>
-                  <button className="text-[#8A7966] hover:text-[#1A1512]"><MoreVertical size={16} /></button>
+                  <button onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="text-[#8A7966] hover:text-[#1A1512]"><MoreVertical size={16} /></button>
                 </div>
                 <p className="text-[#1A1512] font-medium mb-1">Aditya Kumar Gupta</p>
                 <p className="text-[#5C5042] text-sm leading-relaxed">
@@ -167,7 +167,7 @@ export default function DashboardPage() {
                   <h3 className="text-xs uppercase tracking-widest text-[#5C5042] font-bold flex items-center gap-2">
                     <CreditCard size={14} /> Payment Method
                   </h3>
-                  <button className="text-[#8A7966] hover:text-[#1A1512]"><MoreVertical size={16} /></button>
+                  <button onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="text-[#8A7966] hover:text-[#1A1512]"><MoreVertical size={16} /></button>
                 </div>
                 <div className="flex items-center gap-3 bg-[#FAF8F5] p-3 border border-[#E6DEC8] rounded-sm mb-4">
                   <div className="bg-[#5C2D91] px-2 py-1 rounded text-white text-[10px] font-bold uppercase tracking-widest">
@@ -175,7 +175,7 @@ export default function DashboardPage() {
                   </div>
                   <p className="text-[#1A1512] text-sm font-medium">Wallet Linked</p>
                 </div>
-                <Link href="#" className="inline-flex items-center gap-1 text-xs text-[#A3432A] uppercase tracking-widest font-bold hover:text-[#8A3722]">
+                <Link href="#" onClick={(e) => { e.preventDefault(); alert("?? Feature scheduled for Final Release."); }} className="inline-flex items-center gap-1 text-xs text-[#A3432A] uppercase tracking-widest font-bold hover:text-[#8A3722]">
                   Manage Billing <ExternalLink size={12} />
                 </Link>
               </div>
