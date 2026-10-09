@@ -38,7 +38,7 @@ export default function DashboardPage() {
     };
 
     fetchOrders();
-  }, [router]);
+  }, []);
 
   if (!user || loading) {
     return (
