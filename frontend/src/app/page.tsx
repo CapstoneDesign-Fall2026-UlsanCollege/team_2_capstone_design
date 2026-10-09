@@ -67,7 +67,7 @@ function HomeContent() {
         
         {/* Origin Selection */}
         <section>
-          <h2 className="text-sm uppercase tracking-widest text-[#8A7966] font-bold mb-6">01. Select Origin</h2>
+          <h2 className="text-sm uppercase tracking-widest text-[#5C5042] font-bold mb-6">01. Select Origin</h2>
           <div className="space-y-4">
             {ORIGINS.map((origin) => (
               <label
@@ -82,11 +82,11 @@ function HomeContent() {
                   <div className={`text-xl font-serif font-bold ${selectedOrigin.id === origin.id ? "text-white" : "text-[#1A1512]"}`}>
                     {origin.name}
                   </div>
-                  <div className={`font-medium ${selectedOrigin.id === origin.id ? "text-[#D3C7B1]" : "text-[#8A7966]"}`}>
+                  <div className={`font-medium ${selectedOrigin.id === origin.id ? "text-[#D3C7B1]" : "text-[#5C5042]"}`}>
                     Rs. {origin.price}
                   </div>
                 </div>
-                <div className={`text-sm pr-6 ${selectedOrigin.id === origin.id ? "text-[#A89F91]" : "text-[#5C5042]"}`}>
+                <div className={`text-sm pr-6 ${selectedOrigin.id === origin.id ? "text-[#7A6A58]" : "text-[#5C5042]"}`}>
                   {origin.desc}
                 </div>
                 
@@ -113,7 +113,7 @@ function HomeContent() {
           
           {/* Weight Selection */}
           <section>
-            <h2 className="text-sm uppercase tracking-widest text-[#8A7966] font-bold mb-6">02. Select Weight</h2>
+            <h2 className="text-sm uppercase tracking-widest text-[#5C5042] font-bold mb-6">02. Select Weight</h2>
             <div className="grid grid-cols-2 gap-4">
               {[0.5, 1, 2, 5].map((weight) => (
                 <label
@@ -139,7 +139,7 @@ function HomeContent() {
 
           {/* Plan Selection */}
           <section>
-            <h2 className="text-sm uppercase tracking-widest text-[#8A7966] font-bold mb-6">03. Delivery Plan</h2>
+            <h2 className="text-sm uppercase tracking-widest text-[#5C5042] font-bold mb-6">03. Delivery Plan</h2>
             <div className="space-y-4">
               {PLANS.map((plan) => {
                 const originalPrice = selectedOrigin.price * selectedWeight * plan.months;
@@ -160,14 +160,14 @@ function HomeContent() {
                           {plan.name}
                         </div>
                         {plan.discount > 0 && (
-                          <div className={`text-xs mt-1 uppercase tracking-wider ${selectedPlan.id === plan.id ? "text-[#D3C7B1]" : "text-[#8A7966]"}`}>
+                          <div className={`text-xs mt-1 uppercase tracking-wider ${selectedPlan.id === plan.id ? "text-[#D3C7B1]" : "text-[#5C5042]"}`}>
                             Saves {plan.discount}%
                           </div>
                         )}
                       </div>
                       <div className="text-right">
                         {plan.discount > 0 && (
-                          <div className={`text-xs line-through mb-1 ${selectedPlan.id === plan.id ? "text-[#A89F91]" : "text-[#A89F91]"}`}>
+                          <div className={`text-xs line-through mb-1 ${selectedPlan.id === plan.id ? "text-[#7A6A58]" : "text-[#7A6A58]"}`}>
                             Rs. {originalPrice}
                           </div>
                         )}
@@ -197,7 +197,7 @@ function HomeContent() {
           <div className="flex justify-between w-full md:w-auto md:gap-8 items-center">
             
             <div className="flex flex-col">
-              <span className="text-[#8A7966] uppercase tracking-widest text-xs font-bold mb-1">Total upfront cost</span>
+              <span className="text-[#5C5042] uppercase tracking-widest text-xs font-bold mb-1">Total upfront cost</span>
               {totalSavings > 0 && (
                 <span className="text-[#3A7D44] text-xs font-bold">
                   You save Rs. {totalSavings}
@@ -207,7 +207,7 @@ function HomeContent() {
 
             <div className="flex flex-col items-end">
               {totalSavings > 0 && (
-                <span className="text-[#A89F91] text-sm line-through">
+                <span className="text-[#7A6A58] text-sm line-through">
                   Rs. {totalOriginalPrice}
                 </span>
               )}
