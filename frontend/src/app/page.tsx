@@ -37,6 +37,10 @@ function HomeContent() {
     }
   }, [urlOriginId]);
 
+  const totalOriginalPrice = selectedOrigin.price * selectedWeight * selectedPlan.months;
+  const totalDiscountedPrice = Math.round(totalOriginalPrice * (1 - selectedPlan.discount / 100));
+  const totalSavings = totalOriginalPrice - totalDiscountedPrice;
+
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F2EB] text-[#2C2420] pb-32">
       
@@ -138,9 +142,7 @@ function HomeContent() {
             <h2 className="text-sm uppercase tracking-widest text-[#8A7966] font-bold mb-6">03. Delivery Plan</h2>
             <div className="space-y-4">
               {PLANS.map((plan) => {
-                const originalPrice = selectedOrigin.price * selectedWeight * plan.months;
-                const discountedPrice = Math.round(originalPrice * (1 - plan.discount / 100));
-                const savings = originalPrice - discountedPrice;
+                const planDiscountedPrice = Math.round(selectedOrigin.price * selectedWeight * (1 - plan.discount / 100) * plan.months);
 
                 return (
                   <label
@@ -158,19 +160,12 @@ function HomeContent() {
                         </div>
                         {plan.discount > 0 && (
                           <div className={`text-xs mt-1 uppercase tracking-wider ${selectedPlan.id === plan.id ? "text-[#D3C7B1]" : "text-[#8A7966]"}`}>
-                            Saves {plan.discount}% (Rs. {savings}) — Billed Upfront
+                            Saves {plan.discount}%
                           </div>
                         )}
                       </div>
-                      <div className="text-right">
-                        {plan.discount > 0 && (
-                          <div className={`text-xs line-through mb-1 ${selectedPlan.id === plan.id ? "text-[#A89F91]" : "text-[#A89F91]"}`}>
-                            Rs. {originalPrice}
-                          </div>
-                        )}
-                        <div className="text-xl font-medium">
-                          Rs. {discountedPrice}
-                        </div>
+                      <div className="text-xl font-medium">
+                        Rs. {planDiscountedPrice}
                       </div>
                     </div>
                     <input
@@ -192,13 +187,30 @@ function HomeContent() {
       <div className="fixed bottom-0 left-0 right-0 bg-[#F5F2EB] border-t border-[#E6DEC8] p-6 z-50">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex justify-between w-full md:w-auto md:gap-8 items-center">
-            <span className="text-[#8A7966] uppercase tracking-widest text-xs font-bold">Total upfront cost</span>
-            <span className="text-3xl font-serif text-[#1A1512]">
-              Rs. {Math.round(selectedOrigin.price * selectedWeight * (1 - selectedPlan.discount / 100) * selectedPlan.months)}
-            </span>
+            
+            <div className="flex flex-col">
+              <span className="text-[#8A7966] uppercase tracking-widest text-xs font-bold mb-1">Total upfront cost</span>
+              {totalSavings > 0 && (
+                <span className="text-[#3A7D44] text-xs font-bold">
+                  You save Rs. {totalSavings}
+                </span>
+              )}
+            </div>
+
+            <div className="flex flex-col items-end">
+              {totalSavings > 0 && (
+                <span className="text-[#A89F91] text-sm line-through">
+                  Rs. {totalOriginalPrice}
+                </span>
+              )}
+              <span className="text-3xl font-serif text-[#1A1512]">
+                Rs. {totalDiscountedPrice}
+              </span>
+            </div>
+            
           </div>
           <Link 
-            href={`/checkout?origin=${selectedOrigin.id}&name=${encodeURIComponent(selectedOrigin.name)}&weight=${selectedWeight}&price=${Math.round(selectedOrigin.price * selectedWeight * (1 - selectedPlan.discount / 100) * selectedPlan.months)}&plan_id=${selectedPlan.id}&plan_name=${encodeURIComponent(selectedPlan.name)}`}
+            href={`/checkout?origin=${selectedOrigin.id}&name=${encodeURIComponent(selectedOrigin.name)}&weight=${selectedWeight}&price=${totalDiscountedPrice}&plan_id=${selectedPlan.id}&plan_name=${encodeURIComponent(selectedPlan.name)}`}
             className="w-full md:w-auto px-12 py-4 bg-[#A3432A] hover:bg-[#8A3722] text-white text-center uppercase tracking-widest text-sm font-bold transition-colors"
           >
             Review Order
