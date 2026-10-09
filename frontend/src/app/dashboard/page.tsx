@@ -75,7 +75,11 @@ export default function DashboardPage() {
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
-                className={pb-4 text-xs uppercase tracking-widest font-bold whitespace-nowrap border-b-2 transition-colors }
+                className={`pb-4 text-xs uppercase tracking-widest font-bold whitespace-nowrap border-b-2 transition-colors ${
+                  activeTab === tab 
+                    ? "border-[#A3432A] text-white" 
+                    : "border-transparent text-[#7A6A58] hover:text-[#D3C7B1]"
+                }`}
               >
                 {tab}
               </button>
