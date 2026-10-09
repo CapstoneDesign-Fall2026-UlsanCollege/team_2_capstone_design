@@ -15,13 +15,15 @@ function CheckoutContent() {
   const originId = Number(searchParams.get("origin")) || 1;
   const weightKg = Number(searchParams.get("weight")) || 1;
   const totalPrice = Number(searchParams.get("price")) || 1200;
+  const planId = searchParams.get("plan_id") || "PAYG";
+  const planName = searchParams.get("plan_name") || "Pay per delivery";
 
   const orderPayload = {
     origin_id: originId,
     origin_name: originName,
     weight_kg: weightKg,
-    plan_id: "PAYG",
-    plan_name: "Pay per delivery",
+    plan_id: planId,
+    plan_name: planName,
     total_price_npr: totalPrice,
     is_fake_payment: true,
   };

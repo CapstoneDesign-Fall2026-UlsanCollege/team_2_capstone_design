@@ -12,10 +12,10 @@ const ORIGINS = [
 ];
 
 const PLANS = [
-  { id: "PAYG", name: "Pay-per-delivery", discount: 0 },
-  { id: "3M", name: "3 Months", discount: 5 },
-  { id: "6M", name: "6 Months", discount: 10 },
-  { id: "12M", name: "12 Months", discount: 15 },
+  { id: "PAYG", name: "Pay-per-delivery", discount: 0, months: 1 },
+  { id: "3M", name: "3 Months", discount: 5, months: 3 },
+  { id: "6M", name: "6 Months", discount: 10, months: 6 },
+  { id: "12M", name: "12 Months", discount: 15, months: 12 },
 ];
 
 function HomeContent() {
@@ -138,7 +138,7 @@ function HomeContent() {
             <h2 className="text-sm uppercase tracking-widest text-[#8A7966] font-bold mb-6">03. Delivery Plan</h2>
             <div className="space-y-4">
               {PLANS.map((plan) => {
-                const discountedPrice = selectedOrigin.price * selectedWeight * (1 - plan.discount / 100);
+                const discountedPrice = Math.round(selectedOrigin.price * selectedWeight * (1 - plan.discount / 100) * plan.months);
                 return (
                   <label
                     key={plan.id}
@@ -155,7 +155,7 @@ function HomeContent() {
                         </div>
                         {plan.discount > 0 && (
                           <div className={`text-xs mt-1 uppercase tracking-wider ${selectedPlan.id === plan.id ? "text-[#D3C7B1]" : "text-[#8A7966]"}`}>
-                            Saves {plan.discount}%
+                            Saves {plan.discount}% — Billed Upfront
                           </div>
                         )}
                       </div>
@@ -182,13 +182,13 @@ function HomeContent() {
       <div className="fixed bottom-0 left-0 right-0 bg-[#F5F2EB] border-t border-[#E6DEC8] p-6 z-50">
         <div className="max-w-4xl mx-auto flex flex-col md:flex-row justify-between items-center gap-6">
           <div className="flex justify-between w-full md:w-auto md:gap-8 items-center">
-            <span className="text-[#8A7966] uppercase tracking-widest text-xs font-bold">Total per delivery</span>
+            <span className="text-[#8A7966] uppercase tracking-widest text-xs font-bold">Total upfront cost</span>
             <span className="text-3xl font-serif text-[#1A1512]">
-              Rs. {selectedOrigin.price * selectedWeight * (1 - selectedPlan.discount / 100)}
+              Rs. {Math.round(selectedOrigin.price * selectedWeight * (1 - selectedPlan.discount / 100) * selectedPlan.months)}
             </span>
           </div>
           <Link 
-            href="/checkout"
+            href={`/checkout?origin=${selectedOrigin.id}&name=${encodeURIComponent(selectedOrigin.name)}&weight=${selectedWeight}&price=${Math.round(selectedOrigin.price * selectedWeight * (1 - selectedPlan.discount / 100) * selectedPlan.months)}&plan_id=${selectedPlan.id}&plan_name=${encodeURIComponent(selectedPlan.name)}`}
             className="w-full md:w-auto px-12 py-4 bg-[#A3432A] hover:bg-[#8A3722] text-white text-center uppercase tracking-widest text-sm font-bold transition-colors"
           >
             Review Order
