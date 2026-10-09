@@ -35,6 +35,34 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Social Proof / Press */}
+      <section className="bg-[#EAE4D3] py-12 px-6 border-b border-[#D3C7B1]">
+        <div className="max-w-6xl mx-auto text-center">
+          <p className="text-[#5C5042] text-[10px] uppercase tracking-widest font-bold mb-6">Recognized By</p>
+          <div className="flex flex-wrap justify-center gap-12 text-[#8A7966] font-serif italic text-xl opacity-80">
+            <span>The Kathmandu Post</span>
+            <span>Vogue</span>
+            <span>Himalayan Times</span>
+            <span>GQ</span>
+          </div>
+        </div>
+      </section>
+
+      {/* Testimonial */}
+      <section className="bg-white py-24 px-6 text-center">
+        <div className="max-w-3xl mx-auto">
+          <div className="flex justify-center gap-1 text-[#A3432A] mb-8">
+            {[1, 2, 3, 4, 5].map((star) => (
+              <svg key={star} xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="currentColor" stroke="none"><polygon points="12 2 15.09 8.26 22 9.27 17 14.14 18.18 21.02 12 17.77 5.82 21.02 7 14.14 2 9.27 8.91 8.26 12 2"/></svg>
+            ))}
+          </div>
+          <h3 className="text-2xl md:text-3xl font-serif font-bold text-[#1A1512] mb-6 leading-relaxed">
+            "The best coffee subscription in Nepal. The Ilam Gold beans completely changed my morning routine. Delivery is always on time and the packaging is stunning."
+          </h3>
+          <p className="text-[#5C5042] text-xs uppercase tracking-widest font-bold">— Priya S., Subscriber since 2024</p>
+        </div>
+      </section>
+
       {/* How it Works Section */}
       <section className="bg-[#EAE4D3] py-24 px-6 border-b border-[#E6DEC8]">
         <div className="max-w-5xl mx-auto">
