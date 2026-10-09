@@ -1,11 +1,11 @@
-﻿{
+{
   "name": "BrewMellow: The Himalayan Coffee",
   "short_name": "BrewMellow",
   "description": "Seamless subscription service for authentic Himalayan coffee.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#ffffff",
-  "theme_color": "#5b21b6",
+  "background_color": "#F5F2EB",
+  "theme_color": "#1A1512",
   "icons": [
     {
       "src": "/icon-192x192.png",
