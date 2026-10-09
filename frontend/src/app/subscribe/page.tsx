@@ -6,9 +6,9 @@ import { Check } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 const ORIGINS = [
-  { id: 1, name: "Gulmi Reserve", price: 1200, desc: "Bright acidity with citrus notes." },
-  { id: 2, name: "Ilam Gold", price: 1400, desc: "Smooth body with chocolate and caramel." },
-  { id: 3, name: "Nuwakot Heritage", price: 1100, desc: "Earthy and bold, perfect for espresso." },
+  { id: 1, name: "Gulmi Reserve", price: 1200, desc: "Bright acidity with citrus notes.", img: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=400&h=400&auto=format&fit=crop" },
+  { id: 2, name: "Ilam Gold", price: 1400, desc: "Smooth body with chocolate and caramel.", img: "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?q=80&w=400&h=400&auto=format&fit=crop" },
+  { id: 3, name: "Nuwakot Heritage", price: 1100, desc: "Earthy and bold, perfect for espresso.", img: "https://images.unsplash.com/photo-1611162458324-aae1eb4129a4?q=80&w=400&h=400&auto=format&fit=crop" },
 ];
 
 const PLANS = [
@@ -65,16 +65,21 @@ function SubscribeContent() {
                     : "bg-white text-[#2C2420] hover:bg-[#EAE4D3]"
                 }`}
               >
-                <div className="flex justify-between items-start mb-2 pr-6">
-                  <div className={`text-xl font-serif font-bold ${selectedOrigin.id === origin.id ? "text-white" : "text-[#1A1512]"}`}>
-                    {origin.name}
+                <div className="flex gap-4 items-start mb-3 pr-6">
+                  <img src={origin.img} alt={origin.name} className="w-16 h-16 object-cover rounded-sm bg-[#EAE4D3]" />
+                  <div className="flex-1">
+                    <div className="flex justify-between items-start mb-1">
+                      <div className={`text-xl font-serif font-bold ${selectedOrigin.id === origin.id ? "text-white" : "text-[#1A1512]"}`}>
+                        {origin.name}
+                      </div>
+                      <div className={`font-medium ${selectedOrigin.id === origin.id ? "text-[#D3C7B1]" : "text-[#5C5042]"}`}>
+                        Rs. {origin.price}
+                      </div>
+                    </div>
+                    <div className={`text-sm ${selectedOrigin.id === origin.id ? "text-[#A89F91]" : "text-[#5C5042]"}`}>
+                      {origin.desc}
+                    </div>
                   </div>
-                  <div className={`font-medium ${selectedOrigin.id === origin.id ? "text-[#D3C7B1]" : "text-[#5C5042]"}`}>
-                    Rs. {origin.price}
-                  </div>
-                </div>
-                <div className={`text-sm pr-6 ${selectedOrigin.id === origin.id ? "text-[#7A6A58]" : "text-[#5C5042]"}`}>
-                  {origin.desc}
                 </div>
                 
                 {selectedOrigin.id === origin.id && (

@@ -69,6 +69,31 @@ export default function Home() {
         </div>
       </section>
 
+      {/* Imagery Showcase */}
+      <section className="bg-[#FAF8F5] py-24">
+        <div className="max-w-6xl mx-auto px-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <img 
+              src="https://images.unsplash.com/photo-1497935586351-b67a49e012bf?q=80&w=800&h=600&auto=format&fit=crop" 
+              alt="Pouring coffee" 
+              className="w-full h-[400px] object-cover rounded-sm"
+            />
+            <div className="grid grid-rows-2 gap-4">
+              <img 
+                src="https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=800&h=190&auto=format&fit=crop" 
+                alt="Coffee beans" 
+                className="w-full h-[192px] object-cover rounded-sm"
+              />
+              <img 
+                src="https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&h=190&auto=format&fit=crop" 
+                alt="Coffee cup" 
+                className="w-full h-[192px] object-cover rounded-sm"
+              />
+            </div>
+          </div>
+        </div>
+      </section>
+
       {/* Final CTA */}
       <section className="py-24 px-6 text-center">
         <h3 className="text-3xl font-serif font-bold text-[#1A1512] mb-6">Ready to elevate your morning routine?</h3>
