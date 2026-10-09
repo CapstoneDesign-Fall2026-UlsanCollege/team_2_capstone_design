@@ -1,13 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
 import { Check } from "lucide-react";
+import { useSearchParams } from "next/navigation";
 
 const ORIGINS = [
   { id: 1, name: "Gulmi Reserve", price: 1200, desc: "Bright acidity with citrus notes." },
-  { id: 2, name: "Ilam Estate", price: 1500, desc: "Smooth body with chocolate and caramel." },
-  { id: 3, name: "Bharatpur Blend", price: 1100, desc: "Earthy and bold, perfect for espresso." },
+  { id: 2, name: "Ilam Gold", price: 1400, desc: "Smooth body with chocolate and caramel." },
+  { id: 3, name: "Nuwakot Heritage", price: 1100, desc: "Earthy and bold, perfect for espresso." },
 ];
 
 const PLANS = [
@@ -17,10 +18,24 @@ const PLANS = [
   { id: "12M", name: "12 Months", discount: 15 },
 ];
 
-export default function Home() {
-  const [selectedOrigin, setSelectedOrigin] = useState(ORIGINS[0]);
+function HomeContent() {
+  const searchParams = useSearchParams();
+  const urlOriginId = Number(searchParams.get("origin"));
+  
+  // Find the origin from the URL, otherwise default to the first one
+  const initialOrigin = ORIGINS.find(o => o.id === urlOriginId) || ORIGINS[0];
+
+  const [selectedOrigin, setSelectedOrigin] = useState(initialOrigin);
   const [selectedWeight, setSelectedWeight] = useState(1);
   const [selectedPlan, setSelectedPlan] = useState(PLANS[0]);
+
+  // Update selection if URL changes
+  useEffect(() => {
+    if (urlOriginId) {
+      const found = ORIGINS.find(o => o.id === urlOriginId);
+      if (found) setSelectedOrigin(found);
+    }
+  }, [urlOriginId]);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F2EB] text-[#2C2420] pb-32">
@@ -59,7 +74,7 @@ export default function Home() {
                     : "bg-white text-[#2C2420] hover:bg-[#EAE4D3]"
                 }`}
               >
-                <div className="flex justify-between items-start mb-2">
+                <div className="flex justify-between items-start mb-2 pr-6">
                   <div className={`text-xl font-serif font-bold ${selectedOrigin.id === origin.id ? "text-white" : "text-[#1A1512]"}`}>
                     {origin.name}
                   </div>
@@ -67,12 +82,12 @@ export default function Home() {
                     Rs. {origin.price}
                   </div>
                 </div>
-                <div className={`text-sm ${selectedOrigin.id === origin.id ? "text-[#A89F91]" : "text-[#5C5042]"}`}>
+                <div className={`text-sm pr-6 ${selectedOrigin.id === origin.id ? "text-[#A89F91]" : "text-[#5C5042]"}`}>
                   {origin.desc}
                 </div>
                 
                 {selectedOrigin.id === origin.id && (
-                  <div className="absolute top-6 right-6">
+                  <div className="absolute top-1/2 -translate-y-1/2 right-4">
                     <Check size={18} className="text-[#F5F2EB]" />
                   </div>
                 )}
@@ -181,5 +196,13 @@ export default function Home() {
         </div>
       </div>
     </div>
+  );
+}
+
+export default function Home() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F5F2EB]" />}>
+      <HomeContent />
+    </Suspense>
   );
 }
