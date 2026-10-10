@@ -43,7 +43,7 @@ export default function RootLayout({
             <div className="hidden md:flex items-center gap-8 text-xs uppercase tracking-widest font-bold text-[#5C5042]">
               <Link href="/subscribe" className="hover:text-[#1A1512] transition-colors">Subscribe</Link>
               <Link href="/origins" className="hover:text-[#1A1512] transition-colors">Our Origins</Link>
-              <Link href="#"  className="hover:text-[#1A1512] transition-colors">Our Story</Link>
+              <Link href="/about" className="hover:text-[#1A1512] transition-colors">Our Story</Link>
             </div>
 
             {/* Icons (Account & Cart) */}
