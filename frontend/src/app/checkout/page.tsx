@@ -152,18 +152,7 @@ function CheckoutContent() {
               </div>
             )}
 
-            {paymentStatus === "success" && (
-              <div className="text-center py-6">
-                <CheckCircle size={40} className="mx-auto text-green-600 mb-4" />
-                <div className="text-green-700 text-xl font-serif font-bold mb-2">
-                  Payment Successful
-                </div>
-                <p className="text-sm text-[#8A7966] mb-6">Order #{Math.floor(Math.random() * 9000) + 1000} confirmed</p>
-                <Link href="/" className="text-[#8A7966] text-sm uppercase tracking-widest font-bold hover:text-[#1A1512] underline decoration-[#E6DEC8] underline-offset-8 transition-colors">
-                  Return to Home
-                </Link>
-              </div>
-            )}
+
 
             {paymentStatus === "error" && (
               <div className="text-center py-6">
