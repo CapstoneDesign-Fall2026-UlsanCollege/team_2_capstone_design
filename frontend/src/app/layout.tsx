@@ -48,6 +48,9 @@ export default function RootLayout({
 
             {/* Icons (Account & Cart) */}
             <div className="flex items-center gap-6 text-[#2C2420]">
+              <Link href="/admin" className="hidden md:flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-[#A3432A] hover:text-[#8A3722] transition-colors">
+                Admin
+              </Link>
               <Link href="/dashboard" className="hidden md:flex items-center gap-2 text-xs uppercase tracking-widest font-bold hover:text-[#5C5042] transition-colors">
                 <User size={16} /> Account
               </Link>
