@@ -3,6 +3,7 @@ import localFont from "next/font/local";
 import "./globals.css";
 import Link from "next/link";
 import { ShoppingBag, User, Menu, Home, Coffee } from "lucide-react";
+import PwaInstallBanner from "@/components/PwaInstallBanner";
 
 export const viewport: Viewport = {
   themeColor: "#1A1512",
@@ -136,6 +137,9 @@ export default function RootLayout({
 
         {/* Pad the bottom so the footer isn't hidden behind the sticky nav on mobile */}
         <div className="h-16 md:hidden bg-[#1A1512]"></div>
+
+        {/* PWA One-Click Install Banner */}
+        <PwaInstallBanner />
       </body>
     </html>
   );
