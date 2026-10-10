@@ -6,13 +6,14 @@ import { useRouter } from "next/navigation";
 import { 
   Package, MapPin, CreditCard, MoreVertical, Download, ExternalLink, 
   Calendar, Loader2, CheckCircle2, Clock, Truck, Home as HomeIcon,
-  X, Printer, AlertCircle, Sparkles, Check, Coffee
+  X, Printer, AlertCircle, Sparkles, Check, Coffee, User, Settings,
+  LogOut, Save, Shield
 } from "lucide-react";
 
 export default function DashboardPage() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState("overview");
-  const [user, setUser] = useState<{ name: string; email: string; address: string; memberSince: string } | null>(null);
+  const [activeTab, setActiveTab] = useState<"overview" | "order history" | "settings">("overview");
+  const [user, setUser] = useState<{ name: string; email: string; phone?: string; address: string; memberSince: string } | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -23,21 +24,36 @@ export default function DashboardPage() {
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
   const [grindType, setGrindType] = useState("Whole Bean");
 
+  // Editable Profile Form (Settings Tab)
+  const [profileForm, setProfileForm] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+  });
+
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setTimeout(() => {
       setToastMessage(null);
-    }, 4500);
+    }, 4000);
   };
 
   useEffect(() => {
-    // 1. Get user from mock login
+    // 1. Get user session
     const savedUser = localStorage.getItem("demo_user");
     if (!savedUser) {
       router.push("/login");
       return;
     }
-    setUser(JSON.parse(savedUser));
+    const parsed = JSON.parse(savedUser);
+    setUser(parsed);
+    setProfileForm({
+      name: parsed.name || "",
+      email: parsed.email || "",
+      phone: parsed.phone || "+977 9801234567",
+      address: parsed.address || "Jhamsikhel, Lalitpur, Nepal",
+    });
 
     // 2. Fetch real orders
     const fetchOrders = async () => {
@@ -57,23 +73,30 @@ export default function DashboardPage() {
     fetchOrders();
   }, [router]);
 
-  if (!user || loading) {
-    return (
-      <div className="min-h-screen bg-[#F9F8F6] flex items-center justify-center">
-        <Loader2 size={32} className="animate-spin text-[#1A1512]" />
-      </div>
-    );
-  }
+  const handleProfileSave = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!user) return;
 
-  const activeOrder = orders.length > 0 ? orders[0] : null;
+    const updated = {
+      ...user,
+      name: profileForm.name,
+      email: profileForm.email,
+      phone: profileForm.phone,
+      address: profileForm.address,
+    };
+
+    setUser(updated);
+    localStorage.setItem("demo_user", JSON.stringify(updated));
+    showToast("Profile & delivery destination updated successfully.");
+  };
 
   const handleSkipDelivery = () => {
     if (subStatus === "SKIPPED") {
       setSubStatus("ACTIVE");
-      showToast("Skip cancelled. Your upcoming delivery on Oct 18 is active.");
+      showToast("Skip cancelled. Upcoming delivery on Oct 18 is active.");
     } else {
       setSubStatus("SKIPPED");
-      showToast("Upcoming delivery skipped! Your next shipment is scheduled for Nov 15, 2026.");
+      showToast("Upcoming delivery skipped! Next shipment scheduled for Nov 15, 2026.");
     }
   };
 
@@ -83,7 +106,7 @@ export default function DashboardPage() {
       showToast("Subscription resumed. Monthly deliveries are active.");
     } else {
       setSubStatus("PAUSED");
-      showToast("Subscription paused. You will not be billed until you resume.");
+      showToast("Subscription paused. Deliveries are on hold.");
     }
   };
 
@@ -97,8 +120,18 @@ export default function DashboardPage() {
     }
   };
 
+  if (!user || loading) {
+    return (
+      <div className="min-h-screen bg-[#F9F8F6] flex items-center justify-center font-sans">
+        <Loader2 size={32} className="animate-spin text-[#1A1512]" />
+      </div>
+    );
+  }
+
+  const activeOrder = orders.length > 0 ? orders[0] : null;
+
   return (
-    <div className="min-h-screen bg-[#F9F8F6] font-sans pb-24 relative">
+    <div className="min-h-screen bg-[#F9F8F6] font-sans pb-32 relative">
       
       {/* Toast Notification Banner */}
       {toastMessage && (
@@ -111,7 +144,7 @@ export default function DashboardPage() {
         </div>
       )}
 
-      {/* Dashboard Header */}
+      {/* Dashboard Top Header */}
       <div className="bg-[#1A1512] text-[#F5F2EB] pt-16 pb-0 px-6">
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between mb-8 gap-4">
@@ -119,22 +152,34 @@ export default function DashboardPage() {
               <div className="flex items-center gap-3 mb-1">
                 <h1 className="text-3xl font-serif font-bold">{user.name}</h1>
                 <span className="bg-[#2E6B34] text-white text-[9px] uppercase tracking-widest px-2 py-0.5 font-bold rounded">
-                  Verified Member
+                  Active Subscriber
                 </span>
               </div>
-              <p className="text-[#A89F91] text-sm">{user.email} • Member since {user.memberSince}</p>
+              <p className="text-[#A89F91] text-xs">
+                {user.email} • {user.phone || "+977 9801234567"} • Member since {user.memberSince}
+              </p>
             </div>
-            <Link 
-              href="/subscribe" 
-              className="inline-flex items-center justify-center px-6 py-2 bg-[#F5F2EB] text-[#1A1512] text-xs uppercase tracking-widest font-bold hover:bg-[#EAE4D3] transition-colors"
-            >
-              + New Subscription
-            </Link>
+            
+            <div className="flex items-center gap-3">
+              <Link 
+                href="/subscribe" 
+                className="inline-flex items-center justify-center px-5 py-2.5 bg-[#F5F2EB] text-[#1A1512] text-xs uppercase tracking-widest font-bold hover:bg-[#EAE4D3] transition-colors rounded"
+              >
+                + New Subscription
+              </Link>
+              <button
+                onClick={() => { localStorage.removeItem("demo_user"); router.push("/login"); }}
+                className="p-2.5 text-[#A89F91] hover:text-[#A3432A] transition-colors"
+                title="Log Out"
+              >
+                <LogOut size={18} />
+              </button>
+            </div>
           </div>
 
-          {/* Navigation Tabs */}
-          <div className="flex gap-8 overflow-x-auto no-scrollbar">
-            {["overview", "order history", "settings"].map((tab) => (
+          {/* Clean Navigation Tabs */}
+          <div className="flex gap-8 overflow-x-auto no-scrollbar border-b border-[#2C2420]">
+            {(["overview", "order history", "settings"] as const).map((tab) => (
               <button
                 key={tab}
                 onClick={() => setActiveTab(tab)}
@@ -147,188 +192,243 @@ export default function DashboardPage() {
                 {tab}
               </button>
             ))}
-            <button 
-              onClick={() => { localStorage.removeItem("demo_user"); router.push("/login"); }}
-              className="pb-4 text-xs uppercase tracking-widest font-bold whitespace-nowrap border-b-2 border-transparent text-[#7A6A58] hover:text-[#A3432A] transition-colors ml-auto"
-            >
-              Log Out
-            </button>
           </div>
         </div>
       </div>
 
-      {/* Main Content */}
-      <div className="max-w-6xl mx-auto px-6 py-12 grid grid-cols-1 lg:grid-cols-3 gap-8">
+      {/* Main Tab Views */}
+      <div className="max-w-6xl mx-auto px-6 py-10">
         
-        {/* Left Column (Main Panels) */}
-        <div className="lg:col-span-2 space-y-12">
-          
-          {/* Active Subscription Component */}
-          <section>
-            <div className="flex items-center justify-between mb-6">
-              <h2 className="text-xl font-serif font-bold text-[#1A1512]">Active Subscription</h2>
-              <span className="text-xs uppercase tracking-widest font-bold text-[#8A7966]">
-                Plan Commitment: 3 Months Prepaid
+        {/* ========================================================= */}
+        {/* VIEW 1: OVERVIEW TAB */}
+        {/* ========================================================= */}
+        {activeTab === "overview" && (
+          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+            
+            <div className="lg:col-span-2 space-y-8">
+              
+              {/* Active Subscription Component */}
+              <section>
+                <div className="flex items-center justify-between mb-4">
+                  <h2 className="text-xl font-serif font-bold text-[#1A1512]">Active Subscription</h2>
+                  <span className="text-xs uppercase tracking-widest font-bold text-[#8A7966]">
+                    Prepaid Commitment Active
+                  </span>
+                </div>
+
+                {activeOrder ? (
+                  <div className="bg-white border border-[#E6DEC8] p-6 md:p-8 shadow-sm rounded-lg flex flex-col md:flex-row justify-between gap-6">
+                    <div className="flex-1">
+                      <div className="flex items-center gap-3 mb-2">
+                        <h3 className="text-2xl font-serif font-bold text-[#1A1512]">{activeOrder.origin_name}</h3>
+                        {subStatus === "ACTIVE" && (
+                          <span className="px-2.5 py-1 bg-[#E7F3E8] text-[#2E6B34] text-[10px] font-bold uppercase tracking-widest rounded">
+                            Active
+                          </span>
+                        )}
+                        {subStatus === "SKIPPED" && (
+                          <span className="px-2.5 py-1 bg-[#FFF4E5] text-[#B76E00] text-[10px] font-bold uppercase tracking-widest rounded">
+                            Skipped
+                          </span>
+                        )}
+                        {subStatus === "PAUSED" && (
+                          <span className="px-2.5 py-1 bg-[#F5F2EB] text-[#5C5042] text-[10px] font-bold uppercase tracking-widest rounded">
+                            Paused
+                          </span>
+                        )}
+                        {subStatus === "CANCELLED" && (
+                          <span className="px-2.5 py-1 bg-[#FAF5F5] text-[#A3432A] text-[10px] font-bold uppercase tracking-widest rounded">
+                            Cancelled
+                          </span>
+                        )}
+                      </div>
+
+                      <p className="text-[#5C5042] text-sm mb-4">
+                        {activeOrder.weight_kg} kg/delivery • {activeOrder.plan_name} • <span className="font-semibold text-[#1A1512]">{grindType}</span>
+                      </p>
+                      
+                      <div className="grid grid-cols-2 gap-4 pt-3 border-t border-[#F0EAE1]">
+                        <div>
+                          <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-1">Next Delivery</p>
+                          <p className="text-sm font-medium text-[#1A1512] flex items-center gap-2">
+                            <Calendar size={14} className="text-[#A3432A]" /> 
+                            {subStatus === "SKIPPED" ? "Nov 15, 2026" : subStatus === "PAUSED" ? "Paused (On Hold)" : "Oct 18, 2026"}
+                          </p>
+                        </div>
+                        <div>
+                          <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-1">Total Paid</p>
+                          <p className="text-sm font-medium text-[#1A1512]">Rs. {activeOrder.total_price_npr}</p>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    {/* Action Buttons */}
+                    <div className="flex flex-col gap-2 justify-center md:border-l md:border-[#E6DEC8] md:pl-6 min-w-[170px]">
+                      <button 
+                        onClick={() => setIsEditModalOpen(true)}
+                        className="w-full py-2.5 border border-[#E6DEC8] text-xs uppercase tracking-widest font-bold text-[#1A1512] hover:bg-[#F5F2EB] transition-colors rounded"
+                      >
+                        Edit Grind
+                      </button>
+                      <button 
+                        onClick={handleSkipDelivery}
+                        className="w-full py-2.5 border border-[#E6DEC8] text-xs uppercase tracking-widest font-bold text-[#1A1512] hover:bg-[#F5F2EB] transition-colors rounded"
+                      >
+                        {subStatus === "SKIPPED" ? "Undo Skip" : "Skip Delivery"}
+                      </button>
+                      <button 
+                        onClick={handlePauseSubscription}
+                        className="w-full py-2.5 border border-[#E6DEC8] text-xs uppercase tracking-widest font-bold text-[#5C5042] hover:bg-[#F5F2EB] transition-colors rounded"
+                      >
+                        {subStatus === "PAUSED" ? "Resume Plan" : "Pause Plan"}
+                      </button>
+                      <button 
+                        onClick={handleCancelSubscription}
+                        className="w-full py-1.5 text-[11px] uppercase tracking-widest font-bold text-[#A3432A] hover:underline transition-colors mt-1"
+                      >
+                        {subStatus === "CANCELLED" ? "Reactivate Plan" : "Cancel Plan"}
+                      </button>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="bg-white border border-[#E6DEC8] p-12 text-center rounded-lg">
+                    <p className="text-[#5C5042] mb-4">You do not have any active subscriptions.</p>
+                    <Link href="/subscribe" className="inline-block bg-[#1A1512] text-white px-6 py-3 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] rounded">
+                      Configure Subscription
+                    </Link>
+                  </div>
+                )}
+              </section>
+
+              {/* Himalayan Logistics & Roasting Tracker */}
+              {activeOrder && (
+                <section className="bg-white border border-[#E6DEC8] p-6 md:p-8 shadow-sm rounded-lg">
+                  <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 mb-6 border-b border-[#F0EAE1] gap-2">
+                    <div>
+                      <h3 className="text-base font-serif font-bold text-[#1A1512] flex items-center gap-2">
+                        <Coffee size={18} className="text-[#A3432A]" /> Himalayan Roastery & Delivery Tracker
+                      </h3>
+                      <p className="text-xs text-[#8A7966] mt-0.5">Tracking ID: BM-EXP-2026-NP • Carrier: Himalayan Courier</p>
+                    </div>
+                    <span className="text-xs font-bold uppercase tracking-widest text-[#E58A1F] bg-[#FFF8EE] px-3 py-1 rounded border border-[#F3DFC1]">
+                      Status: {activeOrder.status || "ROASTING"}
+                    </span>
+                  </div>
+
+                  {/* 4-Step Visual Tracker */}
+                  <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-10 h-10 rounded-full bg-[#2E6B34] text-white flex items-center justify-center font-bold mb-2 shadow-sm">
+                        <Check size={18} />
+                      </div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#1A1512]">Confirmed</p>
+                      <p className="text-[10px] text-[#8A7966]">Payment Cleared</p>
+                    </div>
+
+                    <div className="flex flex-col items-center text-center">
+                      <div className="w-10 h-10 rounded-full bg-[#E58A1F] text-white flex items-center justify-center font-bold mb-2 shadow-sm animate-pulse">
+                        <Clock size={18} />
+                      </div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#E58A1F]">Roasting</p>
+                      <p className="text-[10px] text-[#8A7966]">Lalitpur Drum</p>
+                    </div>
+
+                    <div className="flex flex-col items-center text-center opacity-40">
+                      <div className="w-10 h-10 rounded-full bg-[#E6DEC8] text-[#5C5042] flex items-center justify-center font-bold mb-2">
+                        <Truck size={18} />
+                      </div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#5C5042]">In Transit</p>
+                      <p className="text-[10px] text-[#8A7966]">Courier Hub</p>
+                    </div>
+
+                    <div className="flex flex-col items-center text-center opacity-40">
+                      <div className="w-10 h-10 rounded-full bg-[#E6DEC8] text-[#5C5042] flex items-center justify-center font-bold mb-2">
+                        <HomeIcon size={18} />
+                      </div>
+                      <p className="text-xs font-bold uppercase tracking-wider text-[#5C5042]">Delivered</p>
+                      <p className="text-[10px] text-[#8A7966]">Doorstep Drop</p>
+                    </div>
+                  </div>
+                </section>
+              )}
+
+            </div>
+
+            {/* Side Widgets */}
+            <div className="space-y-6">
+              
+              {/* Delivery Destination Snapshot */}
+              <div className="bg-white border border-[#E6DEC8] p-6 shadow-sm rounded-lg">
+                <div className="flex justify-between items-center mb-3">
+                  <p className="text-[10px] uppercase tracking-widest font-bold text-[#5C5042] flex items-center gap-1.5">
+                    <MapPin size={14} className="text-[#A3432A]" /> Shipping Destination
+                  </p>
+                  <button 
+                    onClick={() => setActiveTab("settings")}
+                    className="text-[10px] uppercase font-bold text-[#A3432A] hover:underline"
+                  >
+                    Edit
+                  </button>
+                </div>
+                <p className="font-bold text-sm text-[#1A1512]">{user.name}</p>
+                <p className="text-xs text-[#5C5042] mt-1 leading-relaxed">{user.address}</p>
+                <p className="text-xs text-[#8A7966] mt-2">Phone: {user.phone || "+977 9801234567"}</p>
+              </div>
+
+              {/* Payment Method Snapshot */}
+              <div className="bg-white border border-[#E6DEC8] p-6 shadow-sm rounded-lg">
+                <p className="text-[10px] uppercase tracking-widest font-bold text-[#5C5042] flex items-center gap-1.5 mb-3">
+                  <CreditCard size={14} className="text-[#5C2D91]" /> Primary Payment
+                </p>
+                <div className="flex items-center gap-3 p-3 bg-[#FAF8F5] border border-[#E6DEC8] rounded">
+                  <div className="w-10 h-6 bg-[#5C2D91] rounded text-white text-[8px] font-bold flex items-center justify-center">
+                    KHALTI
+                  </div>
+                  <div className="text-xs">
+                    <p className="font-bold text-[#1A1512]">Khalti Wallet Token</p>
+                    <p className="text-[#8A7966] text-[10px]">Auto-renewal enabled</p>
+                  </div>
+                </div>
+              </div>
+
+              {/* Sourcing Guarantee */}
+              <div className="bg-[#1A1512] text-[#F5F2EB] p-6 border border-[#2C2420] rounded-lg">
+                <h4 className="text-xs font-bold text-[#E58A1F] uppercase tracking-widest mb-1">
+                  100% Direct-Trade Guarantee
+                </h4>
+                <p className="text-xs text-[#A89F91] leading-relaxed">
+                  Every recurring roast supports smallholder mountain cooperatives in Western & Eastern Nepal.
+                </p>
+              </div>
+
+            </div>
+
+          </div>
+        )}
+
+        {/* ========================================================= */}
+        {/* VIEW 2: ORDER HISTORY TAB */}
+        {/* ========================================================= */}
+        {activeTab === "order history" && (
+          <div className="bg-white border border-[#E6DEC8] shadow-sm rounded-lg overflow-hidden">
+            <div className="p-6 border-b border-[#E6DEC8] flex justify-between items-center">
+              <div>
+                <h2 className="text-lg font-serif font-bold text-[#1A1512]">Past Invoices & Deliveries</h2>
+                <p className="text-xs text-[#8A7966]">Click the receipt button to view or print official tax invoice</p>
+              </div>
+              <span className="text-xs uppercase tracking-widest font-bold text-[#5C5042] bg-[#FAF8F5] px-3 py-1.5 border border-[#E6DEC8] rounded">
+                {orders.length} Deliveries
               </span>
             </div>
-            
-            {activeOrder ? (
-              <div className="bg-white border border-[#E6DEC8] p-6 shadow-sm flex flex-col md:flex-row justify-between gap-6">
-                <div className="flex-1">
-                  <div className="flex items-center gap-3 mb-2">
-                    <h3 className="text-2xl font-serif font-bold text-[#1A1512]">{activeOrder.origin_name}</h3>
-                    {subStatus === "ACTIVE" && (
-                      <span className="px-2 py-1 bg-[#E7F3E8] text-[#2E6B34] text-[10px] font-bold uppercase tracking-widest rounded-sm">
-                        Active
-                      </span>
-                    )}
-                    {subStatus === "SKIPPED" && (
-                      <span className="px-2 py-1 bg-[#FFF4E5] text-[#B76E00] text-[10px] font-bold uppercase tracking-widest rounded-sm">
-                        Skipped (Next: Nov 15)
-                      </span>
-                    )}
-                    {subStatus === "PAUSED" && (
-                      <span className="px-2 py-1 bg-[#F5F2EB] text-[#5C5042] text-[10px] font-bold uppercase tracking-widest rounded-sm">
-                        Paused
-                      </span>
-                    )}
-                    {subStatus === "CANCELLED" && (
-                      <span className="px-2 py-1 bg-[#FAF5F5] text-[#A3432A] text-[10px] font-bold uppercase tracking-widest rounded-sm">
-                        Cancelled
-                      </span>
-                    )}
-                  </div>
 
-                  <p className="text-[#5C5042] text-sm mb-4">
-                    {activeOrder.weight_kg} kg/delivery • {activeOrder.plan_name} • <span className="font-semibold text-[#1A1512]">{grindType}</span>
-                  </p>
-                  
-                  <div className="grid grid-cols-2 gap-4 pt-2 border-t border-[#F0EAE1]">
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-1">Next Delivery</p>
-                      <p className="text-sm font-medium text-[#1A1512] flex items-center gap-2">
-                        <Calendar size={14} className="text-[#A3432A]" /> 
-                        {subStatus === "SKIPPED" ? "Nov 15, 2026" : subStatus === "PAUSED" ? "Paused (On Hold)" : "Oct 18, 2026"}
-                      </p>
-                    </div>
-                    <div>
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-1">Prepaid Total</p>
-                      <p className="text-sm font-medium text-[#1A1512]">Rs. {activeOrder.total_price_npr}</p>
-                    </div>
-                  </div>
-                </div>
-                
-                {/* Action Buttons */}
-                <div className="flex flex-col gap-2 justify-center md:border-l md:border-[#E6DEC8] md:pl-6 min-w-[160px]">
-                  <button 
-                    onClick={() => setIsEditModalOpen(true)}
-                    className="w-full py-2.5 border border-[#E6DEC8] text-xs uppercase tracking-widest font-bold text-[#1A1512] hover:bg-[#F5F2EB] transition-colors"
-                  >
-                    Edit Grind / Plan
-                  </button>
-                  <button 
-                    onClick={handleSkipDelivery}
-                    className="w-full py-2.5 border border-[#E6DEC8] text-xs uppercase tracking-widest font-bold text-[#1A1512] hover:bg-[#F5F2EB] transition-colors"
-                  >
-                    {subStatus === "SKIPPED" ? "Undo Skip" : "Skip Delivery"}
-                  </button>
-                  <button 
-                    onClick={handlePauseSubscription}
-                    className="w-full py-2.5 border border-[#E6DEC8] text-xs uppercase tracking-widest font-bold text-[#5C5042] hover:bg-[#F5F2EB] transition-colors"
-                  >
-                    {subStatus === "PAUSED" ? "Resume Plan" : "Pause Plan"}
-                  </button>
-                  <button 
-                    onClick={handleCancelSubscription}
-                    className="w-full py-1.5 text-[11px] uppercase tracking-widest font-bold text-[#A3432A] hover:underline transition-colors mt-1"
-                  >
-                    {subStatus === "CANCELLED" ? "Reactivate Plan" : "Cancel Plan"}
-                  </button>
-                </div>
-              </div>
-            ) : (
-              <div className="bg-white border border-[#E6DEC8] p-12 text-center">
-                <p className="text-[#5C5042] mb-4">You don't have any active subscriptions.</p>
-                <Link href="/subscribe" className="inline-block bg-[#1A1512] text-white px-6 py-3 text-sm uppercase tracking-widest font-bold hover:bg-[#2C2420]">
-                  Configure Subscription
-                </Link>
-              </div>
-            )}
-          </section>
-
-          {/* Himalayan Logistics & Roasting Tracker */}
-          {activeOrder && (
-            <section className="bg-white border border-[#E6DEC8] p-6 shadow-sm">
-              <div className="flex flex-col md:flex-row md:items-center justify-between pb-4 mb-6 border-b border-[#F0EAE1] gap-2">
-                <div>
-                  <h3 className="text-base font-serif font-bold text-[#1A1512] flex items-center gap-2">
-                    <Coffee size={18} className="text-[#A3432A]" /> Himalayan Roastery & Delivery Tracker
-                  </h3>
-                  <p className="text-xs text-[#8A7966] mt-0.5">Tracking ID: BM-EXP-2026-NP • Carrier: Himalayan Courier</p>
-                </div>
-                <span className="text-xs font-bold uppercase tracking-widest text-[#E58A1F] bg-[#FFF8EE] px-3 py-1 rounded border border-[#F3DFC1]">
-                  In Progress: Roasting
-                </span>
-              </div>
-
-              {/* Step Tracker */}
-              <div className="grid grid-cols-2 md:grid-cols-4 gap-4 relative">
-                
-                {/* Step 1: Confirmed */}
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#2E6B34] text-white flex items-center justify-center font-bold mb-2 shadow-sm">
-                    <Check size={18} />
-                  </div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#1A1512]">Order Confirmed</p>
-                  <p className="text-[10px] text-[#8A7966]">Payment Cleared</p>
-                </div>
-
-                {/* Step 2: Roasting */}
-                <div className="flex flex-col items-center text-center">
-                  <div className="w-10 h-10 rounded-full bg-[#E58A1F] text-white flex items-center justify-center font-bold mb-2 shadow-sm animate-pulse">
-                    <Clock size={18} />
-                  </div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#E58A1F]">Roasting in Valley</p>
-                  <p className="text-[10px] text-[#8A7966]">Fresh Batch Scheduled</p>
-                </div>
-
-                {/* Step 3: Transit */}
-                <div className="flex flex-col items-center text-center opacity-40">
-                  <div className="w-10 h-10 rounded-full bg-[#E6DEC8] text-[#5C5042] flex items-center justify-center font-bold mb-2">
-                    <Truck size={18} />
-                  </div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#5C5042]">In Transit</p>
-                  <p className="text-[10px] text-[#8A7966]">Kathmandu Hub</p>
-                </div>
-
-                {/* Step 4: Delivered */}
-                <div className="flex flex-col items-center text-center opacity-40">
-                  <div className="w-10 h-10 rounded-full bg-[#E6DEC8] text-[#5C5042] flex items-center justify-center font-bold mb-2">
-                    <HomeIcon size={18} />
-                  </div>
-                  <p className="text-xs font-bold uppercase tracking-wider text-[#5C5042]">Delivered</p>
-                  <p className="text-[10px] text-[#8A7966]">Expected Oct 18</p>
-                </div>
-              </div>
-            </section>
-          )}
-
-          {/* Recent Orders Table Component */}
-          <section>
-            <div className="flex justify-between items-end mb-6">
-              <div>
-                <h2 className="text-xl font-serif font-bold text-[#1A1512]">Order & Delivery History</h2>
-                <p className="text-xs text-[#8A7966]">Click the receipt icon to view official VAT invoice</p>
-              </div>
-            </div>
-            
-            <div className="bg-white border border-[#E6DEC8] overflow-hidden overflow-x-auto">
+            <div className="overflow-x-auto">
               <table className="w-full text-sm text-left">
                 <thead className="bg-[#FAF8F5] text-[10px] uppercase tracking-widest text-[#5C5042] font-bold border-b border-[#E6DEC8]">
                   <tr>
                     <th className="px-6 py-4">Order ID</th>
                     <th className="px-6 py-4">Date</th>
-                    <th className="px-6 py-4">Origin / Plan</th>
+                    <th className="px-6 py-4">Himalayan Roast</th>
+                    <th className="px-6 py-4">Commitment</th>
                     <th className="px-6 py-4">Total</th>
                     <th className="px-6 py-4">Status</th>
                     <th className="px-6 py-4 text-right">Tax Receipt</th>
@@ -337,7 +437,7 @@ export default function DashboardPage() {
                 <tbody className="divide-y divide-[#E6DEC8]">
                   {orders.length === 0 ? (
                     <tr>
-                      <td colSpan={6} className="px-6 py-8 text-center text-[#8A7966]">No orders found.</td>
+                      <td colSpan={7} className="px-6 py-8 text-center text-[#8A7966]">No orders found yet.</td>
                     </tr>
                   ) : (
                     orders.map((order: any) => (
@@ -346,21 +446,20 @@ export default function DashboardPage() {
                         <td className="px-6 py-4 text-[#5C5042] whitespace-nowrap">
                           {new Date(order.created_at).toLocaleDateString()}
                         </td>
-                        <td className="px-6 py-4">
-                          <p className="font-medium text-[#1A1512]">{order.origin_name}</p>
-                          <p className="text-xs text-[#8A7966]">{order.weight_kg}kg • {order.plan_name}</p>
+                        <td className="px-6 py-4 font-medium text-[#1A1512]">
+                          {order.origin_name} <span className="text-[#8A7966] font-normal text-xs">({order.weight_kg}kg)</span>
                         </td>
+                        <td className="px-6 py-4 text-[#5C5042]">{order.plan_name}</td>
                         <td className="px-6 py-4 font-medium text-[#1A1512]">Rs. {order.total_price_npr}</td>
                         <td className="px-6 py-4">
-                          <span className="px-2 py-0.5 bg-[#E7F3E8] text-[#2E6B34] text-[10px] uppercase font-bold tracking-wider rounded">
+                          <span className="px-2.5 py-0.5 bg-[#E7F3E8] text-[#2E6B34] text-[10px] font-bold uppercase tracking-wider rounded">
                             {order.status || "CONFIRMED"}
                           </span>
                         </td>
                         <td className="px-6 py-4 text-right">
                           <button 
                             onClick={() => setSelectedReceipt(order)}
-                            title="View Official Receipt"
-                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F2EB] hover:bg-[#EAE4D3] text-[#1A1512] text-xs font-bold uppercase tracking-wider transition-colors border border-[#E6DEC8]"
+                            className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#F5F2EB] hover:bg-[#EAE4D3] text-[#1A1512] text-xs font-bold uppercase tracking-wider transition-colors border border-[#E6DEC8] rounded"
                           >
                             <Download size={13} /> Invoice
                           </button>
@@ -371,83 +470,89 @@ export default function DashboardPage() {
                 </tbody>
               </table>
             </div>
-          </section>
+          </div>
+        )}
 
-        </div>
+        {/* ========================================================= */}
+        {/* VIEW 3: SETTINGS TAB (Profile, Address, Preferences) */}
+        {/* ========================================================= */}
+        {activeTab === "settings" && (
+          <div className="max-w-2xl bg-white border border-[#E6DEC8] shadow-sm rounded-lg p-8 md:p-10">
+            <h2 className="text-2xl font-serif font-bold text-[#1A1512] mb-1">Account & Delivery Settings</h2>
+            <p className="text-xs text-[#8A7966] uppercase tracking-wider mb-8">
+              Update your shipping address and contact credentials
+            </p>
 
-        {/* Right Column (Side Widgets) */}
-        <div className="space-y-8">
-          
-          {/* Address Widget */}
-          <section>
-            <h2 className="text-lg font-serif font-bold text-[#1A1512] mb-4">Delivery Profile</h2>
-            <div className="bg-white border border-[#E6DEC8] p-6 shadow-sm">
-              <div className="flex justify-between items-start mb-4">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-[#5C5042] flex items-center gap-2">
-                  <MapPin size={14} /> Primary Shipping Address
-                </p>
-                <button 
-                  onClick={() => showToast("Address management: Click 'Edit' to update")}
-                  className="text-[#A89F91] hover:text-[#1A1512] transition-colors"
-                >
-                  <MoreVertical size={16} />
-                </button>
+            <form onSubmit={handleProfileSave} className="space-y-6">
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  Full Name
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={profileForm.name}
+                  onChange={(e) => setProfileForm({ ...profileForm, name: e.target.value })}
+                  className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                />
               </div>
-              <div className="text-sm text-[#2C2420] leading-relaxed">
-                <p className="font-bold">{user.name}</p>
-                <p className="text-[#5C5042] whitespace-pre-line mt-1">{user.address}</p>
-                <p className="text-[#8A7966] text-xs mt-3 flex items-center gap-1">
-                  <CheckCircle2 size={12} className="text-[#2E6B34]" /> Standard Doorstep Delivery
-                </p>
-              </div>
-            </div>
-          </section>
 
-          {/* Payment Method Widget */}
-          <section>
-            <div className="bg-[#FAF8F5] border border-[#E6DEC8] p-6">
-              <div className="flex justify-between items-start mb-6">
-                <p className="text-[10px] uppercase tracking-widest font-bold text-[#5C5042] flex items-center gap-2">
-                  <CreditCard size={14} /> Digital Payment Method
-                </p>
-              </div>
-              
-              <div className="bg-white border border-[#E6DEC8] p-4 flex items-center gap-4 mb-4">
-                <div className="w-12 h-8 bg-[#5C2D91] rounded-sm flex items-center justify-center text-white text-[8px] font-bold tracking-widest">
-                  KHALTI
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                    Email Address
+                  </label>
+                  <input
+                    type="email"
+                    required
+                    value={profileForm.email}
+                    onChange={(e) => setProfileForm({ ...profileForm, email: e.target.value })}
+                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                  />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-[#1A1512]">Wallet Token Linked</p>
-                  <p className="text-[10px] text-[#8A7966]">Auto-renews at commitment end</p>
+                  <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                    Mobile Phone
+                  </label>
+                  <input
+                    type="tel"
+                    required
+                    value={profileForm.phone}
+                    onChange={(e) => setProfileForm({ ...profileForm, phone: e.target.value })}
+                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                  />
                 </div>
               </div>
-              
-              <button 
-                onClick={() => showToast("Billing details: Managed securely via Khalti gateway")}
-                className="text-[10px] uppercase tracking-widest font-bold text-[#A3432A] flex items-center gap-1 hover:text-[#8A3722] transition-colors"
+
+              <div>
+                <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  Delivery Destination / Street Address
+                </label>
+                <input
+                  type="text"
+                  required
+                  value={profileForm.address}
+                  onChange={(e) => setProfileForm({ ...profileForm, address: e.target.value })}
+                  className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                />
+              </div>
+
+              <button
+                type="submit"
+                className="inline-flex items-center gap-2 px-8 py-3.5 bg-[#1A1512] hover:bg-[#2C2420] text-white text-xs uppercase tracking-widest font-bold rounded transition-colors shadow-sm"
               >
-                Billing History <ExternalLink size={12} />
+                <Save size={14} /> Save Changes
               </button>
-            </div>
-          </section>
+            </form>
+          </div>
+        )}
 
-          {/* Sourcing Guarantee Badge */}
-          <section className="bg-[#1A1512] text-[#F5F2EB] p-6 border border-[#2C2420]">
-            <h4 className="text-sm font-serif font-bold text-[#E58A1F] mb-2 uppercase tracking-widest">
-              Direct Trade Himalayan Promise
-            </h4>
-            <p className="text-xs text-[#A89F91] leading-relaxed">
-              Every bean delivered through your subscription pays 45% above commodity market rate directly to smallholder farming cooperatives in Nepal.
-            </p>
-          </section>
-
-        </div>
       </div>
 
-      {/* Edit Grind & Plan Modal */}
+      {/* Edit Grind Modal */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4">
-          <div className="bg-white max-w-md w-full border border-[#E6DEC8] p-8 shadow-2xl">
+          <div className="bg-white max-w-md w-full border border-[#E6DEC8] p-8 shadow-2xl rounded-xl">
             <div className="flex justify-between items-center mb-6">
               <h3 className="text-2xl font-serif font-bold text-[#1A1512]">Customize Grind</h3>
               <button onClick={() => setIsEditModalOpen(false)} className="text-[#8A7966] hover:text-[#1A1512]">
@@ -464,7 +569,7 @@ export default function DashboardPage() {
                 <label 
                   key={grind}
                   onClick={() => setGrindType(grind)}
-                  className={`flex items-center justify-between p-4 border cursor-pointer transition-colors ${
+                  className={`flex items-center justify-between p-4 border rounded cursor-pointer transition-colors ${
                     grindType === grind 
                       ? "border-[#A3432A] bg-[#FAF5F2]" 
                       : "border-[#E6DEC8] hover:bg-[#FAF8F5]"
@@ -479,9 +584,9 @@ export default function DashboardPage() {
             <button
               onClick={() => {
                 setIsEditModalOpen(false);
-                showToast(`Grind updated to: ${grindType}. Applied to next monthly delivery.`);
+                showToast(`Grind updated to: ${grindType}. Applied to upcoming roast.`);
               }}
-              className="w-full bg-[#1A1512] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors"
+              className="w-full bg-[#1A1512] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors rounded"
             >
               Save Preferences
             </button>
@@ -492,9 +597,8 @@ export default function DashboardPage() {
       {/* Official Tax Invoice / Receipt Modal */}
       {selectedReceipt && (
         <div className="fixed inset-0 z-50 bg-black/60 backdrop-blur-sm flex items-center justify-center p-4 overflow-y-auto">
-          <div className="bg-white max-w-xl w-full border border-[#E6DEC8] p-8 shadow-2xl my-8">
+          <div className="bg-white max-w-xl w-full border border-[#E6DEC8] p-8 shadow-2xl my-8 rounded-xl">
             
-            {/* Action Bar (Top) */}
             <div className="flex justify-between items-center pb-6 mb-6 border-b border-[#E6DEC8]">
               <div className="flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-[#2E6B34]">
                 <CheckCircle2 size={16} /> Official Tax Invoice
@@ -502,7 +606,7 @@ export default function DashboardPage() {
               <div className="flex items-center gap-3">
                 <button
                   onClick={() => window.print()}
-                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1512] text-white text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors"
+                  className="inline-flex items-center gap-1.5 px-3 py-1.5 bg-[#1A1512] text-white text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors rounded"
                 >
                   <Printer size={14} /> Print / Save PDF
                 </button>
@@ -512,10 +616,7 @@ export default function DashboardPage() {
               </div>
             </div>
 
-            {/* Invoice Body */}
             <div className="space-y-6 text-[#1A1512]">
-              
-              {/* Company & Invoice Header */}
               <div className="flex justify-between items-start">
                 <div>
                   <h4 className="text-2xl font-serif font-bold text-[#1A1512]">BrewMellow.</h4>
@@ -530,15 +631,13 @@ export default function DashboardPage() {
                 </div>
               </div>
 
-              {/* Billed To */}
-              <div className="p-4 bg-[#FAF8F5] border border-[#E6DEC8] text-xs">
+              <div className="p-4 bg-[#FAF8F5] border border-[#E6DEC8] text-xs rounded">
                 <p className="uppercase tracking-widest font-bold text-[#8A7966] mb-1">Billed To (Subscriber)</p>
                 <p className="font-bold text-[#1A1512]">{user.name}</p>
                 <p className="text-[#5C5042]">{user.email}</p>
                 <p className="text-[#5C5042]">{user.address}</p>
               </div>
 
-              {/* Items Table */}
               <table className="w-full text-xs text-left border-collapse">
                 <thead>
                   <tr className="border-b border-[#E6DEC8] text-[#8A7966] uppercase tracking-wider font-bold">
@@ -559,18 +658,17 @@ export default function DashboardPage() {
                 </tbody>
               </table>
 
-              {/* Breakdown */}
               <div className="pt-4 border-t border-[#E6DEC8] space-y-1.5 text-xs text-right">
                 <div className="flex justify-between">
                   <span className="text-[#8A7966]">Subtotal:</span>
                   <span className="font-medium">Rs. {selectedReceipt.total_price_npr}</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8A7966]">Himalayan Shipping & Handling:</span>
-                  <span className="font-medium text-[#2E6B34]">FREE (Subscription Benefit)</span>
+                  <span className="text-[#8A7966]">Himalayan Shipping:</span>
+                  <span className="font-medium text-[#2E6B34]">FREE</span>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8A7966]">Applicable VAT (13% Included):</span>
+                  <span className="text-[#8A7966]">VAT (13% Included):</span>
                   <span className="font-medium">Rs. {(parseFloat(selectedReceipt.total_price_npr) * 0.115).toFixed(2)}</span>
                 </div>
                 <div className="flex justify-between pt-2 border-t border-[#E6DEC8] text-sm font-bold">
@@ -578,13 +676,6 @@ export default function DashboardPage() {
                   <span className="text-[#A3432A]">Rs. {selectedReceipt.total_price_npr}</span>
                 </div>
               </div>
-
-              {/* Payment Method Details */}
-              <div className="pt-4 border-t border-[#E6DEC8] flex justify-between items-center text-[11px] text-[#8A7966]">
-                <p>Payment: <span className="font-bold text-[#1A1512]">Khalti Wallet</span> • Status: <span className="text-[#2E6B34] font-bold">PAID</span></p>
-                <p>Authorized Digital Receipt</p>
-              </div>
-
             </div>
           </div>
         </div>
