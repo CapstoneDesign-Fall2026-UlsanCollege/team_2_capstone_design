@@ -1,0 +1,14 @@
+{
+  "framework": "open-gsd",
+  "version": "1.0.0",
+  "project_name": "BrewMellow",
+  "workflow": {
+    "phases": ["discuss", "plan", "execute", "verify", "ship"],
+    "active_phase": "plan"
+  },
+  "settings": {
+    "context_management": "structured",
+    "git_tracking": true,
+    "verify_before_ship": true
+  }
+}
