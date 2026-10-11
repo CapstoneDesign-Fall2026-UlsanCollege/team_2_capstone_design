@@ -3,12 +3,13 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Coffee, Lock, Mail, User, MapPin, Phone, ArrowRight, AlertCircle, Sparkles } from "lucide-react";
+import { Coffee, Lock, Mail, User, MapPin, Phone, ArrowRight, AlertCircle, Sparkles, Loader2, KeyRound, ShieldCheck } from "lucide-react";
 
 export default function AuthPage() {
   const router = useRouter();
   const [mode, setMode] = useState<"login" | "signup">("login");
   const [error, setError] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
 
   // Login form state
   const [loginData, setLoginData] = useState({
@@ -26,7 +27,17 @@ export default function AuthPage() {
     password: "",
   });
 
-  const handleLogin = (e: React.FormEvent) => {
+  // Demo user quick login helper
+  const fillDemoCredentials = (email: string, password = "password123") => {
+    setMode("login");
+    setError(null);
+    setLoginData({
+      email,
+      password,
+    });
+  };
+
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -35,28 +46,40 @@ export default function AuthPage() {
       return;
     }
 
-    const savedUser = localStorage.getItem("demo_user");
-    if (savedUser) {
-      const parsed = JSON.parse(savedUser);
-      if (parsed.email.toLowerCase() === loginData.email.toLowerCase()) {
-        router.push("/dashboard");
+    setLoading(true);
+
+    try {
+      const res = await fetch("http://localhost:8000/api/auth/login/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          email: loginData.email,
+          password: loginData.password,
+        }),
+      });
+
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Authentication failed. Please check your credentials.");
         return;
       }
-    }
 
-    // Auto-create/authenticate for seamless demo experience
-    const newSession = {
-      name: loginData.email.split("@")[0].replace(".", " ").toUpperCase(),
-      email: loginData.email,
-      phone: "+977 9801234567",
-      address: "Jhamsikhel, Lalitpur, Nepal",
-      memberSince: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-    };
-    localStorage.setItem("demo_user", JSON.stringify(newSession));
-    router.push("/dashboard");
+      // Store authentic authenticated session
+      localStorage.setItem("demo_user", JSON.stringify(data.user));
+      if (data.user.is_staff) {
+        router.push("/admin");
+      } else {
+        router.push("/dashboard");
+      }
+    } catch (err) {
+      setError("Unable to connect to authentication server. Please ensure backend is running.");
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const handleSignup = (e: React.FormEvent) => {
+  const handleSignup = async (e: React.FormEvent) => {
     e.preventDefault();
     setError(null);
 
@@ -77,26 +100,45 @@ export default function AuthPage() {
       return;
     }
     if (!signupData.password || signupData.password.length < 4) {
-      setError("Password must be at least 4 characters.");
+      setError("Password must be at least 4 characters long.");
       return;
     }
 
+    setLoading(true);
+
     const fullAddress = `${signupData.streetAddress}, ${signupData.city}`;
 
-    const newAccount = {
-      name: signupData.fullName,
-      email: signupData.email,
-      phone: signupData.phone,
-      address: fullAddress,
-      memberSince: new Date().toLocaleDateString("en-US", { month: "short", year: "numeric" }),
-    };
+    try {
+      const res = await fetch("http://localhost:8000/api/auth/register/", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          fullName: signupData.fullName,
+          email: signupData.email,
+          phone: signupData.phone,
+          address: fullAddress,
+          password: signupData.password,
+        }),
+      });
 
-    localStorage.setItem("demo_user", JSON.stringify(newAccount));
-    router.push("/dashboard");
+      const data = await res.json();
+
+      if (!res.ok) {
+        setError(data.error || "Failed to create account.");
+        return;
+      }
+
+      localStorage.setItem("demo_user", JSON.stringify(data.user));
+      router.push("/dashboard");
+    } catch (err) {
+      setError("Unable to connect to authentication server. Please ensure backend is running.");
+    } finally {
+      setLoading(false);
+    }
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center justify-center p-6 font-sans py-20">
+    <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center justify-center p-6 font-sans py-16">
       
       {/* Brand Logo */}
       <Link href="/" className="mb-8 text-[#1A1512] hover:opacity-80 transition-opacity flex items-center gap-2">
@@ -134,7 +176,8 @@ export default function AuthPage() {
           
           {error && (
             <div className="mb-6 p-3.5 bg-[#FAF5F5] border border-[#F0DADA] text-[#A3432A] text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded">
-              <AlertCircle size={15} /> {error}
+              <AlertCircle size={15} className="flex-shrink-0" />
+              <span>{error}</span>
             </div>
           )}
 
@@ -149,7 +192,7 @@ export default function AuthPage() {
                   <input
                     type="email"
                     required
-                    placeholder="aditya@example.com"
+                    placeholder="e.g. aarav.sharma@gmail.com"
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
                     className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
@@ -182,9 +225,18 @@ export default function AuthPage() {
 
               <button
                 type="submit"
-                className="w-full bg-[#1A1512] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors rounded shadow-sm flex items-center justify-center gap-2"
+                disabled={loading}
+                className="w-full bg-[#1A1512] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors rounded shadow-sm flex items-center justify-center gap-2 disabled:opacity-60"
               >
-                Sign In to Dashboard <ArrowRight size={14} />
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Verifying Credentials...
+                  </>
+                ) : (
+                  <>
+                    Sign In to Dashboard <ArrowRight size={14} />
+                  </>
+                )}
               </button>
 
               <p className="text-center text-xs text-[#8A7966] pt-2">
@@ -294,9 +346,18 @@ export default function AuthPage() {
 
               <button
                 type="submit"
-                className="w-full bg-[#A3432A] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#8A3722] transition-colors rounded shadow-sm flex items-center justify-center gap-2 mt-4"
+                disabled={loading}
+                className="w-full bg-[#A3432A] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#8A3722] transition-colors rounded shadow-sm flex items-center justify-center gap-2 mt-4 disabled:opacity-60"
               >
-                Create Account & Go to Dashboard <ArrowRight size={14} />
+                {loading ? (
+                  <>
+                    <Loader2 size={16} className="animate-spin" /> Creating Account...
+                  </>
+                ) : (
+                  <>
+                    Create Account & Go to Dashboard <ArrowRight size={14} />
+                  </>
+                )}
               </button>
 
               <p className="text-center text-xs text-[#8A7966] pt-1">
@@ -312,6 +373,47 @@ export default function AuthPage() {
             </form>
           )}
 
+        </div>
+      </div>
+
+      {/* Midterm Presentation Quick Test Panel */}
+      <div className="w-full max-w-lg mt-6 bg-[#FAF8F5] border border-[#E6DEC8] p-4 rounded-lg">
+        <div className="flex items-center gap-2 text-xs font-bold text-[#1A1512] uppercase tracking-wider mb-2">
+          <KeyRound size={14} className="text-[#A3432A]" />
+          <span>Evaluation Demo Logins (Password: password123)</span>
+        </div>
+        <p className="text-[11px] text-[#8A7966] mb-3">
+          Click any registered customer to prefill and test authentication against the real PostgreSQL database:
+        </p>
+        <div className="flex flex-wrap gap-2">
+          <button
+            type="button"
+            onClick={() => fillDemoCredentials("admin@brewmellow.com", "adminpassword123")}
+            className="text-xs px-3 py-1.5 bg-[#1A1512] text-white border border-[#1A1512] hover:bg-[#A3432A] rounded font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+          >
+            <ShieldCheck size={13} className="text-[#E58A1F]" /> Staff Admin (Direct to Portal)
+          </button>
+          <button
+            type="button"
+            onClick={() => fillDemoCredentials("aarav.sharma@gmail.com")}
+            className="text-xs px-3 py-1.5 bg-white border border-[#E6DEC8] hover:border-[#A3432A] rounded font-medium text-[#1A1512] transition-colors"
+          >
+            Aarav Sharma (Gulmi Plan)
+          </button>
+          <button
+            type="button"
+            onClick={() => fillDemoCredentials("priya.shrestha@gmail.com")}
+            className="text-xs px-3 py-1.5 bg-white border border-[#E6DEC8] hover:border-[#A3432A] rounded font-medium text-[#1A1512] transition-colors"
+          >
+            Priya Shrestha (Ilam Plan)
+          </button>
+          <button
+            type="button"
+            onClick={() => fillDemoCredentials("rohan.gurung@outlook.com")}
+            className="text-xs px-3 py-1.5 bg-white border border-[#E6DEC8] hover:border-[#A3432A] rounded font-medium text-[#1A1512] transition-colors"
+          >
+            Rohan Gurung (Nuwakot Plan)
+          </button>
         </div>
       </div>
 

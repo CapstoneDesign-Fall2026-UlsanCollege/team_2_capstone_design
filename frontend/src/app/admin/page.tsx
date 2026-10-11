@@ -2,11 +2,12 @@
 
 import { useState, useEffect } from "react";
 import Link from "next/link";
-import { ArrowLeft, Users, CreditCard, Package, TrendingUp, Loader2, CheckCircle2, Sparkles, X } from "lucide-react";
+import { ArrowLeft, Users, CreditCard, Package, TrendingUp, Loader2, CheckCircle2, Sparkles, X, ShieldAlert, LogOut } from "lucide-react";
 
 export default function AdminPage() {
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [isAuthorized, setIsAuthorized] = useState<boolean | null>(null);
   const [toastMessage, setToastMessage] = useState<string | null>(null);
 
   const showToast = (msg: string) => {
@@ -31,7 +32,23 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    fetchOrders();
+    // Role-Based Authorization Guard
+    try {
+      const savedUser = localStorage.getItem("demo_user");
+      if (savedUser) {
+        const parsed = JSON.parse(savedUser);
+        if (parsed.is_staff === true) {
+          setIsAuthorized(true);
+          fetchOrders();
+          return;
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+
+    setIsAuthorized(false);
+    setLoading(false);
   }, []);
 
   const handleStatusChange = async (orderId: number, newStatus: string) => {
@@ -58,6 +75,40 @@ export default function AdminPage() {
     return (
       <div className="min-h-screen bg-[#F5F2EB] flex items-center justify-center">
         <Loader2 size={32} className="animate-spin text-[#1A1512]" />
+      </div>
+    );
+  }
+
+  // 403 Forbidden Access Screen for non-staff visitors
+  if (!isAuthorized) {
+    return (
+      <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center justify-center p-6 font-sans">
+        <div className="w-full max-w-md bg-white border border-[#E6DEC8] p-8 md:p-10 shadow-xl rounded-xl text-center">
+          <div className="w-16 h-16 bg-[#FAF5F5] border border-[#F0DADA] text-[#A3432A] rounded-full flex items-center justify-center mx-auto mb-6">
+            <ShieldAlert size={32} />
+          </div>
+          <span className="text-[10px] uppercase font-bold tracking-widest text-[#A3432A] bg-[#FAF5F5] px-3 py-1 rounded-full border border-[#F0DADA]">
+            403 Forbidden • Staff Clearance Required
+          </span>
+          <h1 className="text-2xl font-serif font-bold text-[#1A1512] mt-4 mb-2">Restricted Access</h1>
+          <p className="text-xs text-[#5C5042] mb-6 leading-relaxed">
+            The Business Operations Portal contains confidential roastery queues, logistics data, and customer records. You must be authenticated with a verified Staff Admin account.
+          </p>
+          <div className="space-y-3">
+            <Link
+              href="/login"
+              className="block w-full bg-[#1A1512] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors rounded shadow-sm text-center"
+            >
+              Sign In as Staff Admin
+            </Link>
+            <Link
+              href="/"
+              className="block w-full bg-[#FAF8F5] border border-[#E6DEC8] text-[#5C5042] py-3 text-xs uppercase tracking-widest font-bold hover:bg-[#F0EAE1] transition-colors rounded text-center"
+            >
+              Return to Storefront
+            </Link>
+          </div>
+        </div>
       </div>
     );
   }
@@ -90,8 +141,20 @@ export default function AdminPage() {
               <h1 className="text-3xl font-serif font-bold mb-1">Business Management Portal</h1>
               <p className="text-[#A89F91] text-xs uppercase tracking-widest">Master live overview of customer orders, logistics & revenue.</p>
             </div>
-            <div className="bg-[#A3432A] px-4 py-2 text-xs uppercase tracking-widest font-bold rounded-sm">
-              Staff Access Only
+            <div className="flex items-center gap-3">
+              <div className="bg-[#A3432A] px-4 py-2 text-xs uppercase tracking-widest font-bold rounded-sm">
+                Staff Verified
+              </div>
+              <button
+                onClick={() => {
+                  localStorage.removeItem("demo_user");
+                  window.location.href = "/login";
+                }}
+                className="p-2 text-[#A89F91] hover:text-white transition-colors"
+                title="Sign out of Staff Portal"
+              >
+                <LogOut size={18} />
+              </button>
             </div>
           </div>
         </div>
@@ -198,17 +261,16 @@ export default function AdminPage() {
                               currentStatus === "CONFIRMED"
                                 ? "bg-[#E7F3E8] text-[#2E6B34] border-[#C3E4C6]"
                                 : currentStatus === "ROASTING"
-                                ? "bg-[#FFF4E5] text-[#B76E00] border-[#FBD9A5]"
+                                ? "bg-[#FFF8EE] text-[#E58A1F] border-[#F3DFC1]"
                                 : currentStatus === "DISPATCHED"
-                                ? "bg-[#EBF3FB] text-[#1E6091] border-[#BFD9F2]"
+                                ? "bg-[#EEF4FF] text-[#3366CC] border-[#C8DCFF]"
                                 : "bg-[#F5F2EB] text-[#5C5042] border-[#E6DEC8]"
                             }`}
                           >
-                            <option value="CONFIRMED">Confirmed</option>
-                            <option value="ROASTING">Roasting in Valley</option>
-                            <option value="DISPATCHED">Dispatched (In Transit)</option>
-                            <option value="DELIVERED">Delivered</option>
-                            <option value="CANCELLED">Cancelled</option>
+                            <option value="CONFIRMED">CONFIRMED (Order Placed)</option>
+                            <option value="ROASTING">ROASTING (In Roastery Drum)</option>
+                            <option value="DISPATCHED">DISPATCHED (With Courier)</option>
+                            <option value="DELIVERED">DELIVERED (Fulfilled)</option>
                           </select>
                         </td>
                       </tr>
@@ -219,7 +281,9 @@ export default function AdminPage() {
             </table>
           </div>
         </div>
+
       </div>
+
     </div>
   );
 }

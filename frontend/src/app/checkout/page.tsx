@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import { ArrowLeft, CheckCircle, AlertTriangle, Loader2, MapPin, Phone, Mail, User, Lock, ShieldCheck } from "lucide-react";
@@ -11,6 +11,7 @@ function CheckoutContent() {
   const searchParams = useSearchParams();
   const [paymentStatus, setPaymentStatus] = useState<"idle" | "processing" | "success" | "error">("idle");
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isExistingUser, setIsExistingUser] = useState(false);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -22,6 +23,28 @@ function CheckoutContent() {
     landmark: "",
     password: "",
   });
+
+  useEffect(() => {
+    try {
+      const saved = localStorage.getItem("demo_user");
+      if (saved) {
+        const parsed = JSON.parse(saved);
+        if (parsed.email) {
+          setIsExistingUser(true);
+          setFormData((prev) => ({
+            ...prev,
+            fullName: parsed.name || prev.fullName,
+            email: parsed.email || prev.email,
+            phone: parsed.phone || prev.phone,
+            streetAddress: parsed.address || prev.streetAddress,
+            password: "authenticated_session",
+          }));
+        }
+      }
+    } catch (e) {
+      console.error(e);
+    }
+  }, []);
 
   const hasSelection = searchParams.has("origin");
 
@@ -54,7 +77,7 @@ function CheckoutContent() {
       setErrorMessage("Please enter your delivery street address.");
       return;
     }
-    if (!formData.password || formData.password.length < 4) {
+    if (!isExistingUser && (!formData.password || formData.password.length < 4)) {
       setErrorMessage("Please set a password (at least 4 characters) to manage your subscription.");
       return;
     }
@@ -191,6 +214,22 @@ function CheckoutContent() {
           <div className="lg:col-span-2 space-y-8">
             <form onSubmit={handlePayment} id="checkout-form" className="bg-white border border-[#E6DEC8] p-8 md:p-10 shadow-sm space-y-8">
               
+              {/* Authenticated User Banner */}
+              {isExistingUser && (
+                <div className="p-4 bg-[#E7F3E8] border border-[#C3E4C6] rounded flex items-center justify-between">
+                  <div className="flex items-center gap-3">
+                    <CheckCircle size={20} className="text-[#2E6B34] flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-bold text-[#1A1512]">Signed in as {formData.fullName}</p>
+                      <p className="text-[11px] text-[#2E6B34]">{formData.email} • Shipping details pre-filled for 1-click checkout</p>
+                    </div>
+                  </div>
+                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#2E6B34] bg-white px-2.5 py-1 rounded border border-[#C3E4C6]">
+                    Verified
+                  </span>
+                </div>
+              )}
+
               {/* Section 1: Contact Details */}
               <div>
                 <h3 className="text-lg font-serif font-bold text-[#1A1512] mb-4 flex items-center gap-2">
@@ -296,27 +335,41 @@ function CheckoutContent() {
                 </div>
               </div>
 
-              {/* Section 3: Account Creation Password */}
+              {/* Section 3: Account Security */}
               <div className="pt-6 border-t border-[#F0EAE1]">
-                <h3 className="text-lg font-serif font-bold text-[#1A1512] mb-2 flex items-center gap-2">
-                  <Lock size={18} className="text-[#A3432A]" /> Create Account Password
-                </h3>
-                <p className="text-xs text-[#8A7966] mb-4">
-                  Set a password so you can log in to your dashboard to pause, skip, or edit your monthly roasts.
-                </p>
-                <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
-                    Account Password *
-                  </label>
-                  <input
-                    type="password"
-                    required
-                    placeholder="••••••••"
-                    value={formData.password}
-                    onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
-                  />
-                </div>
+                {isExistingUser ? (
+                  <div className="bg-[#FAF8F5] border border-[#E6DEC8] p-4 rounded flex items-start gap-3">
+                    <ShieldCheck size={20} className="text-[#2E6B34] flex-shrink-0 mt-0.5" />
+                    <div>
+                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#1A1512]">Account Linked</h4>
+                      <p className="text-xs text-[#5C5042] mt-0.5">
+                        You are signed in as <strong>{formData.email}</strong>. This new coffee subscription will automatically link to your customer portal.
+                      </p>
+                    </div>
+                  </div>
+                ) : (
+                  <>
+                    <h3 className="text-lg font-serif font-bold text-[#1A1512] mb-2 flex items-center gap-2">
+                      <Lock size={18} className="text-[#A3432A]" /> Create Account Password
+                    </h3>
+                    <p className="text-xs text-[#8A7966] mb-4">
+                      Set a password so you can log in to your dashboard to pause, skip, or edit your monthly roasts.
+                    </p>
+                    <div>
+                      <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                        Account Password *
+                      </label>
+                      <input
+                        type="password"
+                        required
+                        placeholder="••••••••"
+                        value={formData.password}
+                        onChange={(e) => setFormData({ ...formData, password: e.target.value })}
+                        className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
+                      />
+                    </div>
+                  </>
+                )}
               </div>
 
             </form>

@@ -1,4 +1,13 @@
 from django.db import models
+from django.contrib.auth.models import User
+
+class CustomerProfile(models.Model):
+    user = models.OneToOneField(User, on_delete=models.CASCADE, related_name='profile')
+    phone = models.CharField(max_length=50, blank=True, default='')
+    delivery_address = models.TextField(blank=True, default='')
+
+    def __str__(self):
+        return f"Profile of {self.user.email}"
 
 class Order(models.Model):
     origin_id = models.IntegerField()
@@ -17,3 +26,4 @@ class Order(models.Model):
 
     def __str__(self):
         return f"Order {self.id} - {self.customer_name} ({self.origin_name})"
+
