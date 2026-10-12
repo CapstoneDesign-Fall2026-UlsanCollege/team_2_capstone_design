@@ -8,8 +8,6 @@ import {
 } from "lucide-react";
 
 export default function Home() {
-  const [activePillar, setActivePillar] = useState(0);
-
   const pillars = [
     {
       id: 0,
@@ -18,7 +16,7 @@ export default function Home() {
       title: "2,000M+ MIST-GROWN",
       metric: "1,400m - 2,000m Elevation",
       desc: "Cultivated in the extreme microclimates of Gulmi and Ilam. Freezing mountain nights slow cherry development, packing dense natural sugars and bright citrus acidity into every seed.",
-      image: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=1200&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=80&w=800&auto=format&fit=crop"
     },
     {
       id: 1,
@@ -160,8 +158,8 @@ export default function Home() {
         </div>
       </section>
 
-      {/* 3. THE HIMALAYAN STANDARD: 4-COLUMN EXPANDING ACCORDION (Roastify Pattern) */}
-      <section className="py-24 px-6 max-w-6xl mx-auto w-full">
+      {/* 3. THE HIMALAYAN STANDARD: 4-COLUMN BALANCED BENTO GRID */}
+      <section className="py-24 px-6 max-w-7xl mx-auto w-full">
         <div className="text-center mb-16">
           <span className="inline-block text-[11px] font-bold uppercase tracking-[0.24em] text-[#A3432A] mb-2">
             The Quality Benchmark
@@ -170,112 +168,67 @@ export default function Home() {
             The Himalayan Specialty Standard
           </h2>
           <p className="text-[#5C5042] text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
-            Every batch delivered to your door adheres to strict Specialty Coffee Association guidelines, from volcanic mountain soil to our Lalitpur drum roaster.
+            Every batch delivered to your door adheres to strict Specialty Coffee Association guidelines, from rich Himalayan mountain soil to our Lalitpur drum roaster.
           </p>
         </div>
 
-        {/* Desktop Expanding Flex Columns */}
-        <div className="hidden lg:flex h-[560px] gap-4 w-full">
+        {/* 4-Column Balanced Bento Grid */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
           {pillars.map((pillar) => {
             const Icon = pillar.icon;
-            const isActive = activePillar === pillar.id;
 
             return (
               <div
                 key={pillar.id}
-                onClick={() => setActivePillar(pillar.id)}
-                className={`relative rounded-2xl border overflow-hidden cursor-pointer transition-all duration-500 ease-in-out p-8 flex flex-col justify-between ${
-                  isActive 
-                    ? "border-[#A3432A] shadow-xl bg-white" 
-                    : "border-[#E6DEC8] bg-[#FAF8F5] hover:border-[#C4B69E] opacity-80"
-                }`}
-                style={{ flex: isActive ? 3 : 1 }}
+                className="group bg-white rounded-2xl border border-[#E6DEC8] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
               >
-                {/* Background Image for Active Column */}
-                {isActive && (
-                  <div 
-                    className="absolute inset-0 bg-cover bg-center opacity-15 mix-blend-multiply pointer-events-none transition-opacity duration-500"
-                    style={{ backgroundImage: `url('${pillar.image}')` }}
-                  />
-                )}
-
-                {/* Top Badge & Metric */}
-                <div className="relative z-10">
-                  <div className="flex items-center gap-2 mb-3">
-                    <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider ${
-                      isActive ? "bg-[#FAF5F2] text-[#A3432A]" : "bg-[#F0EAE1] text-[#5C5042]"
-                    }`}>
-                      <Icon size={12} /> {pillar.badge}
-                    </span>
-                  </div>
-
-                  <h3 className="text-xl font-serif font-bold text-[#1A1512] tracking-tight mb-1">
-                    {pillar.title}
-                  </h3>
-                  <p className="text-xs font-semibold text-[#8A7966] uppercase tracking-wider">
-                    {pillar.metric}
-                  </p>
-                </div>
-
-                {/* Description & Action (Expanded View) */}
-                <div className="relative z-10">
-                  {isActive ? (
-                    <div className="space-y-6 animate-in fade-in duration-300">
-                      <p className="text-sm text-[#5C5042] leading-relaxed max-w-md">
-                        {pillar.desc}
-                      </p>
-                      <Link
-                        href="/origins"
-                        className="inline-flex items-center gap-2 text-xs uppercase tracking-widest font-bold text-[#A3432A] hover:underline"
-                      >
-                        Learn about altitude sourcing <ArrowRight size={14} />
-                      </Link>
+                <div>
+                  {/* Curated Header Image with Floating Metrics */}
+                  <div className="relative h-48 w-full overflow-hidden">
+                    <img 
+                      src={pillar.image} 
+                      alt={pillar.title} 
+                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
+                    />
+                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
+                    
+                    {/* Top Floating Badge */}
+                    <div className="absolute top-3 left-3 bg-[#1A1512]/80 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-[#F5F2EB] flex items-center gap-1.5 border border-white/10">
+                      <Icon size={12} className="text-[#E58A1F]" />
+                      <span>{pillar.badge}</span>
                     </div>
-                  ) : (
-                    <div className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966]">
-                      Click to inspect
-                    </div>
-                  )}
-                </div>
-              </div>
-            );
-          })}
-        </div>
 
-        {/* Mobile Accordion */}
-        <div className="flex flex-col gap-3 lg:hidden">
-          {pillars.map((pillar) => {
-            const Icon = pillar.icon;
-            const isOpen = activePillar === pillar.id;
-
-            return (
-              <div 
-                key={pillar.id}
-                className={`border rounded-xl overflow-hidden transition-colors ${
-                  isOpen ? "border-[#A3432A] bg-white shadow-md" : "border-[#E6DEC8] bg-[#FAF8F5]"
-                }`}
-              >
-                <button
-                  onClick={() => setActivePillar(isOpen ? -1 : pillar.id)}
-                  className="w-full p-5 text-left flex items-center justify-between"
-                >
-                  <div>
-                    <div className="flex items-center gap-2 mb-1">
-                      <span className="text-[10px] uppercase tracking-wider font-bold text-[#A3432A] flex items-center gap-1">
-                        <Icon size={12} /> {pillar.badge}
+                    {/* Bottom Stat Callout on Image */}
+                    <div className="absolute bottom-3 left-3 right-3 flex items-baseline justify-between text-white">
+                      <span className="text-lg font-serif font-bold tracking-tight">
+                        {pillar.metric}
                       </span>
                     </div>
-                    <h3 className="text-base font-serif font-bold text-[#1A1512]">{pillar.title}</h3>
                   </div>
-                  <ChevronDown size={18} className={`text-[#8A7966] transition-transform ${isOpen ? "rotate-180" : ""}`} />
-                </button>
 
-                {isOpen && (
-                  <div className="px-5 pb-5 pt-1 border-t border-[#F0EAE1] space-y-3">
-                    <p className="text-xs text-[#5C5042] leading-relaxed">{pillar.desc}</p>
-                    <p className="text-[11px] font-bold text-[#A3432A] uppercase tracking-widest">{pillar.metric}</p>
+                  {/* Body Content */}
+                  <div className="p-6">
+                    <h3 className="text-lg font-serif font-bold text-[#1A1512] tracking-tight mb-2 group-hover:text-[#A3432A] transition-colors">
+                      {pillar.title}
+                    </h3>
+                    <p className="text-xs text-[#5C5042] leading-relaxed">
+                      {pillar.desc}
+                    </p>
                   </div>
-                )}
+                </div>
+
+                {/* Card Action Footer */}
+                <div className="p-6 pt-0">
+                  <div className="pt-4 border-t border-[#F0EAE1]">
+                    <Link
+                      href={pillar.id <= 1 ? "/origins" : pillar.id === 2 ? "/about" : "/subscribe"}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#A3432A] hover:text-[#8A3722] group-hover:gap-2.5 transition-all"
+                    >
+                      <span>{pillar.id <= 1 ? "Explore Terroir" : pillar.id === 2 ? "Farmer Impact" : "Roast Schedule"}</span>
+                      <ArrowRight size={13} />
+                    </Link>
+                  </div>
+                </div>
               </div>
             );
           })}
