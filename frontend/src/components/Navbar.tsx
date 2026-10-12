@@ -51,6 +51,11 @@ export default function Navbar() {
     window.location.href = "/login";
   };
 
+  // Staff Backoffice Portal uses its own dedicated corporate shell
+  if (pathname.startsWith("/admin")) {
+    return null;
+  }
+
   return (
     <>
       {/* Sticky Global Top Navigation */}
