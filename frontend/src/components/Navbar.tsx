@@ -95,20 +95,32 @@ export default function Navbar() {
           </div>
 
           {/* Right Controls: Account & Cart */}
-          <div className="flex items-center gap-5 text-[#2C2420]">
+          <div className="flex items-center gap-4 text-[#2C2420]">
+            {user?.is_staff && (
+              <Link 
+                href="/admin" 
+                className="hidden md:inline-flex items-center gap-1.5 px-2.5 py-1 bg-[#1A1512] text-[#E58A1F] text-[10px] uppercase tracking-widest font-bold rounded hover:bg-black transition-colors"
+                title="Staff Portal"
+              >
+                <ShieldCheck size={12} /> Staff
+              </Link>
+            )}
             <Link 
               href="/dashboard" 
               className="hidden md:flex items-center gap-2 text-xs uppercase tracking-widest font-bold hover:text-[#A3432A] transition-colors"
+              aria-label={user ? `Account: ${user.name}` : "Account Dashboard"}
             >
-              <User size={16} />
+              <User size={16} aria-hidden="true" />
               <span>{user ? user.name.split(" ")[0] : "Account"}</span>
             </Link>
             <Link 
               href="/checkout" 
               className="relative p-2 text-[#2C2420] hover:text-[#A3432A] transition-colors"
+              aria-label="View Shopping Cart (1 item)"
               title="Cart"
             >
-              <ShoppingBag size={22} />
+              <ShoppingBag size={22} aria-hidden="true" />
+              <span className="sr-only">Shopping Cart</span>
               <span className="absolute top-1 right-1 w-2.5 h-2.5 bg-[#A3432A] rounded-full border-2 border-[#F5F2EB]"></span>
             </Link>
           </div>

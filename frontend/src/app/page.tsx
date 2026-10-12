@@ -70,7 +70,7 @@ export default function Home() {
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
-              href="/subscribe"
+              href="/subscribe?plan=PAYG"
               className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-[#A3432A] text-white text-xs uppercase tracking-widest font-bold hover:bg-[#8A3722] transition-all shadow-lg hover:shadow-xl group"
             >
               Build Your Plan <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
@@ -113,7 +113,7 @@ export default function Home() {
 
           {/* Bento Card 2: Custom Subscription */}
           <Link 
-            href="/subscribe" 
+            href="/subscribe?plan=6M&origin=1" 
             className="group relative block overflow-hidden min-h-[380px] bg-neutral-900 border-r border-white/10"
           >
             <div 
@@ -135,7 +135,7 @@ export default function Home() {
 
           {/* Bento Card 3: Bulk / Wholesale */}
           <Link 
-            href="/about" 
+            href="/about#story" 
             className="group relative block overflow-hidden min-h-[380px] bg-neutral-900"
           >
             <div 
@@ -305,7 +305,7 @@ export default function Home() {
             Experience what true Himalayan altitude coffee tastes like. Start with a flexible prepaid subscription today.
           </p>
           <Link
-            href="/subscribe"
+            href="/subscribe?plan=3M"
             className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full bg-[#1A1512] text-white text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-all shadow-md hover:shadow-xl"
           >
             Start Your Subscription <ArrowRight size={14} />

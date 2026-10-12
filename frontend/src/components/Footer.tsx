@@ -68,7 +68,7 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link href="/dashboard" className="hover:text-white transition-colors">
+              <Link href="/dashboard?tab=subscription" className="hover:text-white transition-colors">
                 Subscriber Portal
               </Link>
             </li>
@@ -92,7 +92,7 @@ export default function Footer() {
               </Link>
             </li>
             <li>
-              <Link href="/about" className="hover:text-white transition-colors">
+              <Link href="/about#story" className="hover:text-white transition-colors">
                 Lalitpur Roastery Process
               </Link>
             </li>
@@ -106,12 +106,12 @@ export default function Footer() {
           </h3>
           <ul className="space-y-3.5 text-sm text-[#A89F91]">
             <li>
-              <Link href="/dashboard" className="hover:text-white transition-colors">
+              <Link href="/dashboard?tab=returns" className="hover:text-white transition-colors">
                 Doorstep Return Request
               </Link>
             </li>
             <li>
-              <Link href="/about" className="hover:text-white transition-colors">
+              <Link href="/about#brew-guide" className="hover:text-white transition-colors">
                 Brew Guide & Brewing Ratios
               </Link>
             </li>
@@ -129,8 +129,8 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-6 pt-8 border-t border-[#2C2420] flex flex-col md:flex-row justify-between items-center text-xs text-[#8A7966] gap-4">
         <p>© 2026 BrewMellow Himalayan Roasters Pvt. Ltd. Capstone Design Team 2.</p>
         <div className="flex gap-6">
-          <Link href="/about" className="hover:text-[#D3C7B1] transition-colors">Privacy Policy</Link>
-          <Link href="/about" className="hover:text-[#D3C7B1] transition-colors">Terms of Service</Link>
+          <Link href="/about#privacy" className="hover:text-[#D3C7B1] transition-colors">Privacy Policy</Link>
+          <Link href="/about#terms" className="hover:text-[#D3C7B1] transition-colors">Terms of Service</Link>
           <Link href="/admin" className="hover:text-[#D3C7B1] transition-colors">Staff Portal</Link>
         </div>
       </div>

@@ -68,20 +68,37 @@ const PLANS = [
 function SubscribeContent() {
   const searchParams = useSearchParams();
   const urlOriginId = Number(searchParams.get("origin"));
+  const urlPlanId = searchParams.get("plan");
+  const urlGrindId = searchParams.get("grind");
+  const urlWeight = Number(searchParams.get("weight"));
   
   const initialOrigin = ORIGINS.find(o => o.id === urlOriginId) || ORIGINS[0];
+  const initialPlan = PLANS.find(p => p.id.toLowerCase() === urlPlanId?.toLowerCase()) || PLANS[0];
+  const initialGrind = GRINDS.find(g => g.id.toLowerCase() === urlGrindId?.toLowerCase()) || GRINDS[0];
+  const initialWeight = WEIGHTS.find(w => w.value === urlWeight) || WEIGHTS[1];
 
   const [selectedOrigin, setSelectedOrigin] = useState(initialOrigin);
-  const [selectedGrind, setSelectedGrind] = useState(GRINDS[0]);
-  const [selectedWeight, setSelectedWeight] = useState(WEIGHTS[1]);
-  // Default to low-friction Pay Monthly rather than forcing high prepay upfront
-  const [selectedPlan, setSelectedPlan] = useState(PLANS[0]);
+  const [selectedGrind, setSelectedGrind] = useState(initialGrind);
+  const [selectedWeight, setSelectedWeight] = useState(initialWeight);
+  const [selectedPlan, setSelectedPlan] = useState(initialPlan);
   const [customer, setCustomer] = useState<{ name?: string; email?: string } | null>(null);
 
   useEffect(() => {
     if (urlOriginId) {
       const found = ORIGINS.find(o => o.id === urlOriginId);
       if (found) setSelectedOrigin(found);
+    }
+    if (urlPlanId) {
+      const foundPlan = PLANS.find(p => p.id.toLowerCase() === urlPlanId.toLowerCase());
+      if (foundPlan) setSelectedPlan(foundPlan);
+    }
+    if (urlGrindId) {
+      const foundGrind = GRINDS.find(g => g.id.toLowerCase() === urlGrindId.toLowerCase());
+      if (foundGrind) setSelectedGrind(foundGrind);
+    }
+    if (urlWeight) {
+      const foundWeight = WEIGHTS.find(w => w.value === urlWeight);
+      if (foundWeight) setSelectedWeight(foundWeight);
     }
     // Check if user is logged in
     try {
@@ -92,7 +109,7 @@ function SubscribeContent() {
     } catch (e) {
       // ignore
     }
-  }, [urlOriginId]);
+  }, [urlOriginId, urlPlanId, urlGrindId, urlWeight]);
 
   const baseMonthlyPrice = selectedOrigin.price * selectedWeight.value;
   const totalOriginalPrice = baseMonthlyPrice * selectedPlan.months;
