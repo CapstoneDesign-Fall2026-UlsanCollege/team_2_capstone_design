@@ -39,7 +39,7 @@ Specifically, we tested the **Nepali Single-Origin Selection to Checkout Flow**:
 
 ---
 
-## 4. Evidence Links
+## 4. Evidence Links & Visual Gallery
 
 | Evidence Category | Document / Asset | Link |
 |---|---|---|
@@ -56,6 +56,23 @@ Specifically, we tested the **Nepali Single-Origin Selection to Checkout Flow**:
 | Individual Receipts | Receipts for all 4 team members | [individual-evidence-receipts.md](individual-evidence-receipts.md) |
 | API Outage & Recovery | Backend Outage Smoke Test Record | [api-smoke-test-record.md](api-smoke-test-record.md) |
 | Mobile & A11y Audit | Accessibility & Viewport Test Record | [accessibility-and-mobile-check.md](accessibility-and-mobile-check.md) |
+
+### Visual Evidence Previews
+
+#### 1. Nepali Coffee Origin Selection (`/origins`)
+![Origins Selection](evidence/origins-selection.png)
+
+#### 2. Checkout Flow with Selection & Pricing Breakdown (`/checkout`)
+![Checkout Flow](evidence/checkout-flow.png)
+
+#### 3. Edge Case Handling: Direct Checkout Navigation (Empty Cart State)
+![Empty Cart State](evidence/checkout-empty-state.png)
+
+#### 4. Mobile Viewport & Responsiveness Audit (390 x 844 px)
+![Mobile Portrait View](evidence/origins-mobile.png)
+
+#### 5. Authenticated Customer Roastery Portal (`/dashboard`)
+![Customer Portal](evidence/dashboard-orders.png)
 
 ---
 

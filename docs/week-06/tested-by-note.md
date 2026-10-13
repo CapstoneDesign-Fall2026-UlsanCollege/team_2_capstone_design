@@ -46,8 +46,12 @@
   - The order summary accurately reflected Gulmi Reserve.
   - Simulated payment processing took 2.0s and showed the green confirmation modal with order details.
 - **Evidence / Proof:**
-  - Desktop Origin Selection Proof: [origins-selection.png](evidence/origins-selection.png)
-  - Desktop Checkout Flow Proof: [checkout-flow.png](evidence/checkout-flow.png)
+  - Desktop Origin Selection Proof:
+  
+    ![Origins Selection](evidence/origins-selection.png)
+  - Desktop Checkout Flow Proof:
+  
+    ![Checkout Flow](evidence/checkout-flow.png)
   - GitHub PR: [PR #44](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/44)
   - Merge Commit: [9d45f95](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/9d45f95)
 
@@ -60,7 +64,9 @@
 - **Steps:** Navigate directly to `http://localhost:3000/checkout` in an incognito window without selecting any origin or plan first.
 - **Expected Result:** App should not crash or show `undefined`; it should display an empty-cart state guiding the user back to `/origins` or `/subscribe`.
 - **Actual Result:** App gracefully handled the missing query parameters by showing the empty selection notice: *"No coffee selected yet. Please choose your origin or subscription plan."* with a button back to selection. Fixed in commit [f69700e](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/f69700e).
-- **Proof:** [checkout-empty-state.png](evidence/checkout-empty-state.png)
+- **Proof:**
+
+  ![Empty Cart State](evidence/checkout-empty-state.png)
 
 ---
 
