@@ -53,7 +53,12 @@ Specifically, we tested the **Nepali Single-Origin Selection to Checkout Flow**:
 | Visual Proof: Admin | Backoffice Orders Dashboard | [evidence/admin-backoffice.png](evidence/admin-backoffice.png) |
 | Definition of Done | Updated DoD Document | [definition-of-done.md](definition-of-done.md) |
 | Work Checklist | Completed Week 6 Checklist | [work-checklist.md](work-checklist.md) |
-| Individual Receipts | Receipts for all 4 team members | [individual-evidence-receipts.md](individual-evidence-receipts.md) |
+| Feedback Follow-Up | Line-by-Line Review Response Log | [feedback-follow-up.md](feedback-follow-up.md) |
+| Setup & Demo Guide | Fresh Checkout & 5-Step Demo Guide | [setup-and-demo-guide.md](setup-and-demo-guide.md) |
+| Bug & Problem Log | Follow-Up Problems & Edge-Case Bug Log | [follow-up-problems.md](follow-up-problems.md) |
+| Stretch Menu Validation | Completed Extensions & Claims Matrix | [stretch-validation.md](stretch-validation.md) |
+| Individual Receipts | Consolidated Receipts (All 4 Members) | [individual-evidence-receipts.md](individual-evidence-receipts.md) |
+| Dedicated Receipt Files | Individual Receipts Folder | [receipts/](receipts/) |
 | API Outage & Recovery | Backend Outage Smoke Test Record | [api-smoke-test-record.md](api-smoke-test-record.md) |
 | Mobile & A11y Audit | Accessibility & Viewport Test Record | [accessibility-and-mobile-check.md](accessibility-and-mobile-check.md) |
 
