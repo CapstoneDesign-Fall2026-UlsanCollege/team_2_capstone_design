@@ -87,7 +87,7 @@ import dj_database_url
 
 DATABASES = {
     'default': dj_database_url.config(
-        default='postgresql://neondb_owner:npg_b2fFy4DdroNZ@ep-dark-term-avy8vnke-pooler.c-11.us-east-1.aws.neon.tech/neondb?channel_binding=require&sslmode=require',
+        default='sqlite:///' + str(BASE_DIR / 'db.sqlite3'),
         conn_max_age=600,
         conn_health_checks=True,
     )
