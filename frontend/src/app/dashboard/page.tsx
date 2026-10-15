@@ -57,7 +57,7 @@ type TabType = "subscription" | "favorites" | "orders" | "returns" | "support";
 export default function DashboardPage() {
   const router = useRouter();
   const [activeTab, setActiveTab] = useState<TabType>("subscription");
-  const [user, setUser] = useState<{ name: string; email: string; phone?: string; address: string; memberSince: string } | null>(null);
+  const [user, setUser] = useState<{ name: string; email: string; phone?: string; address: string; memberSince: string; is_staff?: boolean } | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
@@ -341,6 +341,25 @@ export default function DashboardPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-6 pt-10">
+
+        {/* Staff Operations Clearance Banner */}
+        {user.is_staff && (
+          <div className="mb-8 p-4 bg-[#14100E] text-[#F5F2EB] rounded-2xl flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 border border-[#2C2420] shadow-md">
+            <div className="flex items-center gap-3">
+              <span className="w-2.5 h-2.5 rounded-full bg-[#E58A1F] animate-pulse shrink-0"></span>
+              <div>
+                <p className="text-xs uppercase font-bold tracking-wider text-[#E58A1F]">Staff Roastery Clearance Active</p>
+                <p className="text-xs text-[#A89F91]">Authenticated for Lalitpur Roastery order queues, inventory & VAT invoices</p>
+              </div>
+            </div>
+            <Link 
+              href="/admin" 
+              className="px-4 py-2 bg-[#A3432A] hover:bg-[#8A3722] text-white text-xs font-bold uppercase tracking-wider rounded-xl transition-colors inline-flex items-center gap-2 shadow-sm shrink-0"
+            >
+              <Shield size={14} /> Open Roastery Console →
+            </Link>
+          </div>
+        )}
 
         {/* ========================================================================= */}
         {/* TAB 1: MY SUBSCRIPTION (HERO UNBOXING EXPERIENCE)                         */}
