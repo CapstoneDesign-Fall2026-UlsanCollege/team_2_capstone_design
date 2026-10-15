@@ -29,11 +29,12 @@ export default function AdminPage() {
 
   const fetchOrders = async () => {
     try {
-      setLoading(true);
       const res = await fetch("http://localhost:8000/api/orders/");
       if (res.ok) {
         const data = await res.json();
-        setOrders(data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime()));
+        const sorted = data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
+        setOrders(sorted);
+        localStorage.setItem("cached_admin_orders", JSON.stringify(sorted));
       }
     } catch (err) {
       console.error("Failed to fetch orders from Django backend:", err);
@@ -50,6 +51,19 @@ export default function AdminPage() {
         setCurrentUser(parsed);
         if (parsed.is_staff === true) {
           setIsAuthorized(true);
+
+          // Stale-While-Revalidate: Instant render from cached orders
+          const cached = localStorage.getItem("cached_admin_orders");
+          if (cached) {
+            try {
+              const parsedOrders = JSON.parse(cached);
+              if (Array.isArray(parsedOrders) && parsedOrders.length > 0) {
+                setOrders(parsedOrders);
+                setLoading(false); // Unblock view immediately!
+              }
+            } catch (e) {}
+          }
+
           fetchOrders();
           return;
         }

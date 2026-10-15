@@ -2,6 +2,7 @@ from rest_framework import viewsets, status
 from rest_framework.decorators import api_view, permission_classes
 from rest_framework.permissions import AllowAny
 from rest_framework.response import Response
+from django.core.cache import cache
 from django.contrib.auth.models import User
 from .models import Order, CustomerProfile
 from .serializers import OrderSerializer
@@ -10,7 +11,17 @@ class OrderViewSet(viewsets.ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
 
+    def list(self, request, *args, **kwargs):
+        cached_data = cache.get('orders_list_cache')
+        if cached_data is not None:
+            return Response(cached_data)
+        
+        response = super().list(request, *args, **kwargs)
+        cache.set('orders_list_cache', response.data, 30) # 30-second TTL
+        return response
+
     def create(self, request, *args, **kwargs):
+        cache.delete('orders_list_cache')
         data = request.data.get('order', request.data)
         
         # Intercept fake payments
@@ -23,6 +34,14 @@ class OrderViewSet(viewsets.ModelViewSet):
         self.perform_create(serializer)
         
         return Response(serializer.data, status=status.HTTP_201_CREATED)
+
+    def perform_update(self, serializer):
+        cache.delete('orders_list_cache')
+        super().perform_update(serializer)
+
+    def perform_destroy(self, instance):
+        cache.delete('orders_list_cache')
+        super().perform_destroy(instance)
 
 
 @api_view(['POST'])

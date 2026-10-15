@@ -16,7 +16,7 @@ export default function Home() {
       title: "2,000M+ MIST-GROWN",
       metric: "1,400m - 2,000m Elevation",
       desc: "Cultivated in the extreme microclimates of Gulmi and Ilam. Freezing mountain nights slow cherry development, packing dense natural sugars and bright citrus acidity into every seed.",
-      image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=80&w=800&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=70&w=600&auto=format&fit=crop"
     },
     {
       id: 1,
@@ -25,7 +25,7 @@ export default function Home() {
       title: "84+ SCA CUP SCORE",
       metric: "Top 3% Tier Globally",
       desc: "100% Arabica Bourbon and Typica varieties with zero primary defects. Every harvest lot is cup-tested and graded by certified Q-Graders to ensure unmatched balance and complex aroma.",
-      image: "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?q=80&w=1200&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?q=70&w=600&auto=format&fit=crop"
     },
     {
       id: 2,
@@ -34,7 +34,7 @@ export default function Home() {
       title: "100% FARMER-DIRECT",
       metric: "+40% Above Market Rates",
       desc: "We cut out commodity export middlemen. We contract directly with smallholder farming cooperatives in Nepal, guaranteeing stable living wages and long-term soil regeneration.",
-      image: "https://images.unsplash.com/photo-1524350876685-274059332603?q=80&w=1200&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1524350876685-274059332603?q=70&w=600&auto=format&fit=crop"
     },
     {
       id: 3,
@@ -43,7 +43,7 @@ export default function Home() {
       title: "48-HR ROAST-TO-DOOR",
       metric: "Small-Batch Roasted",
       desc: "Never warehouse-aged. Beans are roasted in small 5kg batches in our Kathmandu Valley roastery and dispatched immediately so they arrive at peak degassing and crema readiness.",
-      image: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=1200&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=70&w=600&auto=format&fit=crop"
     }
   ];
 
@@ -52,7 +52,7 @@ export default function Home() {
       
       {/* 1. HERO SECTION */}
       <section className="relative pt-36 pb-24 px-6 flex items-center justify-center min-h-[75vh] overflow-hidden bg-[#1A1512]">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=2000&auto=format&fit=crop')] bg-cover bg-center opacity-35 mix-blend-overlay"></div>
+        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=70&w=1200&auto=format&fit=crop')] bg-cover bg-center opacity-35 mix-blend-overlay"></div>
         <div className="absolute inset-0 bg-gradient-to-t from-[#1A1512] via-[#1A1512]/60 to-transparent"></div>
         
         <div className="max-w-4xl mx-auto text-center relative z-10">
@@ -188,6 +188,8 @@ export default function Home() {
                     <img 
                       src={pillar.image} 
                       alt={pillar.title} 
+                      loading="lazy"
+                      decoding="async"
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>

@@ -130,25 +130,43 @@ export default function DashboardPage() {
       pickupAddress: parsed.address || "Jhamsikhel, Lalitpur, Nepal",
     }));
 
+    const userEmail = (parsed.email || "").trim().toLowerCase();
+    const cacheKey = `cached_orders_${userEmail}`;
+
+    // Stale-While-Revalidate: Instant render from cached orders
+    try {
+      const cached = localStorage.getItem(cacheKey);
+      if (cached) {
+        const parsedOrders = JSON.parse(cached);
+        if (Array.isArray(parsedOrders)) {
+          setOrders(parsedOrders);
+          if (parsedOrders.length > 0) {
+            setReturnForm((prev) => ({ ...prev, orderId: `INV-${parsedOrders[0].id.toString().padStart(5, "0")}` }));
+          }
+        }
+      }
+    } catch (e) {
+      console.warn("Orders cache read error:", e);
+    }
+    setLoading(false); // Unblock UI immediately: User profile is ready
+
     const fetchOrders = async () => {
       try {
         const res = await fetch("http://localhost:8000/api/orders/");
         if (res.ok) {
           const data = await res.json();
-          const userEmail = (parsed.email || "").trim().toLowerCase();
           const userOrders = data.filter(
             (o: any) => (o.customer_email || "").trim().toLowerCase() === userEmail
           );
           const sorted = userOrders.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
           setOrders(sorted);
+          localStorage.setItem(cacheKey, JSON.stringify(sorted));
           if (sorted.length > 0) {
             setReturnForm((prev) => ({ ...prev, orderId: `INV-${sorted[0].id.toString().padStart(5, "0")}` }));
           }
         }
       } catch (err) {
         console.error("Failed to fetch orders:", err);
-      } finally {
-        setLoading(false);
       }
     };
 
