@@ -129,8 +129,8 @@ export default function Footer() {
       <div className="max-w-6xl mx-auto px-6 pt-8 border-t border-[#2C2420] flex flex-col md:flex-row justify-between items-center text-xs text-[#8A7966] gap-4">
         <p>© 2026 BrewMellow Himalayan Roasters Pvt. Ltd. Capstone Design Team 2.</p>
         <div className="flex gap-6">
-          <Link href="/about#privacy" className="hover:text-[#D3C7B1] transition-colors">Privacy Policy</Link>
-          <Link href="/about#terms" className="hover:text-[#D3C7B1] transition-colors">Terms of Service</Link>
+          <Link href="/privacy" className="hover:text-[#D3C7B1] transition-colors">Privacy Policy</Link>
+          <Link href="/terms" className="hover:text-[#D3C7B1] transition-colors">Terms of Service</Link>
           <Link href="/admin" className="hover:text-[#D3C7B1] transition-colors">Staff Portal</Link>
         </div>
       </div>
