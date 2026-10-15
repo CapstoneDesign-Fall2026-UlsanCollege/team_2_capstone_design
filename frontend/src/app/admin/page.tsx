@@ -29,7 +29,7 @@ export default function AdminPage() {
 
   const fetchOrders = async () => {
     try {
-      const res = await fetch("http://localhost:8000/api/orders/");
+      const res = await fetch("/api/orders/");
       if (res.ok) {
         const data = await res.json();
         const sorted = data.sort((a: any, b: any) => new Date(b.created_at).getTime() - new Date(a.created_at).getTime());
@@ -37,7 +37,7 @@ export default function AdminPage() {
         localStorage.setItem("cached_admin_orders", JSON.stringify(sorted));
       }
     } catch (err) {
-      console.error("Failed to fetch orders from Django backend:", err);
+      console.error("Failed to fetch orders:", err);
     } finally {
       setLoading(false);
     }
@@ -83,13 +83,13 @@ export default function AdminPage() {
     showToast(`Order #${orderId} updated to: ${newStatus}`);
 
     try {
-      await fetch(`http://localhost:8000/api/orders/${orderId}/`, {
+      await fetch(`/api/orders/${orderId}/`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ status: newStatus }),
       });
     } catch (err) {
-      console.error("Failed to persist status to Django backend:", err);
+      console.error("Failed to persist status update:", err);
     }
   };
 

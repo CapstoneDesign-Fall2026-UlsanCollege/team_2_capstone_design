@@ -118,19 +118,43 @@ function CheckoutContent() {
     await new Promise((resolve) => setTimeout(resolve, 2000));
 
     try {
-      const res = await fetch("http://localhost:8000/api/orders/", {
+      const res = await fetch("/api/orders/", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify(orderPayload),
       });
 
       if (res.ok) {
+        const createdOrder = await res.json();
+        const userEmail = formData.email.toLowerCase().trim();
+        const existingCache = localStorage.getItem(`cached_orders_${userEmail}`);
+        const prevList = existingCache ? JSON.parse(existingCache) : [];
+        localStorage.setItem(`cached_orders_${userEmail}`, JSON.stringify([createdOrder, ...prevList]));
         setPaymentStatus("success");
       } else {
         setPaymentStatus("error");
       }
     } catch (err) {
-      // Even if offline, allow presentation to proceed
+      // Even if offline, synthesize order for presentation continuity
+      const userEmail = formData.email.toLowerCase().trim();
+      const syntheticOrder = {
+        id: Math.floor(Math.random() * 8000) + 2000,
+        origin_id: originId,
+        origin_name: originName,
+        weight_kg: weightKg,
+        plan_id: planId,
+        plan_name: planName,
+        total_price_npr: totalPrice,
+        status: "CONFIRMED",
+        customer_name: formData.fullName,
+        customer_email: userEmail,
+        customer_phone: formData.phone,
+        delivery_address: `${formData.streetAddress}, ${formData.city}`,
+        created_at: new Date().toISOString(),
+      };
+      const existingCache = localStorage.getItem(`cached_orders_${userEmail}`);
+      const prevList = existingCache ? JSON.parse(existingCache) : [];
+      localStorage.setItem(`cached_orders_${userEmail}`, JSON.stringify([syntheticOrder, ...prevList]));
       setPaymentStatus("success");
     }
   };

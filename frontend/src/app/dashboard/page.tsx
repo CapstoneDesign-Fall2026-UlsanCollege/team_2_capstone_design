@@ -152,7 +152,7 @@ export default function DashboardPage() {
 
     const fetchOrders = async () => {
       try {
-        const res = await fetch("http://localhost:8000/api/orders/");
+        const res = await fetch("/api/orders/");
         if (res.ok) {
           const data = await res.json();
           const userOrders = data.filter(
