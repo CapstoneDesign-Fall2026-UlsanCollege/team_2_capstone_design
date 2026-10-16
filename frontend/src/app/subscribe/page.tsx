@@ -204,11 +204,17 @@ function SubscribeContent() {
                           <div className="absolute top-2 left-2 bg-[#1A1512]/80 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider text-white">
                             {origin.altitude}
                           </div>
-                          {isSelected && (
-                            <div className="absolute top-2 right-2 w-5 h-5 rounded-full bg-[#A3432A] text-white flex items-center justify-center shadow-md">
-                              <Check size={12} />
-                            </div>
-                          )}
+                          <div className="absolute top-2 right-2">
+                            <span
+                              className={`w-4 h-4 rounded-full border transition-all flex items-center justify-center shadow-xs ${
+                                isSelected
+                                  ? "bg-green-500 border-green-500 ring-2 ring-green-500/20"
+                                  : "border-white/70 bg-black/40 backdrop-blur-xs"
+                              }`}
+                            >
+                              {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                            </span>
+                          </div>
                         </div>
 
                         <div className="flex justify-between items-baseline mb-1">
@@ -296,12 +302,23 @@ function SubscribeContent() {
                     <div
                       key={w.value}
                       onClick={() => setSelectedWeight(w)}
-                      className={`p-4 rounded-lg border text-center cursor-pointer transition-all ${
+                      className={`p-4 rounded-lg border text-center cursor-pointer transition-all relative ${
                         isSelected 
                           ? "bg-[#1A1512] text-white border-[#1A1512] shadow-md" 
                           : "bg-white border-[#E6DEC8] text-[#2C2420] hover:bg-[#FAF8F5]"
                       }`}
                     >
+                      <div className="absolute top-2.5 right-2.5">
+                        <span
+                          className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center ${
+                            isSelected
+                              ? "bg-green-500 border-green-500 ring-2 ring-green-500/20"
+                              : "border-[#C8BFAB] bg-transparent"
+                          }`}
+                        >
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                        </span>
+                      </div>
                       <p className="text-lg font-serif font-bold mb-0.5">{w.label}</p>
                       <p className={`text-[9px] uppercase tracking-wider font-semibold ${isSelected ? "text-[#E58A1F]" : "text-[#8A7966]"}`}>
                         {w.cups}
@@ -346,11 +363,22 @@ function SubscribeContent() {
                           <p className="text-[11px] text-[#8A7966]">Monthly roasted dispatch</p>
                         </div>
 
-                        <div className="text-right">
-                          {plan.discount > 0 && (
-                            <p className="text-[11px] line-through text-[#8A7966]">Rs. {originalCost}</p>
-                          )}
-                          <p className="text-xl font-serif font-bold text-[#1A1512]">Rs. {discountedCost}</p>
+                        <div className="flex items-start gap-3">
+                          <div className="text-right">
+                            {plan.discount > 0 && (
+                              <p className="text-[11px] line-through text-[#8A7966]">Rs. {originalCost}</p>
+                            )}
+                            <p className="text-xl font-serif font-bold text-[#1A1512]">Rs. {discountedCost}</p>
+                          </div>
+                          <span
+                            className={`w-4 h-4 rounded-full border transition-all flex items-center justify-center shrink-0 mt-1 ${
+                              isSelected
+                                ? "bg-green-500 border-green-500 ring-2 ring-green-500/20"
+                                : "border-[#C8BFAB] bg-transparent"
+                            }`}
+                          >
+                            {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                          </span>
                         </div>
                       </div>
 

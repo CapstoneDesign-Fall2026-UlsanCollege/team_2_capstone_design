@@ -1273,7 +1273,15 @@ export default function DashboardPage() {
                     <span className="text-xs font-bold text-[#1A1512] block">{g.name}</span>
                     <span className="text-[11px] text-[#8A7966]">{g.desc}</span>
                   </div>
-                  {grindType === g.name && <Check size={18} className="text-[#A3432A] mt-0.5" />}
+                  <span
+                    className={`w-4 h-4 rounded-full border transition-all flex items-center justify-center shrink-0 mt-0.5 ${
+                      grindType === g.name
+                        ? "bg-green-500 border-green-500 ring-2 ring-green-500/20"
+                        : "border-[#C8BFAB] bg-transparent"
+                    }`}
+                  >
+                    {grindType === g.name && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                  </span>
                 </label>
               ))}
             </div>
