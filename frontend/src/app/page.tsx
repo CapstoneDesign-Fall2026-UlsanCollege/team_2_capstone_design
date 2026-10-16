@@ -2,12 +2,14 @@
 
 import { useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { 
   Mountain, Award, ShieldCheck, Flame, ArrowRight, 
   Coffee, ChevronDown, Check, Sparkles, MapPin, Star
 } from "lucide-react";
 
 export default function Home() {
+  const router = useRouter();
   const pillars = [
     {
       id: 0,
@@ -186,9 +188,9 @@ export default function Home() {
             const Icon = pillar.icon;
 
             return (
-              <Link
+              <div
                 key={pillar.id}
-                href={pillar.link}
+                onClick={() => router.push(pillar.link)}
                 className="group bg-white rounded-2xl border border-[#E6DEC8] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
               >
                 <div>
@@ -231,13 +233,17 @@ export default function Home() {
                 {/* Card Action Footer */}
                 <div className="p-6 pt-0">
                   <div className="pt-4 border-t border-[#F0EAE1]">
-                    <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#A3432A] group-hover:text-[#8A3722] group-hover:gap-2.5 transition-all">
+                    <Link
+                      href={pillar.link}
+                      onClick={(e) => e.stopPropagation()}
+                      className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#A3432A] hover:text-[#8A3722] group-hover:gap-2.5 transition-all"
+                    >
                       <span>{pillar.linkText}</span>
                       <ArrowRight size={13} />
-                    </div>
+                    </Link>
                   </div>
                 </div>
-              </Link>
+              </div>
             );
           })}
         </div>
