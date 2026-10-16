@@ -4,12 +4,10 @@ import { useState, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
-  Package, MapPin, CreditCard, Download, Calendar, Loader2, CheckCircle2, 
-  Clock, Truck, Home as HomeIcon, X, Printer, AlertCircle, Sparkles, 
-  Check, Coffee, User, Settings, LogOut, Save, Shield, ArrowRight, 
-  Flame, Mountain, Edit3, Heart, ChevronRight, SlidersHorizontal, Star,
-  MessageSquare, RotateCcw, HelpCircle, Phone, Mail, Send, ExternalLink,
-  RefreshCw, Undo2, Award, ChevronDown, CheckCheck
+  Package, MapPin, CreditCard, Loader2, CheckCircle2, 
+  Truck, X, Printer, Sparkles, Coffee, LogOut, Shield, ArrowRight, 
+  Heart, SlidersHorizontal, Star, MessageSquare, RotateCcw, 
+  Phone, Mail, Send, RefreshCw, ChevronDown, CheckCheck
 } from "lucide-react";
 
 // Rich Origin Metadata

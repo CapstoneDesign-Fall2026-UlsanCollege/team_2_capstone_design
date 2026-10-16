@@ -1,27 +1,30 @@
 @import "tailwindcss";
 
+@theme {
+  --color-coffee-dark: #1A1512;
+  --color-coffee-body: #2C2420;
+  --color-coffee-medium: #5C5042;
+  --color-coffee-muted: #8A7966;
+  --color-coffee-rust: #A3432A;
+  --color-coffee-rust-hover: #8A3722;
+  --color-cream-bg: #F5F2EB;
+  --color-cream-card: #FAF8F5;
+  --color-cream-border: #E6DEC8;
+  --color-cream-divider: #F0EAE1;
+  --color-accent-amber: #E58A1F;
+  --color-status-green: #2E6B34;
+  --color-status-green-bg: #E7F3E8;
+}
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
-}
-
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+  --background: #F5F2EB;
+  --foreground: #2C2420;
 }
 
 body {
-  background: var(--background);
+  background-color: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
-/* updated global styling */

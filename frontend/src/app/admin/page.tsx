@@ -3,10 +3,10 @@
 import { useState, useEffect, useMemo } from "react";
 import Link from "next/link";
 import { 
-  Package, Users, Coffee, TrendingUp, Search, Filter, 
+  Package, Users, Coffee, TrendingUp, Search, 
   ArrowUpRight, Download, RefreshCw, CheckCircle2, AlertCircle, 
-  Clock, Truck, Flame, ShieldAlert, LogOut, ChevronRight, 
-  ExternalLink, FileText, Printer, X, Sparkles, Building2, MapPin
+  Truck, Flame, ShieldAlert, LogOut, 
+  ExternalLink, Printer, X, Sparkles
 } from "lucide-react";
 
 export default function AdminPage() {
@@ -832,7 +832,7 @@ export default function AdminPage() {
               </span>
               <h2 className="text-2xl font-serif font-bold text-[#1A1512] mt-1">BrewMellow Himalayan Roasters</h2>
               <p className="text-xs text-[#8A7966]">Lalitpur Industrial District, Ward 4, Nepal</p>
-              <p className="text-xs text-[#8A7966] font-mono">PAN / VAT No: 601928374</p>
+              <p className="text-xs text-[#8A7966] font-mono">PAN / VAT No: 609812450</p>
             </div>
 
             {/* Bill To Info */}

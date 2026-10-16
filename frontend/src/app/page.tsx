@@ -1,11 +1,10 @@
 "use client";
 
-import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   Mountain, Award, ShieldCheck, Flame, ArrowRight, 
-  Coffee, ChevronDown, Check, Sparkles, MapPin, Star
+  Sparkles, Star
 } from "lucide-react";
 
 export default function Home() {

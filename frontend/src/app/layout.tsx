@@ -1,8 +1,5 @@
 import type { Metadata, Viewport } from "next";
-import localFont from "next/font/local";
 import "./globals.css";
-import Link from "next/link";
-import { ShoppingBag, User, Menu, Home, Coffee } from "lucide-react";
 import PwaInstallBanner from "@/components/PwaInstallBanner";
 import Navbar from "@/components/Navbar";
 import Footer from "@/components/Footer";
@@ -12,8 +9,6 @@ export const viewport: Viewport = {
   themeColor: "#1A1512",
   width: "device-width",
   initialScale: 1,
-  maximumScale: 1,
-  userScalable: false,
 };
 
 export const metadata: Metadata = {

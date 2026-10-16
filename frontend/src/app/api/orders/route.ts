@@ -104,10 +104,35 @@ export async function POST(request: Request) {
 
     const origin_id = Number(data.origin_id) || 1;
     const origin_name = String(data.origin_name || "Gulmi Reserve");
-    const weight_kg = Number(data.weight_kg) || 1.0;
-    const plan_id = String(data.plan_id || "PAYG");
+    const weight_kg = Number(data.weight_kg) || 0.5;
+    const plan_id = String(data.plan_id || "PAYG").toUpperCase();
     const plan_name = String(data.plan_name || "Pay per delivery");
-    const total_price_npr = Math.round(Number(data.total_price_npr) || 1200);
+
+    // Server-Side Authoritative Price Validation
+    const SERVER_PRICES: Record<number, Record<string, number>> = {
+      1: { "0.15": 450, "0.25": 650, "0.5": 1200, "1": 2200 },
+      2: { "0.15": 500, "0.25": 750, "0.5": 1400, "1": 2600 },
+      3: { "0.15": 400, "0.25": 600, "0.5": 1100, "1": 2000 },
+    };
+    const PLAN_DISCOUNTS: Record<string, { months: number; discount: number }> = {
+      TRIAL_ONETIME: { months: 1, discount: 0 },
+      PAYG: { months: 1, discount: 0 },
+      "3M": { months: 3, discount: 5 },
+      "6M": { months: 6, discount: 10 },
+      "12M": { months: 12, discount: 15 },
+    };
+
+    const baseUnit = SERVER_PRICES[origin_id]?.[String(weight_kg)] || 1200;
+    const planMeta = PLAN_DISCOUNTS[plan_id] || { months: 1, discount: 0 };
+    const rawCycle = baseUnit * planMeta.months;
+    const authoritativePrice = Math.round(rawCycle * (1 - planMeta.discount / 100));
+
+    // Guard against client-side price tampering: use authoritative calculation if tampered
+    const clientPrice = Number(data.total_price_npr);
+    const total_price_npr = (!clientPrice || clientPrice < authoritativePrice * 0.8) 
+      ? authoritativePrice 
+      : Math.round(clientPrice);
+
     const is_fake_payment = Boolean(data.is_fake_payment ?? true);
     const status = is_fake_payment ? "PAID_TEST" : "CONFIRMED";
     const customer_name = String(data.customer_name || "Guest Customer");
