@@ -59,6 +59,7 @@ export default function DashboardPage() {
   const [activeTab, setActiveTab] = useState<TabType>("subscription");
   const [user, setUser] = useState<{ name: string; email: string; phone?: string; address: string; memberSince: string; is_staff?: boolean } | null>(null);
   const [orders, setOrders] = useState<any[]>([]);
+  const [selectedOrderIndex, setSelectedOrderIndex] = useState<number>(0);
   const [loading, setLoading] = useState(true);
 
   // Interactive Subscription Controls
@@ -262,7 +263,7 @@ export default function DashboardPage() {
     );
   }
 
-  const activeOrder = orders.length > 0 ? orders[0] : null;
+  const activeOrder = orders.length > 0 ? (orders[selectedOrderIndex] || orders[0]) : null;
   const originInfo = activeOrder && ORIGIN_DETAILS[activeOrder.origin_name] 
     ? ORIGIN_DETAILS[activeOrder.origin_name]
     : ORIGIN_DETAILS["Gulmi Reserve"];
@@ -383,7 +384,78 @@ export default function DashboardPage() {
         {/* TAB 1: MY SUBSCRIPTION (HERO UNBOXING EXPERIENCE)                         */}
         {/* ========================================================================= */}
         {activeTab === "subscription" && (
-          <div className="space-y-10">
+          <div className="space-y-8">
+
+            {/* MULTI-SUBSCRIPTION SELECTOR (When member has multiple orders/plans) */}
+            {orders.length > 1 && (
+              <div className="bg-white border border-[#E6DEC8] rounded-2xl p-4 sm:p-5 shadow-sm">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
+                  <div className="flex items-center gap-2.5">
+                    <div className="w-8 h-8 rounded-full bg-[#FAF5F2] border border-[#E6DEC8] flex items-center justify-center text-[#A3432A]">
+                      <Package size={16} />
+                    </div>
+                    <div>
+                      <h3 className="text-xs font-bold uppercase tracking-widest text-[#1A1512]">
+                        You Have {orders.length} Active Subscriptions
+                      </h3>
+                      <p className="text-[11px] text-[#8A7966]">
+                        Click any box below to inspect its live status, grind, or delivery address:
+                      </p>
+                    </div>
+                  </div>
+                  <Link
+                    href="/subscribe"
+                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#A3432A] hover:underline self-start sm:self-auto"
+                  >
+                    + Add Another Plan <ArrowRight size={13} />
+                  </Link>
+                </div>
+
+                {/* Selector Pills */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-2 border-t border-[#F0EAE1]">
+                  {orders.map((ord: any, idx: number) => {
+                    const isSelected = idx === selectedOrderIndex;
+                    const ordOrigin = ORIGIN_DETAILS[ord.origin_name] || ORIGIN_DETAILS["Gulmi Reserve"];
+
+                    return (
+                      <button
+                        key={ord.id}
+                        type="button"
+                        onClick={() => setSelectedOrderIndex(idx)}
+                        className={`p-2.5 rounded-xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                          isSelected
+                            ? "bg-[#1A1512] text-white border-[#1A1512] shadow-md ring-2 ring-[#A3432A]"
+                            : "bg-[#FAF8F5] text-[#1A1512] border-[#E6DEC8] hover:bg-white"
+                        }`}
+                      >
+                        <img
+                          src={ordOrigin.img}
+                          alt={ord.origin_name}
+                          className="w-10 h-10 rounded-lg object-cover border border-white/20 shrink-0"
+                        />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center justify-between gap-1">
+                            <p className="text-xs font-bold truncate">
+                              Box #{idx + 1}: {ord.origin_name}
+                            </p>
+                            <span
+                              className={`w-3 h-3 rounded-full shrink-0 flex items-center justify-center ${
+                                isSelected ? "bg-green-500 ring-2 ring-green-500/20" : "border border-[#C8BFAB]"
+                              }`}
+                            >
+                              {isSelected && <span className="w-1 h-1 rounded-full bg-white block" />}
+                            </span>
+                          </div>
+                          <p className={`text-[10px] truncate ${isSelected ? "text-[#A89F91]" : "text-[#8A7966]"}`}>
+                            {ord.weight_kg} kg • {ord.plan_name || "Monthly"} • Rs. {ord.total_price_npr}
+                          </p>
+                        </div>
+                      </button>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
             
             {activeOrder ? (
               <section className="bg-white border border-[#E6DEC8] rounded-2xl shadow-sm overflow-hidden">
@@ -393,7 +465,7 @@ export default function DashboardPage() {
                   <div className="flex items-center gap-2.5">
                     <Coffee size={18} className="text-[#A3432A]" />
                     <span className="text-xs uppercase tracking-widest font-bold text-[#1A1512]">
-                      Your Upcoming Roastery Box
+                      {orders.length > 1 ? `Inspecting Box #${selectedOrderIndex + 1} of ${orders.length} • ${activeOrder.origin_name}` : "Your Upcoming Roastery Box"}
                     </span>
                     <span className="hidden sm:inline text-xs text-[#8A7966]">•</span>
                     <span className="text-xs text-[#8A7966]">
@@ -734,6 +806,103 @@ export default function DashboardPage() {
               </div>
 
             </div>
+
+            {/* MULTI-SUBSCRIPTION ALL PLANS OVERVIEW (When member has > 1 subscriptions) */}
+            {orders.length > 1 && (
+              <div className="bg-white border border-[#E6DEC8] rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E6DEC8] pb-4">
+                  <div>
+                    <span className="text-[10px] uppercase font-bold tracking-[0.24em] text-[#A3432A]">
+                      Multi-Plan Overview
+                    </span>
+                    <h3 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">
+                      All Your Active Roastery Subscriptions ({orders.length})
+                    </h3>
+                  </div>
+                  <p className="text-xs text-[#8A7966]">
+                    Combined Volume: <strong className="text-[#1A1512]">{orders.reduce((acc: number, o: any) => acc + (Number(o.weight_kg) || 0), 0)} kg / month</strong>
+                  </p>
+                </div>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                  {orders.map((ord: any, idx: number) => {
+                    const ordOrigin = ORIGIN_DETAILS[ord.origin_name] || ORIGIN_DETAILS["Gulmi Reserve"];
+                    const isCurrent = idx === selectedOrderIndex;
+
+                    return (
+                      <div
+                        key={ord.id}
+                        className={`rounded-xl border p-5 flex flex-col justify-between transition-all ${
+                          isCurrent
+                            ? "bg-[#FAF8F5] border-[#A3432A] ring-2 ring-[#A3432A]/30 shadow-md"
+                            : "bg-white border-[#E6DEC8] hover:shadow-sm"
+                        }`}
+                      >
+                        <div>
+                          <div className="flex justify-between items-start mb-3">
+                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#1A1512] text-white">
+                              Box #{idx + 1}
+                            </span>
+                            <span className="text-[10px] uppercase font-bold tracking-wider text-[#2E6B34] bg-[#E7F3E8] px-2.5 py-0.5 rounded-full border border-[#C3E4C6]">
+                              {ord.status || "ROASTING"}
+                            </span>
+                          </div>
+
+                          <div className="flex gap-3 mb-4">
+                            <img
+                              src={ordOrigin.img}
+                              alt={ord.origin_name}
+                              className="w-16 h-16 rounded-lg object-cover border border-[#E6DEC8] shrink-0"
+                            />
+                            <div>
+                              <h4 className="font-serif font-bold text-base text-[#1A1512] leading-tight mb-1">
+                                {ord.origin_name}
+                              </h4>
+                              <p className="text-xs text-[#A3432A] font-semibold mb-0.5">{ord.plan_name}</p>
+                              <p className="text-[11px] text-[#8A7966]">{ord.weight_kg} kg (~{ord.weight_kg * 60} cups)</p>
+                            </div>
+                          </div>
+
+                          <div className="space-y-1.5 text-xs text-[#5C5042] pt-3 border-t border-[#F0EAE1]">
+                            <div className="flex justify-between">
+                              <span className="text-[#8A7966]">Monthly Price</span>
+                              <span className="font-bold text-[#1A1512]">Rs. {ord.total_price_npr}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-[#8A7966]">Batch Order</span>
+                              <span className="font-mono text-[11px]">INV-{ord.id.toString().padStart(5, "0")}</span>
+                            </div>
+                            <div className="flex justify-between">
+                              <span className="text-[#8A7966]">Next Roast</span>
+                              <span className="font-semibold text-[#2E6B34]">Every Mon / Wed</span>
+                            </div>
+                          </div>
+                        </div>
+
+                        <div className="pt-4 mt-4 border-t border-[#F0EAE1]">
+                          {isCurrent ? (
+                            <div className="text-center py-2 bg-[#E7F3E8] text-[#2E6B34] text-xs font-bold uppercase tracking-wider rounded-lg flex items-center justify-center gap-1.5">
+                              <CheckCircle2 size={14} /> Currently Inspecting Above
+                            </div>
+                          ) : (
+                            <button
+                              type="button"
+                              onClick={() => {
+                                setSelectedOrderIndex(idx);
+                                window.scrollTo({ top: 150, behavior: "smooth" });
+                              }}
+                              className="w-full py-2 bg-[#1A1512] text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#2C2420] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
+                            >
+                              Manage Box #{idx + 1} <ArrowRight size={13} />
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              </div>
+            )}
 
           </div>
         )}
