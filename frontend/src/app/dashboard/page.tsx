@@ -68,6 +68,7 @@ export default function DashboardPage() {
   const [selectedReceipt, setSelectedReceipt] = useState<any | null>(null);
   const [isGrindModalOpen, setIsGrindModalOpen] = useState(false);
   const [isAddressModalOpen, setIsAddressModalOpen] = useState(false);
+  const [isBrewGuideOpen, setIsBrewGuideOpen] = useState(false);
   const [grindType, setGrindType] = useState("Pour-Over (Medium)");
 
   // Wishlist / Favorites State
@@ -380,105 +381,69 @@ export default function DashboardPage() {
           </div>
         )}
 
-        {/* ========================================================================= */}
-        {/* TAB 1: MY SUBSCRIPTION (HERO UNBOXING EXPERIENCE)                         */}
+                {/* ========================================================================= */}
+        {/* TAB 1: MY SUBSCRIPTION (STREAMLINED LUXURY D2C EXPERIENCE)                */}
         {/* ========================================================================= */}
         {activeTab === "subscription" && (
-          <div className="space-y-8">
+          <div className="space-y-6">
 
-            {/* MULTI-SUBSCRIPTION SELECTOR (When member has multiple orders/plans) */}
+            {/* 1. COMPACT MULTI-SUBSCRIPTION SWITCHER (If member has multiple orders) */}
             {orders.length > 1 && (
-              <div className="bg-white border border-[#E6DEC8] rounded-2xl p-4 sm:p-5 shadow-sm">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 mb-3">
-                  <div className="flex items-center gap-2.5">
-                    <div className="w-8 h-8 rounded-full bg-[#FAF5F2] border border-[#E6DEC8] flex items-center justify-center text-[#A3432A]">
-                      <Package size={16} />
-                    </div>
-                    <div>
-                      <h3 className="text-xs font-bold uppercase tracking-widest text-[#1A1512]">
-                        You Have {orders.length} Active Subscriptions
-                      </h3>
-                      <p className="text-[11px] text-[#8A7966]">
-                        Click any box below to inspect its live status, grind, or delivery address:
-                      </p>
-                    </div>
-                  </div>
-                  <Link
-                    href="/subscribe"
-                    className="inline-flex items-center gap-1.5 text-xs font-bold text-[#A3432A] hover:underline self-start sm:self-auto"
-                  >
-                    + Add Another Plan <ArrowRight size={13} />
-                  </Link>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 bg-white border border-[#E6DEC8] p-3 rounded-2xl shadow-xs">
+                <div className="flex items-center gap-2 px-2">
+                  <Package size={15} className="text-[#A3432A]" />
+                  <span className="text-xs font-bold uppercase tracking-wider text-[#1A1512]">
+                    Your Coffee Boxes ({orders.length}):
+                  </span>
                 </div>
-
-                {/* Selector Pills */}
-                <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-2.5 pt-2 border-t border-[#F0EAE1]">
+                <div className="flex flex-wrap items-center gap-2">
                   {orders.map((ord: any, idx: number) => {
                     const isSelected = idx === selectedOrderIndex;
-                    const ordOrigin = ORIGIN_DETAILS[ord.origin_name] || ORIGIN_DETAILS["Gulmi Reserve"];
-
                     return (
                       <button
                         key={ord.id}
                         type="button"
                         onClick={() => setSelectedOrderIndex(idx)}
-                        className={`p-2.5 rounded-xl border text-left transition-all flex items-center gap-3 cursor-pointer ${
+                        className={`px-3.5 py-1.5 rounded-full text-xs font-bold transition-all flex items-center gap-2 cursor-pointer ${
                           isSelected
-                            ? "bg-[#1A1512] text-white border-[#1A1512] shadow-md ring-2 ring-[#A3432A]"
-                            : "bg-[#FAF8F5] text-[#1A1512] border-[#E6DEC8] hover:bg-white"
+                            ? "bg-[#1A1512] text-white shadow-xs"
+                            : "bg-[#FAF8F5] text-[#5C5042] border border-[#E6DEC8] hover:bg-white hover:text-[#1A1512]"
                         }`}
                       >
-                        <img
-                          src={ordOrigin.img}
-                          alt={ord.origin_name}
-                          className="w-10 h-10 rounded-lg object-cover border border-white/20 shrink-0"
-                        />
-                        <div className="flex-1 min-w-0">
-                          <div className="flex items-center justify-between gap-1">
-                            <p className="text-xs font-bold truncate">
-                              Box #{idx + 1}: {ord.origin_name}
-                            </p>
-                            <span
-                              className={`w-3 h-3 rounded-full shrink-0 flex items-center justify-center ${
-                                isSelected ? "bg-green-500 ring-2 ring-green-500/20" : "border border-[#C8BFAB]"
-                              }`}
-                            >
-                              {isSelected && <span className="w-1 h-1 rounded-full bg-white block" />}
-                            </span>
-                          </div>
-                          <p className={`text-[10px] truncate ${isSelected ? "text-[#A89F91]" : "text-[#8A7966]"}`}>
-                            {ord.weight_kg} kg • {ord.plan_name || "Monthly"} • Rs. {ord.total_price_npr}
-                          </p>
-                        </div>
+                        <span className={`w-2 h-2 rounded-full ${isSelected ? "bg-green-500" : "bg-[#C8BFAB]"}`} />
+                        <span>Box #{idx + 1}: {ord.origin_name} ({ord.weight_kg}kg)</span>
                       </button>
                     );
                   })}
+                  <Link
+                    href="/subscribe"
+                    className="text-xs font-bold text-[#A3432A] hover:underline px-2 py-1"
+                  >
+                    + Add Box
+                  </Link>
                 </div>
               </div>
             )}
             
             {activeOrder ? (
-              <section className="bg-white border border-[#E6DEC8] rounded-2xl shadow-sm overflow-hidden">
+              <div className="bg-white border border-[#E6DEC8] rounded-2xl shadow-sm overflow-hidden">
                 
-                {/* Unboxing Ribbon Header */}
-                <div className="bg-[#FAF8F5] border-b border-[#E6DEC8] px-6 md:px-8 py-4 flex flex-wrap items-center justify-between gap-4">
-                  <div className="flex items-center gap-2.5">
-                    <Coffee size={18} className="text-[#A3432A]" />
-                    <span className="text-xs uppercase tracking-widest font-bold text-[#1A1512]">
-                      {orders.length > 1 ? `Inspecting Box #${selectedOrderIndex + 1} of ${orders.length} • ${activeOrder.origin_name}` : "Your Upcoming Roastery Box"}
+                {/* Clean Top Ribbon: Status + Batch */}
+                <div className="bg-[#FAF8F5] border-b border-[#E6DEC8] px-6 py-3.5 flex flex-wrap items-center justify-between gap-3">
+                  <div className="flex items-center gap-2 text-xs">
+                    <span className="font-bold text-[#1A1512]">
+                      {orders.length > 1 ? `Box #${selectedOrderIndex + 1} of ${orders.length}` : "Upcoming Roastery Box"}
                     </span>
-                    <span className="hidden sm:inline text-xs text-[#8A7966]">•</span>
-                    <span className="text-xs text-[#8A7966]">
-                      Batch #{activeOrder.id.toString().padStart(4, "0")}
-                    </span>
+                    <span className="text-[#8A7966]">•</span>
+                    <span className="text-[#8A7966] font-mono">INV-{activeOrder.id.toString().padStart(5, "0")}</span>
                   </div>
 
-                  {/* Status Pill */}
+                  {/* Dynamic Status Tag */}
                   <div className="flex items-center gap-2">
                     {subStatus === "ACTIVE" && (
                       <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#E7F3E8] text-[#2E6B34] text-xs font-bold uppercase tracking-wider rounded-full border border-[#C3E4C6]">
-                        <span className="w-1.5 h-1.5 rounded-full bg-[#2E6B34] animate-pulse"></span>
-                        Roasting Scheduled: Oct 18, 2026
+                        <span className="w-1.5 h-1.5 rounded-full bg-[#2E6B34] animate-pulse" />
+                        Roasting Scheduled: Oct 18 • Peak Freshness
                       </span>
                     )}
                     {subStatus === "SKIPPED" && (
@@ -491,209 +456,168 @@ export default function DashboardPage() {
                         Deliveries On Hold
                       </span>
                     )}
-                    {subStatus === "CANCELLED" && (
-                      <span className="inline-flex items-center gap-1.5 px-3 py-1 bg-[#FAF5F5] text-[#A3432A] text-xs font-bold uppercase tracking-wider rounded-full border border-[#F0DADA]">
-                        Plan Cancelled
-                      </span>
-                    )}
                   </div>
                 </div>
 
-                {/* Hero Showcase Grid */}
-                <div className="p-6 md:p-8 grid grid-cols-1 lg:grid-cols-12 gap-8 items-center">
+                {/* Hero Showcase: 2-Column Balanced Unboxing */}
+                <div className="p-6 md:p-8 grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
                   
-                  {/* Left: Artisan Coffee Bag Photography (5 Cols) */}
-                  <div className="lg:col-span-5 relative group overflow-hidden rounded-xl border border-[#E6DEC8] bg-[#FAF8F5]">
-                    <div className="h-64 sm:h-72 w-full overflow-hidden relative">
+                  {/* Left: Coffee Bag Image (4 Cols) */}
+                  <div className="md:col-span-4 relative rounded-xl overflow-hidden border border-[#E6DEC8] bg-[#FAF8F5] group">
+                    <div className="h-56 md:h-64 w-full relative">
                       <img 
                         src={originInfo.img} 
                         alt={activeOrder.origin_name} 
                         className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500" 
                       />
-                      <div className="absolute inset-0 bg-gradient-to-t from-black/85 via-black/25 to-transparent"></div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
                       
-                      <div className="absolute top-4 left-4 flex gap-2">
-                        <span className="bg-[#1A1512]/90 backdrop-blur-md text-white text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded">
+                      <div className="absolute top-3 left-3 flex gap-1.5">
+                        <span className="bg-black/70 backdrop-blur-md text-white text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded">
                           {originInfo.altitude}
                         </span>
-                        <span className="bg-[#A3432A] text-white text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded">
+                        <span className="bg-[#A3432A] text-white text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded">
                           {originInfo.process}
                         </span>
                       </div>
 
-                      <div className="absolute bottom-4 left-4 right-4 text-white">
-                        <p className="text-[10px] uppercase tracking-widest font-bold text-[#E58A1F] mb-1">
+                      <div className="absolute bottom-3 left-3 right-3 text-white">
+                        <p className="text-[10px] uppercase tracking-wider font-bold text-[#E58A1F]">
                           {originInfo.region}
                         </p>
-                        <h3 className="text-2xl font-serif font-bold text-white leading-tight">
+                        <h3 className="text-xl font-serif font-bold leading-tight">
                           {activeOrder.origin_name}
                         </h3>
                       </div>
                     </div>
 
-                    {/* Sensory Flavor Tags */}
-                    <div className="p-4 bg-white border-t border-[#E6DEC8]">
-                      <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-2">
-                        Sensory Flavor Profile:
-                      </p>
-                      <div className="flex flex-wrap gap-1.5">
-                        {originInfo.notes.map((note) => (
-                          <span 
-                            key={note}
-                            className="text-xs px-2.5 py-1 bg-[#FAF8F5] text-[#1A1512] border border-[#E6DEC8] rounded font-medium"
-                          >
-                            {note}
-                          </span>
-                        ))}
-                      </div>
+                    {/* Compact Flavor Tags */}
+                    <div className="p-3 bg-white border-t border-[#E6DEC8] flex flex-wrap gap-1">
+                      {originInfo.notes.map((note) => (
+                        <span key={note} className="text-[10px] px-2 py-0.5 bg-[#FAF8F5] text-[#1A1512] border border-[#E6DEC8] rounded font-medium">
+                          {note}
+                        </span>
+                      ))}
                     </div>
                   </div>
 
-                  {/* Right: Plan Specs & Frictionless Actions (7 Cols) */}
-                  <div className="lg:col-span-7 flex flex-col justify-between space-y-6">
+                  {/* Right: Plan Specs, Quick Actions & Shipping (8 Cols) */}
+                  <div className="md:col-span-8 space-y-6">
                     <div>
-                      <div className="flex justify-between items-start">
-                        <div>
-                          <h4 className="text-2xl font-serif font-bold text-[#1A1512] mb-1">
-                            {activeOrder.plan_name}
-                          </h4>
-                          <p className="text-xs text-[#5C5042] leading-relaxed max-w-lg">
-                            {originInfo.roasterNote}
-                          </p>
-                        </div>
+                      <div className="flex flex-wrap items-baseline justify-between gap-2 mb-1">
+                        <h4 className="text-2xl font-serif font-bold text-[#1A1512]">
+                          {activeOrder.origin_name} • {activeOrder.weight_kg} kg
+                        </h4>
+                        <span className="text-lg font-serif font-bold text-[#A3432A]">
+                          Rs. {activeOrder.total_price_npr} <span className="text-xs font-sans text-[#8A7966] font-normal">/ cycle</span>
+                        </span>
                       </div>
+                      <p className="text-xs text-[#8A7966]">
+                        {activeOrder.plan_name} • ~{activeOrder.weight_kg * 60} fresh cups • Small-batch roasted in Lalitpur
+                      </p>
                     </div>
 
-                    {/* Bento Specs Box */}
-                    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3">
-                      <div className="p-3.5 bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl">
-                        <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-0.5">Quantity</p>
-                        <p className="text-sm font-bold text-[#1A1512]">{activeOrder.weight_kg} kg</p>
-                        <p className="text-[11px] text-[#5C5042]">~{activeOrder.weight_kg * 60} fresh cups</p>
-                      </div>
-
-                      <div className="p-3.5 bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl">
-                        <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-0.5">Grind Profile</p>
-                        <p className="text-sm font-bold text-[#A3432A] truncate">{grindType}</p>
-                        <button 
-                          onClick={() => setIsGrindModalOpen(true)}
-                          className="text-[11px] text-[#8A7966] hover:text-[#1A1512] underline mt-0.5"
-                        >
-                          Change Grind
-                        </button>
-                      </div>
-
-                      <div className="p-3.5 bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl col-span-2 sm:col-span-1">
-                        <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-0.5">Recurring Price</p>
-                        <p className="text-sm font-bold text-[#1A1512]">Rs. {activeOrder.total_price_npr}</p>
-                        <p className="text-[11px] text-[#2E6B34] font-medium">Free Courier Included</p>
-                      </div>
-                    </div>
-
-                    {/* Tactile 1-Click Action Buttons */}
-                    <div className="pt-2 flex flex-wrap gap-2.5 items-center">
+                    {/* 3 Core Quick-Action Buttons */}
+                    <div className="flex flex-wrap gap-2.5">
                       <button
                         onClick={() => setIsGrindModalOpen(true)}
-                        className="px-4 py-2.5 bg-white border border-[#E6DEC8] hover:border-[#1A1512] text-xs uppercase tracking-widest font-bold text-[#1A1512] transition-colors rounded-xl flex items-center gap-1.5 shadow-sm"
+                        className="px-4 py-2.5 bg-[#FAF8F5] hover:bg-white border border-[#E6DEC8] hover:border-[#1A1512] text-xs uppercase tracking-wider font-bold text-[#1A1512] transition-colors rounded-xl flex items-center gap-2 shadow-xs cursor-pointer"
                       >
-                        <SlidersHorizontal size={14} className="text-[#A3432A]" /> Customize Grind
+                        <SlidersHorizontal size={14} className="text-[#A3432A]" />
+                        <span>Grind: <strong className="text-[#A3432A]">{grindType.split(" ")[0]}</strong></span>
                       </button>
+
                       <button
                         onClick={handleSkipDelivery}
-                        className="px-4 py-2.5 bg-white border border-[#E6DEC8] hover:border-[#1A1512] text-xs uppercase tracking-widest font-bold text-[#1A1512] transition-colors rounded-xl shadow-sm"
+                        className="px-4 py-2.5 bg-[#FAF8F5] hover:bg-white border border-[#E6DEC8] hover:border-[#1A1512] text-xs uppercase tracking-wider font-bold text-[#1A1512] transition-colors rounded-xl shadow-xs cursor-pointer"
                       >
                         {subStatus === "SKIPPED" ? "Undo Skip" : "Skip Next Box"}
                       </button>
+
                       <button
                         onClick={handlePauseSubscription}
-                        className="px-4 py-2.5 bg-white border border-[#E6DEC8] hover:border-[#1A1512] text-xs uppercase tracking-widest font-bold text-[#5C5042] transition-colors rounded-xl shadow-sm"
+                        className="px-4 py-2.5 bg-[#FAF8F5] hover:bg-white border border-[#E6DEC8] hover:border-[#1A1512] text-xs uppercase tracking-wider font-bold text-[#5C5042] transition-colors rounded-xl shadow-xs cursor-pointer"
                       >
                         {subStatus === "PAUSED" ? "Resume Deliveries" : "Pause Plan"}
                       </button>
+
                       <button
                         onClick={() => setActiveTab("favorites")}
-                        className="px-4 py-2.5 bg-[#FAF8F5] border border-[#E6DEC8] hover:border-[#A3432A] text-xs uppercase tracking-widest font-bold text-[#A3432A] transition-colors rounded-xl flex items-center gap-1.5"
+                        className="px-4 py-2.5 bg-white border border-[#E6DEC8] hover:border-[#A3432A] text-xs uppercase tracking-wider font-bold text-[#A3432A] transition-colors rounded-xl flex items-center gap-1.5 shadow-xs cursor-pointer"
                       >
                         <RefreshCw size={13} /> Swap Origin
                       </button>
                     </div>
 
+                    {/* Streamlined Shipping & Payment Strip */}
+                    <div className="p-4 rounded-xl bg-[#FAF8F5] border border-[#E6DEC8] space-y-2.5 text-xs">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2 text-[#5C5042]">
+                          <MapPin size={14} className="text-[#A3432A] shrink-0" />
+                          <span>Delivery to: <strong className="text-[#1A1512]">{user.address || "Kathmandu Valley"}</strong></span>
+                        </div>
+                        <button
+                          onClick={() => setIsAddressModalOpen(true)}
+                          className="text-[#A3432A] font-bold hover:underline shrink-0 text-[11px]"
+                        >
+                          Change
+                        </button>
+                      </div>
+
+                      <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E6DEC8] text-[11px] text-[#8A7966]">
+                        <span className="flex items-center gap-1.5">
+                          <Truck size={13} className="text-[#2E6B34]" /> Express Courier: <strong>Free Doorstep Dispatch</strong>
+                        </span>
+                        <span className="flex items-center gap-1.5">
+                          <CreditCard size={13} className="text-[#5C2D91]" /> Payment: <strong>Khalti Auto-Cleared</strong>
+                        </span>
+                      </div>
+                    </div>
+
+                    {/* Collapsible Barista Brewing Tip (Zero Clutter) */}
+                    <div className="border border-[#E6DEC8] rounded-xl overflow-hidden bg-white">
+                      <button
+                        type="button"
+                        onClick={() => setIsBrewGuideOpen(!isBrewGuideOpen)}
+                        className="w-full px-4 py-2.5 text-left flex items-center justify-between text-xs font-bold text-[#1A1512] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                      >
+                        <span className="flex items-center gap-2">
+                          <Coffee size={14} className="text-[#A3432A]" />
+                          <span>Barista Brew Recommendation for {activeOrder.origin_name}</span>
+                        </span>
+                        <ChevronDown size={14} className={`text-[#8A7966] transition-transform ${isBrewGuideOpen ? "rotate-180" : ""}`} />
+                      </button>
+
+                      {isBrewGuideOpen && (
+                        <div className="px-4 py-3 bg-[#FAF8F5] border-t border-[#E6DEC8] grid grid-cols-3 gap-3 text-xs animate-fadeIn">
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-[#8A7966] block">Ideal Method</span>
+                            <span className="font-bold text-[#1A1512]">{originInfo.idealBrew}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-[#8A7966] block">Ratio</span>
+                            <span className="font-bold text-[#A3432A]">{originInfo.ratio}</span>
+                          </div>
+                          <div>
+                            <span className="text-[10px] uppercase font-bold text-[#8A7966] block">Water Temp</span>
+                            <span className="font-bold text-[#1A1512]">{originInfo.temp}</span>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+
                   </div>
 
                 </div>
 
-                {/* Integrated 4-Step Roastery & Delivery Live Progress Rail */}
-                <div className="bg-[#FAF8F5] border-t border-[#E6DEC8] p-6 md:p-8">
-                  <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 mb-6">
-                    <div>
-                      <h5 className="text-sm font-bold uppercase tracking-wider text-[#1A1512] flex items-center gap-2">
-                        <Truck size={16} className="text-[#A3432A]" />
-                        Himalayan Roastery & Live Delivery Tracker
-                      </h5>
-                      <p className="text-xs text-[#8A7966] mt-0.5">
-                        Carrier: Himalayan Express • Tracking ID: BM-KT-{activeOrder.id}2026
-                      </p>
-                    </div>
-                    <span className="text-xs uppercase tracking-widest font-bold text-[#2E6B34] bg-[#E7F3E8] px-3.5 py-1 rounded-full border border-[#C3E4C6] self-start sm:self-auto">
-                      Current Stage: {currentStatus}
-                    </span>
-                  </div>
-
-                  <div className="grid grid-cols-4 gap-2 relative">
-                    <div className="flex flex-col items-center text-center">
-                      <div className="w-9 h-9 rounded-full bg-[#2E6B34] text-white flex items-center justify-center font-bold mb-2 shadow-sm">
-                        <Check size={16} />
-                      </div>
-                      <p className="text-xs font-bold text-[#1A1512]">Confirmed</p>
-                      <p className="text-[10px] text-[#8A7966] hidden sm:block">Payment Cleared</p>
-                    </div>
-
-                    <div className="flex flex-col items-center text-center">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold mb-2 shadow-sm ${
-                        currentStatus === "ROASTING" || currentStatus === "DISPATCHED" || currentStatus === "DELIVERED"
-                          ? "bg-[#E58A1F] text-white animate-pulse"
-                          : "bg-[#E6DEC8] text-[#8A7966]"
-                      }`}>
-                        <Flame size={16} />
-                      </div>
-                      <p className="text-xs font-bold text-[#1A1512]">Roasting</p>
-                      <p className="text-[10px] text-[#8A7966] hidden sm:block">Lalitpur Drum</p>
-                    </div>
-
-                    <div className="flex flex-col items-center text-center">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold mb-2 shadow-sm ${
-                        currentStatus === "DISPATCHED" || currentStatus === "DELIVERED"
-                          ? "bg-[#3366CC] text-white"
-                          : "bg-[#E6DEC8] text-[#8A7966] opacity-60"
-                      }`}>
-                        <Truck size={16} />
-                      </div>
-                      <p className="text-xs font-bold text-[#1A1512]">Dispatched</p>
-                      <p className="text-[10px] text-[#8A7966] hidden sm:block">With Courier</p>
-                    </div>
-
-                    <div className="flex flex-col items-center text-center">
-                      <div className={`w-9 h-9 rounded-full flex items-center justify-center font-bold mb-2 shadow-sm ${
-                        currentStatus === "DELIVERED"
-                          ? "bg-[#2E6B34] text-white"
-                          : "bg-[#E6DEC8] text-[#8A7966] opacity-60"
-                      }`}>
-                        <HomeIcon size={16} />
-                      </div>
-                      <p className="text-xs font-bold text-[#1A1512]">Delivered</p>
-                      <p className="text-[10px] text-[#8A7966] hidden sm:block">Doorstep Drop</p>
-                    </div>
-                  </div>
-                </div>
-
-              </section>
+              </div>
             ) : (
-              <section className="bg-white border border-[#E6DEC8] rounded-2xl p-12 text-center shadow-sm">
+              <div className="bg-white border border-[#E6DEC8] rounded-2xl p-12 text-center shadow-sm">
                 <div className="w-16 h-16 rounded-full bg-[#FAF8F5] border border-[#E6DEC8] flex items-center justify-center mx-auto mb-4 text-[#A3432A]">
                   <Coffee size={28} />
                 </div>
                 <h2 className="text-2xl font-serif font-bold text-[#1A1512] mb-2">No Active Subscription Yet</h2>
-                <p className="text-sm text-[#5C5042] max-w-md mx-auto mb-8 leading-relaxed">
+                <p className="text-sm text-[#5C5042] max-w-md mx-auto mb-6 leading-relaxed">
                   Explore our single-origin coffees from Gulmi, Ilam, and Nuwakot. Customize your grind, frequency, and weight for freshly roasted monthly deliveries.
                 </p>
                 <Link
@@ -702,210 +626,12 @@ export default function DashboardPage() {
                 >
                   Configure Your First Subscription <ArrowRight size={14} />
                 </Link>
-              </section>
-            )}
-
-            {/* THREE LUXURY COMPANION CARDS */}
-            <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-              
-              {/* Card 1: Barista Brew Ritual */}
-              <div className="bg-white border border-[#E6DEC8] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] flex items-center gap-1.5">
-                      <Coffee size={14} className="text-[#A3432A]" /> Barista Brew Ritual
-                    </span>
-                    <span className="text-[10px] uppercase font-bold tracking-wider text-[#A3432A] bg-[#FAF5F2] px-2 py-0.5 rounded">
-                      {activeOrder ? activeOrder.origin_name : "Himalayan V60"}
-                    </span>
-                  </div>
-
-                  <h4 className="text-base font-serif font-bold text-[#1A1512] mb-3">
-                    {originInfo.idealBrew}
-                  </h4>
-
-                  <div className="space-y-2 text-xs text-[#5C5042]">
-                    <div className="flex justify-between pb-1.5 border-b border-[#F0EAE1]">
-                      <span className="text-[#8A7966]">Brew Ratio</span>
-                      <span className="font-bold text-[#1A1512]">{originInfo.ratio}</span>
-                    </div>
-                    <div className="flex justify-between pb-1.5 border-b border-[#F0EAE1]">
-                      <span className="text-[#8A7966]">Water Temp</span>
-                      <span className="font-bold text-[#1A1512]">{originInfo.temp}</span>
-                    </div>
-                    <div className="flex justify-between pb-1.5 border-b border-[#F0EAE1]">
-                      <span className="text-[#8A7966]">Bloom Time</span>
-                      <span className="font-bold text-[#1A1512]">{originInfo.bloom}</span>
-                    </div>
-                  </div>
-                </div>
-
-                <p className="text-[11px] text-[#8A7966] mt-4 pt-3 border-t border-[#F0EAE1] italic">
-                  "Fresh high-altitude beans bloom vigorously. Brew within 30 days of roast."
-                </p>
-              </div>
-
-              {/* Card 2: Shipping Destination */}
-              <div className="bg-white border border-[#E6DEC8] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] flex items-center gap-1.5">
-                      <MapPin size={14} className="text-[#A3432A]" /> Delivery Destination
-                    </span>
-                    <button
-                      onClick={() => setIsAddressModalOpen(true)}
-                      className="text-xs uppercase tracking-widest font-bold text-[#A3432A] hover:underline flex items-center gap-1"
-                    >
-                      <Edit3 size={13} /> Edit
-                    </button>
-                  </div>
-
-                  <h4 className="text-base font-serif font-bold text-[#1A1512] mb-1">
-                    {user.name}
-                  </h4>
-                  <p className="text-xs text-[#5C5042] leading-relaxed mb-3 line-clamp-2">
-                    {user.address}
-                  </p>
-                  <p className="text-[11px] text-[#8A7966]">
-                    Phone: {user.phone || "+977 9801234567"}
-                  </p>
-                </div>
-
-                <div className="mt-4 pt-3 border-t border-[#F0EAE1] flex items-center justify-between text-xs text-[#8A7966]">
-                  <span>Himalayan Courier</span>
-                  <span className="text-[#2E6B34] font-bold">Free Doorstep Delivery</span>
-                </div>
-              </div>
-
-              {/* Card 3: Payment & Direct-Trade Impact */}
-              <div className="bg-white border border-[#E6DEC8] rounded-2xl p-6 shadow-sm flex flex-col justify-between">
-                <div>
-                  <div className="flex justify-between items-start mb-4">
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] flex items-center gap-1.5">
-                      <CreditCard size={14} className="text-[#5C2D91]" /> Primary Payment
-                    </span>
-                    <span className="text-[10px] uppercase tracking-widest font-bold text-[#2E6B34] bg-[#E7F3E8] px-2 py-0.5 rounded border border-[#C3E4C6]">
-                      Khalti Token
-                    </span>
-                  </div>
-
-                  <div className="p-3 bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl mb-3">
-                    <p className="text-xs font-bold text-[#1A1512] flex items-center gap-1.5 mb-1">
-                      <Heart size={13} className="text-[#A3432A]" /> Direct-Trade Impact
-                    </p>
-                    <p className="text-[11px] text-[#5C5042] leading-relaxed">
-                      Rs. 180 of every recurring box goes directly as a quality premium to smallholder mountain farmers.
-                    </p>
-                  </div>
-                </div>
-
-                <div className="mt-2 pt-3 border-t border-[#F0EAE1] flex items-center justify-between text-xs text-[#8A7966]">
-                  <span>Next Renewal</span>
-                  <span className="font-bold text-[#1A1512]">Oct 18, 2026</span>
-                </div>
-              </div>
-
-            </div>
-
-            {/* MULTI-SUBSCRIPTION ALL PLANS OVERVIEW (When member has > 1 subscriptions) */}
-            {orders.length > 1 && (
-              <div className="bg-white border border-[#E6DEC8] rounded-2xl p-6 md:p-8 shadow-sm space-y-6">
-                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 border-b border-[#E6DEC8] pb-4">
-                  <div>
-                    <span className="text-[10px] uppercase font-bold tracking-[0.24em] text-[#A3432A]">
-                      Multi-Plan Overview
-                    </span>
-                    <h3 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">
-                      All Your Active Roastery Subscriptions ({orders.length})
-                    </h3>
-                  </div>
-                  <p className="text-xs text-[#8A7966]">
-                    Combined Volume: <strong className="text-[#1A1512]">{orders.reduce((acc: number, o: any) => acc + (Number(o.weight_kg) || 0), 0)} kg / month</strong>
-                  </p>
-                </div>
-
-                <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                  {orders.map((ord: any, idx: number) => {
-                    const ordOrigin = ORIGIN_DETAILS[ord.origin_name] || ORIGIN_DETAILS["Gulmi Reserve"];
-                    const isCurrent = idx === selectedOrderIndex;
-
-                    return (
-                      <div
-                        key={ord.id}
-                        className={`rounded-xl border p-5 flex flex-col justify-between transition-all ${
-                          isCurrent
-                            ? "bg-[#FAF8F5] border-[#A3432A] ring-2 ring-[#A3432A]/30 shadow-md"
-                            : "bg-white border-[#E6DEC8] hover:shadow-sm"
-                        }`}
-                      >
-                        <div>
-                          <div className="flex justify-between items-start mb-3">
-                            <span className="text-[10px] uppercase font-bold tracking-wider px-2.5 py-0.5 rounded-full bg-[#1A1512] text-white">
-                              Box #{idx + 1}
-                            </span>
-                            <span className="text-[10px] uppercase font-bold tracking-wider text-[#2E6B34] bg-[#E7F3E8] px-2.5 py-0.5 rounded-full border border-[#C3E4C6]">
-                              {ord.status || "ROASTING"}
-                            </span>
-                          </div>
-
-                          <div className="flex gap-3 mb-4">
-                            <img
-                              src={ordOrigin.img}
-                              alt={ord.origin_name}
-                              className="w-16 h-16 rounded-lg object-cover border border-[#E6DEC8] shrink-0"
-                            />
-                            <div>
-                              <h4 className="font-serif font-bold text-base text-[#1A1512] leading-tight mb-1">
-                                {ord.origin_name}
-                              </h4>
-                              <p className="text-xs text-[#A3432A] font-semibold mb-0.5">{ord.plan_name}</p>
-                              <p className="text-[11px] text-[#8A7966]">{ord.weight_kg} kg (~{ord.weight_kg * 60} cups)</p>
-                            </div>
-                          </div>
-
-                          <div className="space-y-1.5 text-xs text-[#5C5042] pt-3 border-t border-[#F0EAE1]">
-                            <div className="flex justify-between">
-                              <span className="text-[#8A7966]">Monthly Price</span>
-                              <span className="font-bold text-[#1A1512]">Rs. {ord.total_price_npr}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-[#8A7966]">Batch Order</span>
-                              <span className="font-mono text-[11px]">INV-{ord.id.toString().padStart(5, "0")}</span>
-                            </div>
-                            <div className="flex justify-between">
-                              <span className="text-[#8A7966]">Next Roast</span>
-                              <span className="font-semibold text-[#2E6B34]">Every Mon / Wed</span>
-                            </div>
-                          </div>
-                        </div>
-
-                        <div className="pt-4 mt-4 border-t border-[#F0EAE1]">
-                          {isCurrent ? (
-                            <div className="text-center py-2 bg-[#E7F3E8] text-[#2E6B34] text-xs font-bold uppercase tracking-wider rounded-lg flex items-center justify-center gap-1.5">
-                              <CheckCircle2 size={14} /> Currently Inspecting Above
-                            </div>
-                          ) : (
-                            <button
-                              type="button"
-                              onClick={() => {
-                                setSelectedOrderIndex(idx);
-                                window.scrollTo({ top: 150, behavior: "smooth" });
-                              }}
-                              className="w-full py-2 bg-[#1A1512] text-white text-xs font-bold uppercase tracking-wider rounded-lg hover:bg-[#2C2420] transition-colors flex items-center justify-center gap-1.5 cursor-pointer"
-                            >
-                              Manage Box #{idx + 1} <ArrowRight size={13} />
-                            </button>
-                          )}
-                        </div>
-                      </div>
-                    );
-                  })}
-                </div>
               </div>
             )}
 
           </div>
         )}
+
 
         {/* ========================================================================= */}
         {/* TAB 2: FAVORITES & TASTING WISHLIST (INTERACTIVE DISCOVERY)               */}
