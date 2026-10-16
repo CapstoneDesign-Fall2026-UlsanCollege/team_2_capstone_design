@@ -52,6 +52,42 @@ const ORIGIN_DETAILS: Record<string, { notes: string[]; altitude: string; proces
   },
 };
 
+const resolveOriginDetails = (name?: string) => {
+  if (!name) return ORIGIN_DETAILS["Gulmi Reserve"];
+  if (ORIGIN_DETAILS[name]) return ORIGIN_DETAILS[name];
+  if (name.includes("Trio")) {
+    return {
+      notes: ["Alpine Honey", "Wild Berry", "Roasted Walnut"],
+      altitude: "1,400m - 1,800m",
+      process: "Washed + Natural + Honey Trio",
+      region: "Gulmi, Ilam & Nuwakot (All Regions)",
+      img: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=800&auto=format&fit=crop",
+      roasterNote: "Complete Himalayan 3-region discovery box featuring our master roaster's signature micro-lots across West, East, and Central Nepal.",
+      idealBrew: "All Brew Methods (V60, French Press, Espresso)",
+      ratio: "1:15 standard ratio",
+      temp: "92°C - 94°C",
+      bloom: "45s Full Bloom",
+    };
+  }
+  if (name.includes("Duo") || name.includes("+")) {
+    return {
+      notes: ["Mountain Honey", "Wild Berry", "Caramel"],
+      altitude: "1,600m - 1,800m",
+      process: "Curated Dual Micro-lot",
+      region: "Dual Himalayan Terroirs",
+      img: "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?q=80&w=800&auto=format&fit=crop",
+      roasterNote: "A hand-paired duo designed for your day: morning bold roast and an afternoon bright pour-over.",
+      idealBrew: "Espresso & Pour-Over",
+      ratio: "1:15 standard ratio",
+      temp: "92°C - 93°C",
+      bloom: "40s Aroma Bloom",
+    };
+  }
+  if (name.includes("Ilam")) return ORIGIN_DETAILS["Ilam Gold"];
+  if (name.includes("Nuwakot")) return ORIGIN_DETAILS["Nuwakot Heritage"];
+  return ORIGIN_DETAILS["Gulmi Reserve"];
+};
+
 type TabType = "subscription" | "favorites" | "orders" | "returns" | "support";
 
 export default function DashboardPage() {
@@ -265,9 +301,7 @@ export default function DashboardPage() {
   }
 
   const activeOrder = orders.length > 0 ? (orders[selectedOrderIndex] || orders[0]) : null;
-  const originInfo = activeOrder && ORIGIN_DETAILS[activeOrder.origin_name] 
-    ? ORIGIN_DETAILS[activeOrder.origin_name]
-    : ORIGIN_DETAILS["Gulmi Reserve"];
+  const originInfo = resolveOriginDetails(activeOrder?.origin_name);
 
   const currentStatus = activeOrder?.status || "ROASTING";
 

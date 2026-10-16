@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { Check, Mountain, Sparkles, Coffee, ShieldCheck, ArrowRight, Flame, RotateCcw, UserCheck, Lock } from "lucide-react";
+import { Check, Mountain, Sparkles, Coffee, ShieldCheck, ArrowRight, Flame, RotateCcw, UserCheck, Lock, Package } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 const ORIGINS = [
@@ -44,6 +44,36 @@ const ORIGINS = [
   },
 ];
 
+const BOX_FORMATS = [
+  { 
+    id: "single", 
+    name: "Single Origin", 
+    bags: 1, 
+    tag: "1 Bag / Month", 
+    badge: "Solo Ritual", 
+    discountPercent: 0, 
+    desc: "1 Bag of your chosen micro-lot" 
+  },
+  { 
+    id: "duo", 
+    name: "Dual Origin Duo", 
+    bags: 2, 
+    tag: "2 Bags / Month", 
+    badge: "Mix & Match • 5% Off", 
+    discountPercent: 5, 
+    desc: "Pick any 2 origins (Morning espresso + Afternoon pour-over)" 
+  },
+  { 
+    id: "trio", 
+    name: "Himalayan Trio", 
+    bags: 3, 
+    tag: "3 Bags / Month", 
+    badge: "All 3 Regions • 10% Off", 
+    discountPercent: 10, 
+    desc: "All 3 micro-lots: Gulmi + Ilam + Nuwakot taster flight" 
+  },
+];
+
 const GRINDS = [
   { id: "whole", name: "Whole Bean", desc: "For home grinders • Peak aroma" },
   { id: "espresso", name: "Espresso", desc: "Fine grind • Moka pot & espresso" },
@@ -51,11 +81,10 @@ const GRINDS = [
   { id: "frenchpress", name: "French Press", desc: "Coarse grind • Immersion & Cold Brew" },
 ];
 
-const WEIGHTS = [
-  { value: 0.5, label: "500g", cups: "~30 Cups / month (Tasting size)" },
-  { value: 1, label: "1.0 kg", cups: "~60 Cups / month (Most Popular)" },
-  { value: 2, label: "2.0 kg", cups: "~120 Cups / month (Coffee Lovers)" },
-  { value: 5, label: "5.0 kg", cups: "Office / Team Lot" },
+const BAG_SIZES = [
+  { value: 0.25, label: "250g / bag", cups: "~15 Cups per bag (Tasting size)" },
+  { value: 0.5, label: "500g / bag", cups: "~30 Cups per bag (Most Popular)" },
+  { value: 1.0, label: "1.0 kg / bag", cups: "~60 Cups per bag (Coffee Lovers)" },
 ];
 
 const PLANS = [
@@ -71,22 +100,29 @@ function SubscribeContent() {
   const urlPlanId = searchParams.get("plan");
   const urlGrindId = searchParams.get("grind");
   const urlWeight = Number(searchParams.get("weight"));
+  const urlBoxId = searchParams.get("box");
   
-  const initialOrigin = ORIGINS.find(o => o.id === urlOriginId) || ORIGINS[0];
+  const initialFormat = BOX_FORMATS.find(b => b.id === urlBoxId) || BOX_FORMATS[0];
   const initialPlan = PLANS.find(p => p.id.toLowerCase() === urlPlanId?.toLowerCase()) || PLANS[0];
   const initialGrind = GRINDS.find(g => g.id.toLowerCase() === urlGrindId?.toLowerCase()) || GRINDS[0];
-  const initialWeight = WEIGHTS.find(w => w.value === urlWeight) || WEIGHTS[1];
+  const initialBagSize = BAG_SIZES.find(w => w.value === urlWeight) || BAG_SIZES[1];
 
-  const [selectedOrigin, setSelectedOrigin] = useState(initialOrigin);
+  const [boxFormat, setBoxFormat] = useState(initialFormat);
+  const [bagCounts, setBagCounts] = useState<{ [id: number]: number }>({ 
+    1: urlOriginId === 2 ? 0 : urlOriginId === 3 ? 0 : 1, 
+    2: urlOriginId === 2 ? 1 : 0, 
+    3: urlOriginId === 3 ? 1 : 0 
+  });
   const [selectedGrind, setSelectedGrind] = useState(initialGrind);
-  const [selectedWeight, setSelectedWeight] = useState(initialWeight);
+  const [selectedBagSize, setSelectedBagSize] = useState(initialBagSize);
   const [selectedPlan, setSelectedPlan] = useState(initialPlan);
   const [customer, setCustomer] = useState<{ name?: string; email?: string } | null>(null);
 
   useEffect(() => {
     if (urlOriginId) {
-      const found = ORIGINS.find(o => o.id === urlOriginId);
-      if (found) setSelectedOrigin(found);
+      if (boxFormat.bags === 1) {
+        setBagCounts({ 1: urlOriginId === 1 ? 1 : 0, 2: urlOriginId === 2 ? 1 : 0, 3: urlOriginId === 3 ? 1 : 0 });
+      }
     }
     if (urlPlanId) {
       const foundPlan = PLANS.find(p => p.id.toLowerCase() === urlPlanId.toLowerCase());
@@ -97,12 +133,12 @@ function SubscribeContent() {
       if (foundGrind) setSelectedGrind(foundGrind);
     }
     if (urlWeight) {
-      const foundWeight = WEIGHTS.find(w => w.value === urlWeight);
-      if (foundWeight) setSelectedWeight(foundWeight);
+      const foundWeight = BAG_SIZES.find(w => w.value === urlWeight);
+      if (foundWeight) setSelectedBagSize(foundWeight);
     }
     // Check if user is logged in
     try {
-      const stored = localStorage.getItem("customer_user");
+      const stored = localStorage.getItem("demo_user") || localStorage.getItem("customer_user");
       if (stored) {
         setCustomer(JSON.parse(stored));
       }
@@ -111,11 +147,90 @@ function SubscribeContent() {
     }
   }, [urlOriginId, urlPlanId, urlGrindId, urlWeight]);
 
-  const baseMonthlyPrice = selectedOrigin.price * selectedWeight.value;
-  const totalOriginalPrice = baseMonthlyPrice * selectedPlan.months;
-  const totalDiscountedPrice = Math.round(totalOriginalPrice * (1 - selectedPlan.discount / 100));
-  const totalSavings = totalOriginalPrice - totalDiscountedPrice;
+  // Handle Box Format change
+  const handleSelectFormat = (format: typeof BOX_FORMATS[0]) => {
+    setBoxFormat(format);
+    if (format.bags === 1) {
+      // Pick first currently active origin, or default to Gulmi
+      const activeId = Number(Object.entries(bagCounts).find(([_, c]) => c > 0)?.[0] || 1);
+      setBagCounts({ 1: activeId === 1 ? 1 : 0, 2: activeId === 2 ? 1 : 0, 3: activeId === 3 ? 1 : 0 });
+    } else if (format.bags === 2) {
+      // Default to 1 Gulmi + 1 Ilam (most popular dual pair)
+      setBagCounts({ 1: 1, 2: 1, 3: 0 });
+    } else if (format.bags === 3) {
+      // 1 of each signature origin
+      setBagCounts({ 1: 1, 2: 1, 3: 1 });
+    }
+  };
+
+  const totalSelectedBags = Object.values(bagCounts).reduce((a, b) => a + b, 0);
+
+  // Card click handler
+  const handleOriginCardClick = (originId: number) => {
+    if (boxFormat.bags === 1) {
+      setBagCounts({ 1: originId === 1 ? 1 : 0, 2: originId === 2 ? 1 : 0, 3: originId === 3 ? 1 : 0 });
+    } else {
+      if (totalSelectedBags < boxFormat.bags) {
+        setBagCounts(prev => ({ ...prev, [originId]: (prev[originId] || 0) + 1 }));
+      } else {
+        // If box is already full and this origin is at 0, reallocate 1 from a non-zero origin
+        if ((bagCounts[originId] || 0) === 0) {
+          const donorId = Number(Object.entries(bagCounts).find(([_, c]) => c > 0)?.[0] || 1);
+          setBagCounts(prev => ({
+            ...prev,
+            [donorId]: Math.max(0, (prev[donorId] || 0) - 1),
+            [originId]: 1,
+          }));
+        }
+      }
+    }
+  };
+
+  // Stepper increment/decrement
+  const updateBagCount = (originId: number, delta: number) => {
+    const current = bagCounts[originId] || 0;
+    const next = current + delta;
+    if (next < 0) return;
+    if (delta > 0 && totalSelectedBags >= boxFormat.bags) return;
+    setBagCounts(prev => ({ ...prev, [originId]: next }));
+  };
+
+  // Pricing calculations
+  const rawMonthlyBase = ORIGINS.reduce((sum, o) => {
+    const count = bagCounts[o.id] || 0;
+    return sum + (o.price * selectedBagSize.value * count);
+  }, 0);
+
+  // Bundle discount (5% for Duo, 10% for Trio)
+  const bundleDiscountAmount = Math.round(rawMonthlyBase * (boxFormat.discountPercent / 100));
+  const monthlyAfterBundle = rawMonthlyBase - bundleDiscountAmount;
+
+  // Plan frequency prepay discount
+  const totalBaseOrder = monthlyAfterBundle * selectedPlan.months;
+  const prepayDiscountAmount = Math.round(totalBaseOrder * (selectedPlan.discount / 100));
+  const totalDiscountedPrice = totalBaseOrder - prepayDiscountAmount;
+  const totalSavings = (rawMonthlyBase * selectedPlan.months) - totalDiscountedPrice;
   const effectiveMonthlyPrice = Math.round(totalDiscountedPrice / selectedPlan.months);
+  const totalWeightKg = Math.round(selectedBagSize.value * totalSelectedBags * 100) / 100;
+
+  // Summary box title
+  const getBoxSummaryName = () => {
+    const selectedItems = ORIGINS.filter(o => (bagCounts[o.id] || 0) > 0);
+    if (boxFormat.id === "single") {
+      const single = selectedItems[0] || ORIGINS[0];
+      return single.name;
+    }
+    if (boxFormat.id === "trio" && selectedItems.length === 3 && Object.values(bagCounts).every(c => c === 1)) {
+      return "Himalayan Trio Bundle (Gulmi, Ilam, Nuwakot)";
+    }
+    if (boxFormat.id === "duo") {
+      return "Dual Origin Duo: " + selectedItems.map(o => `${bagCounts[o.id]}x ${o.name}`).join(" + ");
+    }
+    return selectedItems.map(o => `${bagCounts[o.id]}x ${o.name}`).join(" + ");
+  };
+
+  const primaryOriginId = ORIGINS.find(o => (bagCounts[o.id] || 0) > 0)?.id || 1;
+  const selectedOriginsList = ORIGINS.filter(o => (bagCounts[o.id] || 0) > 0);
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F2EB] text-[#2C2420] font-sans">
@@ -132,14 +247,14 @@ function SubscribeContent() {
             Build Your Himalayan Ritual.
           </h1>
           <p className="text-[#A89F91] text-xs md:text-sm max-w-xl mx-auto leading-relaxed">
-            Select your preferred mountain origin, grind size, and delivery frequency. Roasted fresh in Lalitpur and delivered to your doorstep.
+            Choose single-origin or mix & match 2 to 3 mountain micro-lots. Roasted fresh in Lalitpur and delivered directly to your doorstep.
           </p>
 
           {/* Stepper Indicator */}
           <div className="flex items-center justify-center gap-2 sm:gap-4 mt-8 text-[11px] uppercase tracking-wider font-semibold text-[#8A7966]">
             <span className="text-[#E58A1F] flex items-center gap-1.5 font-bold">
               <span className="w-5 h-5 rounded-full bg-[#E58A1F] text-[#1A1512] flex items-center justify-center text-[10px]">1</span>
-              Origin
+              Box & Origins
             </span>
             <span>→</span>
             <span className="text-white flex items-center gap-1.5">
@@ -160,33 +275,104 @@ function SubscribeContent() {
         </div>
       </div>
 
-      {/* 2. TWO-COLUMN SPLIT CONTAINER (Trade Coffee / Apple Pattern) */}
+      {/* 2. TWO-COLUMN SPLIT CONTAINER */}
       <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-12">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start">
           
           {/* LEFT COLUMN: Interactive Steps (7 Cols) */}
           <div className="lg:col-span-7 space-y-12">
             
-            {/* Step 1: Origin Cards */}
+            {/* Step 1: Box Format & Origin Cards */}
             <section id="step-origin">
-              <div className="flex items-center justify-between mb-4">
+              <div className="flex items-center justify-between mb-3">
                 <div>
                   <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 01</span>
-                  <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Choose Mountain Origin</h2>
+                  <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Choose Box Format & Origins</h2>
                 </div>
                 <span className="text-xs text-[#8A7966] font-medium hidden sm:inline">
-                  Single-Origin Lots
+                  Mix & Match Available
                 </span>
               </div>
 
+              <p className="text-xs text-[#5C5042] mb-4">
+                Select whether you want a single signature origin, a 2-bag duo (mix & match morning & afternoon), or all 3 Himalayan regions.
+              </p>
+
+              {/* Box Format Mode Selector */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+                {BOX_FORMATS.map((fmt) => {
+                  const isSelected = boxFormat.id === fmt.id;
+                  return (
+                    <div
+                      key={fmt.id}
+                      onClick={() => handleSelectFormat(fmt)}
+                      className={`p-4 rounded-xl border cursor-pointer transition-all relative flex flex-col justify-between ${
+                        isSelected 
+                          ? "bg-white border-[#A3432A] shadow-md ring-2 ring-[#A3432A]" 
+                          : "bg-white/80 border-[#E6DEC8] hover:bg-white hover:border-[#C4B69E] shadow-xs"
+                      }`}
+                    >
+                      <div className="absolute top-3.5 right-3.5">
+                        <span
+                          className={`w-4 h-4 rounded-full border transition-all flex items-center justify-center ${
+                            isSelected
+                              ? "bg-green-500 border-green-500 ring-2 ring-green-500/20"
+                              : "border-[#C8BFAB] bg-transparent"
+                          }`}
+                        >
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                        </span>
+                      </div>
+
+                      <div>
+                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-1.5 ${
+                          isSelected ? "bg-[#FAF5F2] text-[#A3432A]" : "bg-[#F0EAE1] text-[#5C5042]"
+                        }`}>
+                          {fmt.badge}
+                        </span>
+                        <h3 className="font-serif font-bold text-sm text-[#1A1512] pr-6">{fmt.name}</h3>
+                        <p className="text-[10px] font-semibold text-[#8A7966] mb-1">{fmt.tag}</p>
+                      </div>
+
+                      <p className="text-[11px] text-[#5C5042] leading-snug mt-2 pt-2 border-t border-[#F0EAE1]">
+                        {fmt.desc}
+                      </p>
+                    </div>
+                  );
+                })}
+              </div>
+
+              {/* Box Allocation Progress Strip (When multi-bag) */}
+              {boxFormat.bags > 1 && (
+                <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-[#E6DEC8] mb-5 shadow-xs">
+                  <div className="flex items-center gap-2">
+                    <Package size={16} className="text-[#A3432A]" />
+                    <span className="text-xs text-[#5C5042]">
+                      Box Slots: <strong className="text-[#1A1512] font-semibold">{totalSelectedBags} of {boxFormat.bags} Bags Selected</strong>
+                    </span>
+                  </div>
+                  {totalSelectedBags === boxFormat.bags ? (
+                    <span className="text-xs text-[#2E6B34] font-bold flex items-center gap-1.5 bg-[#E7F3E8] px-2.5 py-1 rounded-full">
+                      <Check size={13} className="stroke-[3]" /> Box Complete ({boxFormat.badge})
+                    </span>
+                  ) : (
+                    <span className="text-xs text-[#A3432A] font-bold bg-[#FAF5F2] px-2.5 py-1 rounded-full animate-pulse">
+                      Select {boxFormat.bags - totalSelectedBags} more bag{boxFormat.bags - totalSelectedBags > 1 ? "s" : ""}
+                    </span>
+                  )}
+                </div>
+              )}
+
+              {/* Mountain Origin Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {ORIGINS.map((origin) => {
-                  const isSelected = selectedOrigin.id === origin.id;
+                  const count = bagCounts[origin.id] || 0;
+                  const isSelected = count > 0;
 
                   return (
                     <div
                       key={origin.id}
-                      onClick={() => setSelectedOrigin(origin)}
+                      onClick={() => handleOriginCardClick(origin.id)}
                       className={`group relative rounded-xl border p-4 cursor-pointer transition-all duration-300 flex flex-col justify-between ${
                         isSelected 
                           ? "bg-white border-[#A3432A] shadow-lg ring-2 ring-[#A3432A]" 
@@ -204,7 +390,14 @@ function SubscribeContent() {
                           <div className="absolute top-2 left-2 bg-[#1A1512]/80 backdrop-blur-md px-2 py-0.5 rounded text-[8px] font-bold uppercase tracking-wider text-white">
                             {origin.altitude}
                           </div>
-                          <div className="absolute top-2 right-2">
+
+                          {/* Top-Right Green Circle Indicator + Count Badge */}
+                          <div className="absolute top-2 right-2 flex items-center gap-1">
+                            {count > 1 && (
+                              <span className="px-1.5 py-0.5 rounded-full bg-[#1A1512] text-white text-[9px] font-bold shadow-xs">
+                                {count}x
+                              </span>
+                            )}
                             <span
                               className={`w-4 h-4 rounded-full border transition-all flex items-center justify-center shadow-xs ${
                                 isSelected
@@ -219,7 +412,9 @@ function SubscribeContent() {
 
                         <div className="flex justify-between items-baseline mb-1">
                           <h3 className="text-sm font-serif font-bold text-[#1A1512]">{origin.name}</h3>
-                          <span className="text-xs font-bold text-[#A3432A]">Rs. {origin.price}</span>
+                          <span className="text-xs font-bold text-[#A3432A]">
+                            Rs. {origin.price * selectedBagSize.value}
+                          </span>
                         </div>
 
                         <p className="text-[9px] uppercase font-bold tracking-wider text-[#8A7966] mb-2">
@@ -231,13 +426,52 @@ function SubscribeContent() {
                         </p>
                       </div>
 
-                      <div className="pt-2 border-t border-[#F0EAE1]">
-                        <span className="text-[9px] uppercase tracking-wider font-bold text-[#1A1512] block">
-                          Notes:
-                        </span>
-                        <span className="text-[10px] text-[#A3432A] font-medium leading-tight">
-                          {origin.notes}
-                        </span>
+                      {/* Card Footer: Notes & Stepper (if multi-bag) */}
+                      <div className="pt-2.5 border-t border-[#F0EAE1]">
+                        <div className="flex items-center justify-between">
+                          <div className="min-w-0 pr-1">
+                            <span className="text-[9px] uppercase tracking-wider font-bold text-[#1A1512] block">
+                              Notes:
+                            </span>
+                            <span className="text-[10px] text-[#A3432A] font-medium leading-tight block truncate">
+                              {origin.notes}
+                            </span>
+                          </div>
+
+                          {/* Multi-Bag Direct Stepper */}
+                          {boxFormat.bags > 1 && (
+                            <div 
+                              className="flex items-center gap-1 bg-[#FAF8F5] border border-[#E6DEC8] rounded-lg p-0.5 shrink-0" 
+                              onClick={(e) => e.stopPropagation()}
+                            >
+                              <button
+                                type="button"
+                                onClick={() => updateBagCount(origin.id, -1)}
+                                disabled={count === 0}
+                                className={`w-5 h-5 rounded flex items-center justify-center font-bold text-xs transition-colors ${
+                                  count === 0 ? "text-gray-300 cursor-not-allowed" : "text-[#1A1512] hover:bg-[#E6DEC8]"
+                                }`}
+                                title="Remove 1 bag"
+                              >
+                                -
+                              </button>
+                              <span className="w-4 text-center text-[11px] font-bold text-[#1A1512]">
+                                {count}
+                              </span>
+                              <button
+                                type="button"
+                                onClick={() => updateBagCount(origin.id, 1)}
+                                disabled={totalSelectedBags >= boxFormat.bags}
+                                className={`w-5 h-5 rounded flex items-center justify-center font-bold text-xs transition-colors ${
+                                  totalSelectedBags >= boxFormat.bags ? "text-gray-300 cursor-not-allowed" : "text-white bg-[#A3432A] hover:bg-[#8A3722]"
+                                }`}
+                                title="Add 1 bag"
+                              >
+                                +
+                              </button>
+                            </div>
+                          )}
+                        </div>
                       </div>
                     </div>
                   );
@@ -291,17 +525,18 @@ function SubscribeContent() {
             <section id="step-size">
               <div className="mb-4">
                 <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 03</span>
-                <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Monthly Bag Quantity</h2>
+                <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Individual Bag Size</h2>
               </div>
 
-              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
-                {WEIGHTS.map((w) => {
-                  const isSelected = selectedWeight.value === w.value;
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+                {BAG_SIZES.map((w) => {
+                  const isSelected = selectedBagSize.value === w.value;
+                  const totalGrams = Math.round(w.value * boxFormat.bags * 1000);
 
                   return (
                     <div
                       key={w.value}
-                      onClick={() => setSelectedWeight(w)}
+                      onClick={() => setSelectedBagSize(w)}
                       className={`p-4 rounded-lg border text-center cursor-pointer transition-all relative ${
                         isSelected 
                           ? "bg-[#1A1512] text-white border-[#1A1512] shadow-md" 
@@ -320,8 +555,8 @@ function SubscribeContent() {
                         </span>
                       </div>
                       <p className="text-lg font-serif font-bold mb-0.5">{w.label}</p>
-                      <p className={`text-[9px] uppercase tracking-wider font-semibold ${isSelected ? "text-[#E58A1F]" : "text-[#8A7966]"}`}>
-                        {w.cups}
+                      <p className={`text-[10px] font-semibold ${isSelected ? "text-[#E58A1F]" : "text-[#8A7966]"}`}>
+                        {boxFormat.bags > 1 ? `${totalGrams}g box total` : w.cups}
                       </p>
                     </div>
                   );
@@ -339,7 +574,7 @@ function SubscribeContent() {
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {PLANS.map((plan) => {
                   const isSelected = selectedPlan.id === plan.id;
-                  const originalCost = baseMonthlyPrice * plan.months;
+                  const originalCost = monthlyAfterBundle * plan.months;
                   const discountedCost = Math.round(originalCost * (1 - plan.discount / 100));
 
                   return (
@@ -398,7 +633,7 @@ function SubscribeContent() {
 
           </div>
 
-          {/* RIGHT COLUMN: Sticky "Your Box Summary" Card (5 Cols on lg) */}
+          {/* RIGHT COLUMN: Sticky "Your Box Summary" Card */}
           <div className="lg:col-span-5 sticky top-24">
             <div className="bg-white rounded-2xl border border-[#E6DEC8] shadow-xl overflow-hidden p-6 md:p-7">
               
@@ -416,24 +651,47 @@ function SubscribeContent() {
                 </span>
               </div>
 
-              {/* Coffee Visual Mini Card */}
-              <div className="flex gap-4 items-center bg-[#FAF8F5] p-3.5 rounded-xl border border-[#E6DEC8] mb-5">
-                <img 
-                  src={selectedOrigin.img} 
-                  alt={selectedOrigin.name} 
-                  className="w-16 h-16 rounded-lg object-cover shadow-sm shrink-0" 
-                />
-                <div className="min-w-0">
-                  <h4 className="font-serif font-bold text-sm text-[#1A1512] truncate">
-                    {selectedOrigin.name}
-                  </h4>
-                  <p className="text-[10px] text-[#8A7966] uppercase tracking-wider">
-                    {selectedOrigin.altitude} • {selectedOrigin.process}
-                  </p>
-                  <p className="text-[11px] text-[#A3432A] font-medium truncate mt-0.5">
-                    {selectedOrigin.notes}
-                  </p>
-                </div>
+              {/* Box Format Indicator */}
+              <div className="mb-4 flex items-center justify-between bg-[#FAF8F5] px-3.5 py-2 rounded-lg border border-[#E6DEC8]">
+                <span className="text-xs font-semibold text-[#5C5042] flex items-center gap-1.5">
+                  <Package size={14} className="text-[#A3432A]" />
+                  {boxFormat.name}
+                </span>
+                <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3432A] bg-[#FAF5F2] px-2 py-0.5 rounded">
+                  {boxFormat.bags} Bag{boxFormat.bags > 1 ? "s" : ""} / Mo
+                </span>
+              </div>
+
+              {/* Selected Origin Mini Cards */}
+              <div className="space-y-2.5 mb-5">
+                {selectedOriginsList.map((origin) => {
+                  const bagCount = bagCounts[origin.id] || 0;
+                  return (
+                    <div key={origin.id} className="flex gap-3 items-center bg-[#FAF8F5] p-3 rounded-xl border border-[#E6DEC8]">
+                      <img 
+                        src={origin.img} 
+                        alt={origin.name} 
+                        className="w-12 h-12 rounded-lg object-cover shadow-xs shrink-0" 
+                      />
+                      <div className="min-w-0 flex-1">
+                        <div className="flex justify-between items-baseline">
+                          <h4 className="font-serif font-bold text-xs text-[#1A1512] truncate">
+                            {origin.name}
+                          </h4>
+                          <span className="text-[10px] font-bold text-[#A3432A]">
+                            {bagCount}x Bag{bagCount > 1 ? "s" : ""} ({selectedBagSize.label})
+                          </span>
+                        </div>
+                        <p className="text-[9px] text-[#8A7966] uppercase tracking-wider">
+                          {origin.altitude} • {origin.process}
+                        </p>
+                        <p className="text-[10px] text-[#A3432A] font-medium truncate">
+                          {origin.notes}
+                        </p>
+                      </div>
+                    </div>
+                  );
+                })}
               </div>
 
               {/* Box Specifications */}
@@ -443,8 +701,8 @@ function SubscribeContent() {
                   <strong className="text-[#1A1512] font-semibold">{selectedGrind.name}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8A7966]">Monthly Quantity:</span>
-                  <strong className="text-[#1A1512] font-semibold">{selectedWeight.label} ({selectedWeight.cups})</strong>
+                  <span className="text-[#8A7966]">Total Shipment Weight:</span>
+                  <strong className="text-[#1A1512] font-semibold">{totalWeightKg} kg ({totalSelectedBags}x {selectedBagSize.label})</strong>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8A7966]">Plan Frequency:</span>
@@ -476,8 +734,8 @@ function SubscribeContent() {
 
                 {totalSavings > 0 && (
                   <div className="mt-2 py-1.5 px-3 bg-[#E7F3E8] text-[#2E6B34] text-xs font-bold rounded-lg flex items-center justify-between">
-                    <span>Discount Applied:</span>
-                    <span>Save Rs. {totalSavings} ({selectedPlan.discount}%)</span>
+                    <span>Total Savings Applied:</span>
+                    <span>Save Rs. {totalSavings}</span>
                   </div>
                 )}
               </div>
@@ -501,12 +759,18 @@ function SubscribeContent() {
               </div>
 
               {/* Primary Action Button */}
-              <Link 
-                href={`/checkout?origin=${selectedOrigin.id}&name=${encodeURIComponent(selectedOrigin.name)}&weight=${selectedWeight.value}&price=${totalDiscountedPrice}&plan_id=${selectedPlan.id}&plan_name=${encodeURIComponent(selectedPlan.name)}`}
-                className="w-full py-4 rounded-xl bg-[#A3432A] hover:bg-[#8A3722] text-white text-center uppercase tracking-widest text-xs font-bold transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2 group"
-              >
-                Proceed to Checkout <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </Link>
+              {totalSelectedBags !== boxFormat.bags ? (
+                <div className="w-full py-4 rounded-xl bg-gray-300 text-gray-600 text-center uppercase tracking-widest text-xs font-bold shadow-xs cursor-not-allowed">
+                  Select {boxFormat.bags - totalSelectedBags} more bag{boxFormat.bags - totalSelectedBags > 1 ? "s" : ""} to continue
+                </div>
+              ) : (
+                <Link 
+                  href={`/checkout?origin=${primaryOriginId}&name=${encodeURIComponent(getBoxSummaryName())}&weight=${totalWeightKg}&price=${totalDiscountedPrice}&plan_id=${selectedPlan.id}&plan_name=${encodeURIComponent(selectedPlan.name)}`}
+                  className="w-full py-4 rounded-xl bg-[#A3432A] hover:bg-[#8A3722] text-white text-center uppercase tracking-widest text-xs font-bold transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2 group"
+                >
+                  Proceed to Checkout <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+                </Link>
+              )}
 
               {/* Reassurance Guarantees */}
               <div className="mt-4 grid grid-cols-2 gap-2 text-[10px] text-[#8A7966] text-center pt-3 border-t border-[#F0EAE1]">

@@ -407,9 +407,9 @@ function CheckoutContent() {
               </h2>
 
               <div className="space-y-4 text-xs mb-6">
-                <div className="flex justify-between">
-                  <span className="text-[#8A7966] uppercase tracking-wider font-bold">Origin:</span>
-                  <span className="font-bold text-[#1A1512]">{originName}</span>
+                <div className="flex justify-between items-start gap-3">
+                  <span className="text-[#8A7966] uppercase tracking-wider font-bold shrink-0">Origin / Box:</span>
+                  <span className="font-bold text-[#1A1512] text-right">{originName}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8A7966] uppercase tracking-wider font-bold">Weight:</span>
