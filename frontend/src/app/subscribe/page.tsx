@@ -260,9 +260,17 @@ function SubscribeContent() {
                           : "bg-white border-[#E6DEC8] text-[#2C2420] hover:bg-[#FAF8F5]"
                       }`}
                     >
-                      <div className="flex justify-between items-center mb-1">
-                        <span className="text-xs font-bold uppercase tracking-wider">{grind.name}</span>
-                        {isSelected && <Check size={12} className="text-[#E58A1F]" />}
+                      <div className="flex justify-between items-start mb-1">
+                        <span className="text-xs font-bold uppercase tracking-wider pr-2">{grind.name}</span>
+                        <span
+                          className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center shrink-0 mt-0.5 ${
+                            isSelected
+                              ? "bg-green-500 border-green-500 ring-2 ring-green-500/20"
+                              : "border-[#C8BFAB] bg-transparent"
+                          }`}
+                        >
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                        </span>
                       </div>
                       <p className={`text-[10px] leading-tight ${isSelected ? "text-[#A89F91]" : "text-[#8A7966]"}`}>
                         {grind.desc}
