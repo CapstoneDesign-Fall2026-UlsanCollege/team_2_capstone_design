@@ -255,14 +255,14 @@ export default function Home() {
           <div className="flex flex-col md:flex-row items-center justify-between mb-10 pb-6 border-b border-[#D3C7B1] gap-4">
             <div>
               <p className="text-[#5C5042] text-[10px] uppercase tracking-[0.24em] font-bold mb-1">Empirical Proof</p>
-              <h3 className="text-2xl font-serif font-bold text-[#1A1512]">Trusted Across Nepal & Beyond</h3>
+              <h3 className="text-2xl font-serif font-bold text-[#1A1512]">Trusted Across Nepal</h3>
             </div>
             <div className="flex items-center gap-6 text-sm text-[#8A7966] font-serif italic">
               <span>The Kathmandu Post</span>
               <span>•</span>
               <span>Himalayan Times</span>
               <span>•</span>
-              <span>Vogue</span>
+              <span>Republica</span>
             </div>
           </div>
 
@@ -276,7 +276,7 @@ export default function Home() {
               </p>
               <div className="border-t border-[#F0EAE1] pt-3 text-[11px]">
                 <p className="font-bold text-[#1A1512]">Priya Sharma</p>
-                <p className="text-[#8A7966]">Lalitpur • Subscriber since 2024</p>
+                <p className="text-[#8A7966]">Biratnagar • Subscriber since 2024</p>
               </div>
             </div>
 
@@ -302,7 +302,7 @@ export default function Home() {
               </p>
               <div className="border-t border-[#F0EAE1] pt-3 text-[11px]">
                 <p className="font-bold text-[#1A1512]">Dr. R. Shrestha</p>
-                <p className="text-[#8A7966]">Pokhara • 3-Month Prepaid</p>
+                <p className="text-[#8A7966]">Nepalgunj • 3-Month Prepaid</p>
               </div>
             </div>
           </div>
