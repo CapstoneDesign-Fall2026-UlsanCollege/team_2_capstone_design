@@ -2,7 +2,7 @@
 
 import { useState, useEffect, Suspense } from "react";
 import Link from "next/link";
-import { Check, Mountain, Sparkles, Coffee, ShieldCheck, ArrowRight, Flame, RotateCcw, UserCheck, Lock, Package } from "lucide-react";
+import { Check, Mountain, Sparkles, Coffee, ShieldCheck, ArrowRight, Flame, RotateCcw, UserCheck, Lock, Package, Scale } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 
 const ORIGINS = [
@@ -49,31 +49,28 @@ const BOX_FORMATS = [
     id: "single", 
     name: "Single Origin", 
     bags: 1, 
-    weightLabel: "500g (~30 Cups)",
-    tag: "1 Bag / Month", 
+    tag: "1 Origin Focus", 
     badge: "Solo Ritual", 
     discountPercent: 0, 
-    desc: "1 Bag of your chosen micro-lot" 
+    desc: "1 signature micro-lot per shipment" 
   },
   { 
     id: "duo", 
     name: "Dual Origin Duo", 
     bags: 2, 
-    weightLabel: "1.0 kg (2x 500g • ~60 Cups)",
-    tag: "2 Bags / Month", 
-    badge: "Mix & Match • 5% Off", 
+    tag: "2 Origins (Mix & Match)", 
+    badge: "Most Popular • 5% Off", 
     discountPercent: 5, 
-    desc: "Pick any 2 origins (Morning espresso + Afternoon pour-over)" 
+    desc: "Pick any 2 origins (Morning espresso + Afternoon drip)" 
   },
   { 
     id: "trio", 
     name: "Himalayan Trio", 
     bags: 3, 
-    weightLabel: "1.5 kg (3x 500g • ~90 Cups)",
-    tag: "3 Bags / Month", 
-    badge: "All 3 Regions • 10% Off", 
+    tag: "All 3 Origins (Flight)", 
+    badge: "All Regions • 10% Off", 
     discountPercent: 10, 
-    desc: "All 3 micro-lots: Gulmi + Ilam + Nuwakot taster flight" 
+    desc: "Complete 3-region flight: Gulmi + Ilam + Nuwakot" 
   },
 ];
 
@@ -82,6 +79,13 @@ const GRINDS = [
   { id: "espresso", name: "Espresso", desc: "Fine grind • Moka pot & espresso" },
   { id: "pourover", name: "Pour-Over / Drip", desc: "Medium grind • V60 & Chemex" },
   { id: "frenchpress", name: "French Press", desc: "Coarse grind • Immersion & Cold Brew" },
+];
+
+const WEIGHTS = [
+  { value: 0.5, label: "500g", cups: "~30 Cups / month (Tasting Size)" },
+  { value: 1.0, label: "1.0 kg", cups: "~60 Cups / month (Most Popular)" },
+  { value: 2.0, label: "2.0 kg", cups: "~120 Cups / month (Coffee Lovers)" },
+  { value: 5.0, label: "5.0 kg", cups: "Office / Team Lot (Bulk Fresh)" },
 ];
 
 const PLANS = [
@@ -96,11 +100,13 @@ function SubscribeContent() {
   const urlOriginId = Number(searchParams.get("origin"));
   const urlPlanId = searchParams.get("plan");
   const urlGrindId = searchParams.get("grind");
+  const urlWeight = Number(searchParams.get("weight"));
   const urlBoxId = searchParams.get("box");
   
   const initialFormat = BOX_FORMATS.find(b => b.id === urlBoxId) || BOX_FORMATS[0];
   const initialPlan = PLANS.find(p => p.id.toLowerCase() === urlPlanId?.toLowerCase()) || PLANS[0];
   const initialGrind = GRINDS.find(g => g.id.toLowerCase() === urlGrindId?.toLowerCase()) || GRINDS[0];
+  const initialWeight = WEIGHTS.find(w => w.value === urlWeight) || WEIGHTS[1]; // default 1.0 kg
 
   const [boxFormat, setBoxFormat] = useState(initialFormat);
   const [bagCounts, setBagCounts] = useState<{ [id: number]: number }>({ 
@@ -109,6 +115,7 @@ function SubscribeContent() {
     3: urlOriginId === 3 ? 1 : 0 
   });
   const [selectedGrind, setSelectedGrind] = useState(initialGrind);
+  const [selectedWeight, setSelectedWeight] = useState(initialWeight);
   const [selectedPlan, setSelectedPlan] = useState(initialPlan);
   const [customer, setCustomer] = useState<{ name?: string; email?: string } | null>(null);
 
@@ -126,6 +133,10 @@ function SubscribeContent() {
       const foundGrind = GRINDS.find(g => g.id.toLowerCase() === urlGrindId.toLowerCase());
       if (foundGrind) setSelectedGrind(foundGrind);
     }
+    if (urlWeight) {
+      const foundWeight = WEIGHTS.find(w => w.value === urlWeight);
+      if (foundWeight) setSelectedWeight(foundWeight);
+    }
     // Check if user is logged in
     try {
       const stored = localStorage.getItem("demo_user") || localStorage.getItem("customer_user");
@@ -135,20 +146,17 @@ function SubscribeContent() {
     } catch (e) {
       // ignore
     }
-  }, [urlOriginId, urlPlanId, urlGrindId]);
+  }, [urlOriginId, urlPlanId, urlGrindId, urlWeight]);
 
   // Handle Box Format change
   const handleSelectFormat = (format: typeof BOX_FORMATS[0]) => {
     setBoxFormat(format);
     if (format.bags === 1) {
-      // Pick first currently active origin, or default to Gulmi
       const activeId = Number(Object.entries(bagCounts).find(([_, c]) => c > 0)?.[0] || 1);
       setBagCounts({ 1: activeId === 1 ? 1 : 0, 2: activeId === 2 ? 1 : 0, 3: activeId === 3 ? 1 : 0 });
     } else if (format.bags === 2) {
-      // Default to 1 Gulmi + 1 Ilam (most popular dual pair)
       setBagCounts({ 1: 1, 2: 1, 3: 0 });
     } else if (format.bags === 3) {
-      // 1 of each signature origin
       setBagCounts({ 1: 1, 2: 1, 3: 1 });
     }
   };
@@ -163,7 +171,6 @@ function SubscribeContent() {
       if (totalSelectedBags < boxFormat.bags) {
         setBagCounts(prev => ({ ...prev, [originId]: (prev[originId] || 0) + 1 }));
       } else {
-        // If box is already full and this origin is at 0, reallocate 1 from a non-zero origin
         if ((bagCounts[originId] || 0) === 0) {
           const donorId = Number(Object.entries(bagCounts).find(([_, c]) => c > 0)?.[0] || 1);
           setBagCounts(prev => ({
@@ -185,14 +192,20 @@ function SubscribeContent() {
     setBagCounts(prev => ({ ...prev, [originId]: next }));
   };
 
-  // 1. RAW CATALOG BAG SUBTOTAL (NPR)
-  // Each bag is standard 500g with its direct retail catalog price
-  const rawMonthlySubtotal = ORIGINS.reduce((sum, o) => {
-    const count = bagCounts[o.id] || 0;
-    return sum + (o.price * count);
-  }, 0);
+  // 1. MONTHLY BASE CALCULATION
+  // Each origin has its rate per 1.0 kg (Gulmi: 1200, Ilam: 1400, Nuwakot: 1100).
+  // Total monthly weight is split proportionally among chosen bags:
+  // Weight per bag slot = selectedWeight.value / boxFormat.bags
+  const weightPerBag = selectedWeight.value / (boxFormat.bags || 1);
 
-  // 2. MULTI-BAG BOX BUNDLE DISCOUNT (0% for Single, 5% for Duo, 10% for Trio)
+  const rawMonthlySubtotal = Math.round(
+    ORIGINS.reduce((sum, o) => {
+      const count = bagCounts[o.id] || 0;
+      return sum + (o.price * weightPerBag * count);
+    }, 0)
+  );
+
+  // 2. MULTI-BAG BOX BUNDLE DISCOUNT (0% Single, 5% Duo, 10% Trio)
   const bundleDiscountPercent = boxFormat.discountPercent;
   const bundleDiscountAmount = Math.round(rawMonthlySubtotal * (bundleDiscountPercent / 100));
   const monthlyAfterBundle = rawMonthlySubtotal - bundleDiscountAmount;
@@ -204,10 +217,9 @@ function SubscribeContent() {
   const planDiscountAmount = Math.round(fullPeriodBase * (planDiscountPercent / 100));
   const totalDueToday = fullPeriodBase - planDiscountAmount;
 
-  // Effective monthly cost & total savings
+  // Effective monthly price & total savings
   const effectiveMonthlyPrice = Math.round(totalDueToday / planMonths);
   const totalSavings = (rawMonthlySubtotal * planMonths) - totalDueToday;
-  const totalWeightKg = Math.round(totalSelectedBags * 0.5 * 10) / 10;
 
   // Summary box title
   const getBoxSummaryName = () => {
@@ -243,24 +255,24 @@ function SubscribeContent() {
             Build Your Himalayan Ritual.
           </h1>
           <p className="text-[#A89F91] text-xs md:text-sm max-w-xl mx-auto leading-relaxed">
-            Choose single-origin or mix & match 2 to 3 mountain micro-lots. Roasted fresh in Lalitpur and delivered directly to your doorstep.
+            Customize your origin, grind, monthly weight, and delivery frequency. Roasted fresh in Lalitpur and delivered to your doorstep.
           </p>
 
           {/* Stepper Indicator */}
           <div className="flex items-center justify-center gap-2 sm:gap-4 mt-8 text-[11px] uppercase tracking-wider font-semibold text-[#8A7966]">
             <span className="text-[#E58A1F] flex items-center gap-1.5 font-bold">
               <span className="w-5 h-5 rounded-full bg-[#E58A1F] text-[#1A1512] flex items-center justify-center text-[10px]">1</span>
-              Box Format
-            </span>
-            <span>→</span>
-            <span className="text-white flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px]">2</span>
               Origins
             </span>
             <span>→</span>
             <span className="text-white flex items-center gap-1.5">
-              <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px]">3</span>
+              <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px]">2</span>
               Grind
+            </span>
+            <span>→</span>
+            <span className="text-white flex items-center gap-1.5">
+              <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px]">3</span>
+              Weight
             </span>
             <span>→</span>
             <span className="text-white flex items-center gap-1.5">
@@ -278,38 +290,35 @@ function SubscribeContent() {
           {/* LEFT COLUMN: Interactive Steps (7 Cols) */}
           <div className="lg:col-span-7 space-y-12">
             
-            {/* Step 1: Box Format Mode Selector */}
-            <section id="step-format">
+            {/* Step 1: Origin & Box Curation */}
+            <section id="step-origin">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 01</span>
-                  <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Select Box Format</h2>
+                  <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Choose Origins & Box Format</h2>
                 </div>
                 <span className="text-xs text-[#8A7966] font-medium hidden sm:inline">
-                  Multi-Pack Savings
+                  Mix & Match Available
                 </span>
               </div>
 
-              <p className="text-xs text-[#5C5042] mb-4">
-                Choose how many 500g bags you want in each monthly shipment. Mix & match different mountain regions for varied brewing.
-              </p>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
+              {/* Box Format Selector Tabs */}
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
                 {BOX_FORMATS.map((fmt) => {
                   const isSelected = boxFormat.id === fmt.id;
                   return (
                     <div
                       key={fmt.id}
                       onClick={() => handleSelectFormat(fmt)}
-                      className={`p-4 rounded-xl border cursor-pointer transition-all relative flex flex-col justify-between ${
+                      className={`p-3.5 rounded-xl border cursor-pointer transition-all relative flex flex-col justify-between ${
                         isSelected 
                           ? "bg-white border-[#A3432A] shadow-md ring-2 ring-[#A3432A]" 
                           : "bg-white/80 border-[#E6DEC8] hover:bg-white hover:border-[#C4B69E] shadow-xs"
                       }`}
                     >
-                      <div className="absolute top-3.5 right-3.5">
+                      <div className="absolute top-3 right-3">
                         <span
-                          className={`w-4 h-4 rounded-full border transition-all flex items-center justify-center ${
+                          className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center ${
                             isSelected
                               ? "bg-green-500 border-green-500 ring-2 ring-green-500/20"
                               : "border-[#C8BFAB] bg-transparent"
@@ -320,68 +329,50 @@ function SubscribeContent() {
                       </div>
 
                       <div>
-                        <span className={`text-[9px] font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-1.5 ${
+                        <span className={`text-[8px] font-bold uppercase tracking-wider px-2 py-0.5 rounded inline-block mb-1 ${
                           isSelected ? "bg-[#FAF5F2] text-[#A3432A]" : "bg-[#F0EAE1] text-[#5C5042]"
                         }`}>
                           {fmt.badge}
                         </span>
-                        <h3 className="font-serif font-bold text-sm text-[#1A1512] pr-6">{fmt.name}</h3>
-                        <p className="text-[11px] font-bold text-[#A3432A] mt-0.5">{fmt.weightLabel}</p>
+                        <h3 className="font-serif font-bold text-xs sm:text-sm text-[#1A1512] pr-5">{fmt.name}</h3>
+                        <p className="text-[10px] font-semibold text-[#8A7966]">{fmt.tag}</p>
                       </div>
 
-                      <p className="text-[11px] text-[#5C5042] leading-snug mt-2 pt-2 border-t border-[#F0EAE1]">
+                      <p className="text-[10px] text-[#5C5042] leading-tight mt-1.5 pt-1.5 border-t border-[#F0EAE1]">
                         {fmt.desc}
                       </p>
                     </div>
                   );
                 })}
               </div>
-            </section>
 
-            {/* Step 2: Choose Mountain Origins */}
-            <section id="step-origin">
-              <div className="flex items-center justify-between mb-3">
-                <div>
-                  <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 02</span>
-                  <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">
-                    {boxFormat.bags === 1 ? "Choose Single Origin" : `Mix & Match Your ${boxFormat.bags} Bags`}
-                  </h2>
-                </div>
-                <span className="text-xs text-[#8A7966] font-medium hidden sm:inline">
-                  Single-Origin Lots
-                </span>
-              </div>
-
-              {/* Box Allocation Progress Strip (When multi-bag) */}
-              {boxFormat.bags > 1 ? (
-                <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-[#E6DEC8] mb-5 shadow-xs">
+              {/* Box Slots Indicator (If multi-bag) */}
+              {boxFormat.bags > 1 && (
+                <div className="flex items-center justify-between bg-white rounded-xl px-4 py-2.5 border border-[#E6DEC8] mb-5 shadow-xs">
                   <div className="flex items-center gap-2">
-                    <Package size={16} className="text-[#A3432A]" />
+                    <Package size={15} className="text-[#A3432A]" />
                     <span className="text-xs text-[#5C5042]">
-                      Box Slots: <strong className="text-[#1A1512] font-semibold">{totalSelectedBags} of {boxFormat.bags} Bags Filled</strong>
+                      Box Slots: <strong className="text-[#1A1512] font-semibold">{totalSelectedBags} of {boxFormat.bags} Origins Selected</strong>
                     </span>
                   </div>
                   {totalSelectedBags === boxFormat.bags ? (
-                    <span className="text-xs text-[#2E6B34] font-bold flex items-center gap-1.5 bg-[#E7F3E8] px-2.5 py-1 rounded-full">
-                      <Check size={13} className="stroke-[3]" /> Box Complete ({boxFormat.badge})
+                    <span className="text-xs text-[#2E6B34] font-bold flex items-center gap-1.5 bg-[#E7F3E8] px-2.5 py-0.5 rounded-full">
+                      <Check size={12} className="stroke-[3]" /> Box Complete ({boxFormat.badge})
                     </span>
                   ) : (
-                    <span className="text-xs text-[#A3432A] font-bold bg-[#FAF5F2] px-2.5 py-1 rounded-full animate-pulse">
-                      Select {boxFormat.bags - totalSelectedBags} more bag{boxFormat.bags - totalSelectedBags > 1 ? "s" : ""}
+                    <span className="text-xs text-[#A3432A] font-bold bg-[#FAF5F2] px-2.5 py-0.5 rounded-full animate-pulse">
+                      Select {boxFormat.bags - totalSelectedBags} more origin{boxFormat.bags - totalSelectedBags > 1 ? "s" : ""}
                     </span>
                   )}
                 </div>
-              ) : (
-                <p className="text-xs text-[#5C5042] mb-4">
-                  Select your signature 500g mountain lot. Roasted fresh to order in Lalitpur.
-                </p>
               )}
 
-              {/* Mountain Origin Cards */}
+              {/* Origin Selection Cards */}
               <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
                 {ORIGINS.map((origin) => {
                   const count = bagCounts[origin.id] || 0;
                   const isSelected = count > 0;
+                  const bagPrice = Math.round(origin.price * weightPerBag);
 
                   return (
                     <div
@@ -427,7 +418,7 @@ function SubscribeContent() {
                         <div className="flex justify-between items-baseline mb-1">
                           <h3 className="text-sm font-serif font-bold text-[#1A1512]">{origin.name}</h3>
                           <span className="text-xs font-bold text-[#A3432A]">
-                            Rs. {origin.price}
+                            Rs. {bagPrice}
                           </span>
                         </div>
 
@@ -440,7 +431,7 @@ function SubscribeContent() {
                         </p>
                       </div>
 
-                      {/* Card Footer: Notes & Stepper (if multi-bag) */}
+                      {/* Card Footer: Notes & Multi-Bag Stepper */}
                       <div className="pt-2.5 border-t border-[#F0EAE1]">
                         <div className="flex items-center justify-between">
                           <div className="min-w-0 pr-1">
@@ -465,7 +456,7 @@ function SubscribeContent() {
                                 className={`w-5 h-5 rounded flex items-center justify-center font-bold text-xs transition-colors ${
                                   count === 0 ? "text-gray-300 cursor-not-allowed" : "text-[#1A1512] hover:bg-[#E6DEC8]"
                                 }`}
-                                title="Remove 1 bag"
+                                title="Remove slot"
                               >
                                 -
                               </button>
@@ -479,7 +470,7 @@ function SubscribeContent() {
                                 className={`w-5 h-5 rounded flex items-center justify-center font-bold text-xs transition-colors ${
                                   totalSelectedBags >= boxFormat.bags ? "text-gray-300 cursor-not-allowed" : "text-white bg-[#A3432A] hover:bg-[#8A3722]"
                                 }`}
-                                title="Add 1 bag"
+                                title="Add slot"
                               >
                                 +
                               </button>
@@ -493,10 +484,10 @@ function SubscribeContent() {
               </div>
             </section>
 
-            {/* Step 3: Grind Profile */}
+            {/* Step 2: Grind Profile */}
             <section id="step-grind">
               <div className="mb-4">
-                <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 03</span>
+                <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 02</span>
                 <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Select Grind Preparation</h2>
               </div>
 
@@ -529,6 +520,71 @@ function SubscribeContent() {
                       <p className={`text-[10px] leading-tight ${isSelected ? "text-[#A89F91]" : "text-[#8A7966]"}`}>
                         {grind.desc}
                       </p>
+                    </div>
+                  );
+                })}
+              </div>
+            </section>
+
+            {/* Step 3: Monthly Bag Quantity / Weight Selection */}
+            <section id="step-size">
+              <div className="flex items-center justify-between mb-4">
+                <div>
+                  <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 03</span>
+                  <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Select Monthly Weight</h2>
+                </div>
+                <span className="text-xs text-[#8A7966] font-medium hidden sm:inline flex items-center gap-1">
+                  <Scale size={13} /> {selectedWeight.label} / Month
+                </span>
+              </div>
+
+              <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                {WEIGHTS.map((w) => {
+                  const isSelected = selectedWeight.value === w.value;
+                  // Calculate estimated cost for this weight option
+                  const estimatedMonthly = Math.round(
+                    ORIGINS.reduce((sum, o) => {
+                      const count = bagCounts[o.id] || 0;
+                      return sum + (o.price * (w.value / (boxFormat.bags || 1)) * count);
+                    }, 0) * (1 - bundleDiscountPercent / 100)
+                  );
+
+                  return (
+                    <div
+                      key={w.value}
+                      onClick={() => setSelectedWeight(w)}
+                      className={`p-4 rounded-xl border text-center cursor-pointer transition-all relative flex flex-col justify-between ${
+                        isSelected 
+                          ? "bg-[#1A1512] text-white border-[#1A1512] shadow-md" 
+                          : "bg-white border-[#E6DEC8] text-[#2C2420] hover:bg-[#FAF8F5]"
+                      }`}
+                    >
+                      <div className="absolute top-2.5 right-2.5">
+                        <span
+                          className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center ${
+                            isSelected
+                              ? "bg-green-500 border-green-500 ring-2 ring-green-500/20"
+                              : "border-[#C8BFAB] bg-transparent"
+                          }`}
+                        >
+                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
+                        </span>
+                      </div>
+
+                      <div>
+                        <p className="text-xl font-serif font-bold mb-0.5">{w.label}</p>
+                        <p className={`text-[9px] uppercase tracking-wider font-semibold mb-2 ${
+                          isSelected ? "text-[#E58A1F]" : "text-[#8A7966]"
+                        }`}>
+                          {w.cups}
+                        </p>
+                      </div>
+
+                      <div className={`pt-2 border-t text-[11px] font-bold ${
+                        isSelected ? "border-white/15 text-white" : "border-[#F0EAE1] text-[#A3432A]"
+                      }`}>
+                        Rs. {estimatedMonthly} <span className="text-[9px] font-normal opacity-80">/mo</span>
+                      </div>
                     </div>
                   );
                 })}
@@ -635,7 +691,7 @@ function SubscribeContent() {
                   {boxFormat.name}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3432A] bg-[#FAF5F2] px-2 py-0.5 rounded">
-                  {boxFormat.weightLabel}
+                  {selectedWeight.label} / Month
                 </span>
               </div>
 
@@ -643,6 +699,7 @@ function SubscribeContent() {
               <div className="space-y-2.5 mb-5">
                 {selectedOriginsList.map((origin) => {
                   const bagCount = bagCounts[origin.id] || 0;
+                  const portionWeight = Math.round(weightPerBag * bagCount * 1000);
                   return (
                     <div key={origin.id} className="flex gap-3 items-center bg-[#FAF8F5] p-3 rounded-xl border border-[#E6DEC8]">
                       <img 
@@ -656,7 +713,7 @@ function SubscribeContent() {
                             {origin.name}
                           </h4>
                           <span className="text-[10px] font-bold text-[#A3432A]">
-                            {bagCount}x Bag{bagCount > 1 ? "s" : ""} (500g)
+                            {portionWeight}g portion
                           </span>
                         </div>
                         <p className="text-[9px] text-[#8A7966] uppercase tracking-wider">
@@ -678,8 +735,8 @@ function SubscribeContent() {
                   <strong className="text-[#1A1512] font-semibold">{selectedGrind.name}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8A7966]">Total Monthly Coffee:</span>
-                  <strong className="text-[#1A1512] font-semibold">{totalWeightKg} kg ({totalSelectedBags}x 500g Bags)</strong>
+                  <span className="text-[#8A7966]">Monthly Shipment Weight:</span>
+                  <strong className="text-[#1A1512] font-semibold">{selectedWeight.label} ({selectedWeight.cups})</strong>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8A7966]">Plan Commitment:</span>
@@ -694,7 +751,7 @@ function SubscribeContent() {
               {/* Itemized Pricing Breakdown */}
               <div className="space-y-2 text-xs text-[#5C5042] pb-4 border-b border-[#F0EAE1] mb-5">
                 <div className="flex justify-between">
-                  <span className="text-[#8A7966]">Bags Monthly Subtotal:</span>
+                  <span className="text-[#8A7966]">Base Subtotal ({selectedWeight.label}):</span>
                   <span className="text-[#1A1512] font-semibold">Rs. {rawMonthlySubtotal}</span>
                 </div>
 
@@ -767,11 +824,11 @@ function SubscribeContent() {
               {/* Primary Action Button */}
               {totalSelectedBags !== boxFormat.bags ? (
                 <div className="w-full py-4 rounded-xl bg-gray-300 text-gray-600 text-center uppercase tracking-widest text-xs font-bold shadow-xs cursor-not-allowed">
-                  Select {boxFormat.bags - totalSelectedBags} more bag{boxFormat.bags - totalSelectedBags > 1 ? "s" : ""} to continue
+                  Select {boxFormat.bags - totalSelectedBags} more origin{boxFormat.bags - totalSelectedBags > 1 ? "s" : ""} to continue
                 </div>
               ) : (
                 <Link 
-                  href={`/checkout?origin=${primaryOriginId}&name=${encodeURIComponent(getBoxSummaryName())}&weight=${totalWeightKg}&price=${totalDueToday}&plan_id=${selectedPlan.id}&plan_name=${encodeURIComponent(selectedPlan.name)}`}
+                  href={`/checkout?origin=${primaryOriginId}&name=${encodeURIComponent(getBoxSummaryName())}&weight=${selectedWeight.value}&price=${totalDueToday}&plan_id=${selectedPlan.id}&plan_name=${encodeURIComponent(selectedPlan.name)}`}
                   className="w-full py-4 rounded-xl bg-[#A3432A] hover:bg-[#8A3722] text-white text-center uppercase tracking-widest text-xs font-bold transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2 group"
                 >
                   Proceed to Checkout <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
