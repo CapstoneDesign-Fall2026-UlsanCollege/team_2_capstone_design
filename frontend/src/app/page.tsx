@@ -16,7 +16,9 @@ export default function Home() {
       title: "2,000M+ MIST-GROWN",
       metric: "1,400m - 2,000m Elevation",
       desc: "Cultivated in the extreme microclimates of Gulmi and Ilam. Freezing mountain nights slow cherry development, packing dense natural sugars and bright citrus acidity into every seed.",
-      image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=70&w=600&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=70&w=600&auto=format&fit=crop",
+      link: "/origins#terroir",
+      linkText: "Explore Terroir"
     },
     {
       id: 1,
@@ -25,7 +27,9 @@ export default function Home() {
       title: "84+ SCA CUP SCORE",
       metric: "Top 3% Tier Globally",
       desc: "100% Arabica Bourbon and Typica varieties with zero primary defects. Every harvest lot is cup-tested and graded by certified Q-Graders to ensure unmatched balance and complex aroma.",
-      image: "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?q=70&w=600&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?q=70&w=600&auto=format&fit=crop",
+      link: "/origins#sca-quality",
+      linkText: "View SCA Scorecard"
     },
     {
       id: 2,
@@ -34,7 +38,9 @@ export default function Home() {
       title: "100% FARMER-DIRECT",
       metric: "+40% Above Market Rates",
       desc: "We cut out commodity export middlemen. We contract directly with smallholder farming cooperatives in Nepal, guaranteeing stable living wages and long-term soil regeneration.",
-      image: "https://images.unsplash.com/photo-1524350876685-274059332603?q=70&w=600&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1524350876685-274059332603?q=70&w=600&auto=format&fit=crop",
+      link: "/origins#farmer-impact",
+      linkText: "Farmer Impact (+40%)"
     },
     {
       id: 3,
@@ -43,7 +49,9 @@ export default function Home() {
       title: "48-HR ROAST-TO-DOOR",
       metric: "Small-Batch Roasted",
       desc: "Never warehouse-aged. Beans are roasted in small 5kg batches in our Kathmandu Valley roastery and dispatched immediately so they arrive at peak degassing and crema readiness.",
-      image: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=70&w=600&auto=format&fit=crop"
+      image: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=70&w=600&auto=format&fit=crop",
+      link: "/origins#roast-schedule",
+      linkText: "View Roast Schedule"
     }
   ];
 
@@ -178,9 +186,10 @@ export default function Home() {
             const Icon = pillar.icon;
 
             return (
-              <div
+              <Link
                 key={pillar.id}
-                className="group bg-white rounded-2xl border border-[#E6DEC8] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between"
+                href={pillar.link}
+                className="group bg-white rounded-2xl border border-[#E6DEC8] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
               >
                 <div>
                   {/* Curated Header Image with Floating Metrics */}
@@ -222,16 +231,13 @@ export default function Home() {
                 {/* Card Action Footer */}
                 <div className="p-6 pt-0">
                   <div className="pt-4 border-t border-[#F0EAE1]">
-                    <Link
-                      href={pillar.id <= 1 ? "/origins" : pillar.id === 2 ? "/about" : "/subscribe"}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#A3432A] hover:text-[#8A3722] group-hover:gap-2.5 transition-all"
-                    >
-                      <span>{pillar.id <= 1 ? "Explore Terroir" : pillar.id === 2 ? "Farmer Impact" : "Roast Schedule"}</span>
+                    <div className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#A3432A] group-hover:text-[#8A3722] group-hover:gap-2.5 transition-all">
+                      <span>{pillar.linkText}</span>
                       <ArrowRight size={13} />
-                    </Link>
+                    </div>
                   </div>
                 </div>
-              </div>
+              </Link>
             );
           })}
         </div>
