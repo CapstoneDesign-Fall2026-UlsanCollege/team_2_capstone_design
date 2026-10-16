@@ -49,6 +49,7 @@ const BOX_FORMATS = [
     id: "single", 
     name: "Single Origin", 
     bags: 1, 
+    weightLabel: "500g (~30 Cups)",
     tag: "1 Bag / Month", 
     badge: "Solo Ritual", 
     discountPercent: 0, 
@@ -58,6 +59,7 @@ const BOX_FORMATS = [
     id: "duo", 
     name: "Dual Origin Duo", 
     bags: 2, 
+    weightLabel: "1.0 kg (2x 500g • ~60 Cups)",
     tag: "2 Bags / Month", 
     badge: "Mix & Match • 5% Off", 
     discountPercent: 5, 
@@ -67,6 +69,7 @@ const BOX_FORMATS = [
     id: "trio", 
     name: "Himalayan Trio", 
     bags: 3, 
+    weightLabel: "1.5 kg (3x 500g • ~90 Cups)",
     tag: "3 Bags / Month", 
     badge: "All 3 Regions • 10% Off", 
     discountPercent: 10, 
@@ -81,12 +84,6 @@ const GRINDS = [
   { id: "frenchpress", name: "French Press", desc: "Coarse grind • Immersion & Cold Brew" },
 ];
 
-const BAG_SIZES = [
-  { value: 0.25, label: "250g / bag", cups: "~15 Cups per bag (Tasting size)" },
-  { value: 0.5, label: "500g / bag", cups: "~30 Cups per bag (Most Popular)" },
-  { value: 1.0, label: "1.0 kg / bag", cups: "~60 Cups per bag (Coffee Lovers)" },
-];
-
 const PLANS = [
   { id: "PAYG", name: "Pay Monthly", discount: 0, months: 1, tag: "Flexible • Cancel Anytime" },
   { id: "3M", name: "3-Month Prepay", discount: 5, months: 3, tag: "Save 5%" },
@@ -99,13 +96,11 @@ function SubscribeContent() {
   const urlOriginId = Number(searchParams.get("origin"));
   const urlPlanId = searchParams.get("plan");
   const urlGrindId = searchParams.get("grind");
-  const urlWeight = Number(searchParams.get("weight"));
   const urlBoxId = searchParams.get("box");
   
   const initialFormat = BOX_FORMATS.find(b => b.id === urlBoxId) || BOX_FORMATS[0];
   const initialPlan = PLANS.find(p => p.id.toLowerCase() === urlPlanId?.toLowerCase()) || PLANS[0];
   const initialGrind = GRINDS.find(g => g.id.toLowerCase() === urlGrindId?.toLowerCase()) || GRINDS[0];
-  const initialBagSize = BAG_SIZES.find(w => w.value === urlWeight) || BAG_SIZES[1];
 
   const [boxFormat, setBoxFormat] = useState(initialFormat);
   const [bagCounts, setBagCounts] = useState<{ [id: number]: number }>({ 
@@ -114,7 +109,6 @@ function SubscribeContent() {
     3: urlOriginId === 3 ? 1 : 0 
   });
   const [selectedGrind, setSelectedGrind] = useState(initialGrind);
-  const [selectedBagSize, setSelectedBagSize] = useState(initialBagSize);
   const [selectedPlan, setSelectedPlan] = useState(initialPlan);
   const [customer, setCustomer] = useState<{ name?: string; email?: string } | null>(null);
 
@@ -132,10 +126,6 @@ function SubscribeContent() {
       const foundGrind = GRINDS.find(g => g.id.toLowerCase() === urlGrindId.toLowerCase());
       if (foundGrind) setSelectedGrind(foundGrind);
     }
-    if (urlWeight) {
-      const foundWeight = BAG_SIZES.find(w => w.value === urlWeight);
-      if (foundWeight) setSelectedBagSize(foundWeight);
-    }
     // Check if user is logged in
     try {
       const stored = localStorage.getItem("demo_user") || localStorage.getItem("customer_user");
@@ -145,7 +135,7 @@ function SubscribeContent() {
     } catch (e) {
       // ignore
     }
-  }, [urlOriginId, urlPlanId, urlGrindId, urlWeight]);
+  }, [urlOriginId, urlPlanId, urlGrindId]);
 
   // Handle Box Format change
   const handleSelectFormat = (format: typeof BOX_FORMATS[0]) => {
@@ -195,23 +185,29 @@ function SubscribeContent() {
     setBagCounts(prev => ({ ...prev, [originId]: next }));
   };
 
-  // Pricing calculations
-  const rawMonthlyBase = ORIGINS.reduce((sum, o) => {
+  // 1. RAW CATALOG BAG SUBTOTAL (NPR)
+  // Each bag is standard 500g with its direct retail catalog price
+  const rawMonthlySubtotal = ORIGINS.reduce((sum, o) => {
     const count = bagCounts[o.id] || 0;
-    return sum + (o.price * selectedBagSize.value * count);
+    return sum + (o.price * count);
   }, 0);
 
-  // Bundle discount (5% for Duo, 10% for Trio)
-  const bundleDiscountAmount = Math.round(rawMonthlyBase * (boxFormat.discountPercent / 100));
-  const monthlyAfterBundle = rawMonthlyBase - bundleDiscountAmount;
+  // 2. MULTI-BAG BOX BUNDLE DISCOUNT (0% for Single, 5% for Duo, 10% for Trio)
+  const bundleDiscountPercent = boxFormat.discountPercent;
+  const bundleDiscountAmount = Math.round(rawMonthlySubtotal * (bundleDiscountPercent / 100));
+  const monthlyAfterBundle = rawMonthlySubtotal - bundleDiscountAmount;
 
-  // Plan frequency prepay discount
-  const totalBaseOrder = monthlyAfterBundle * selectedPlan.months;
-  const prepayDiscountAmount = Math.round(totalBaseOrder * (selectedPlan.discount / 100));
-  const totalDiscountedPrice = totalBaseOrder - prepayDiscountAmount;
-  const totalSavings = (rawMonthlyBase * selectedPlan.months) - totalDiscountedPrice;
-  const effectiveMonthlyPrice = Math.round(totalDiscountedPrice / selectedPlan.months);
-  const totalWeightKg = Math.round(selectedBagSize.value * totalSelectedBags * 100) / 100;
+  // 3. PLAN PREPAYMENT DISCOUNT (0% PAYG, 5% 3M, 10% 6M, 15% 12M)
+  const planMonths = selectedPlan.months;
+  const planDiscountPercent = selectedPlan.discount;
+  const fullPeriodBase = monthlyAfterBundle * planMonths;
+  const planDiscountAmount = Math.round(fullPeriodBase * (planDiscountPercent / 100));
+  const totalDueToday = fullPeriodBase - planDiscountAmount;
+
+  // Effective monthly cost & total savings
+  const effectiveMonthlyPrice = Math.round(totalDueToday / planMonths);
+  const totalSavings = (rawMonthlySubtotal * planMonths) - totalDueToday;
+  const totalWeightKg = Math.round(totalSelectedBags * 0.5 * 10) / 10;
 
   // Summary box title
   const getBoxSummaryName = () => {
@@ -221,7 +217,7 @@ function SubscribeContent() {
       return single.name;
     }
     if (boxFormat.id === "trio" && selectedItems.length === 3 && Object.values(bagCounts).every(c => c === 1)) {
-      return "Himalayan Trio Bundle (Gulmi, Ilam, Nuwakot)";
+      return "Himalayan Trio Bundle (Gulmi + Ilam + Nuwakot)";
     }
     if (boxFormat.id === "duo") {
       return "Dual Origin Duo: " + selectedItems.map(o => `${bagCounts[o.id]}x ${o.name}`).join(" + ");
@@ -254,17 +250,17 @@ function SubscribeContent() {
           <div className="flex items-center justify-center gap-2 sm:gap-4 mt-8 text-[11px] uppercase tracking-wider font-semibold text-[#8A7966]">
             <span className="text-[#E58A1F] flex items-center gap-1.5 font-bold">
               <span className="w-5 h-5 rounded-full bg-[#E58A1F] text-[#1A1512] flex items-center justify-center text-[10px]">1</span>
-              Box & Origins
+              Box Format
             </span>
             <span>→</span>
             <span className="text-white flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px]">2</span>
-              Grind
+              Origins
             </span>
             <span>→</span>
             <span className="text-white flex items-center gap-1.5">
               <span className="w-5 h-5 rounded-full bg-white/20 text-white flex items-center justify-center text-[10px]">3</span>
-              Size
+              Grind
             </span>
             <span>→</span>
             <span className="text-white flex items-center gap-1.5">
@@ -282,24 +278,23 @@ function SubscribeContent() {
           {/* LEFT COLUMN: Interactive Steps (7 Cols) */}
           <div className="lg:col-span-7 space-y-12">
             
-            {/* Step 1: Box Format & Origin Cards */}
-            <section id="step-origin">
+            {/* Step 1: Box Format Mode Selector */}
+            <section id="step-format">
               <div className="flex items-center justify-between mb-3">
                 <div>
                   <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 01</span>
-                  <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Choose Box Format & Origins</h2>
+                  <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Select Box Format</h2>
                 </div>
                 <span className="text-xs text-[#8A7966] font-medium hidden sm:inline">
-                  Mix & Match Available
+                  Multi-Pack Savings
                 </span>
               </div>
 
               <p className="text-xs text-[#5C5042] mb-4">
-                Select whether you want a single signature origin, a 2-bag duo (mix & match morning & afternoon), or all 3 Himalayan regions.
+                Choose how many 500g bags you want in each monthly shipment. Mix & match different mountain regions for varied brewing.
               </p>
 
-              {/* Box Format Mode Selector */}
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {BOX_FORMATS.map((fmt) => {
                   const isSelected = boxFormat.id === fmt.id;
                   return (
@@ -331,7 +326,7 @@ function SubscribeContent() {
                           {fmt.badge}
                         </span>
                         <h3 className="font-serif font-bold text-sm text-[#1A1512] pr-6">{fmt.name}</h3>
-                        <p className="text-[10px] font-semibold text-[#8A7966] mb-1">{fmt.tag}</p>
+                        <p className="text-[11px] font-bold text-[#A3432A] mt-0.5">{fmt.weightLabel}</p>
                       </div>
 
                       <p className="text-[11px] text-[#5C5042] leading-snug mt-2 pt-2 border-t border-[#F0EAE1]">
@@ -341,14 +336,29 @@ function SubscribeContent() {
                   );
                 })}
               </div>
+            </section>
+
+            {/* Step 2: Choose Mountain Origins */}
+            <section id="step-origin">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 02</span>
+                  <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">
+                    {boxFormat.bags === 1 ? "Choose Single Origin" : `Mix & Match Your ${boxFormat.bags} Bags`}
+                  </h2>
+                </div>
+                <span className="text-xs text-[#8A7966] font-medium hidden sm:inline">
+                  Single-Origin Lots
+                </span>
+              </div>
 
               {/* Box Allocation Progress Strip (When multi-bag) */}
-              {boxFormat.bags > 1 && (
+              {boxFormat.bags > 1 ? (
                 <div className="flex items-center justify-between bg-white rounded-xl px-4 py-3 border border-[#E6DEC8] mb-5 shadow-xs">
                   <div className="flex items-center gap-2">
                     <Package size={16} className="text-[#A3432A]" />
                     <span className="text-xs text-[#5C5042]">
-                      Box Slots: <strong className="text-[#1A1512] font-semibold">{totalSelectedBags} of {boxFormat.bags} Bags Selected</strong>
+                      Box Slots: <strong className="text-[#1A1512] font-semibold">{totalSelectedBags} of {boxFormat.bags} Bags Filled</strong>
                     </span>
                   </div>
                   {totalSelectedBags === boxFormat.bags ? (
@@ -361,6 +371,10 @@ function SubscribeContent() {
                     </span>
                   )}
                 </div>
+              ) : (
+                <p className="text-xs text-[#5C5042] mb-4">
+                  Select your signature 500g mountain lot. Roasted fresh to order in Lalitpur.
+                </p>
               )}
 
               {/* Mountain Origin Cards */}
@@ -413,7 +427,7 @@ function SubscribeContent() {
                         <div className="flex justify-between items-baseline mb-1">
                           <h3 className="text-sm font-serif font-bold text-[#1A1512]">{origin.name}</h3>
                           <span className="text-xs font-bold text-[#A3432A]">
-                            Rs. {origin.price * selectedBagSize.value}
+                            Rs. {origin.price}
                           </span>
                         </div>
 
@@ -479,10 +493,10 @@ function SubscribeContent() {
               </div>
             </section>
 
-            {/* Step 2: Grind Profile */}
+            {/* Step 3: Grind Profile */}
             <section id="step-grind">
               <div className="mb-4">
-                <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 02</span>
+                <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 03</span>
                 <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Select Grind Preparation</h2>
               </div>
 
@@ -521,61 +535,20 @@ function SubscribeContent() {
               </div>
             </section>
 
-            {/* Step 3: Bag Size Selection */}
-            <section id="step-size">
-              <div className="mb-4">
-                <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 03</span>
-                <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Individual Bag Size</h2>
-              </div>
-
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
-                {BAG_SIZES.map((w) => {
-                  const isSelected = selectedBagSize.value === w.value;
-                  const totalGrams = Math.round(w.value * boxFormat.bags * 1000);
-
-                  return (
-                    <div
-                      key={w.value}
-                      onClick={() => setSelectedBagSize(w)}
-                      className={`p-4 rounded-lg border text-center cursor-pointer transition-all relative ${
-                        isSelected 
-                          ? "bg-[#1A1512] text-white border-[#1A1512] shadow-md" 
-                          : "bg-white border-[#E6DEC8] text-[#2C2420] hover:bg-[#FAF8F5]"
-                      }`}
-                    >
-                      <div className="absolute top-2.5 right-2.5">
-                        <span
-                          className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center ${
-                            isSelected
-                              ? "bg-green-500 border-green-500 ring-2 ring-green-500/20"
-                              : "border-[#C8BFAB] bg-transparent"
-                          }`}
-                        >
-                          {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
-                        </span>
-                      </div>
-                      <p className="text-lg font-serif font-bold mb-0.5">{w.label}</p>
-                      <p className={`text-[10px] font-semibold ${isSelected ? "text-[#E58A1F]" : "text-[#8A7966]"}`}>
-                        {boxFormat.bags > 1 ? `${totalGrams}g box total` : w.cups}
-                      </p>
-                    </div>
-                  );
-                })}
-              </div>
-            </section>
-
             {/* Step 4: Frequency & Commitment */}
             <section id="step-plan">
               <div className="mb-4">
                 <span className="text-[10px] uppercase tracking-[0.24em] font-bold text-[#A3432A]">Step 04</span>
-                <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Billing & Delivery Frequency</h2>
+                <h2 className="text-xl md:text-2xl font-serif font-bold text-[#1A1512]">Billing & Delivery Commitment</h2>
               </div>
 
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
                 {PLANS.map((plan) => {
                   const isSelected = selectedPlan.id === plan.id;
-                  const originalCost = monthlyAfterBundle * plan.months;
-                  const discountedCost = Math.round(originalCost * (1 - plan.discount / 100));
+                  const planPeriodBase = monthlyAfterBundle * plan.months;
+                  const planDiscountVal = Math.round(planPeriodBase * (plan.discount / 100));
+                  const planTotal = planPeriodBase - planDiscountVal;
+                  const planMonthly = Math.round(planTotal / plan.months);
 
                   return (
                     <div
@@ -595,15 +568,19 @@ function SubscribeContent() {
                             {plan.tag}
                           </span>
                           <h3 className="text-base font-serif font-bold text-[#1A1512] mt-1.5">{plan.name}</h3>
-                          <p className="text-[11px] text-[#8A7966]">Monthly roasted dispatch</p>
+                          <p className="text-[11px] text-[#8A7966]">
+                            {plan.months === 1 ? "Billed monthly • Cancel anytime" : `Total: Rs. ${planTotal} for ${plan.months} months`}
+                          </p>
                         </div>
 
                         <div className="flex items-start gap-3">
                           <div className="text-right">
                             {plan.discount > 0 && (
-                              <p className="text-[11px] line-through text-[#8A7966]">Rs. {originalCost}</p>
+                              <p className="text-[11px] line-through text-[#8A7966]">Rs. {monthlyAfterBundle}/mo</p>
                             )}
-                            <p className="text-xl font-serif font-bold text-[#1A1512]">Rs. {discountedCost}</p>
+                            <p className="text-xl font-serif font-bold text-[#1A1512]">
+                              Rs. {planMonthly} <span className="text-xs font-normal text-[#8A7966]">/mo</span>
+                            </p>
                           </div>
                           <span
                             className={`w-4 h-4 rounded-full border transition-all flex items-center justify-center shrink-0 mt-1 ${
@@ -620,7 +597,7 @@ function SubscribeContent() {
                       <div className="pt-2.5 border-t border-[#F0EAE1] flex justify-between items-center text-[11px]">
                         <span className="text-[#5C5042]">Delivery: <strong className="text-[#2E6B34]">Free Courier</strong></span>
                         {plan.discount > 0 ? (
-                          <span className="text-[#2E6B34] font-bold">Save Rs. {originalCost - discountedCost}</span>
+                          <span className="text-[#2E6B34] font-bold">Save Rs. {planDiscountVal} ({plan.discount}% off)</span>
                         ) : (
                           <span className="text-[#8A7966]">Cancel anytime</span>
                         )}
@@ -652,13 +629,13 @@ function SubscribeContent() {
               </div>
 
               {/* Box Format Indicator */}
-              <div className="mb-4 flex items-center justify-between bg-[#FAF8F5] px-3.5 py-2 rounded-lg border border-[#E6DEC8]">
+              <div className="mb-4 flex items-center justify-between bg-[#FAF8F5] px-3.5 py-2.5 rounded-lg border border-[#E6DEC8]">
                 <span className="text-xs font-semibold text-[#5C5042] flex items-center gap-1.5">
                   <Package size={14} className="text-[#A3432A]" />
                   {boxFormat.name}
                 </span>
                 <span className="text-[10px] font-bold uppercase tracking-wider text-[#A3432A] bg-[#FAF5F2] px-2 py-0.5 rounded">
-                  {boxFormat.bags} Bag{boxFormat.bags > 1 ? "s" : ""} / Mo
+                  {boxFormat.weightLabel}
                 </span>
               </div>
 
@@ -679,7 +656,7 @@ function SubscribeContent() {
                             {origin.name}
                           </h4>
                           <span className="text-[10px] font-bold text-[#A3432A]">
-                            {bagCount}x Bag{bagCount > 1 ? "s" : ""} ({selectedBagSize.label})
+                            {bagCount}x Bag{bagCount > 1 ? "s" : ""} (500g)
                           </span>
                         </div>
                         <p className="text-[9px] text-[#8A7966] uppercase tracking-wider">
@@ -701,17 +678,46 @@ function SubscribeContent() {
                   <strong className="text-[#1A1512] font-semibold">{selectedGrind.name}</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8A7966]">Total Shipment Weight:</span>
-                  <strong className="text-[#1A1512] font-semibold">{totalWeightKg} kg ({totalSelectedBags}x {selectedBagSize.label})</strong>
+                  <span className="text-[#8A7966]">Total Monthly Coffee:</span>
+                  <strong className="text-[#1A1512] font-semibold">{totalWeightKg} kg ({totalSelectedBags}x 500g Bags)</strong>
                 </div>
                 <div className="flex justify-between">
-                  <span className="text-[#8A7966]">Plan Frequency:</span>
+                  <span className="text-[#8A7966]">Plan Commitment:</span>
                   <strong className="text-[#1A1512] font-semibold">{selectedPlan.name}</strong>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-[#8A7966]">Doorstep Delivery:</span>
                   <strong className="text-[#2E6B34] font-semibold">Free (Kathmandu & Nationwide)</strong>
                 </div>
+              </div>
+
+              {/* Itemized Pricing Breakdown */}
+              <div className="space-y-2 text-xs text-[#5C5042] pb-4 border-b border-[#F0EAE1] mb-5">
+                <div className="flex justify-between">
+                  <span className="text-[#8A7966]">Bags Monthly Subtotal:</span>
+                  <span className="text-[#1A1512] font-semibold">Rs. {rawMonthlySubtotal}</span>
+                </div>
+
+                {bundleDiscountAmount > 0 && (
+                  <div className="flex justify-between text-[#2E6B34]">
+                    <span>{boxFormat.name} Perk ({bundleDiscountPercent}%):</span>
+                    <span className="font-semibold">- Rs. {bundleDiscountAmount} / mo</span>
+                  </div>
+                )}
+
+                {selectedPlan.months > 1 && (
+                  <div className="flex justify-between">
+                    <span className="text-[#8A7966]">{selectedPlan.months}-Month Total Base:</span>
+                    <span className="text-[#1A1512] font-semibold">Rs. {fullPeriodBase}</span>
+                  </div>
+                )}
+
+                {planDiscountAmount > 0 && (
+                  <div className="flex justify-between text-[#2E6B34]">
+                    <span>{selectedPlan.name} Perk ({planDiscountPercent}%):</span>
+                    <span className="font-semibold">- Rs. {planDiscountAmount}</span>
+                  </div>
+                )}
               </div>
 
               {/* Pricing Totals */}
@@ -722,7 +728,7 @@ function SubscribeContent() {
                   </span>
                   <div className="text-right">
                     <span className="text-3xl font-serif font-bold text-[#1A1512]">
-                      Rs. {totalDiscountedPrice}
+                      Rs. {totalDueToday}
                     </span>
                     {selectedPlan.months > 1 && (
                       <span className="block text-[11px] text-[#8A7966]">
@@ -765,7 +771,7 @@ function SubscribeContent() {
                 </div>
               ) : (
                 <Link 
-                  href={`/checkout?origin=${primaryOriginId}&name=${encodeURIComponent(getBoxSummaryName())}&weight=${totalWeightKg}&price=${totalDiscountedPrice}&plan_id=${selectedPlan.id}&plan_name=${encodeURIComponent(selectedPlan.name)}`}
+                  href={`/checkout?origin=${primaryOriginId}&name=${encodeURIComponent(getBoxSummaryName())}&weight=${totalWeightKg}&price=${totalDueToday}&plan_id=${selectedPlan.id}&plan_name=${encodeURIComponent(selectedPlan.name)}`}
                   className="w-full py-4 rounded-xl bg-[#A3432A] hover:bg-[#8A3722] text-white text-center uppercase tracking-widest text-xs font-bold transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2 group"
                 >
                   Proceed to Checkout <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
