@@ -17,7 +17,7 @@ export default function Home() {
       metric: "1,400m - 2,000m Elevation",
       desc: "Cultivated in the extreme microclimates of Gulmi and Ilam. Freezing mountain nights slow cherry development, packing dense natural sugars and bright citrus acidity into every seed.",
       image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=70&w=600&auto=format&fit=crop",
-      link: "/origins#terroir",
+      link: "/origins?section=terroir",
       linkText: "Explore Terroir"
     },
     {
@@ -28,7 +28,7 @@ export default function Home() {
       metric: "Top 3% Tier Globally",
       desc: "100% Arabica Bourbon and Typica varieties with zero primary defects. Every harvest lot is cup-tested and graded by certified Q-Graders to ensure unmatched balance and complex aroma.",
       image: "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?q=70&w=600&auto=format&fit=crop",
-      link: "/origins#sca-quality",
+      link: "/origins?section=sca-quality",
       linkText: "View SCA Scorecard"
     },
     {
@@ -39,7 +39,7 @@ export default function Home() {
       metric: "+40% Above Market Rates",
       desc: "We cut out commodity export middlemen. We contract directly with smallholder farming cooperatives in Nepal, guaranteeing stable living wages and long-term soil regeneration.",
       image: "https://images.unsplash.com/photo-1524350876685-274059332603?q=70&w=600&auto=format&fit=crop",
-      link: "/origins#farmer-impact",
+      link: "/origins?section=farmer-impact",
       linkText: "Farmer Impact (+40%)"
     },
     {
@@ -50,7 +50,7 @@ export default function Home() {
       metric: "Small-Batch Roasted",
       desc: "Never warehouse-aged. Beans are roasted in small 5kg batches in our Kathmandu Valley roastery and dispatched immediately so they arrive at peak degassing and crema readiness.",
       image: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=70&w=600&auto=format&fit=crop",
-      link: "/origins#roast-schedule",
+      link: "/origins?section=roast-schedule",
       linkText: "View Roast Schedule"
     }
   ];
