@@ -210,11 +210,12 @@ export default function AuthPage() {
           {mode === "login" && (
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                <label htmlFor="loginEmail" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
                   <input
+                    id="loginEmail"
                     type="email"
                     required
                     placeholder="e.g. aarav.sharma@gmail.com"
@@ -228,7 +229,7 @@ export default function AuthPage() {
 
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042]">
+                  <label htmlFor="loginPassword" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042]">
                     Password
                   </label>
                   <span className="text-[10px] text-[#A3432A] font-bold cursor-pointer hover:underline">
@@ -237,6 +238,7 @@ export default function AuthPage() {
                 </div>
                 <div className="relative">
                   <input
+                    id="loginPassword"
                     type="password"
                     required
                     placeholder="••••••••"
@@ -281,10 +283,11 @@ export default function AuthPage() {
           {mode === "signup" && (
             <form onSubmit={handleSignup} className="space-y-5">
               <div>
-                <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                <label htmlFor="signupFullName" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                   Full Name *
                 </label>
                 <input
+                  id="signupFullName"
                   type="text"
                   required
                   placeholder="e.g. Aditya Gupta"
@@ -296,10 +299,11 @@ export default function AuthPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  <label htmlFor="signupEmail" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                     Email Address *
                   </label>
                   <input
+                    id="signupEmail"
                     type="email"
                     required
                     placeholder="aditya@example.com"
@@ -309,10 +313,11 @@ export default function AuthPage() {
                   />
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  <label htmlFor="signupPhone" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                     Mobile Phone *
                   </label>
                   <input
+                    id="signupPhone"
                     type="tel"
                     required
                     placeholder="+977 98XXXXXXXX"
@@ -324,10 +329,11 @@ export default function AuthPage() {
               </div>
 
               <div>
-                <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                <label htmlFor="signupStreetAddress" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                   Delivery Street Address *
                 </label>
                 <input
+                  id="signupStreetAddress"
                   type="text"
                   required
                   placeholder="e.g. Jhamsikhel, Ward 3, House #12"
@@ -339,10 +345,11 @@ export default function AuthPage() {
 
               <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  <label htmlFor="signupCity" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                     City / Valley *
                   </label>
                   <select
+                    id="signupCity"
                     value={signupData.city}
                     onChange={(e) => setSignupData({ ...signupData, city: e.target.value })}
                     className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
@@ -355,10 +362,11 @@ export default function AuthPage() {
                   </select>
                 </div>
                 <div>
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  <label htmlFor="signupPassword" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                     Account Password *
                   </label>
                   <input
+                    id="signupPassword"
                     type="password"
                     required
                     placeholder="••••••••"

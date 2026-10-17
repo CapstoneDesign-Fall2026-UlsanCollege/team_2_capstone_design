@@ -261,10 +261,11 @@ function CheckoutContent() {
                 </h3>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                    <label htmlFor="checkoutFullName" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                       Full Name *
                     </label>
                     <input
+                      id="checkoutFullName"
                       type="text"
                       required
                       placeholder="e.g. Aditya Gupta"
@@ -274,10 +275,11 @@ function CheckoutContent() {
                     />
                   </div>
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                    <label htmlFor="checkoutEmail" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                       Email Address *
                     </label>
                     <input
+                      id="checkoutEmail"
                       type="email"
                       required
                       placeholder="aditya@example.com"
@@ -289,10 +291,11 @@ function CheckoutContent() {
                 </div>
 
                 <div className="mt-4">
-                  <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  <label htmlFor="checkoutPhone" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                     Mobile Phone Number (for delivery SMS) *
                   </label>
                   <input
+                    id="checkoutPhone"
                     type="tel"
                     required
                     placeholder="+977 9800000000"
@@ -311,10 +314,11 @@ function CheckoutContent() {
                 
                 <div className="space-y-4">
                   <div>
-                    <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                    <label htmlFor="checkoutStreetAddress" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                       Street Address / Ward / Area *
                     </label>
                     <input
+                      id="checkoutStreetAddress"
                       type="text"
                       required
                       placeholder="e.g. Jhamsikhel, Ward 3, House #14"
@@ -326,10 +330,11 @@ function CheckoutContent() {
 
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                     <div>
-                      <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                      <label htmlFor="checkoutCity" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                         City / District *
                       </label>
                       <select
+                        id="checkoutCity"
                         value={formData.city}
                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
                         className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
@@ -344,10 +349,11 @@ function CheckoutContent() {
                     </div>
 
                     <div>
-                      <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                      <label htmlFor="checkoutLandmark" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                         Landmark / Note (Optional)
                       </label>
                       <input
+                        id="checkoutLandmark"
                         type="text"
                         placeholder="e.g. Near St. Mary's School"
                         value={formData.landmark}
@@ -380,10 +386,11 @@ function CheckoutContent() {
                       Set a password so you can log in to your dashboard to pause, skip, or edit your monthly roasts.
                     </p>
                     <div>
-                      <label className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                      <label htmlFor="checkoutPassword" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
                         Account Password *
                       </label>
                       <input
+                        id="checkoutPassword"
                         type="password"
                         required
                         placeholder="••••••••"

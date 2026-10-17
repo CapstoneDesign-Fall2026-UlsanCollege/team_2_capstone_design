@@ -209,7 +209,7 @@ export default function AdminPage() {
   const inCourierTransit = orders.filter(o => o.status === "DISPATCHED").length;
 
   return (
-    <div className="min-h-screen bg-[#F4F1EA] text-[#2C2420] flex font-sans antialiased">
+    <div className="min-h-screen bg-[#F5F2EB] text-[#2C2420] flex font-sans antialiased">
       
       {/* Toast Notification */}
       {toastMessage && (

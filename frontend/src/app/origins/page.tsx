@@ -20,7 +20,7 @@ const origins = [
     flavor: "Citrus • Wild Honey • Dark Chocolate",
     roast: "Medium-Light",
     harvest: "Nov - Jan",
-    scaScore: "85.5",
+    scaScore: "86.5",
     img: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=800&auto=format&fit=crop",
     description: "Hand-picked from the misty terraces of the Gulmi district. The high altitude and freezing mountain nights slow cherry development, forcing natural sugars and bright citrus acidity into every seed. Fully washed in glacial spring water for a sparkling, pristine cup profile.",
   },
@@ -33,7 +33,7 @@ const origins = [
     flavor: "Blackberry • Jasmine • Brown Caramel",
     roast: "Light",
     harvest: "Dec - Feb",
-    scaScore: "86.0",
+    scaScore: "87.0",
     img: "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?q=80&w=800&auto=format&fit=crop",
     description: "Cultivated on the high eastern ridges of Ilam neighboring Darjeeling. Sun-dried with the whole coffee fruit intact on raised bamboo drying beds. This intensive natural process concentrates rich berry esters and sweet floral aromatics with a thick, syrupy mouthfeel.",
   },
@@ -46,7 +46,7 @@ const origins = [
     flavor: "Toasted Walnut • Plum • Raw Cane Sugar",
     roast: "Medium-Dark",
     harvest: "Oct - Dec",
-    scaScore: "84.5",
+    scaScore: "85.0",
     img: "https://images.unsplash.com/photo-1611162458324-aae1eb4129a4?q=80&w=800&auto=format&fit=crop",
     description: "An heirloom variety grown in the historic valley foothills north of Kathmandu. The skin is pulped while leaving the sticky fruit mucilage during drying. Delivers a heavy, rounded body with caramelized brown sugar depth and zero astringent bitterness.",
   },
@@ -105,8 +105,14 @@ function OriginsContent() {
         </div>
 
         {/* 2. DEDICATED SECTION SELECTOR TABS (Instant Switcher) */}
-        <div className="bg-white p-2 rounded-2xl border border-[#E6DEC8] shadow-sm flex flex-wrap gap-2 mb-10">
+        <div 
+          role="tablist" 
+          aria-label="Himalayan origin standards" 
+          className="bg-white p-2 rounded-2xl border border-[#E6DEC8] shadow-sm flex flex-wrap gap-2 mb-10"
+        >
           <button
+            role="tab"
+            aria-selected={activeSection === "catalog"}
             onClick={() => selectTab("catalog")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
               activeSection === "catalog"
@@ -119,6 +125,8 @@ function OriginsContent() {
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeSection === "terroir"}
             onClick={() => selectTab("terroir")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
               activeSection === "terroir"
@@ -131,6 +139,8 @@ function OriginsContent() {
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeSection === "sca-quality"}
             onClick={() => selectTab("sca-quality")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
               activeSection === "sca-quality"
@@ -143,6 +153,8 @@ function OriginsContent() {
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeSection === "farmer-impact"}
             onClick={() => selectTab("farmer-impact")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
               activeSection === "farmer-impact"
@@ -155,6 +167,8 @@ function OriginsContent() {
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeSection === "roast-schedule"}
             onClick={() => selectTab("roast-schedule")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ${
               activeSection === "roast-schedule"
@@ -167,6 +181,8 @@ function OriginsContent() {
           </button>
 
           <button
+            role="tab"
+            aria-selected={activeSection === "all"}
             onClick={() => selectTab("all")}
             className={`flex items-center gap-2 px-4 py-2.5 rounded-xl text-xs font-bold uppercase tracking-wider transition-all ml-auto ${
               activeSection === "all"
@@ -432,7 +448,7 @@ function OriginsContent() {
                     <h3 className="font-serif font-bold text-lg text-[#1A1512]">SCA 100-Point Sensory Cupping Breakdown</h3>
                   </div>
                   <div className="flex items-center gap-2 bg-[#1A1512] text-white px-4 py-2 rounded-lg text-sm font-bold">
-                    <Award size={16} className="text-[#E58A1F]" /> Certified Lot Score: 85.5 / 100
+                    <Award size={16} className="text-[#E58A1F]" /> Certified Lot Score: 86.5 / 100
                   </div>
                 </div>
 
