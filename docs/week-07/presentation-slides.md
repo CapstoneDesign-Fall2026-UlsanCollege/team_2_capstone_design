@@ -1,162 +1,151 @@
 # Midterm Presentation Slide Deck — BrewMellow
 
 **Course:** Capstone Design — Fall 2026  
-**Presentation:** 5–7 Minutes (Midterm — 15% of Course Grade)  
+**Presentation:** Midterm Presentation (15% of Course Grade)  
 **Team:** Team 2 — BrewMellow  
+**PowerPoint File:** [`BrewMellow_Midterm_Presentation.pptx`](BrewMellow_Midterm_Presentation.pptx)  
 **Live Deployed Application:** [https://team-2-capstone-design-one.vercel.app](https://team-2-capstone-design-one.vercel.app)  
 **Repository:** [https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design)
 
 ---
 
-## Slide 1: The User & Problem (No Feature Pitching)
-**Presenter:** **Aanchal (`jaasly07`)**  
-**Duration:** 0:00 – 0:40
+## Slide 1: Title & Overview
+**Badge:** `CAPSTONE DESIGN MIDTERM · TEAM -2`
 
-### Who is this for?
-- **Target User:** Specialty coffee enthusiasts and home-brewers in Nepal and diaspora seeking single-origin Himalayan coffees.
+### BrewMellow.
+*Nepali specialty coffee, roasted to order and delivered fresh*
 
-### What is the real problem?
-- **Zero Transparency:** Commercial grocery store coffee in Kathmandu consists of stale, dark-roasted commercial blends with zero altitude, farm, processing, or roast date information.
-- **No Direct Subscriptions:** Drinkers cannot customize roast profiles for their specific brewing equipment (Pour-Over, Aeropress, French Press) or receive fresh doorstep deliveries.
-
----
-
-## Slide 2: Scope of this Demo & Full-Stack Architecture
-**Presenter:** **Aditya (`notyouradhee`)**  
-**Duration:** 0:40 – 1:15
-
-### Technical Architecture
-- **Frontend:** Next.js 16 (React 19) + Tailwind CSS, deployed live on **Vercel** with HTTPS.
-- **Backend:** Django REST Framework API with PostgreSQL ORM.
-- **Database:** Hosted **Neon PostgreSQL** serverless cluster.
-
-### Scope Boundary (Stated Upfront)
-- **Verified Vertical Slice:** Origin browsing $\rightarrow$ checkout parameter synchronization $\rightarrow$ simulated order persistence $\rightarrow$ customer dashboard & admin console.
-- **What is Simulated:** Payment is flagged internally as `is_fake_payment=True`. No live Khalti or bank money is deducted, but real order records are created and persisted in the database.
+- **Team Members:**
+  - **Aanchal ch. Thakuri** (`@jaasly07`)
+  - **Aditya Kumar Gupta** (`@notyouradhee`)
+  - **Kushan Sunuwar** (`@Kushan2191`)
+  - **Rohit Chantiyal** (`@Rohit-coder201`)
+- **GitHub Link:** [https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design)
+- **Live Demo:** [https://team-2-capstone-design-one.vercel.app](https://team-2-capstone-design-one.vercel.app)
 
 ---
 
-## Slide 3: Live Walkthrough — Regional Origins to Dynamic Checkout
-**Presenter:** **Aditya (`notyouradhee`)**  
-**Duration:** 1:15 – 2:00  
-**Live Action:** Open [https://team-2-capstone-design-one.vercel.app/origins](https://team-2-capstone-design-one.vercel.app/origins)
+## Slide 2 (1/8): The User & The Specialty Coffee Problem
+**Presenter:** Aanchal Thakuri · `@jaasly07` | **Slide:** 1/8
 
-### What the user sees:
-1. **Three Himalayan Micro-Lots:**
-   - *Gulmi Reserve* (1,600m — Fully Washed — Citrus & Dark Chocolate)
-   - *Ilam Gold* (1,800m — Natural Sun-Dried — Alpine Berry & Caramel)
-   - *Nuwakot Heritage* (1,400m — Honey Processed — Roasted Walnut & Molasses)
-2. **State Synchronization:** Clicking **"Shop Gulmi Reserve"** carries origin ID, name, plan, and price directly into `/checkout?origin=1&name=Gulmi%20Reserve&plan_id=PAYG&price=1200`.
+### THE TARGET USER
+- Specialty coffee enthusiasts and home-brewers in Nepal and the diaspora.
+- They seek single-origin Himalayan beans with distinct elevations and processing methods (Washed, Natural, Honey) for manual brewing: V60, Aeropress, French Press.
 
-### Visual Evidence:
-![Origins Desktop Selection](../week-06/evidence/origins-selection.png)
-*Figure 1: Nepali Single-Origin Selection Page ([origins-selection.png](../week-06/evidence/origins-selection.png))*
+### THE REAL PROBLEM
+- **Zero transparency in retail:** Kathmandu supermarket coffee is stale, dark-roasted commercial blend with no harvest altitude, processing method or roast date.
+- **Inaccessible micro-lots:** Premium beans from Gulmi, Ilam and Nuwakot are mostly exported. Locals have no direct platform for fresh roast-to-order subscriptions.
 
 ---
 
-## Slide 4: Checkout Submission & Simulated Payment Confirmation
-**Presenter:** **Aditya (`notyouradhee`)**  
-**Duration:** 2:00 – 2:45  
-**Live Action:** Fill out customer form $\rightarrow$ Click 'Pay with Khalti'
+## Slide 3 (2/8): Scope of this Demo & Full-Stack Architecture
+**Presenter:** Aditya Kumar Gupta · `@notyouradhee` | **Slide:** 2/8
 
-### What happens under the hood:
-1. **Client-Side Form Validation:** Validates full name, email format, Nepal phone prefix, and delivery street address.
-2. **Server-Side API Call:** Dispatches `POST /api/orders/` to the Django REST backend.
-3. **Database Persistence:** An order record is saved into Neon PostgreSQL with status `CONFIRMED`.
-4. **Interactive Modal:** Surfaces a 2.0-second simulated payment modal confirming the order with zero fake claims.
+### TECHNICAL ARCHITECTURE
+- **Frontend:** Next.js 16 (React 19) + Tailwind CSS, live on Vercel over HTTPS.
+- **Backend API:** Django 5.1 REST Framework for orders and data models.
+- **Database:** Serverless PostgreSQL cluster on Neon.
 
-### Visual Evidence:
-![Checkout Flow & Pricing](../week-06/evidence/checkout-flow.png)
-*Figure 2: Complete Checkout & Delivery Setup with Simulated Payment ([checkout-flow.png](../week-06/evidence/checkout-flow.png))*
+### TRANSPARENT SCOPE BOUNDARY
+- **What is verified:** End-to-end flow from browsing origins to checkout state sync, database records, customer dashboard and roastery backoffice.
+- **What is simulated:** Payment is flagged `is_fake_payment=True`. No real cards or Khalti balances are charged; real orders are still saved and tracked.
 
 ---
 
-## Slide 5: Customer Roastery Portal & Operations Backoffice
-**Presenter:** **Aditya (`notyouradhee`)**  
-**Duration:** 2:45 – 3:30  
-**Live Action:** Open `/dashboard` $\rightarrow$ Open `/admin`
+## Slide 4 (3/8): Live Walkthrough: The Verified Vertical Slice
+**Presenter:** Aditya Kumar Gupta · `@notyouradhee` | **Slide:** 3/8  
+**Live URL:** [https://team-2-capstone-design-one.vercel.app/origins](https://team-2-capstone-design-one.vercel.app/origins)
 
-### 1. Customer Roastery Portal (`/dashboard`)
-- Active subscription box (Nuwakot Heritage, 2 kg prepay, pour-over grind).
-- Next roast date scheduled for October 18, 2026.
-- **Himalayan Roastery & Live Delivery Tracker:** Real-time 4-stage tracking (*Confirmed $\rightarrow$ Roasting $\rightarrow$ Dispatched $\rightarrow$ Delivered*).
-
-### 2. Admin Operations Console (`/admin`)
-- Operations KPIs: Gross Revenue (Rs. 22,150), 5 Active Subscribers, 1 Roastery Batch, 2 Shipments in-transit.
-- Live Orders Queue: Interactive lifecycle status dropdowns to dispatch or deliver roastery lots.
-
-### Visual Evidence:
-![Customer Dashboard](../week-06/evidence/dashboard-orders.png)
-*Figure 3: Customer Portal with Active Box & Live Tracker ([dashboard-orders.png](../week-06/evidence/dashboard-orders.png))*
-
-![Admin Backoffice](../week-06/evidence/admin-backoffice.png)
-*Figure 4: Roastery Operations Backoffice Console ([admin-backoffice.png](../week-06/evidence/admin-backoffice.png))*
+- **1 · /ORIGINS (Regional origins):** 3 micro-lots: Gulmi Reserve (1,600m), Ilam Gold (1,800m), Nuwakot Heritage (1,400m).
+- **2 · /CHECKOUT (State synchronization):** Gulmi Reserve passes parameters in the URL query string; total Rs. 1,200 recalculates with no state loss.
+- **3 · POST /API/ORDERS/ (Payment & order record):** Writes an order row to PostgreSQL and opens the 2.0s simulated confirmation modal.
+- **4 · /DASHBOARD · /ADMIN (Post-purchase hubs):** 4-stage tracking (Confirmed → Roasting → Dispatched → Delivered); admin shows Rs. 22,150 revenue and roasting queues.
 
 ---
 
-## Slide 6: Independent QA & Defensive Empty-Cart Edge Case
-**Presenter:** **Kushan (`Kushan2191`)**  
-**Duration:** 3:30 – 4:15  
-**Live Action:** Navigate directly to `https://team-2-capstone-design-one.vercel.app/checkout`
+## Slide 5 (4/8): Individual Contribution: Aanchal Chand Thakuri (@jaasly07)
+**Role:** Frontend & Accessibility Auditor | **Presenter:** Aanchal Chand Thakuri | **Slide:** 4/8
 
-### 1. Non-Author Testing on Independent Hardware
-- Re-tested the complete flow from a clean clone without author coaching.
-- Verified all three coffee cards and reviewed/merged [PR #44](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/44) via [Commit 9d45f95](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/9d45f95).
+### CONCRETE CONTRIBUTIONS
+- Formulated the target user persona and the specialty coffee retail transparency problem.
+- Audited the vertical slice at a 390px mobile viewport against WCAG 2.1 AA.
+- Verified all CTA buttons give a 52px thumb target (`py-3 px-6`).
 
-### 2. Defensive Edge Case: Empty Cart Recovery
-- **Problem:** If a customer directly bookmarks or visits `/checkout` without selecting an origin, unhandled code would throw an `undefined` null crash.
-- **Our Handling:** Defensive routing detects missing parameters and displays a clean **"Your Cart is Empty"** fallback card with a direct **"Build Your Plan"** button back to `/origins`.
+### GITHUB EVIDENCE & PROOF
+- **Commit `ca35b07`:** `docs(ui): record accessibility and mobile responsiveness check for checkout`
+- **Test record:** [`docs/week-06/accessibility-and-mobile-check.md`](../week-06/accessibility-and-mobile-check.md)
+- **Receipt:** [`docs/week-07/receipts/receipt-aanchal.md`](receipts/receipt-aanchal.md)
 
-### Visual Evidence:
-![Empty Cart Edge Case](../week-06/evidence/checkout-empty-state.png)
-*Figure 5: Defensive Empty Cart State on Direct Navigation ([checkout-empty-state.png](../week-06/evidence/checkout-empty-state.png))*
+![Commit ca35b07](presentation-assets/slide_5_img_0.png)
 
 ---
 
-## Slide 7: Mobile PWA & WCAG Accessibility Audit
-**Presenter:** **Aanchal (`jaasly07`)**  
-**Duration:** 4:15 – 5:00  
-**Live Action:** Switch browser DevTools to 390px mobile viewport
+## Slide 6 (5/8): Individual Contribution: Aditya Kumar Gupta (@notyouradhee)
+**Role:** Project Lead & Full-Stack | **Presenter:** Aditya Kumar Gupta | **Slide:** 5/8
 
-### Mobile-First Testing (390 x 960 px):
-- **Responsive Stacking:** Origin grid cleanly collapses to `grid-cols-1` with zero horizontal overflow.
-- **Ergonomic Touch Targets:** All CTA buttons styled with `py-3 px-6` providing a minimum 52px thumb target.
-- **Fixed Bottom Collision Bug Fix:** Resolved an overlap where the mobile navigation bar covered the checkout payment CTA by adding safe-area padding (`pb-28`) in [Commit 7b55d72](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/7b55d72).
+### CONCRETE CONTRIBUTIONS
+- Architected the full-stack vertical slice: Next.js 16, Django REST Framework, Neon PostgreSQL.
+- Built `/origins` to `/checkout` state sync via URL parameters, preventing loss on reload.
+- Deployed the production app on Vercel over HTTPS.
+- Built the customer dashboard, admin console and the simulated payment boundary (`is_fake_payment=True`).
 
-### Visual Evidence:
-![Mobile Origins View](../week-06/evidence/origins-mobile.png)
-*Figure 6: 390px Mobile Viewport Layout and Touch Targets ([origins-mobile.png](../week-06/evidence/origins-mobile.png))*
+### GITHUB EVIDENCE & PROOF
+- **Issue:** [#43 “Feature: Coffee Origin Selection Page”](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/43)
+- **Pull request:** [#44 “feat: origin selection flow with query-param checkout integration”](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/44)
+- **Commit:** `30081cc` *“connect origin selection to checkout state”*
+- **Receipt:** [`docs/week-07/receipts/receipt-aditya.md`](receipts/receipt-aditya.md)
 
----
-
-## Slide 8: Backend Outage Resilience Smoke Testing
-**Presenter:** **Rohit (`Rohit-coder201`)**  
-**Duration:** 5:00 – 5:45  
-**Live Action:** Show terminal curl verification commands
-
-### API Failure Recovery:
-- Simulated an unannounced backend outage by shutting down the Django API service.
-- Verified that the frontend gracefully intercepts network connection drops and alerts the user rather than freezing or crashing.
-- Documented repeatable curl commands in the project README for fast health auditing.
-
-```bash
-# Repeatable Verification Command
-curl -s -X POST http://localhost:8000/api/orders/ \
-  -H "Content-Type: application/json" \
-  -d '{"origin_id":1,"origin_name":"Gulmi Reserve","total_price_npr":1200,"customer_name":"Smoke Test"}'
-```
+![PR #44](presentation-assets/slide_6_img_1.png)
+![Issue #43](presentation-assets/slide_6_img_2.png)
 
 ---
 
-## Slide 9: Honest Boundaries & Sprint 2 Roadmap
-**Presenter:** **Rohit (`Rohit-coder201`)**  
-**Duration:** 5:45 – 6:30
+## Slide 7 (6/8): Individual Contribution: Kushan Sunuwar (@Kushan2191)
+**Role:** QA Lead & Code Reviewer | **Presenter:** Kushan Sunuwar | **Slide:** 6/8
 
-### What is Incomplete Today:
-1. **Live Payment Integration:** Real Khalti mobile wallet sandbox credentials are not yet wired into the checkout button.
-2. **Automated Email Dispatch:** Order receipts are stored in PostgreSQL, but customer confirmation emails via SMTP/SendGrid remain in progress.
+### CONCRETE CONTRIBUTIONS
+- Ran an independent clean-clone test on separate hardware, with no author coaching.
+- Reviewed PR #44, verified parameter behavior and merged it (merge commit `9d45f95`).
+- Tested the empty-cart edge case: opening `/checkout` with no parameters shows a “Your Cart is Empty” card with a “Build Your Plan” button instead of crashing.
 
-### Sprint 2 Next Steps (Immediately Following Midterm):
-- [ ] Connect Khalti Sandbox SDK for real test wallet payments.
-- [ ] Implement automated customer confirmation emails upon order creation.
-- [ ] Expand Roastery Backoffice order fulfillment workflows for roasters.
+### GITHUB EVIDENCE & PROOF
+- **Merge commit:** `9d45f95` *“Merge pull request #44 from CapstoneDesign-Fall2026-UlsanCollege/feature/origin-selection”*
+- **Test note:** [`docs/week-06/tested-by-note.md`](../week-06/tested-by-note.md)
+- **Edge case commit:** `f69700e` *“add defensive empty cart fallback”*
+- **Receipt:** [`docs/week-07/receipts/receipt-kushan.md`](receipts/receipt-kushan.md)
+
+![PR #44 Merged](presentation-assets/slide_7_img_3.png)
+
+---
+
+## Slide 8 (7/8): Individual Contribution: Rohit Chantiyal (@Rohit-coder201)
+**Role:** DevOps & Resilience Lead | **Presenter:** Rohit Chantiyal | **Slide:** 7/8
+
+### CONCRETE CONTRIBUTIONS
+- Ran backend outage testing: stopped the Django server and verified the frontend handles the dropped connection with an explicit alert.
+- Wrote repeatable curl smoke-test commands in the README for continuous health checks.
+- Completed Sprint 1 Quality Quick Checks confirming zero secrets and safe demo data.
+
+### GITHUB EVIDENCE & PROOF
+- **Outage test record:** [`docs/week-06/api-smoke-test-record.md`](../week-06/api-smoke-test-record.md)
+- **README section:** [`README.md#smoke-testing`](../../README.md#4-repeatable-smoke-command-script)
+- **Quality checks:** [`docs/week-07/sprint-1-quality-quick-checks.md`](sprint-1-quality-quick-checks.md)
+- **Receipt:** [`docs/week-07/receipts/receipt-rohit.md`](receipts/receipt-rohit.md)
+
+![README Smoke Script](presentation-assets/slide_8_img_4.png)
+
+---
+
+## Slide 9 (8/8): Next Steps & Sprint 2 Post-Midterm Roadmap
+**Presenter:** Aditya Kumar Gupta · `@notyouradhee` | **Slide:** 8/8
+
+### WHAT REMAINS INCOMPLETE TODAY
+- **Simulated payment gateway:** Checkout uses the mock flag `is_fake_payment=True`; real Khalti wallet sandbox deduction is pending.
+- **Automated transactional emails:** Orders are saved to PostgreSQL; automated dispatch emails via SMTP are in progress.
+
+### SPRINT 2 ACTION PLAN
+1. **Khalti Sandbox SDK:** replace the simulated modal with real test wallet credentials (NPR).
+2. **Transactional email:** automate confirmation and courier tracking emails on order placement.
+3. **Roastery operations portal:** expand backoffice fulfillment status workflows.
+
+*“Thank you, Professor and classmates. We welcome any questions!”*
