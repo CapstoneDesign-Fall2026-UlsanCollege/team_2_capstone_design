@@ -1,6 +1,6 @@
-# Individual Evidence Receipt — Kushan Gautam
+# Individual Evidence Receipt — Kushan Sunuwar
 
-**Student:** `Kushan2191` (Kushan Gautam)  
+**Student:** `Kushan2191` (Kushan Sunuwar)  
 **Team:** Team 2 — BrewMellow  
 **Week:** 6  
 **Date:** October 14, 2026  

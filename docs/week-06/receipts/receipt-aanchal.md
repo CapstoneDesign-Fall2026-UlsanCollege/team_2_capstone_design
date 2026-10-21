@@ -1,6 +1,6 @@
-# Individual Evidence Receipt — Aanchal Jaiswal
+# Individual Evidence Receipt — Aanchal Chand Thakuri
 
-**Student:** `jaasly07` (Aanchal Jaiswal)  
+**Student:** `jaasly07` (Aanchal Chand Thakuri)  
 **Team:** Team 2 — BrewMellow  
 **Week:** 6  
 **Date:** October 14, 2026  

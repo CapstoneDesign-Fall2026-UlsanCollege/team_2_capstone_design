@@ -46,10 +46,10 @@
 
 | Student | Assigned Section | Concrete Contribution Cited | Self Score |
 |---|---|---|---|
-| **`jaasly07`** (Aanchal) | Opening (User & Problem) + Mobile Audit | Explained specialty coffee user persona; audited 390px mobile layout; fixed sticky checkout bar collision via `pb-28`. | **4 / 4** |
-| **`notyouradhee`** (Aditya) | Live Slice Demo & Scope Boundary | Implemented origin-to-checkout architecture; deployed production Vercel app; articulated `is_fake_payment=True` boundary. | **4 / 4** |
-| **`Kushan2191`** (Kushan) | Independent Testing & Edge Case | Executed clean-clone test on separate machine without coaching; reviewed/merged PR #44; checked empty cart edge case. | **4 / 4** |
-| **`Rohit-coder201`** (Rohit) | Resilience Testing & Roadmap | Executed backend outage and recovery smoke test; verified repeatable curl commands; outlined Sprint 2 Khalti roadmap. | **4 / 4** |
+| **`jaasly07`** (Aanchal Chand Thakuri) | Opening (User & Problem) + Mobile Audit | Explained specialty coffee user persona; audited 390px mobile layout; fixed sticky checkout bar collision via `pb-28`. | **4 / 4** |
+| **`notyouradhee`** (Aditya Kumar Gupta) | Live Slice Demo & Scope Boundary | Implemented origin-to-checkout architecture; deployed production Vercel app; articulated `is_fake_payment=True` boundary. | **4 / 4** |
+| **`Kushan2191`** (Kushan Sunuwar) | Independent Testing & Edge Case | Executed clean-clone test on separate machine without coaching; reviewed/merged PR #44; checked empty cart edge case. | **4 / 4** |
+| **`Rohit-coder201`** (Rohit Chhantiyal) | Resilience Testing & Roadmap | Executed backend outage and recovery smoke test; verified repeatable curl commands; outlined Sprint 2 Khalti roadmap. | **4 / 4** |
 
 ---
 

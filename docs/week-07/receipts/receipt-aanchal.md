@@ -1,6 +1,6 @@
-# Individual Evidence Receipt — Aanchal Jaiswal
+# Individual Evidence Receipt — Aanchal Chand Thakuri
 
-**Student:** Aanchal Jaiswal  
+**Student:** Aanchal Chand Thakuri  
 **GitHub Login:** `jaasly07`  
 **Team:** Team 2 — BrewMellow  
 **Week:** 7  

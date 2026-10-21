@@ -25,7 +25,7 @@ This document records the individual evidence receipts for each enrolled student
 
 ---
 
-## 2. Student: Kushan Gautam (`Kushan2191`)
+## 2. Student: Kushan Sunuwar (`Kushan2191`)
 
 ### Receipt 1: Independent Teammate Testing of Origin Selection
 - **What I did:** Performed independent teammate verification of the `/origins` to `/checkout` funnel on a separate machine without coaching from the author. Reviewed and approved PR #44 and executed the merge.
@@ -41,7 +41,7 @@ This document records the individual evidence receipts for each enrolled student
 
 ---
 
-## 3. Student: Aanchal Jaiswal (`jaasly07`)
+## 3. Student: Aanchal Chand Thakuri (`jaasly07`)
 
 ### Receipt 1: Mobile Viewport & Responsiveness Check
 - **What I did:** Executed mobile responsiveness audit on the vertical slice (Origins and Checkout) at 390x844px viewport. Verified card stacking, touch target sizing, and absence of horizontal overflow.
@@ -57,7 +57,7 @@ This document records the individual evidence receipts for each enrolled student
 
 ---
 
-## 4. Student: Rohit Kumar Sharma (`Rohit-coder201`)
+## 4. Student: Rohit Chhantiyal (`Rohit-coder201`)
 
 ### Receipt 1: End-to-End API Smoke Testing & Recovery Validation
 - **What I did:** Conducted API integration smoke tests on `POST /api/orders/` under two test scenarios: backend service active vs. backend service stopped.

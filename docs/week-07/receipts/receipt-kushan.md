@@ -1,6 +1,6 @@
-# Individual Evidence Receipt — Kushan Gautam
+# Individual Evidence Receipt — Kushan Sunuwar
 
-**Student:** Kushan Gautam  
+**Student:** Kushan Sunuwar  
 **GitHub Login:** `Kushan2191`  
 **Team:** Team 2 — BrewMellow  
 **Week:** 7  

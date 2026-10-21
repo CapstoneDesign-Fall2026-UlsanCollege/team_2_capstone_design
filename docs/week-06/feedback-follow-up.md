@@ -29,7 +29,7 @@
   4. Implemented retry/recovery state and curl smoke commands documented in `api-smoke-test-record.md` and `README.md`.
 - **Status:** **COMPLETE**
 
-### Kushan Gautam (`Kushan2191`)
+### Kushan Sunuwar (`Kushan2191`)
 - **Instructor Note:** *"Add your own Week 6 contribution row and link the review or test you performed. If you reviewed the selection flow, record one expected/actual observation and one follow-up. Stretch: test direct navigation to checkout with no selected origin and confirm the empty-cart behavior is clear."*
 - **Action Taken:**
   1. Added personal contribution row in `weekly-report.md` linking merge commit [9d45f95](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/9d45f95).
@@ -37,7 +37,7 @@
   3. Tested edge case: navigated directly to `http://localhost:3000/checkout` in incognito; verified empty cart banner. Proof captured in [`evidence/checkout-empty-state.png`](evidence/checkout-empty-state.png).
 - **Status:** **COMPLETE**
 
-### Aanchal Jaiswal (`jaasly07`)
+### Aanchal Chand Thakuri (`jaasly07`)
 - **Instructor Note:** *"Add a personal report row with exact evidence or own a current test. A responsive/mobile check on the origin-selection or checkout path would be a useful bounded contribution."*
 - **Action Taken:**
   1. Conducted mobile viewport audit at 390x844px for `/origins` and `/checkout`.
@@ -45,7 +45,7 @@
   3. Documented full audit and WCAG 2.1 touch target verifications in [`accessibility-and-mobile-check.md`](accessibility-and-mobile-check.md) with proof screenshot [`evidence/origins-mobile.png`](evidence/origins-mobile.png).
 - **Status:** **COMPLETE**
 
-### Rohit Kumar Sharma (`Rohit-coder201`)
+### Rohit Chhantiyal (`Rohit-coder201`)
 - **Instructor Note:** *"Add a personal row and run a specific checkout/API test with expected and actual results. Stretch: turn the test into a documented smoke check that another teammate can repeat after a frontend or backend change."*
 - **Action Taken:**
   1. Tested `POST /api/orders/` under live Django/Neon DB execution (HTTP 201) vs. terminated backend process (connection error & offline fallback banner).

@@ -92,10 +92,10 @@ Any teammate can verify the core checkout flow is working by running this repeat
 
 | Name | Role / Focus | GitHub |
 |---|---|---|
-| **Aditya** | Backend, Database, Payments API | [@notyouradhee](https://github.com/notyouradhee) |
-| **Aanchal** | Frontend Setup, PWA Configuration | [@jaasly07](https://github.com/jaasly07) |
-| **Kushan2191** | Frontend Plan Selection, Documentation | [@Kushan2191](https://github.com/Kushan2191) |
-| **Rohit-coder201** | Frontend Checkout, Customer Dashboard | [@Rohit-coder201](https://github.com/Rohit-coder201) |
+| **Aditya Kumar Gupta** | Backend, Database, Payments API | [@notyouradhee](https://github.com/notyouradhee) |
+| **Aanchal Chand Thakuri** | Frontend Setup, PWA Configuration | [@jaasly07](https://github.com/jaasly07) |
+| **Kushan Sunuwar** | Frontend Plan Selection, Documentation | [@Kushan2191](https://github.com/Kushan2191) |
+| **Rohit Chhantiyal** | Frontend Checkout, Customer Dashboard | [@Rohit-coder201](https://github.com/Rohit-coder201) |
 
 ---
 *Built with ❤️ in Nepal for Ulsan College.*

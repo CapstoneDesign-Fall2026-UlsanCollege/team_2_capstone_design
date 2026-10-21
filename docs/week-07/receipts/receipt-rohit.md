@@ -1,6 +1,6 @@
-# Individual Evidence Receipt — Rohit Kumar Sharma
+# Individual Evidence Receipt — Rohit Chhantiyal
 
-**Student:** Rohit Kumar Sharma  
+**Student:** Rohit Chhantiyal  
 **GitHub Login:** `Rohit-coder201`  
 **Team:** Team 2 — BrewMellow  
 **Week:** 7  
