@@ -138,16 +138,16 @@ export default function SubscriptionTab({
                 <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-transparent to-transparent" />
 
                 <div className="absolute top-3 left-3 flex gap-1.5">
-                  <span className="bg-black/70 backdrop-blur-md text-white text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded">
+                  <span className="bg-[#1A1512]/90 text-white font-mono text-xs uppercase tracking-wider font-bold px-2.5 py-0.5 rounded border border-white/20">
                     {originInfo.altitude}
                   </span>
-                  <span className="bg-[#A3432A] text-white text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 rounded">
+                  <span className="bg-[#A3432A] text-white font-mono text-xs uppercase tracking-wider font-bold px-2.5 py-0.5 rounded">
                     {originInfo.process}
                   </span>
                 </div>
 
                 <div className="absolute bottom-3 left-3 right-3 text-white">
-                  <p className="text-[10px] uppercase tracking-wider font-bold text-[#E58A1F]">
+                  <p className="font-mono text-xs uppercase tracking-wider font-bold text-[#E58A1F]">
                     {originInfo.region}
                   </p>
                   <h3 className="text-xl font-serif font-bold leading-tight">
@@ -157,11 +157,11 @@ export default function SubscriptionTab({
               </div>
 
               {/* Compact Flavor Tags */}
-              <div className="p-3 bg-white border-t border-[#E6DEC8] flex flex-wrap gap-1">
+              <div className="p-3 bg-white border-t border-[#E6DEC8] flex flex-wrap gap-1.5 font-mono text-xs">
                 {originInfo.notes.map((note) => (
                   <span
                     key={note}
-                    className="text-[10px] px-2 py-0.5 bg-[#FAF8F5] text-[#1A1512] border border-[#E6DEC8] rounded font-medium"
+                    className="px-2 py-0.5 bg-[#FAF8F5] text-[#1A1512] border border-[#E6DEC8] rounded font-medium"
                   >
                     {note}
                   </span>
@@ -236,20 +236,20 @@ export default function SubscriptionTab({
                   <button
                     type="button"
                     onClick={onOpenAddressModal}
-                    className="text-[#A3432A] font-bold hover:underline shrink-0 text-[11px] cursor-pointer"
+                    className="text-[#A3432A] font-mono text-xs font-bold hover:underline shrink-0 cursor-pointer"
                   >
                     Change
                   </button>
                 </div>
 
-                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E6DEC8] text-[11px] text-[#8A7966]">
+                <div className="flex flex-wrap items-center justify-between gap-2 pt-2 border-t border-[#E6DEC8] font-mono text-xs text-[#5C5042]">
                   <span className="flex items-center gap-1.5">
                     <Truck size={13} className="text-[#2E6B34]" /> Express Courier:{" "}
-                    <strong>Free Doorstep Dispatch</strong>
+                    <strong className="text-[#1A1512]">Free Doorstep Dispatch</strong>
                   </span>
                   <span className="flex items-center gap-1.5">
                     <CreditCard size={13} className="text-[#5C2D91]" /> Payment:{" "}
-                    <strong>Khalti Auto-Cleared</strong>
+                    <strong className="text-[#1A1512]">Khalti Auto-Cleared</strong>
                   </span>
                 </div>
               </div>
@@ -259,7 +259,7 @@ export default function SubscriptionTab({
                 <button
                   type="button"
                   onClick={() => setIsBrewGuideOpen(!isBrewGuideOpen)}
-                  className="w-full px-4 py-2.5 text-left flex items-center justify-between text-xs font-bold text-[#1A1512] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
+                  className="w-full min-h-[44px] px-4 py-2.5 text-left flex items-center justify-between font-mono text-xs font-bold text-[#1A1512] hover:bg-[#FAF8F5] transition-colors cursor-pointer"
                 >
                   <span className="flex items-center gap-2">
                     <Coffee size={14} className="text-[#A3432A]" />
@@ -272,17 +272,17 @@ export default function SubscriptionTab({
                 </button>
 
                 {isBrewGuideOpen && (
-                  <div className="px-4 py-3 bg-[#FAF8F5] border-t border-[#E6DEC8] grid grid-cols-3 gap-3 text-xs animate-fadeIn">
+                  <div className="px-4 py-3 bg-[#FAF8F5] border-t border-[#E6DEC8] grid grid-cols-3 gap-3 font-mono text-xs animate-fadeIn">
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-[#8A7966] block">Ideal Method</span>
+                      <span className="uppercase font-bold text-[#5C5042] block">Ideal Method</span>
                       <span className="font-bold text-[#1A1512]">{originInfo.idealBrew}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-[#8A7966] block">Ratio</span>
+                      <span className="uppercase font-bold text-[#5C5042] block">Ratio</span>
                       <span className="font-bold text-[#A3432A]">{originInfo.ratio}</span>
                     </div>
                     <div>
-                      <span className="text-[10px] uppercase font-bold text-[#8A7966] block">Water Temp</span>
+                      <span className="uppercase font-bold text-[#5C5042] block">Water Temp</span>
                       <span className="font-bold text-[#1A1512]">{originInfo.temp}</span>
                     </div>
                   </div>

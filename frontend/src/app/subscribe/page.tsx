@@ -302,7 +302,7 @@ function SubscribeContent() {
                 : "text-[#5C5042] hover:text-[#1A1512] hover:bg-black/5"
             }`}
           >
-            <span className="font-mono text-[11px] text-[#E58A1F] font-bold">01</span>
+            <span className="font-mono text-xs text-[#E58A1F] font-bold">01</span>
             <span>150g Trial Sample</span>
           </button>
           <button
@@ -317,7 +317,7 @@ function SubscribeContent() {
                 : "text-[#5C5042] hover:text-[#1A1512] hover:bg-black/5"
             }`}
           >
-            <span className="font-mono text-[11px] text-[#E58A1F] font-bold">02</span>
+            <span className="font-mono text-xs text-[#E58A1F] font-bold">02</span>
             <span>Roastery Subscription</span>
           </button>
         </div>

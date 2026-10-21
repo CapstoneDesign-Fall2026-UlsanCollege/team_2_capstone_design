@@ -16,7 +16,7 @@ export default function OfflinePage() {
           <WifiOff size={32} />
         </div>
 
-        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#A3432A] bg-[#FAF5F2] px-3 py-1 rounded-full">
+        <span className="font-mono text-xs font-bold uppercase tracking-[0.2em] text-[#A3432A] bg-[#FAF5F2] px-3 py-1 rounded-full border border-[#E6DEC8]">
           PWA Offline Resilience
         </span>
 
@@ -32,7 +32,7 @@ export default function OfflinePage() {
           <p className="font-bold text-[#1A1512] flex items-center gap-1.5">
             <Coffee size={14} className="text-[#A3432A]" /> Himalayan Roast Data Cached:
           </p>
-          <ul className="text-[#8A7966] text-[11px] list-disc list-inside space-y-1">
+          <ul className="text-[#5C5042] text-xs font-mono list-disc list-inside space-y-1">
             <li>Gulmi Reserve, Ilam Gold & Nuwakot profiles</li>
             <li>Stored delivery address & past invoice receipts</li>
           </ul>

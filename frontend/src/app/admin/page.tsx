@@ -176,7 +176,7 @@ export default function AdminPage() {
           <div className="w-16 h-16 bg-[#2C1814] text-[#E56345] rounded-full flex items-center justify-center mx-auto mb-6 border border-[#A3432A]/30">
             <ShieldAlert size={32} />
           </div>
-          <span className="text-[10px] uppercase font-bold tracking-widest text-[#E58A1F] bg-[#2C2420] px-3 py-1 rounded-full border border-white/10">
+          <span className="text-xs uppercase font-bold tracking-widest text-[#E58A1F] bg-[#2C2420] px-3 py-1 rounded-full border border-white/10">
             Corporate Operations Clearance Required
           </span>
           <h1 className="text-2xl font-serif font-bold text-white mt-4 mb-2">Restricted Staff Portal</h1>
@@ -229,7 +229,7 @@ export default function AdminPage() {
           <div className="p-6 border-b border-[#26201B]">
             <div className="flex items-center gap-2 mb-1.5">
               <span className="w-2.5 h-2.5 rounded-full bg-[#E58A1F] animate-pulse"></span>
-              <span className="text-[10px] uppercase font-bold tracking-[0.2em] text-[#E58A1F]">
+              <span className="text-xs uppercase font-bold tracking-[0.2em] text-[#E58A1F]">
                 Operations Hub
               </span>
             </div>
@@ -251,7 +251,7 @@ export default function AdminPage() {
                 <Package size={16} />
                 <span>Orders & Queue</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/30 text-white font-mono">
+              <span className="text-xs px-1.5 py-0.5 rounded bg-black/30 text-white font-mono">
                 {orders.length}
               </span>
             </button>
@@ -268,7 +268,7 @@ export default function AdminPage() {
                 <Users size={16} />
                 <span>Customer CRM</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-black/30 text-white font-mono">
+              <span className="text-xs px-1.5 py-0.5 rounded bg-black/30 text-white font-mono">
                 {customerDirectory.length}
               </span>
             </button>
@@ -285,7 +285,7 @@ export default function AdminPage() {
                 <Coffee size={16} />
                 <span>Roastery Lots</span>
               </div>
-              <span className="text-[10px] px-1.5 py-0.5 rounded bg-[#2E6B34] text-white font-bold">
+              <span className="text-xs px-1.5 py-0.5 rounded bg-[#2E6B34] text-white font-bold">
                 3 Lots
               </span>
             </button>
@@ -302,7 +302,7 @@ export default function AdminPage() {
                 <TrendingUp size={16} />
                 <span>Financials</span>
               </div>
-              <span className="text-[10px] text-[#3A7D44] font-bold">+14%</span>
+              <span className="text-xs text-[#3A7D44] font-bold">+14%</span>
             </button>
           </nav>
         </div>
@@ -310,9 +310,9 @@ export default function AdminPage() {
         {/* Sidebar Footer */}
         <div className="p-4 border-t border-[#26201B] space-y-3">
           <div className="p-3 bg-[#1D1714] rounded-lg border border-[#2C2420]">
-            <p className="text-[10px] uppercase tracking-wider text-[#8A7966] font-bold">Authenticated Admin</p>
+            <p className="text-xs uppercase tracking-wider text-[#8A7966] font-bold">Authenticated Admin</p>
             <p className="text-xs font-bold text-white truncate">{currentUser?.name || "Operations Lead"}</p>
-            <p className="text-[10px] text-[#A89F91] truncate">{currentUser?.email || "admin@brewmellow.com"}</p>
+            <p className="text-xs text-[#A89F91] truncate">{currentUser?.email || "admin@brewmellow.com"}</p>
           </div>
 
           <div className="flex items-center justify-between pt-1 text-xs">
@@ -392,52 +392,52 @@ export default function AdminPage() {
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-5">
                 <div className="bg-white border border-[#E6DEC8] p-5 rounded-xl shadow-sm">
                   <div className="flex justify-between items-start mb-2 text-[#8A7966]">
-                    <span className="text-[10px] uppercase tracking-wider font-bold">Gross Revenue</span>
+                    <span className="text-xs uppercase tracking-wider font-bold">Gross Revenue</span>
                     <TrendingUp size={16} className="text-[#2E6B34]" />
                   </div>
                   <h3 className="text-2xl font-serif font-bold text-[#1A1512]">
                     Rs. {totalRevenue.toLocaleString()}
                   </h3>
-                  <p className="text-[10px] text-[#2E6B34] font-semibold mt-1 flex items-center gap-1">
+                  <p className="text-xs text-[#2E6B34] font-semibold mt-1 flex items-center gap-1">
                     <ArrowUpRight size={12} /> +14.2% MoM subscription growth
                   </p>
                 </div>
 
                 <div className="bg-white border border-[#E6DEC8] p-5 rounded-xl shadow-sm">
                   <div className="flex justify-between items-start mb-2 text-[#8A7966]">
-                    <span className="text-[10px] uppercase tracking-wider font-bold">Active Subscriptions</span>
+                    <span className="text-xs uppercase tracking-wider font-bold">Active Subscriptions</span>
                     <Users size={16} />
                   </div>
                   <h3 className="text-2xl font-serif font-bold text-[#1A1512]">
                     {activeSubs} Subscribers
                   </h3>
-                  <p className="text-[10px] text-[#8A7966] font-medium mt-1">
+                  <p className="text-xs text-[#8A7966] font-medium mt-1">
                     94.2% monthly recurring retention
                   </p>
                 </div>
 
                 <div className="bg-white border border-[#E6DEC8] p-5 rounded-xl shadow-sm">
                   <div className="flex justify-between items-start mb-2 text-[#8A7966]">
-                    <span className="text-[10px] uppercase tracking-wider font-bold">Roastery Drum Queue</span>
+                    <span className="text-xs uppercase tracking-wider font-bold">Roastery Drum Queue</span>
                     <Flame size={16} className="text-[#E58A1F]" />
                   </div>
                   <h3 className="text-2xl font-serif font-bold text-[#E58A1F]">
                     {inRoastingQueue} Batches
                   </h3>
-                  <p className="text-[10px] text-[#8A7966] font-medium mt-1">
+                  <p className="text-xs text-[#8A7966] font-medium mt-1">
                     Lalitpur drum roaster allocation
                   </p>
                 </div>
 
                 <div className="bg-white border border-[#E6DEC8] p-5 rounded-xl shadow-sm">
                   <div className="flex justify-between items-start mb-2 text-[#8A7966]">
-                    <span className="text-[10px] uppercase tracking-wider font-bold">Courier In-Transit</span>
+                    <span className="text-xs uppercase tracking-wider font-bold">Courier In-Transit</span>
                     <Truck size={16} className="text-[#3366CC]" />
                   </div>
                   <h3 className="text-2xl font-serif font-bold text-[#3366CC]">
                     {inCourierTransit} Shipments
                   </h3>
-                  <p className="text-[10px] text-[#8A7966] font-medium mt-1">
+                  <p className="text-xs text-[#8A7966] font-medium mt-1">
                     Doorstep deliveries nationwide
                   </p>
                 </div>
@@ -463,7 +463,7 @@ export default function AdminPage() {
                       }`}
                     >
                       <span>{tab.label}</span>
-                      <span className={`px-1.5 py-0.2 rounded text-[9px] font-mono ${statusFilter === tab.id ? "bg-white/20" : "bg-[#F0EAE1]"}`}>
+                      <span className={`px-1.5 py-0.2 rounded text-xs font-mono ${statusFilter === tab.id ? "bg-white/20" : "bg-[#F0EAE1]"}`}>
                         {tab.count}
                       </span>
                     </button>
@@ -479,7 +479,7 @@ export default function AdminPage() {
               <div className="bg-white rounded-xl border border-[#E6DEC8] overflow-hidden shadow-sm">
                 <div className="overflow-x-auto">
                   <table className="w-full text-sm text-left">
-                    <thead className="bg-[#FAF8F5] text-[10px] uppercase tracking-widest text-[#5C5042] font-bold border-b border-[#E6DEC8]">
+                    <thead className="bg-[#FAF8F5] text-xs uppercase tracking-widest text-[#5C5042] font-bold border-b border-[#E6DEC8]">
                       <tr>
                         <th className="px-5 py-4">Order ID & Date</th>
                         <th className="px-5 py-4">Customer Account</th>
@@ -509,7 +509,7 @@ export default function AdminPage() {
                                 <span className="font-mono font-bold text-[#1A1512]">
                                   #{order.id.toString().padStart(4, "0")}
                                 </span>
-                                <p className="text-[10px] text-[#8A7966]">
+                                <p className="text-xs text-[#8A7966]">
                                   {new Date(order.created_at).toLocaleDateString("en-US", { month: "short", day: "numeric", hour: "2-digit", minute: "2-digit" })}
                                 </p>
                               </td>
@@ -526,7 +526,7 @@ export default function AdminPage() {
                                     </p>
                                     <p className="text-[11px] text-[#8A7966]">{order.customer_email || "N/A"}</p>
                                     {order.customer_phone && (
-                                      <p className="text-[10px] text-[#5C5042] font-mono">{order.customer_phone}</p>
+                                      <p className="text-xs text-[#5C5042] font-mono">{order.customer_phone}</p>
                                     )}
                                   </div>
                                 </div>
@@ -541,7 +541,7 @@ export default function AdminPage() {
 
                               {/* Coffee Lot */}
                               <td className="px-5 py-4">
-                                <span className="inline-block px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#FAF5F2] text-[#A3432A] border border-[#E6DEC8]">
+                                <span className="inline-block px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-[#FAF5F2] text-[#A3432A] border border-[#E6DEC8]">
                                   {order.origin_name || "Gulmi Reserve"}
                                 </span>
                                 <p className="text-[11px] text-[#5C5042] mt-0.5">
@@ -552,7 +552,7 @@ export default function AdminPage() {
                               {/* Total Amount */}
                               <td className="px-5 py-4 whitespace-nowrap font-bold text-[#1A1512]">
                                 Rs. {Number(order.total_price_npr || 0).toLocaleString()}
-                                <span className="block text-[9px] uppercase tracking-wider text-[#2E6B34] font-semibold">Paid</span>
+                                <span className="block text-xs uppercase tracking-wider text-[#2E6B34] font-semibold">Paid</span>
                               </td>
 
                               {/* Status Selector */}
@@ -615,7 +615,7 @@ export default function AdminPage() {
 
               <div className="bg-white rounded-xl border border-[#E6DEC8] overflow-hidden shadow-sm">
                 <table className="w-full text-sm text-left">
-                  <thead className="bg-[#FAF8F5] text-[10px] uppercase tracking-widest text-[#5C5042] font-bold border-b border-[#E6DEC8]">
+                  <thead className="bg-[#FAF8F5] text-xs uppercase tracking-widest text-[#5C5042] font-bold border-b border-[#E6DEC8]">
                     <tr>
                       <th className="px-6 py-4">Customer Name & Contact</th>
                       <th className="px-6 py-4">Delivery Address</th>
@@ -631,7 +631,7 @@ export default function AdminPage() {
                         <td className="px-6 py-4">
                           <p className="font-bold text-[#1A1512]">{c.name}</p>
                           <p className="text-xs text-[#8A7966]">{c.email}</p>
-                          <p className="text-[10px] text-[#5C5042] font-mono mt-0.5">{c.phone}</p>
+                          <p className="text-xs text-[#5C5042] font-mono mt-0.5">{c.phone}</p>
                         </td>
                         <td className="px-6 py-4 text-xs text-[#5C5042] max-w-xs">
                           {c.address}
@@ -643,12 +643,12 @@ export default function AdminPage() {
                           Rs. {c.totalSpent.toLocaleString()}
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-2 py-0.5 rounded text-[10px] font-bold uppercase tracking-wider bg-[#FAF5F2] text-[#A3432A] border border-[#E6DEC8]">
+                          <span className="px-2 py-0.5 rounded text-xs font-bold uppercase tracking-wider bg-[#FAF5F2] text-[#A3432A] border border-[#E6DEC8]">
                             {c.favoriteOrigin}
                           </span>
                         </td>
                         <td className="px-6 py-4">
-                          <span className="px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider bg-[#E7F3E8] text-[#2E6B34] border border-[#C3E4C6]">
+                          <span className="px-2.5 py-1 rounded-full text-xs font-bold uppercase tracking-wider bg-[#E7F3E8] text-[#2E6B34] border border-[#C3E4C6]">
                             Active Subscriber
                           </span>
                         </td>
@@ -715,12 +715,12 @@ export default function AdminPage() {
                     <div key={idx} className="bg-white border border-[#E6DEC8] rounded-xl p-6 shadow-sm space-y-4">
                       <div className="flex justify-between items-start">
                         <div>
-                          <span className="text-[10px] uppercase font-bold tracking-wider text-[#A3432A]">
+                          <span className="text-xs uppercase font-bold tracking-wider text-[#A3432A]">
                             Lot #{idx + 1} • {lot.altitude}
                           </span>
                           <h4 className="font-serif font-bold text-base text-[#1A1512] mt-0.5">{lot.name}</h4>
                         </div>
-                        <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-[#FAF8F5] border border-[#E6DEC8] text-[#5C5042]">
+                        <span className="px-2 py-0.5 rounded text-xs font-bold bg-[#FAF8F5] border border-[#E6DEC8] text-[#5C5042]">
                           {lot.score}
                         </span>
                       </div>
@@ -736,7 +736,7 @@ export default function AdminPage() {
                             style={{ width: `${percentRoasted}%`, backgroundColor: lot.color }}
                           />
                         </div>
-                        <p className="text-[10px] text-right text-[#8A7966]">{percentRoasted}% roasted</p>
+                        <p className="text-xs text-right text-[#8A7966]">{percentRoasted}% roasted</p>
                       </div>
 
                       <div className="pt-3 border-t border-[#F0EAE1] space-y-1.5 text-xs text-[#5C5042]">
@@ -827,7 +827,7 @@ export default function AdminPage() {
 
             {/* Invoice Print Header */}
             <div className="text-center pb-6 border-b border-[#E6DEC8] mb-6">
-              <span className="text-[10px] uppercase tracking-widest font-bold text-[#A3432A]">
+              <span className="text-xs uppercase tracking-widest font-bold text-[#A3432A]">
                 Tax Invoice • Nepal VAT Compliant
               </span>
               <h2 className="text-2xl font-serif font-bold text-[#1A1512] mt-1">BrewMellow Himalayan Roasters</h2>
@@ -838,14 +838,14 @@ export default function AdminPage() {
             {/* Bill To Info */}
             <div className="grid grid-cols-2 gap-4 text-xs mb-6 pb-6 border-b border-[#F0EAE1]">
               <div>
-                <span className="text-[#8A7966] uppercase text-[10px] font-bold block mb-1">Billed To:</span>
+                <span className="text-[#8A7966] uppercase text-xs font-bold block mb-1">Billed To:</span>
                 <p className="font-bold text-[#1A1512]">{selectedInvoiceOrder.customer_name || "Customer"}</p>
                 <p className="text-[#5C5042]">{selectedInvoiceOrder.customer_email || "N/A"}</p>
                 <p className="text-[#5C5042]">{selectedInvoiceOrder.customer_phone || "N/A"}</p>
                 <p className="text-[#5C5042] mt-1 line-clamp-2">{selectedInvoiceOrder.delivery_address || "Kathmandu, Nepal"}</p>
               </div>
               <div className="text-right">
-                <span className="text-[#8A7966] uppercase text-[10px] font-bold block mb-1">Invoice Details:</span>
+                <span className="text-[#8A7966] uppercase text-xs font-bold block mb-1">Invoice Details:</span>
                 <p className="font-mono font-bold text-[#1A1512]">Invoice #{selectedInvoiceOrder.id.toString().padStart(5, '0')}</p>
                 <p className="text-[#5C5042]">Date: {new Date(selectedInvoiceOrder.created_at).toLocaleDateString()}</p>
                 <p className="text-[#2E6B34] font-bold mt-1">Payment Status: PAID</p>
@@ -854,7 +854,7 @@ export default function AdminPage() {
 
             {/* Line Items */}
             <table className="w-full text-xs mb-6">
-              <thead className="bg-[#FAF8F5] text-[10px] uppercase font-bold text-[#5C5042] border-b border-[#E6DEC8]">
+              <thead className="bg-[#FAF8F5] text-xs uppercase font-bold text-[#5C5042] border-b border-[#E6DEC8]">
                 <tr>
                   <th className="py-2 text-left">Item Description</th>
                   <th className="py-2 text-center">Qty</th>
@@ -865,7 +865,7 @@ export default function AdminPage() {
                 <tr>
                   <td className="py-3">
                     <p className="font-bold text-[#1A1512]">{selectedInvoiceOrder.origin_name || "Himalayan Single-Origin"}</p>
-                    <p className="text-[10px] text-[#8A7966]">{selectedInvoiceOrder.weight_kg}kg • {selectedInvoiceOrder.plan_name}</p>
+                    <p className="text-xs text-[#8A7966]">{selectedInvoiceOrder.weight_kg}kg • {selectedInvoiceOrder.plan_name}</p>
                   </td>
                   <td className="py-3 text-center">1</td>
                   <td className="py-3 text-right font-mono">Rs. {selectedInvoiceOrder.total_price_npr}</td>

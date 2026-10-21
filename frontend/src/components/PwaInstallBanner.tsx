@@ -81,7 +81,7 @@ export default function PwaInstallBanner() {
                 <span className="text-xs uppercase tracking-wider font-bold text-white">
                   BrewMellow App
                 </span>
-                <span className="bg-[#2E6B34] text-white text-[10px] font-mono uppercase tracking-widest px-2 py-0.5 rounded-full font-bold">
+                <span className="bg-[#2E6B34] text-white text-xs font-mono uppercase tracking-widest px-2.5 py-0.5 rounded-full font-bold">
                   PWA Ready
                 </span>
               </div>

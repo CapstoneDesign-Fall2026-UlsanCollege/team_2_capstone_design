@@ -303,7 +303,7 @@ export default function DashboardPage() {
   const activeOrder = orders.length > 0 ? orders[selectedOrderIndex] || orders[0] : null;
 
   return (
-    <div className="min-h-screen bg-[#F5F2EB] text-[#1A1512] font-sans pb-32">
+    <div className="min-h-screen bg-[#F5F2EB] text-[#1A1512] font-sans pb-36 lg:pb-16 pb-safe">
       {/* Toast Alert Notification */}
       {toastMessage && (
         <div className="fixed top-24 right-6 z-50 bg-[#1A1512] text-[#F5F2EB] px-6 py-4 rounded-xl shadow-2xl border border-[#A3432A] flex items-center gap-3 animate-in slide-in-from-top-4 duration-200">
@@ -325,17 +325,17 @@ export default function DashboardPage() {
         <div className="max-w-6xl mx-auto">
           <div className="flex flex-col md:flex-row md:items-end justify-between gap-6 pb-8">
             <div>
-              <div className="flex items-center gap-3 mb-2">
+              <div className="flex flex-wrap items-center gap-3 mb-2">
                 <span
-                  className={`text-[10px] uppercase tracking-widest px-3 py-1 font-bold rounded-full border ${
+                  className={`font-mono text-xs uppercase tracking-wider px-3 py-1 font-bold rounded-full border ${
                     activeOrder
                       ? "bg-[#E7F3E8] text-[#2E6B34] border-[#C3E4C6]"
-                      : "bg-[#F5F2EB] text-[#8A7966] border-[#E6DEC8]"
+                      : "bg-[#F5F2EB] text-[#5C5042] border-[#E6DEC8]"
                   }`}
                 >
                   {activeOrder ? "● Active Coffee Club Subscriber" : "Registered Member"}
                 </span>
-                <span className="text-[10px] uppercase tracking-widest text-[#8A7966] font-medium">
+                <span className="font-mono text-xs uppercase tracking-wider text-[#5C5042] font-semibold">
                   Direct-Trade Member • Since {user.memberSince}
                 </span>
               </div>
@@ -392,10 +392,10 @@ export default function DashboardPage() {
                   id={`tab-${tab.id}`}
                   type="button"
                   onClick={() => setActiveTab(tab.id as TabType)}
-                  className={`pb-4 px-3 sm:px-4 text-xs uppercase tracking-widest font-bold whitespace-nowrap border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
+                  className={`min-h-[48px] pb-3 px-3.5 sm:px-4 font-mono text-xs uppercase tracking-wider font-bold whitespace-nowrap border-b-2 transition-all flex items-center gap-2 cursor-pointer ${
                     isActive
                       ? "border-[#A3432A] text-[#1A1512]"
-                      : "border-transparent text-[#8A7966] hover:text-[#1A1512]"
+                      : "border-transparent text-[#5C5042] hover:text-[#1A1512]"
                   }`}
                 >
                   <Icon size={15} className={isActive ? "text-[#A3432A]" : "text-[#8A7966]"} />

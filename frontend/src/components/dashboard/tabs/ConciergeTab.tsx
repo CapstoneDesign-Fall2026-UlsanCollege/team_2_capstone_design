@@ -51,15 +51,15 @@ export default function ConciergeTab({
         <div>
           <div className="flex items-center gap-2 mb-2">
             <span className="w-2.5 h-2.5 rounded-full bg-[#2E6B34] animate-pulse"></span>
-            <span className="text-[10px] uppercase tracking-widest font-bold text-[#E58A1F]">
+            <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#E58A1F]">
               Lalitpur Roastery Live Operations
             </span>
           </div>
           <h3 className="text-2xl font-serif font-bold text-white mb-1">
-            Artisan Roasting & Concierge Support
+            Roastery Operations & Concierge Support
           </h3>
-          <p className="text-xs text-[#A89F91] max-w-xl leading-relaxed">
-            Our drum roasters and coffee sommeliers are on-site in Jhamsikhel, Lalitpur from 8:00 AM – 6:00 PM NPT. We're here for grind adjustments, water brewing ratios, or shipment support.
+          <p className="text-xs text-[#C8BFAB] max-w-xl leading-relaxed">
+            Our drum roasters and coffee specialists are on-site in Jhamsikhel, Lalitpur from 8:00 AM – 6:00 PM NPT. Contact us for grind adjustments, brewing ratios, or courier dispatch support.
           </p>
         </div>
 
@@ -68,13 +68,13 @@ export default function ConciergeTab({
             href="https://wa.me/9779801234567"
             target="_blank"
             rel="noreferrer"
-            className="px-4 py-2.5 bg-[#2E6B34] hover:bg-[#25582a] text-white text-xs uppercase tracking-widest font-bold rounded-xl transition-colors shadow-sm flex items-center gap-2"
+            className="min-h-[44px] px-4 py-2.5 bg-[#2E6B34] hover:bg-[#25582a] text-white font-mono text-xs uppercase tracking-wider font-bold rounded-xl transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
           >
             <Phone size={14} /> WhatsApp Hotline
           </a>
           <a
             href="mailto:concierge@brewmellow.com"
-            className="px-4 py-2.5 bg-[#FAF8F5] text-[#1A1512] hover:bg-white text-xs uppercase tracking-widest font-bold rounded-xl transition-colors shadow-sm flex items-center gap-2"
+            className="min-h-[44px] px-4 py-2.5 bg-[#FAF8F5] text-[#1A1512] hover:bg-white font-mono text-xs uppercase tracking-wider font-bold rounded-xl transition-colors shadow-xs flex items-center gap-2 cursor-pointer"
           >
             <Mail size={14} /> Email Roaster
           </a>
@@ -109,14 +109,14 @@ export default function ConciergeTab({
           ) : (
             <form onSubmit={onSubmitSupport} className="space-y-4">
               <div>
-                <label htmlFor="conciergeTopic" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1">
+                <label htmlFor="conciergeTopic" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                   Topic / Category *
                 </label>
                 <select
                   id="conciergeTopic"
                   value={supportForm.subject}
                   onChange={(e) => onChangeSupportForm("subject", e.target.value)}
-                  className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
+                  className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
                 >
                   <option value="Roast Date & Freshness Inquiry">Roast Date & Freshness Inquiry</option>
                   <option value="Grind Calibration Assistance">Grind Calibration Assistance (V60 / Espresso)</option>
@@ -127,7 +127,7 @@ export default function ConciergeTab({
               </div>
 
               <div>
-                <label htmlFor="conciergeMessage" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1">
+                <label htmlFor="conciergeMessage" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                   Your Message / Question *
                 </label>
                 <textarea
@@ -137,13 +137,13 @@ export default function ConciergeTab({
                   placeholder="Tell us what you need help with..."
                   value={supportForm.message}
                   onChange={(e) => onChangeSupportForm("message", e.target.value)}
-                  className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
+                  className="w-full p-3.5 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
                 />
               </div>
 
               <button
                 type="submit"
-                className="px-6 py-3.5 bg-[#1A1512] hover:bg-[#2C2420] text-white text-xs uppercase tracking-widest font-bold rounded-xl transition-colors shadow-sm flex items-center gap-2 cursor-pointer"
+                className="min-h-[48px] px-6 py-3.5 bg-[#1A1512] hover:bg-[#2C2420] text-white font-mono text-xs uppercase tracking-widest font-bold rounded-xl transition-colors shadow-xs flex items-center gap-2 cursor-pointer active:scale-[0.99]"
               >
                 <Send size={14} /> Send Message to Roastery
               </button>

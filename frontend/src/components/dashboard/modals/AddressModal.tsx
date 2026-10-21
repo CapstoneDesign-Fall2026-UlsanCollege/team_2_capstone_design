@@ -41,7 +41,7 @@ export default function AddressModal({
         
         <form onSubmit={onSave} className="space-y-4">
           <div>
-            <label htmlFor="addressModalName" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1">
+            <label htmlFor="addressModalName" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
               Recipient Full Name *
             </label>
             <input
@@ -50,12 +50,12 @@ export default function AddressModal({
               required
               value={profileForm.name}
               onChange={(e) => onChange("name", e.target.value)}
-              className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
+              className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
             />
           </div>
 
           <div>
-            <label htmlFor="addressModalStreet" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1">
+            <label htmlFor="addressModalStreet" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
               Delivery Street Address / Ward / Area *
             </label>
             <input
@@ -64,13 +64,13 @@ export default function AddressModal({
               required
               value={profileForm.address}
               onChange={(e) => onChange("address", e.target.value)}
-              className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
+              className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
             />
           </div>
 
           <div>
-            <label htmlFor="addressModalPhone" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1">
-              Mobile Phone Number (for courier SMS) *
+            <label htmlFor="addressModalPhone" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
+              Mobile Phone Number (For courier SMS) *
             </label>
             <input
               id="addressModalPhone"
@@ -78,15 +78,15 @@ export default function AddressModal({
               required
               value={profileForm.phone}
               onChange={(e) => onChange("phone", e.target.value)}
-              className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
+              className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] text-sm text-[#1A1512] bg-[#FAF8F5] rounded-xl focus:outline-none focus:border-[#A3432A]"
             />
           </div>
 
           <button
             type="submit"
-            className="w-full bg-[#1A1512] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors rounded-xl mt-2 cursor-pointer"
+            className="w-full min-h-[48px] bg-[#1A1512] text-white py-3.5 font-mono text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors rounded-xl mt-2 cursor-pointer active:scale-[0.99]"
           >
-            Save Shipping Address
+            Save Shipping Destination
           </button>
         </form>
       </div>

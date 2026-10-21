@@ -231,12 +231,12 @@ export default function Navbar() {
               {user ? (
                 <div className="p-4 bg-white border border-[#E6DEC8] rounded-xl shadow-sm">
                   <div className="flex items-center justify-between mb-1">
-                    <p className="text-xs font-bold text-[#1A1512]">{user.name}</p>
-                    <span className="text-[9px] uppercase tracking-wider font-bold px-2 py-0.5 bg-[#E7F3E8] text-[#2E6B34] rounded">
+                    <p className="font-mono text-xs font-bold text-[#1A1512]">{user.name}</p>
+                    <span className="font-mono text-xs uppercase tracking-wider font-bold px-2 py-0.5 bg-[#E7F3E8] text-[#2E6B34] rounded border border-[#C3E4C6]">
                       Logged In
                     </span>
                   </div>
-                  <p className="text-[11px] text-[#8A7966] mb-3 truncate">{user.email}</p>
+                  <p className="font-mono text-xs text-[#5C5042] mb-3 truncate">{user.email}</p>
 
                   <div className="flex gap-2">
                     <Link

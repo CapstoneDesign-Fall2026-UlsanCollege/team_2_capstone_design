@@ -63,8 +63,8 @@ export default function GrindModal({
               }`}
             >
               <div>
-                <span className="text-xs font-bold text-[#1A1512] block">{g.name}</span>
-                <span className="text-[11px] text-[#8A7966]">{g.desc}</span>
+                <span className="font-mono text-xs font-bold text-[#1A1512] block mb-0.5">{g.name}</span>
+                <span className="font-mono text-xs text-[#5C5042]">{g.desc}</span>
               </div>
               <span
                 className={`w-4 h-4 rounded-full border transition-all flex items-center justify-center shrink-0 mt-0.5 ${

@@ -12,7 +12,7 @@ export default function PrivacyPage() {
           <ArrowLeft size={16} /> Back to Store
         </Link>
         
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-[#E6DEC8] rounded-full text-[#A3432A] text-[10px] font-bold uppercase tracking-widest mb-3">
+        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-[#E6DEC8] rounded-full text-[#A3432A] font-mono text-xs font-bold uppercase tracking-widest mb-3">
           <Scale size={12} /> Compliance & Trust
         </div>
         

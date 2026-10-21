@@ -3,7 +3,7 @@
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
-import { Coffee, Lock, Mail, User, MapPin, Phone, ArrowRight, AlertCircle, Sparkles, Loader2, KeyRound, ShieldCheck } from "lucide-react";
+import { Coffee, Lock, Mail, ArrowRight, AlertCircle, Loader2, KeyRound, ShieldCheck } from "lucide-react";
 
 export default function AuthPage() {
   const router = useRouter();
@@ -163,45 +163,47 @@ export default function AuthPage() {
   };
 
   return (
-    <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center justify-center p-6 font-sans py-16">
+    <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center justify-center p-4 sm:p-6 font-sans py-16 pb-28 md:pb-16 pb-safe">
       
       {/* Brand Logo */}
-      <Link href="/" className="mb-8 text-[#1A1512] hover:opacity-80 transition-opacity flex items-center gap-2">
-        <Coffee size={36} className="text-[#A3432A]" />
+      <Link href="/" className="mb-6 text-[#1A1512] hover:opacity-80 transition-opacity flex items-center gap-2">
+        <Coffee size={32} className="text-[#A3432A]" />
         <span className="font-serif text-2xl font-bold tracking-tight">BrewMellow.</span>
       </Link>
 
-      <div className="w-full max-w-lg bg-white border border-[#E6DEC8] shadow-xl rounded-xl overflow-hidden">
+      <div className="w-full max-w-lg bg-white border border-[#E6DEC8] shadow-sm rounded-2xl overflow-hidden">
         
         {/* Tab Switcher */}
         <div className="flex border-b border-[#E6DEC8] bg-[#FAF8F5]">
           <button
+            type="button"
             onClick={() => { setMode("login"); setError(null); }}
-            className={`flex-1 py-4 text-xs uppercase tracking-widest font-bold transition-colors ${
+            className={`flex-1 min-h-[48px] py-3.5 font-mono text-xs uppercase tracking-widest font-bold transition-colors cursor-pointer ${
               mode === "login" 
                 ? "bg-white text-[#1A1512] border-b-2 border-[#A3432A]" 
-                : "text-[#8A7966] hover:text-[#1A1512]"
+                : "text-[#5C5042] hover:text-[#1A1512]"
             }`}
           >
             Sign In
           </button>
           <button
+            type="button"
             onClick={() => { setMode("signup"); setError(null); }}
-            className={`flex-1 py-4 text-xs uppercase tracking-widest font-bold transition-colors ${
+            className={`flex-1 min-h-[48px] py-3.5 font-mono text-xs uppercase tracking-widest font-bold transition-colors cursor-pointer ${
               mode === "signup" 
                 ? "bg-white text-[#1A1512] border-b-2 border-[#A3432A]" 
-                : "text-[#8A7966] hover:text-[#1A1512]"
+                : "text-[#5C5042] hover:text-[#1A1512]"
             }`}
           >
             Create Account
           </button>
         </div>
 
-        <div className="p-8 md:p-10">
+        <div className="p-6 sm:p-8 md:p-10">
           
           {error && (
-            <div className="mb-6 p-3.5 bg-[#FAF5F5] border border-[#F0DADA] text-[#A3432A] text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded">
-              <AlertCircle size={15} className="flex-shrink-0" />
+            <div className="mb-6 p-4 bg-[#FAF5F5] border border-[#F0DADA] text-[#A3432A] font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2 rounded-xl">
+              <AlertCircle size={15} className="shrink-0" />
               <span>{error}</span>
             </div>
           )}
@@ -210,7 +212,7 @@ export default function AuthPage() {
           {mode === "login" && (
             <form onSubmit={handleLogin} className="space-y-6">
               <div>
-                <label htmlFor="loginEmail" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                <label htmlFor="loginEmail" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                   Email Address
                 </label>
                 <div className="relative">
@@ -221,18 +223,18 @@ export default function AuthPage() {
                     placeholder="e.g. aarav.sharma@gmail.com"
                     value={loginData.email}
                     onChange={(e) => setLoginData({ ...loginData, email: e.target.value })}
-                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                    className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                   />
-                  <Mail size={16} className="absolute right-3 top-3.5 text-[#8A7966]" />
+                  <Mail size={16} className="absolute right-3.5 top-4 text-[#8A7966]" />
                 </div>
               </div>
 
               <div>
                 <div className="flex justify-between items-center mb-1.5">
-                  <label htmlFor="loginPassword" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042]">
+                  <label htmlFor="loginPassword" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042]">
                     Password
                   </label>
-                  <span className="text-[10px] text-[#A3432A] font-bold cursor-pointer hover:underline">
+                  <span className="font-mono text-xs text-[#A3432A] font-bold cursor-pointer hover:underline">
                     Forgot Password?
                   </span>
                 </div>
@@ -244,16 +246,16 @@ export default function AuthPage() {
                     placeholder="••••••••"
                     value={loginData.password}
                     onChange={(e) => setLoginData({ ...loginData, password: e.target.value })}
-                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                    className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                   />
-                  <Lock size={16} className="absolute right-3 top-3.5 text-[#8A7966]" />
+                  <Lock size={16} className="absolute right-3.5 top-4 text-[#8A7966]" />
                 </div>
               </div>
 
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#1A1512] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors rounded shadow-sm flex items-center justify-center gap-2 disabled:opacity-60"
+                className="w-full min-h-[48px] bg-[#1A1512] text-white py-3.5 rounded-xl font-mono text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors shadow-xs flex items-center justify-center gap-2 disabled:opacity-60 cursor-pointer active:scale-[0.99]"
               >
                 {loading ? (
                   <>
@@ -266,12 +268,12 @@ export default function AuthPage() {
                 )}
               </button>
 
-              <p className="text-center text-xs text-[#8A7966] pt-2">
+              <p className="text-center font-mono text-xs text-[#5C5042] pt-2">
                 New subscriber?{" "}
                 <button
                   type="button"
                   onClick={() => setMode("signup")}
-                  className="text-[#A3432A] font-bold hover:underline"
+                  className="text-[#A3432A] font-bold hover:underline cursor-pointer"
                 >
                   Create your account
                 </button>
@@ -283,7 +285,7 @@ export default function AuthPage() {
           {mode === "signup" && (
             <form onSubmit={handleSignup} className="space-y-5">
               <div>
-                <label htmlFor="signupFullName" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                <label htmlFor="signupFullName" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                   Full Name *
                 </label>
                 <input
@@ -293,13 +295,13 @@ export default function AuthPage() {
                   placeholder="e.g. Aditya Gupta"
                   value={signupData.fullName}
                   onChange={(e) => setSignupData({ ...signupData, fullName: e.target.value })}
-                  className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                  className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="signupEmail" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  <label htmlFor="signupEmail" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                     Email Address *
                   </label>
                   <input
@@ -309,11 +311,11 @@ export default function AuthPage() {
                     placeholder="aditya@example.com"
                     value={signupData.email}
                     onChange={(e) => setSignupData({ ...signupData, email: e.target.value })}
-                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                    className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                   />
                 </div>
                 <div>
-                  <label htmlFor="signupPhone" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  <label htmlFor="signupPhone" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                     Mobile Phone *
                   </label>
                   <input
@@ -323,13 +325,13 @@ export default function AuthPage() {
                     placeholder="+977 98XXXXXXXX"
                     value={signupData.phone}
                     onChange={(e) => setSignupData({ ...signupData, phone: e.target.value })}
-                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                    className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                   />
                 </div>
               </div>
 
               <div>
-                <label htmlFor="signupStreetAddress" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                <label htmlFor="signupStreetAddress" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                   Delivery Street Address *
                 </label>
                 <input
@@ -339,20 +341,20 @@ export default function AuthPage() {
                   placeholder="e.g. Jhamsikhel, Ward 3, House #12"
                   value={signupData.streetAddress}
                   onChange={(e) => setSignupData({ ...signupData, streetAddress: e.target.value })}
-                  className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                  className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                 />
               </div>
 
-              <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                 <div>
-                  <label htmlFor="signupCity" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  <label htmlFor="signupCity" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                     City / Valley *
                   </label>
                   <select
                     id="signupCity"
                     value={signupData.city}
                     onChange={(e) => setSignupData({ ...signupData, city: e.target.value })}
-                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                    className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                   >
                     <option value="Kathmandu">Kathmandu</option>
                     <option value="Lalitpur">Lalitpur</option>
@@ -362,7 +364,7 @@ export default function AuthPage() {
                   </select>
                 </div>
                 <div>
-                  <label htmlFor="signupPassword" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                  <label htmlFor="signupPassword" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                     Account Password *
                   </label>
                   <input
@@ -372,7 +374,7 @@ export default function AuthPage() {
                     placeholder="••••••••"
                     value={signupData.password}
                     onChange={(e) => setSignupData({ ...signupData, password: e.target.value })}
-                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5] rounded"
+                    className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                   />
                 </div>
               </div>
@@ -380,7 +382,7 @@ export default function AuthPage() {
               <button
                 type="submit"
                 disabled={loading}
-                className="w-full bg-[#A3432A] text-white py-3.5 text-xs uppercase tracking-widest font-bold hover:bg-[#8A3722] transition-colors rounded shadow-sm flex items-center justify-center gap-2 mt-4 disabled:opacity-60"
+                className="w-full min-h-[48px] bg-[#A3432A] text-white py-3.5 rounded-xl font-mono text-xs uppercase tracking-widest font-bold hover:bg-[#8A3722] transition-colors shadow-xs flex items-center justify-center gap-2 mt-4 disabled:opacity-60 cursor-pointer active:scale-[0.99]"
               >
                 {loading ? (
                   <>
@@ -393,12 +395,12 @@ export default function AuthPage() {
                 )}
               </button>
 
-              <p className="text-center text-xs text-[#8A7966] pt-1">
+              <p className="text-center font-mono text-xs text-[#5C5042] pt-1">
                 Already have an account?{" "}
                 <button
                   type="button"
                   onClick={() => setMode("login")}
-                  className="text-[#A3432A] font-bold hover:underline"
+                  className="text-[#A3432A] font-bold hover:underline cursor-pointer"
                 >
                   Sign in here
                 </button>
@@ -409,41 +411,41 @@ export default function AuthPage() {
         </div>
       </div>
 
-      {/* Midterm Presentation Quick Test Panel */}
-      <div className="w-full max-w-lg mt-6 bg-[#FAF8F5] border border-[#E6DEC8] p-4 rounded-lg">
-        <div className="flex items-center gap-2 text-xs font-bold text-[#1A1512] uppercase tracking-wider mb-2">
-          <KeyRound size={14} className="text-[#A3432A]" />
-          <span>Evaluation Demo Logins (Password: password123)</span>
+      {/* Demo Credentials Quick Test Panel */}
+      <div className="w-full max-w-lg mt-6 bg-[#FAF8F5] border border-[#E6DEC8] p-5 rounded-2xl shadow-xs">
+        <div className="flex items-center gap-2 font-mono text-xs font-bold text-[#1A1512] uppercase tracking-wider mb-2">
+          <KeyRound size={15} className="text-[#A3432A]" />
+          <span>Demo Authentication Ledger (Password: password123)</span>
         </div>
-        <p className="text-[11px] text-[#8A7966] mb-3">
-          Click any registered customer to prefill and test authentication against the real PostgreSQL database:
+        <p className="font-mono text-xs text-[#5C5042] mb-3">
+          Select any verified customer record to prefill credentials for assessment:
         </p>
-        <div className="flex flex-wrap gap-2">
+        <div className="flex flex-wrap gap-2 font-mono text-xs">
           <button
             type="button"
             onClick={() => fillDemoCredentials("admin@brewmellow.com", "adminpassword123")}
-            className="text-xs px-3 py-1.5 bg-[#1A1512] text-white border border-[#1A1512] hover:bg-[#A3432A] rounded font-bold transition-colors flex items-center gap-1.5 shadow-sm"
+            className="min-h-[40px] px-3.5 py-2 bg-[#1A1512] text-white border border-[#1A1512] hover:bg-[#2C2420] rounded-xl font-bold transition-colors flex items-center gap-1.5 shadow-xs cursor-pointer active:scale-95"
           >
-            <ShieldCheck size={13} className="text-[#E58A1F]" /> Staff Admin (Direct to Portal)
+            <ShieldCheck size={14} className="text-[#E58A1F]" /> Staff Admin (Direct to Portal)
           </button>
           <button
             type="button"
             onClick={() => fillDemoCredentials("aarav.sharma@gmail.com")}
-            className="text-xs px-3 py-1.5 bg-white border border-[#E6DEC8] hover:border-[#A3432A] rounded font-medium text-[#1A1512] transition-colors"
+            className="min-h-[40px] px-3.5 py-2 bg-white border border-[#E6DEC8] hover:border-[#A3432A] rounded-xl font-medium text-[#1A1512] transition-colors cursor-pointer active:scale-95"
           >
             Aarav Sharma (Gulmi Plan)
           </button>
           <button
             type="button"
             onClick={() => fillDemoCredentials("priya.shrestha@gmail.com")}
-            className="text-xs px-3 py-1.5 bg-white border border-[#E6DEC8] hover:border-[#A3432A] rounded font-medium text-[#1A1512] transition-colors"
+            className="min-h-[40px] px-3.5 py-2 bg-white border border-[#E6DEC8] hover:border-[#A3432A] rounded-xl font-medium text-[#1A1512] transition-colors cursor-pointer active:scale-95"
           >
             Priya Shrestha (Ilam Plan)
           </button>
           <button
             type="button"
             onClick={() => fillDemoCredentials("rohan.gurung@outlook.com")}
-            className="text-xs px-3 py-1.5 bg-white border border-[#E6DEC8] hover:border-[#A3432A] rounded font-medium text-[#1A1512] transition-colors"
+            className="min-h-[40px] px-3.5 py-2 bg-white border border-[#E6DEC8] hover:border-[#A3432A] rounded-xl font-medium text-[#1A1512] transition-colors cursor-pointer active:scale-95"
           >
             Rohan Gurung (Nuwakot Plan)
           </button>

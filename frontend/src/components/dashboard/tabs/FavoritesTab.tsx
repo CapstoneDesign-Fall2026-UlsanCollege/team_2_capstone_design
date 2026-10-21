@@ -46,26 +46,26 @@ export default function FavoritesTab({
                 <div className="h-48 relative overflow-hidden">
                   <img src={data.img} alt={name} className="w-full h-full object-cover" />
                   <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/20 to-transparent"></div>
-                  <span className="absolute top-3 left-3 bg-[#1A1512]/90 backdrop-blur-md text-white text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded">
+                  <span className="absolute top-3 left-3 bg-[#1A1512]/90 text-white font-mono text-xs uppercase tracking-wider font-bold px-2.5 py-1 rounded border border-white/20">
                     {data.altitude}
                   </span>
                   {isCurrentActive && (
-                    <span className="absolute top-3 right-3 bg-[#2E6B34] text-white text-[10px] uppercase tracking-widest font-bold px-2.5 py-1 rounded">
-                      ✓ Currently In Upcoming Box
+                    <span className="absolute top-3 right-3 bg-[#2E6B34] text-white font-mono text-xs uppercase tracking-wider font-bold px-2.5 py-1 rounded border border-white/20">
+                      ✓ In Upcoming Box
                     </span>
                   )}
                   <div className="absolute bottom-3 left-3 text-white">
-                    <p className="text-[10px] uppercase font-bold text-[#E58A1F]">{data.region}</p>
+                    <p className="font-mono text-xs uppercase font-bold text-[#E58A1F]">{data.region}</p>
                     <h4 className="text-xl font-serif font-bold text-white">{name}</h4>
                   </div>
                 </div>
 
                 <div className="p-5 space-y-4">
-                  <div className="flex flex-wrap gap-1">
+                  <div className="flex flex-wrap gap-1.5 font-mono text-xs">
                     {data.notes.map((n) => (
                       <span
                         key={n}
-                        className="text-[11px] px-2 py-0.5 bg-[#FAF8F5] text-[#1A1512] border border-[#E6DEC8] rounded"
+                        className="px-2 py-0.5 bg-[#FAF8F5] text-[#1A1512] border border-[#E6DEC8] rounded font-medium"
                       >
                         {n}
                       </span>
@@ -74,7 +74,7 @@ export default function FavoritesTab({
 
                   {/* Interactive Star Rating */}
                   <div>
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-1">
+                    <p className="font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1">
                       Your Personal Tasting Rating:
                     </p>
                     <div className="flex items-center gap-1 text-[#E58A1F]">
@@ -93,30 +93,30 @@ export default function FavoritesTab({
                           />
                         </button>
                       ))}
-                      <span className="text-xs text-[#5C5042] ml-2 font-bold">{fav.rating} / 5</span>
+                      <span className="font-mono text-xs text-[#5C5042] ml-2 font-bold">{fav.rating} / 5</span>
                     </div>
                   </div>
 
                   {/* Tasting Note */}
-                  <div className="p-3 bg-[#FAF8F5] border border-[#E6DEC8] rounded-lg">
-                    <p className="text-[10px] uppercase tracking-widest font-bold text-[#8A7966] mb-0.5">
+                  <div className="p-3 bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl font-mono text-xs">
+                    <p className="uppercase tracking-wider font-bold text-[#5C5042] mb-0.5">
                       Tasting Note
                     </p>
-                    <p className="text-xs text-[#5C5042] italic">"{fav.note}"</p>
+                    <p className="font-sans text-xs text-[#1A1512] italic">&ldquo;{fav.note}&rdquo;</p>
                   </div>
                 </div>
               </div>
 
               <div className="p-5 pt-0">
                 {isCurrentActive ? (
-                  <div className="w-full py-2.5 bg-[#E7F3E8] text-[#2E6B34] text-xs uppercase tracking-widest font-bold text-center rounded-xl border border-[#C3E4C6]">
+                  <div className="w-full min-h-[44px] py-2.5 bg-[#E7F3E8] text-[#2E6B34] font-mono text-xs uppercase tracking-wider font-bold flex items-center justify-center rounded-xl border border-[#C3E4C6]">
                     Active Selection
                   </div>
                 ) : (
                   <button
                     type="button"
                     onClick={() => onSwapCoffee(name)}
-                    className="w-full py-2.5 bg-[#1A1512] hover:bg-[#A3432A] text-white text-xs uppercase tracking-widest font-bold text-center rounded-xl transition-colors shadow-sm flex items-center justify-center gap-2 cursor-pointer"
+                    className="w-full min-h-[44px] py-2.5 bg-[#1A1512] hover:bg-[#A3432A] text-white font-mono text-xs uppercase tracking-wider font-bold text-center rounded-xl transition-colors shadow-xs flex items-center justify-center gap-2 cursor-pointer active:scale-[0.99]"
                   >
                     <RefreshCw size={13} /> Swap Into Next Box
                   </button>
