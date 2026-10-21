@@ -1,7 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import { Sparkles, Check } from "lucide-react";
+import { Check, SlidersHorizontal, ArrowRight, RotateCcw, X } from "lucide-react";
 import { OriginItem } from "./OriginCard";
 
 interface TasteMatcherProps {
@@ -51,92 +51,103 @@ export default function TasteMatcher({
 
   return (
     <div className="mb-4">
-      {/* Sleek Trigger Pill */}
+      {/* Roastery Cupping Calibrator Trigger */}
       <button
         type="button"
         aria-expanded={isOpen}
-        aria-label="15-second coffee taste matcher"
+        aria-label="15-second coffee cupping taste calibrator"
         onClick={() => {
           setIsOpen(!isOpen);
           if (!isOpen && quizStep === 3) setQuizStep(1);
         }}
-        className={`w-full rounded-2xl py-2.5 px-3.5 sm:px-4 flex items-center justify-between text-xs transition-all border ${
+        className={`w-full min-h-[48px] rounded-xl py-3 px-4 flex items-center justify-between text-xs transition-all border cursor-pointer active:scale-[0.99] ${
           matchedOrigin
-            ? "bg-[#FAF5EC] border-[#E58A1F]/50 text-[#1A1512]"
-            : "bg-white/80 hover:bg-white border-[#DDD4C3] hover:border-[#A3432A]/40 text-[#1A1512] shadow-xs"
+            ? "bg-[#FAF5EC] border-[#A3432A]/40 text-[#1A1512]"
+            : "bg-white hover:bg-[#FAF8F5] border-[#E6DEC8] text-[#1A1512] shadow-xs"
         }`}
       >
-        <div className="flex items-center gap-2.5">
-          <span
-            className={`p-1.5 rounded-lg ${
-              matchedOrigin ? "bg-[#E58A1F] text-white" : "bg-[#E58A1F]/15 text-[#A3432A]"
-            }`}
-          >
-            <Sparkles size={14} />
+        <div className="flex items-center gap-3">
+          <span className="w-8 h-8 rounded-lg bg-[#FAF8F5] border border-[#E6DEC8] flex items-center justify-center text-[#A3432A] shrink-0">
+            <SlidersHorizontal size={15} />
           </span>
           <div className="text-left">
-            <span className="font-bold text-[#1A1512] block">
+            <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#1A1512] block">
               {matchedOrigin
-                ? `Matched for You: ${matchedOrigin.name}`
-                : "Not sure which Himalayan roast fits your taste?"}
+                ? `Matched Terroir: ${matchedOrigin.name}`
+                : "Cup Profile Matcher // 15-Second Calibration"}
             </span>
-            <span className="text-[11px] text-[#8A7966] block">
+            <span className="font-mono text-xs text-[#5C5042] block">
               {matchedOrigin
-                ? "Click to retake the 15-second taste questionnaire"
-                : "Take our 15-second taste matcher to pick your bean"}
+                ? "Calibrated to your preferred brewing style and cup notes"
+                : "Determine your ideal Himalayan micro-lot by brew method & flavor note"}
             </span>
           </div>
         </div>
-        <span className="text-xs font-bold text-[#A3432A] shrink-0 ml-2">
-          {isOpen ? "Close ✕" : matchedOrigin ? "Retake ↺" : "Find My Bean →"}
+        <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#A3432A] shrink-0 ml-3 flex items-center gap-1.5">
+          {isOpen ? (
+            <>
+              <span>Close</span>
+              <X size={14} />
+            </>
+          ) : matchedOrigin ? (
+            <>
+              <span>Recalibrate</span>
+              <RotateCcw size={13} />
+            </>
+          ) : (
+            <>
+              <span>Calibrate</span>
+              <ArrowRight size={13} />
+            </>
+          )}
         </span>
       </button>
 
-      {/* Expanded Matcher Panel */}
+      {/* Expanded Calibrator Panel */}
       {isOpen && (
-        <div className="mt-2.5 bg-white border border-[#E6DEC8] rounded-2xl p-4 sm:p-5 shadow-sm animate-in fade-in duration-200">
+        <div className="mt-3 bg-white border border-[#E6DEC8] rounded-xl p-5 shadow-sm animate-in fade-in duration-200">
           {/* Header */}
-          <div className="flex items-center justify-between pb-3 mb-3 border-b border-[#F0EAE1]">
+          <div className="flex items-center justify-between pb-3.5 mb-4 border-b border-[#F0EAE1]">
             <div className="flex items-center gap-2">
-              <span className="w-5 h-5 rounded-full bg-[#A3432A] text-white text-[10px] font-bold flex items-center justify-center">
+              <span className="w-5 h-5 rounded-md bg-[#1A1512] text-white font-mono text-xs font-bold flex items-center justify-center">
                 {quizStep === 3 ? "✓" : quizStep}
               </span>
-              <span className="text-xs font-bold text-[#1A1512]">
-                {quizStep === 1 && "Step 1 of 2 • How do you brew / drink your coffee?"}
-                {quizStep === 2 && "Step 2 of 2 • What flavor notes do you love most?"}
-                {quizStep === 3 && "Your Himalayan Match Found!"}
+              <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#1A1512]">
+                {quizStep === 1 && "Stage 01 // Extraction & Milk Preparation"}
+                {quizStep === 2 && "Stage 02 // Primary Flavor Note Alignment"}
+                {quizStep === 3 && "Stage 03 // Cupping Calibration Result"}
               </span>
             </div>
-            <span className="text-[10px] uppercase font-bold text-[#8A7966] tracking-wider">
-              15s Taste Matcher
+            <span className="font-mono text-xs uppercase font-bold text-[#A3432A] tracking-wider">
+              Roastery Protocol
             </span>
           </div>
 
           {/* Step 1: Brew Method */}
           {quizStep === 1 && (
             <div>
-              <p className="text-xs text-[#8A7966] mb-3">
-                Select your primary style to match the optimal bean body and roast profile:
+              <p className="font-mono text-xs text-[#5C5042] mb-3">
+                Select your primary brew style to determine optimal roast density and body:
               </p>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   {
                     id: "black",
                     label: "Black & Pure",
                     sub: "Drip, Pour-Over, Chemex, Americano",
-                    desc: "Aromatic clarity & clean mountain acidity",
+                    desc: "High clarity, crisp elevation acidity, pristine wash profile.",
                   },
                   {
                     id: "milk",
                     label: "With Milk & Steam",
-                    sub: "Latte, Cappuccino, Flat White",
-                    desc: "Bold body that cuts through steamed milk",
+                    sub: "Latte, Flat White, Moka Pot",
+                    desc: "Thick body, deep caramelized sugars that cut through dairy.",
                   },
                   {
                     id: "coldbrew",
                     label: "Cold Brew & Chilled",
-                    sub: "Chilled extraction, sweet & smooth",
-                    desc: "Sweet fruit notes & low bitterness",
+                    sub: "Immersion, Slow Drip, Iced",
+                    desc: "Sweet fruit aromatics, low perceived bitterness, high syrup.",
                   },
                 ].map((opt) => (
                   <button
@@ -146,19 +157,19 @@ export default function TasteMatcher({
                       setQuizBrew(opt.id);
                       setQuizStep(2);
                     }}
-                    className={`p-3 rounded-xl border text-left transition-all hover:border-[#A3432A] ${
+                    className={`min-h-[72px] p-3.5 rounded-xl border text-left transition-all hover:border-[#A3432A] active:scale-[0.99] cursor-pointer ${
                       quizBrew === opt.id
                         ? "bg-[#FAF5EC] border-[#A3432A]"
                         : "bg-[#FAF8F5] border-[#E6DEC8]"
                     }`}
                   >
-                    <span className="font-bold text-xs text-[#1A1512] block mb-0.5">
+                    <span className="font-mono font-bold text-xs uppercase tracking-wider text-[#1A1512] block mb-1">
                       {opt.label}
                     </span>
-                    <span className="text-[11px] text-[#A3432A] font-semibold block mb-1">
+                    <span className="font-mono text-xs text-[#A3432A] font-semibold block mb-1">
                       {opt.sub}
                     </span>
-                    <span className="text-[10px] text-[#8A7966] block">{opt.desc}</span>
+                    <span className="text-xs text-[#5C5042] block leading-relaxed">{opt.desc}</span>
                   </button>
                 ))}
               </div>
@@ -168,56 +179,56 @@ export default function TasteMatcher({
           {/* Step 2: Flavor Profile */}
           {quizStep === 2 && (
             <div>
-              <div className="flex items-center justify-between mb-2">
-                <p className="text-xs text-[#8A7966]">
-                  What flavor notes excite your tastebuds most?
+              <div className="flex items-center justify-between mb-3">
+                <p className="font-mono text-xs text-[#5C5042]">
+                  Select the flavor spectrum that aligns with your sensory preference:
                 </p>
                 <button
                   type="button"
                   onClick={() => setQuizStep(1)}
-                  className="text-xs text-[#8A7966] hover:text-[#1A1512] font-semibold"
+                  className="font-mono text-xs text-[#8A7966] hover:text-[#1A1512] font-semibold cursor-pointer"
                 >
-                  ← Back
+                  ← Stage 01
                 </button>
               </div>
-              <div className="grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
                 {[
                   {
                     id: "fruity",
                     label: "Bright & Wild Berry",
-                    tags: "Wild Berry • Jasmine • Floral",
-                    desc: "Vibrant mountain acidity, natural process",
+                    tags: "Wild Berry • White Jasmine • Floral",
+                    desc: "Vibrant terroir acidity, sun-dried natural process on bamboo beds.",
                   },
                   {
                     id: "balanced",
                     label: "Balanced Mountain Honey",
-                    tags: "Mountain Honey • Blossom • Dark Choc",
-                    desc: "Silky balance, smooth mouthfeel, everyday ritual",
+                    tags: "Mountain Honey • Citrus Blossom • Cacao",
+                    desc: "Silky sweetness, sparkling spring-water wash, everyday benchmark.",
                   },
                   {
                     id: "chocolate",
                     label: "Deep Chocolate & Walnut",
-                    tags: "Toasted Walnut • Molasses • Plum",
-                    desc: "Low acidity, comforting nutty cocoa sweetness",
+                    tags: "Toasted Walnut • Dark Molasses • Plum",
+                    desc: "Low perceived acidity, heavy rounded mouthfeel, honey processed.",
                   },
                 ].map((opt) => (
                   <button
                     key={opt.id}
                     type="button"
                     onClick={() => handleSelectFlavor(opt.id)}
-                    className={`p-3 rounded-xl border text-left transition-all hover:border-[#A3432A] ${
+                    className={`min-h-[72px] p-3.5 rounded-xl border text-left transition-all hover:border-[#A3432A] active:scale-[0.99] cursor-pointer ${
                       quizFlavor === opt.id
                         ? "bg-[#FAF5EC] border-[#A3432A]"
                         : "bg-[#FAF8F5] border-[#E6DEC8]"
                     }`}
                   >
-                    <span className="font-bold text-xs text-[#1A1512] block mb-0.5">
+                    <span className="font-mono font-bold text-xs uppercase tracking-wider text-[#1A1512] block mb-1">
                       {opt.label}
                     </span>
-                    <span className="text-[11px] text-[#A3432A] font-semibold block mb-1">
+                    <span className="font-mono text-xs text-[#A3432A] font-semibold block mb-1">
                       {opt.tags}
                     </span>
-                    <span className="text-[10px] text-[#8A7966] block">{opt.desc}</span>
+                    <span className="text-xs text-[#5C5042] block leading-relaxed">{opt.desc}</span>
                   </button>
                 ))}
               </div>
@@ -230,28 +241,28 @@ export default function TasteMatcher({
               {(() => {
                 const match = calculateMatch();
                 return (
-                  <div className="flex flex-col sm:flex-row items-center gap-4 bg-[#FAF5EC] border border-[#E58A1F]/30 rounded-xl p-4">
+                  <div className="flex flex-col sm:flex-row items-center gap-5 bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl p-5">
                     <img
                       src={match.img}
                       alt={match.name}
-                      className="w-20 h-20 rounded-xl object-cover shrink-0 shadow-xs border border-[#E6DEC8]"
+                      className="w-24 h-24 rounded-lg object-cover shrink-0 border border-[#E6DEC8]"
                     />
                     <div className="flex-1 text-center sm:text-left">
-                      <div className="inline-flex items-center gap-1.5 px-2 py-0.5 rounded-full bg-[#E58A1F]/20 text-[#1A1512] text-[10px] font-black uppercase tracking-wider mb-1">
-                        <Sparkles size={11} className="text-[#A3432A]" /> Perfect Match Found
+                      <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-md bg-[#E7F3E8] border border-[#C3E4C6] text-[#2E6B34] font-mono text-xs font-bold uppercase tracking-wider mb-1.5">
+                        <Check size={12} className="stroke-[3]" /> Calibrated Terroir Match
                       </div>
-                      <h4 className="text-base font-serif font-bold text-[#1A1512]">
-                        {match.name} ({match.score})
+                      <h4 className="text-lg font-serif font-bold text-[#1A1512]">
+                        {match.name} <span className="font-mono text-xs text-[#5C5042] font-semibold">({match.score})</span>
                       </h4>
-                      <p className="text-xs text-[#A3432A] font-bold mb-1">{match.notes}</p>
-                      <p className="text-xs text-[#5C5042] leading-relaxed mb-3">
+                      <p className="font-mono text-xs text-[#A3432A] font-bold mb-1.5">{match.notes}</p>
+                      <p className="text-xs text-[#5C5042] leading-relaxed mb-4">
                         {getMatchRationale(match.id)}
                       </p>
-                      <div className="flex items-center gap-2 justify-center sm:justify-start">
+                      <div className="flex items-center gap-3 justify-center sm:justify-start">
                         <button
                           type="button"
                           onClick={handleApply}
-                          className="bg-[#1A1512] hover:bg-black text-white text-xs font-bold py-2.5 px-4 rounded-xl shadow-xs transition-transform active:scale-95 flex items-center gap-1.5"
+                          className="min-h-[44px] bg-[#1A1512] hover:bg-[#2C2420] text-white font-mono text-xs font-bold uppercase tracking-wider py-2.5 px-5 rounded-xl shadow-xs transition-transform active:scale-[0.99] flex items-center gap-2 cursor-pointer"
                         >
                           <Check size={14} className="text-green-400 stroke-[3]" />
                           Apply {match.name} to Box
@@ -263,9 +274,9 @@ export default function TasteMatcher({
                             setQuizBrew(null);
                             setQuizFlavor(null);
                           }}
-                          className="text-xs text-[#8A7966] hover:text-[#1A1512] py-2 px-3 font-semibold"
+                          className="min-h-[44px] font-mono text-xs text-[#5C5042] hover:text-[#1A1512] py-2 px-3 font-semibold cursor-pointer"
                         >
-                          ↺ Retake
+                          ↺ Recalibrate
                         </button>
                       </div>
                     </div>

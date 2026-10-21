@@ -3,7 +3,7 @@
 import { useState, useEffect } from "react";
 import { useSearchParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import { ArrowLeft, CheckCircle, AlertTriangle, Loader2, MapPin, Phone, Mail, User, Lock, ShieldCheck } from "lucide-react";
+import { ArrowLeft, CheckCircle, AlertTriangle, Loader2, MapPin, Phone, Mail, User, Lock, ShieldCheck, ArrowRight, Package } from "lucide-react";
 import { Suspense } from "react";
 
 function CheckoutContent() {
@@ -161,35 +161,36 @@ function CheckoutContent() {
 
   if (paymentStatus === "success") {
     return (
-      <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center p-6 font-sans justify-center">
-        <div className="w-full max-w-lg text-center bg-white p-10 md:p-14 shadow-xl border border-[#E6DEC8]">
-          <div className="w-16 h-16 bg-[#E7F3E8] rounded-full flex items-center justify-center mx-auto mb-6">
-            <CheckCircle size={36} className="text-[#2E6B34]" />
+      <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center p-6 font-sans justify-center pb-32">
+        <div className="w-full max-w-lg text-center bg-white p-8 md:p-12 rounded-2xl shadow-xl border border-[#E6DEC8]">
+          <div className="w-16 h-16 bg-[#E7F3E8] border border-[#C3E4C6] rounded-full flex items-center justify-center mx-auto mb-6">
+            <CheckCircle size={32} className="text-[#2E6B34]" />
           </div>
           
-          <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#2E6B34] bg-[#E7F3E8] px-3 py-1 rounded-full">
+          <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#2E6B34] bg-[#E7F3E8] border border-[#C3E4C6] px-3.5 py-1 rounded-full">
             Payment Verified via Khalti
           </span>
 
           <h1 className="text-3xl font-serif font-bold text-[#1A1512] mt-4 mb-2">Subscription Confirmed!</h1>
           <p className="text-[#5C5042] text-sm mb-6 leading-relaxed">
-            Welcome, <strong>{formData.fullName}</strong>. Your account has been registered and your first batch of Himalayan coffee is scheduled for roasting.
+            Welcome, <strong>{formData.fullName}</strong>. Your subscription has been recorded in the dispatch registry and your initial roast queue has been scheduled in Lalitpur.
           </p>
 
-          <div className="bg-[#FAF8F5] border border-[#E6DEC8] p-4 text-left text-xs mb-8 space-y-1.5">
-            <p className="text-[#8A7966] font-bold uppercase tracking-wider text-[10px]">Delivery Dispatched To:</p>
+          <div className="bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl p-4 text-left font-mono text-xs mb-8 space-y-2">
+            <p className="text-[#A3432A] font-bold uppercase tracking-wider">Dispatch Destination:</p>
             <p className="font-bold text-[#1A1512]">{formData.streetAddress}, {formData.city}</p>
             <p className="text-[#5C5042]">Contact: {formData.phone} • {formData.email}</p>
-            <p className="text-[#A3432A] font-semibold pt-1 border-t border-[#E6DEC8] mt-2">
+            <p className="text-[#1A1512] font-semibold pt-2 border-t border-dashed border-[#1A1512]/15 mt-2">
               Commitment: {planName} ({originName})
             </p>
           </div>
 
           <Link
             href="/dashboard"
-            className="inline-block w-full bg-[#1A1512] text-white py-4 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors"
+            className="inline-flex items-center justify-center gap-2 w-full min-h-[48px] bg-[#1A1512] text-white py-3.5 rounded-xl font-mono text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors shadow-sm cursor-pointer"
           >
-            Access Customer Dashboard
+            <span>Access Customer Dashboard</span>
+            <ArrowRight size={14} />
           </Link>
         </div>
       </div>
@@ -198,17 +199,18 @@ function CheckoutContent() {
 
   if (!hasSelection) {
     return (
-      <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center p-6 font-sans justify-center">
-        <div className="w-full max-w-md text-center bg-white p-12 shadow-sm border border-[#E6DEC8]">
-          <h1 className="text-3xl font-serif font-bold text-[#1A1512] mb-4">Your Cart is Empty</h1>
+      <div className="min-h-screen bg-[#F5F2EB] flex flex-col items-center p-6 font-sans justify-center pb-32">
+        <div className="w-full max-w-md text-center bg-white p-10 md:p-12 rounded-2xl shadow-sm border border-[#E6DEC8]">
+          <h1 className="text-3xl font-serif font-bold text-[#1A1512] mb-3">Your Manifest is Empty</h1>
           <p className="text-[#5C5042] text-sm mb-8 leading-relaxed">
-            It looks like you haven't built your coffee subscription plan yet. 
+            You haven&apos;t configured your Himalayan coffee subscription selection yet.
           </p>
           <Link
             href="/subscribe"
-            className="inline-block w-full bg-[#1A1512] text-white py-4 text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors"
+            className="inline-flex items-center justify-center gap-2 w-full min-h-[48px] bg-[#1A1512] text-white py-3.5 rounded-xl font-mono text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors shadow-sm cursor-pointer"
           >
-            Build Your Plan
+            <span>Configure Coffee Plan</span>
+            <ArrowRight size={14} />
           </Link>
         </div>
       </div>
@@ -216,105 +218,120 @@ function CheckoutContent() {
   }
 
   return (
-    <div className="min-h-screen bg-[#F5F2EB] p-6 font-sans pb-32">
-      <div className="max-w-5xl mx-auto pt-8">
+    <div className="min-h-screen bg-[#F5F2EB] p-4 sm:p-6 font-sans pb-36 lg:pb-16">
+      <div className="max-w-5xl mx-auto pt-6 md:pt-10">
 
-        <Link href="/subscribe" className="inline-flex items-center gap-2 text-[#8A7966] hover:text-[#2C2420] transition-colors mb-8 text-xs uppercase tracking-widest font-bold">
-          <ArrowLeft size={16} /> Change Selection
+        <Link 
+          href="/subscribe" 
+          className="inline-flex items-center gap-2 text-[#5C5042] hover:text-[#1A1512] transition-colors mb-6 font-mono text-xs uppercase tracking-widest font-bold"
+        >
+          <ArrowLeft size={15} /> Change Selection
         </Link>
 
-        <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#1A1512] mb-2">Checkout & Delivery Setup</h1>
-        <p className="text-[#5C5042] text-sm mb-10">Enter your shipping details and set up your subscription account.</p>
+        <div className="flex flex-col md:flex-row md:items-baseline justify-between gap-2 mb-8 pb-4 border-b border-[#1A1512]/15">
+          <div>
+            <span className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A] block mb-1">
+              DISPATCH DESTINATION & KHALTI CHECKOUT
+            </span>
+            <h1 className="text-3xl md:text-4xl font-serif font-bold text-[#1A1512]">
+              Finalize Delivery Manifest
+            </h1>
+          </div>
+          <p className="font-mono text-xs text-[#5C5042]">
+            Encrypted 256-bit checkout • Lalitpur Roastery Dispatch
+          </p>
+        </div>
 
         {errorMessage && (
-          <div className="mb-8 p-4 bg-[#FAF5F5] border border-[#F0DADA] text-[#A3432A] text-xs font-bold uppercase tracking-wider flex items-center gap-2">
-            <AlertTriangle size={16} /> {errorMessage}
+          <div className="mb-6 p-4 bg-[#FAF5F5] border border-[#F0DADA] rounded-xl text-[#A3432A] font-mono text-xs font-bold uppercase tracking-wider flex items-center gap-2">
+            <AlertTriangle size={16} className="shrink-0" /> 
+            <span>{errorMessage}</span>
           </div>
         )}
 
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-10">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-start">
           
-          {/* Left Column: Delivery & Account Form (2 Cols) */}
-          <div className="lg:col-span-2 space-y-8">
-            <form onSubmit={handlePayment} id="checkout-form" className="bg-white border border-[#E6DEC8] p-8 md:p-10 shadow-sm space-y-8">
+          {/* Left Column: Delivery & Account Form (7 Cols) */}
+          <div className="lg:col-span-7 space-y-6">
+            <form onSubmit={handlePayment} id="checkout-form" className="bg-white border border-[#E6DEC8] rounded-2xl p-6 sm:p-8 shadow-sm space-y-8">
               
               {/* Authenticated User Banner */}
               {isExistingUser && (
-                <div className="p-4 bg-[#E7F3E8] border border-[#C3E4C6] rounded flex items-center justify-between">
+                <div className="p-4 bg-[#E7F3E8] border border-[#C3E4C6] rounded-xl flex items-center justify-between">
                   <div className="flex items-center gap-3">
-                    <CheckCircle size={20} className="text-[#2E6B34] flex-shrink-0" />
+                    <CheckCircle size={20} className="text-[#2E6B34] shrink-0" />
                     <div>
-                      <p className="text-xs font-bold text-[#1A1512]">Signed in as {formData.fullName}</p>
-                      <p className="text-[11px] text-[#2E6B34]">{formData.email} • Shipping details pre-filled for 1-click checkout</p>
+                      <p className="font-mono text-xs font-bold text-[#1A1512]">Signed in as {formData.fullName}</p>
+                      <p className="font-mono text-xs text-[#2E6B34]">{formData.email} • Verified Member Session</p>
                     </div>
                   </div>
-                  <span className="text-[10px] uppercase font-bold tracking-widest text-[#2E6B34] bg-white px-2.5 py-1 rounded border border-[#C3E4C6]">
-                    Verified
+                  <span className="font-mono text-xs uppercase font-bold tracking-wider text-[#2E6B34] bg-white px-2.5 py-1 rounded-md border border-[#C3E4C6]">
+                    Active
                   </span>
                 </div>
               )}
 
               {/* Section 1: Contact Details */}
               <div>
-                <h3 className="text-lg font-serif font-bold text-[#1A1512] mb-4 flex items-center gap-2">
-                  <User size={18} className="text-[#A3432A]" /> Contact Information
+                <h3 className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A] mb-4 flex items-center gap-2">
+                  <User size={15} /> STEP 01 // CONTACT SPECIFICATION
                 </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                   <div>
-                    <label htmlFor="checkoutFullName" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                    <label htmlFor="checkoutFullName" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                       Full Name *
                     </label>
                     <input
                       id="checkoutFullName"
                       type="text"
                       required
-                      placeholder="e.g. Aditya Gupta"
+                      placeholder="e.g. Aarav Sharma"
                       value={formData.fullName}
                       onChange={(e) => setFormData({ ...formData, fullName: e.target.value })}
-                      className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
+                      className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                     />
                   </div>
                   <div>
-                    <label htmlFor="checkoutEmail" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                    <label htmlFor="checkoutEmail" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                       Email Address *
                     </label>
                     <input
                       id="checkoutEmail"
                       type="email"
                       required
-                      placeholder="aditya@example.com"
+                      placeholder="aarav@example.com"
                       value={formData.email}
                       onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                      className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
+                      className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                     />
                   </div>
                 </div>
 
                 <div className="mt-4">
-                  <label htmlFor="checkoutPhone" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
-                    Mobile Phone Number (for delivery SMS) *
+                  <label htmlFor="checkoutPhone" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
+                    Mobile Phone (For courier SMS dispatch alerts) *
                   </label>
                   <input
                     id="checkoutPhone"
                     type="tel"
                     required
-                    placeholder="+977 9800000000"
+                    placeholder="+977 98XXXXXXXX"
                     value={formData.phone}
                     onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                    className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
+                    className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                   />
                 </div>
               </div>
 
               {/* Section 2: Delivery Address */}
               <div className="pt-6 border-t border-[#F0EAE1]">
-                <h3 className="text-lg font-serif font-bold text-[#1A1512] mb-4 flex items-center gap-2">
-                  <MapPin size={18} className="text-[#A3432A]" /> Shipping Address
+                <h3 className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A] mb-4 flex items-center gap-2">
+                  <MapPin size={15} /> STEP 02 // SHIPPING DESTINATION
                 </h3>
                 
                 <div className="space-y-4">
                   <div>
-                    <label htmlFor="checkoutStreetAddress" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                    <label htmlFor="checkoutStreetAddress" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                       Street Address / Ward / Area *
                     </label>
                     <input
@@ -324,20 +341,20 @@ function CheckoutContent() {
                       placeholder="e.g. Jhamsikhel, Ward 3, House #14"
                       value={formData.streetAddress}
                       onChange={(e) => setFormData({ ...formData, streetAddress: e.target.value })}
-                      className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
+                      className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                     />
                   </div>
 
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                     <div>
-                      <label htmlFor="checkoutCity" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                      <label htmlFor="checkoutCity" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                         City / District *
                       </label>
                       <select
                         id="checkoutCity"
                         value={formData.city}
                         onChange={(e) => setFormData({ ...formData, city: e.target.value })}
-                        className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
+                        className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                       >
                         <option value="Kathmandu">Kathmandu</option>
                         <option value="Lalitpur">Lalitpur</option>
@@ -349,16 +366,16 @@ function CheckoutContent() {
                     </div>
 
                     <div>
-                      <label htmlFor="checkoutLandmark" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
+                      <label htmlFor="checkoutLandmark" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
                         Landmark / Note (Optional)
                       </label>
                       <input
                         id="checkoutLandmark"
                         type="text"
-                        placeholder="e.g. Near St. Mary's School"
+                        placeholder="e.g. Near British School"
                         value={formData.landmark}
                         onChange={(e) => setFormData({ ...formData, landmark: e.target.value })}
-                        className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
+                        className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                       />
                     </div>
                   </div>
@@ -368,26 +385,26 @@ function CheckoutContent() {
               {/* Section 3: Account Security */}
               <div className="pt-6 border-t border-[#F0EAE1]">
                 {isExistingUser ? (
-                  <div className="bg-[#FAF8F5] border border-[#E6DEC8] p-4 rounded flex items-start gap-3">
-                    <ShieldCheck size={20} className="text-[#2E6B34] flex-shrink-0 mt-0.5" />
+                  <div className="bg-[#FAF8F5] border border-[#E6DEC8] p-4 rounded-xl flex items-start gap-3">
+                    <ShieldCheck size={20} className="text-[#2E6B34] shrink-0 mt-0.5" />
                     <div>
-                      <h4 className="text-xs font-bold uppercase tracking-wider text-[#1A1512]">Account Linked</h4>
+                      <h4 className="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1512]">Account Linked</h4>
                       <p className="text-xs text-[#5C5042] mt-0.5">
-                        You are signed in as <strong>{formData.email}</strong>. This new coffee subscription will automatically link to your customer portal.
+                        You are signed in as <strong>{formData.email}</strong>. This new coffee batch will automatically sync to your dashboard.
                       </p>
                     </div>
                   </div>
                 ) : (
                   <>
-                    <h3 className="text-lg font-serif font-bold text-[#1A1512] mb-2 flex items-center gap-2">
-                      <Lock size={18} className="text-[#A3432A]" /> Create Account Password
+                    <h3 className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A] mb-2 flex items-center gap-2">
+                      <Lock size={15} /> STEP 03 // SUBSCRIBER PORTAL ACCESS
                     </h3>
-                    <p className="text-xs text-[#8A7966] mb-4">
-                      Set a password so you can log in to your dashboard to pause, skip, or edit your monthly roasts.
+                    <p className="text-xs text-[#5C5042] mb-4">
+                      Create a password so you can access your dashboard to pause, skip, or swap origins anytime.
                     </p>
                     <div>
-                      <label htmlFor="checkoutPassword" className="block text-[10px] uppercase tracking-widest font-bold text-[#5C5042] mb-1.5">
-                        Account Password *
+                      <label htmlFor="checkoutPassword" className="block font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] mb-1.5">
+                        Password (Min. 4 characters) *
                       </label>
                       <input
                         id="checkoutPassword"
@@ -396,7 +413,7 @@ function CheckoutContent() {
                         placeholder="••••••••"
                         value={formData.password}
                         onChange={(e) => setFormData({ ...formData, password: e.target.value })}
-                        className="w-full p-3 border border-[#E6DEC8] text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
+                        className="w-full min-h-[48px] px-3.5 py-3 border border-[#E6DEC8] rounded-xl text-sm text-[#1A1512] focus:outline-none focus:border-[#A3432A] bg-[#FAF8F5]"
                       />
                     </div>
                   </>
@@ -406,34 +423,46 @@ function CheckoutContent() {
             </form>
           </div>
 
-          {/* Right Column: Order Summary & Khalti Payment (1 Col) */}
-          <div className="space-y-6">
-            <div className="bg-white border border-[#E6DEC8] p-8 shadow-sm">
-              <h2 className="text-xl font-serif font-bold text-[#1A1512] pb-4 mb-6 border-b border-[#F0EAE1]">
-                Subscription Summary
-              </h2>
+          {/* Right Column: Order Summary & Khalti Payment (5 Cols) */}
+          <div className="lg:col-span-5 space-y-6">
+            <div className="bg-white border border-[#E6DEC8] rounded-2xl p-6 sm:p-8 shadow-sm">
+              <div className="pb-4 mb-5 border-b border-dashed border-[#1A1512]/20 flex items-center justify-between">
+                <div>
+                  <span className="font-mono text-xs uppercase font-bold tracking-widest text-[#A3432A] block">
+                    Dispatch Order Ledger
+                  </span>
+                  <h2 className="text-xl font-serif font-bold text-[#1A1512] mt-0.5">
+                    Order Summary
+                  </h2>
+                </div>
+                <Package size={18} className="text-[#A3432A]" />
+              </div>
 
-              <div className="space-y-4 text-xs mb-6">
-                <div className="flex justify-between items-start gap-3">
-                  <span className="text-[#8A7966] uppercase tracking-wider font-bold shrink-0">Origin / Box:</span>
-                  <span className="font-bold text-[#1A1512] text-right">{originName}</span>
+              <div className="space-y-3.5 font-mono text-xs mb-6">
+                <div className="flex justify-between items-start gap-3 pb-2.5 border-b border-[#F0EAE1]">
+                  <span className="text-[#5C5042] uppercase tracking-wider font-bold shrink-0">Selected Coffee:</span>
+                  <span className="font-bold text-[#1A1512] text-right font-serif text-sm">{originName}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8A7966] uppercase tracking-wider font-bold">Weight:</span>
-                  <span className="font-bold text-[#1A1512]">{weightKg} kg / delivery</span>
+                <div className="flex justify-between pb-2.5 border-b border-[#F0EAE1]">
+                  <span className="text-[#5C5042] uppercase tracking-wider font-bold">Total Batch Weight:</span>
+                  <span className="font-bold text-[#1A1512]">{weightKg} kg / cycle</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8A7966] uppercase tracking-wider font-bold">Prepaid Commitment:</span>
+                <div className="flex justify-between pb-2.5 border-b border-[#F0EAE1]">
+                  <span className="text-[#5C5042] uppercase tracking-wider font-bold">Commitment Plan:</span>
                   <span className="font-bold text-[#1A1512]">{planName}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-[#8A7966] uppercase tracking-wider font-bold">Doorstep Shipping:</span>
-                  <span className="font-bold text-[#2E6B34]">FREE</span>
+                <div className="flex justify-between pb-2.5 border-b border-[#F0EAE1]">
+                  <span className="text-[#5C5042] uppercase tracking-wider font-bold">Doorstep Courier:</span>
+                  <span className="font-bold text-[#2E6B34]">FREE (Valley)</span>
                 </div>
 
-                <div className="pt-4 border-t border-[#F0EAE1] flex justify-between items-baseline">
-                  <span className="text-xs font-bold uppercase tracking-widest text-[#8A7966]">Total NPR:</span>
-                  <span className="text-3xl font-serif font-bold text-[#1A1512]">Rs. {totalPrice}</span>
+                <div className="pt-3 border-t border-dashed border-[#1A1512]/20 flex justify-between items-baseline">
+                  <span className="font-mono text-xs font-bold uppercase tracking-widest text-[#1A1512]">
+                    Total Due Today:
+                  </span>
+                  <span className="text-3xl font-serif font-bold text-[#A3432A]">
+                    Rs. {totalPrice.toLocaleString()}
+                  </span>
                 </div>
               </div>
 
@@ -442,44 +471,47 @@ function CheckoutContent() {
                 <button
                   type="submit"
                   form="checkout-form"
-                  className="w-full bg-[#5C2D91] text-white py-4 text-xs uppercase tracking-widest font-bold hover:bg-[#4A2474] transition-all shadow-md flex items-center justify-center gap-2"
+                  className="w-full min-h-[48px] bg-[#5C2D91] hover:bg-[#4A2474] text-white py-3.5 rounded-xl font-mono text-xs uppercase tracking-widest font-bold transition-all shadow-md active:scale-[0.99] flex items-center justify-center gap-2 cursor-pointer"
                 >
-                  Pay with Khalti
+                  <span>Pay with Khalti Gateway</span>
+                  <ArrowRight size={14} />
                 </button>
               )}
 
               {paymentStatus === "processing" && (
-                <div className="text-center py-6 bg-[#FAF5F2] border border-[#E6DEC8]">
+                <div className="text-center py-6 bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl">
                   <Loader2 size={24} className="animate-spin text-[#5C2D91] mx-auto mb-2" />
-                  <p className="text-xs uppercase tracking-widest font-bold text-[#5C5042]">
+                  <p className="font-mono text-xs uppercase tracking-widest font-bold text-[#5C5042]">
                     Connecting to Khalti Gateway...
                   </p>
                 </div>
               )}
 
               {paymentStatus === "error" && (
-                <div className="mt-4 p-4 bg-[#FAF5F5] border border-[#F0DADA] text-center">
-                  <p className="text-xs text-[#A3432A] font-bold mb-2">Connection Timeout</p>
+                <div className="mt-4 p-4 bg-[#FAF5F5] border border-[#F0DADA] rounded-xl text-center">
+                  <p className="font-mono text-xs text-[#A3432A] font-bold mb-2">Connection Timeout</p>
                   <button
                     onClick={() => setPaymentStatus("idle")}
-                    className="text-xs uppercase font-bold text-[#1A1512] underline"
+                    className="font-mono text-xs uppercase font-bold text-[#1A1512] underline cursor-pointer"
                   >
                     Try Again
                   </button>
                 </div>
               )}
 
-              <div className="mt-6 pt-4 border-t border-[#F0EAE1] flex items-center gap-2 text-[10px] text-[#8A7966]">
-                <ShieldCheck size={14} className="text-[#2E6B34]" />
+              <div className="mt-5 pt-4 border-t border-[#F0EAE1] flex items-center gap-2 font-mono text-xs text-[#5C5042]">
+                <ShieldCheck size={15} className="text-[#2E6B34] shrink-0" />
                 <span>256-Bit SSL Encrypted & Khalti Protected</span>
               </div>
             </div>
 
-            {/* Direct Trade Note */}
-            <div className="bg-[#FAF8F5] border border-[#E6DEC8] p-6 text-xs text-[#5C5042]">
-              <p className="font-bold text-[#1A1512] uppercase tracking-wider mb-1">Freshness Guarantee</p>
+            {/* Direct Trade Roastery Dispatch Note */}
+            <div className="bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl p-5 text-xs text-[#5C5042]">
+              <p className="font-mono font-bold text-[#1A1512] uppercase tracking-wider mb-1">
+                Lalitpur Freshness Protocol
+              </p>
               <p className="leading-relaxed">
-                Your first batch of {originName} is roasted only after this order is processed. Shipped via door-to-door courier.
+                Your first batch of {originName} is roasted on our cast-iron drum only after this order is confirmed, ensuring delivery during peak degassing.
               </p>
             </div>
           </div>
