@@ -4,325 +4,479 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { 
   Mountain, Award, ShieldCheck, Flame, ArrowRight, 
-  Sparkles, Star
+  MapPin, Clock, Scale
 } from "lucide-react";
 
 export default function Home() {
   const router = useRouter();
-  const pillars = [
-    {
-      id: 0,
-      badge: "High Altitude",
-      icon: Mountain,
-      title: "2,000M+ MIST-GROWN",
-      metric: "1,400m - 2,000m Elevation",
-      desc: "Cultivated in the extreme microclimates of Gulmi and Ilam. Freezing mountain nights slow cherry development, packing dense natural sugars and bright citrus acidity into every seed.",
-      image: "https://images.unsplash.com/photo-1544735716-392fe2489ffa?q=70&w=600&auto=format&fit=crop",
-      link: "/origins?section=terroir",
-      linkText: "Explore Terroir"
-    },
-    {
-      id: 1,
-      badge: "Specialty Grade",
-      icon: Award,
-      title: "84+ SCA CUP SCORE",
-      metric: "Top 3% Tier Globally",
-      desc: "100% Arabica Bourbon and Typica varieties with zero primary defects. Every harvest lot is cup-tested and graded by certified Q-Graders to ensure unmatched balance and complex aroma.",
-      image: "https://images.unsplash.com/photo-1587734195503-904fca47e0e9?q=70&w=600&auto=format&fit=crop",
-      link: "/origins?section=sca-quality",
-      linkText: "View SCA Scorecard"
-    },
-    {
-      id: 2,
-      badge: "Direct Trade",
-      icon: ShieldCheck,
-      title: "100% FARMER-DIRECT",
-      metric: "+40% Above Market Rates",
-      desc: "We cut out commodity export middlemen. We contract directly with smallholder farming cooperatives in Nepal, guaranteeing stable living wages and long-term soil regeneration.",
-      image: "https://images.unsplash.com/photo-1524350876685-274059332603?q=70&w=600&auto=format&fit=crop",
-      link: "/origins?section=farmer-impact",
-      linkText: "Farmer Impact (+40%)"
-    },
-    {
-      id: 3,
-      badge: "Guaranteed Fresh",
-      icon: Flame,
-      title: "48-HR ROAST-TO-DOOR",
-      metric: "Small-Batch Roasted",
-      desc: "Never warehouse-aged. Beans are roasted in small 5kg batches in our Kathmandu Valley roastery and dispatched immediately so they arrive at peak degassing and crema readiness.",
-      image: "https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=70&w=600&auto=format&fit=crop",
-      link: "/origins?section=roast-schedule",
-      linkText: "View Roast Schedule"
-    }
-  ];
 
   return (
     <div className="flex flex-col min-h-screen bg-[#F5F2EB] text-[#2C2420]">
       
-      {/* 1. HERO SECTION */}
-      <section className="relative pt-36 pb-24 px-6 flex items-center justify-center min-h-[75vh] overflow-hidden bg-[#1A1512]">
-        <div className="absolute inset-0 bg-[url('https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=70&w=1200&auto=format&fit=crop')] bg-cover bg-center opacity-35 mix-blend-overlay"></div>
-        <div className="absolute inset-0 bg-gradient-to-t from-[#1A1512] via-[#1A1512]/60 to-transparent"></div>
+      {/* ========================================================================= */}
+      {/* 1. HERO SECTION (EDITORIAL HIMALAYAN SHOWCASE)                            */}
+      {/* ========================================================================= */}
+      <section className="relative pt-36 pb-24 px-6 flex items-center justify-center min-h-[78vh] overflow-hidden bg-[#1A1512]">
+        {/* Authentic Background Terroir Imagery */}
+        <div 
+          className="absolute inset-0 bg-cover bg-center opacity-30 mix-blend-luminosity"
+          style={{ backgroundImage: `url('https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=75&w=1400&auto=format&fit=crop')` }}
+        />
+        <div className="absolute inset-0 bg-gradient-to-t from-[#1A1512] via-[#1A1512]/60 to-[#1A1512]/40" />
         
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-md border border-white/20 text-white/90 text-[11px] font-bold uppercase tracking-[0.24em] mb-8">
-            <Sparkles size={13} className="text-[#E58A1F]" /> Single-Origin Himalayan Specialty Coffee
+          {/* Editorial Eyebrow Header */}
+          <div className="flex items-center justify-center gap-3 mb-6">
+            <span className="w-8 h-[1px] bg-[#A3432A]" />
+            <span className="font-mono text-xs uppercase tracking-[0.22em] text-[#E58A1F] font-bold">
+              Single-Origin Himalayan Specialty Coffee
+            </span>
+            <span className="w-8 h-[1px] bg-[#A3432A]" />
           </div>
 
-          <h1 className="text-5xl sm:text-6xl md:text-7xl font-serif font-bold tracking-tight text-white mb-6 leading-[1.05]">
-            Peak Altitude.<br />Peak Flavor.
+          {/* Fraunces Editorial Display Headline */}
+          <h1 className="text-4xl sm:text-6xl md:text-7xl font-serif font-bold tracking-tight text-white mb-6 leading-[1.08]">
+            Mist-Grown at 2,000m.<br />
+            Roasted to Order in Lalitpur.
           </h1>
 
-          <p className="text-[#F5F2EB] text-base md:text-xl max-w-2xl mx-auto leading-relaxed mb-10 opacity-85">
-            Freshly roasted single-origin coffees from Nepal’s highest hills. Delivered to your doorstep on recurring cycles with zero guesswork.
+          <p className="text-[#F5F2EB]/85 text-base md:text-lg max-w-2xl mx-auto leading-relaxed mb-10 font-normal">
+            High-altitude Bourbon and Typica cherries hand-sorted on the terraced slopes of Gulmi, Ilam, and Nuwakot. Small-batch drum roasted and delivered within 48 hours of degassing.
+          </p>
+
+          {/* Action Gateways */}
+          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+            <Link
+              href="/subscribe?plan=PAYG"
+              className="min-h-[48px] inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#A3432A] text-white text-xs uppercase tracking-widest font-bold hover:bg-[#8A3722] transition-colors shadow-md group"
+            >
+              <span>Build Your Subscription</span>
+              <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
+            </Link>
+            <Link
+              href="/origins"
+              className="min-h-[48px] inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full border border-white/30 bg-white/5 text-[#F5F2EB] text-xs uppercase tracking-widest font-bold hover:bg-white/15 transition-colors backdrop-blur-xs"
+            >
+              Explore Origin Terroirs
+            </Link>
+          </div>
+
+          {/* Empirical Coffee Ledger Header Strip */}
+          <div className="mt-14 pt-8 border-t border-white/10 grid grid-cols-1 sm:grid-cols-3 gap-4 text-left max-w-3xl mx-auto">
+            <div className="p-2">
+              <span className="font-mono text-xs text-[#E58A1F] block uppercase tracking-wider font-semibold">
+                Elevation Terroir
+              </span>
+              <span className="font-mono text-sm text-white font-bold block mt-0.5">
+                1,600m – 2,000m MASL
+              </span>
+              <span className="text-xs text-[#A89F91] block mt-0.5">
+                Strictly Hard Bean (SHB) density
+              </span>
+            </div>
+
+            <div className="p-2 border-t sm:border-t-0 sm:border-l border-white/10">
+              <span className="font-mono text-xs text-[#E58A1F] block uppercase tracking-wider font-semibold">
+                Cupping Standard
+              </span>
+              <span className="font-mono text-sm text-white font-bold block mt-0.5">
+                84+ to 87.0 SCA Certified
+              </span>
+              <span className="text-xs text-[#A89F91] block mt-0.5">
+                Zero primary defects guaranteed
+              </span>
+            </div>
+
+            <div className="p-2 border-t sm:border-t-0 sm:border-l border-white/10">
+              <span className="font-mono text-xs text-[#E58A1F] block uppercase tracking-wider font-semibold">
+                Direct Trade Sourcing
+              </span>
+              <span className="font-mono text-sm text-white font-bold block mt-0.5">
+                +40% Above Fair Market
+              </span>
+              <span className="text-xs text-[#A89F91] block mt-0.5">
+                100% smallholder cooperative paid
+              </span>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 2. ROASTERY INDEX & GATEWAYS (ARCHITECTURAL LEDGER IN PLACE OF DARK BENTO) */}
+      {/* ========================================================================= */}
+      <section className="w-full bg-[#FAF8F5] border-y border-[#E6DEC8]">
+        <div className="max-w-7xl mx-auto">
+          <div className="grid grid-cols-1 md:grid-cols-3 divide-y md:divide-y-0 md:divide-x divide-[#E6DEC8]">
+            
+            {/* Gateway 01: Single Origins */}
+            <Link 
+              href="/origins" 
+              className="group p-8 md:p-10 flex flex-col justify-between hover:bg-white transition-colors"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-mono text-xs font-bold text-[#A3432A] tracking-widest">
+                    01 / TERROIR CATALOG
+                  </span>
+                  <MapPin size={16} className="text-[#A3432A]" />
+                </div>
+                <h2 className="text-2xl font-serif font-bold text-[#1A1512] mb-3 group-hover:text-[#A3432A] transition-colors">
+                  Single-Origin Harvests
+                </h2>
+                <p className="text-[#5C5042] text-[15px] leading-relaxed font-normal">
+                  Explore distinct mountain micro-lots from Gulmi, Ilam, and Nuwakot. Calibrated cupping scorecards, washing methods, and tasting notes direct from the farm.
+                </p>
+              </div>
+
+              <div className="pt-8 mt-6 border-t border-[#F0EAE1] flex items-center justify-between">
+                <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#A3432A] group-hover:underline">
+                  Browse 3 Origins
+                </span>
+                <ArrowRight size={14} className="text-[#A3432A] group-hover:translate-x-1.5 transition-transform" />
+              </div>
+            </Link>
+
+            {/* Gateway 02: Custom Subscription */}
+            <Link 
+              href="/subscribe?plan=6M&origin=1" 
+              className="group p-8 md:p-10 flex flex-col justify-between hover:bg-white transition-colors"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-mono text-xs font-bold text-[#A3432A] tracking-widest">
+                    02 / RECURRING CLUB
+                  </span>
+                  <Scale size={16} className="text-[#A3432A]" />
+                </div>
+                <h2 className="text-2xl font-serif font-bold text-[#1A1512] mb-3 group-hover:text-[#A3432A] transition-colors">
+                  Tailored Delivery Cycles
+                </h2>
+                <p className="text-[#5C5042] text-[15px] leading-relaxed font-normal">
+                  Customize your bean lot, grind calibration, and monthly box cadence. Save up to 15% with prepaid roasting memberships and free doorstep shipping across Nepal.
+                </p>
+              </div>
+
+              <div className="pt-8 mt-6 border-t border-[#F0EAE1] flex items-center justify-between">
+                <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#A3432A] group-hover:underline">
+                  Configure Your Plan
+                </span>
+                <ArrowRight size={14} className="text-[#A3432A] group-hover:translate-x-1.5 transition-transform" />
+              </div>
+            </Link>
+
+            {/* Gateway 03: Roastery Heritage */}
+            <Link 
+              href="/about#story" 
+              className="group p-8 md:p-10 flex flex-col justify-between hover:bg-white transition-colors"
+            >
+              <div>
+                <div className="flex items-center justify-between mb-4">
+                  <span className="font-mono text-xs font-bold text-[#A3432A] tracking-widest">
+                    03 / ROASTERY CRAFT
+                  </span>
+                  <Flame size={16} className="text-[#A3432A]" />
+                </div>
+                <h2 className="text-2xl font-serif font-bold text-[#1A1512] mb-3 group-hover:text-[#A3432A] transition-colors">
+                  Lalitpur Roastery Heritage
+                </h2>
+                <p className="text-[#5C5042] text-[15px] leading-relaxed font-normal">
+                  Contracting directly with 180+ smallholder families with zero commodity brokers. 100% shade-grown canopy, organic mountain compost, and artisan drum profiling.
+                </p>
+              </div>
+
+              <div className="pt-8 mt-6 border-t border-[#F0EAE1] flex items-center justify-between">
+                <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#A3432A] group-hover:underline">
+                  Read Roastery Story
+                </span>
+                <ArrowRight size={14} className="text-[#A3432A] group-hover:translate-x-1.5 transition-transform" />
+              </div>
+            </Link>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 3. ASYMMETRIC EDITORIAL SPREAD (PURGES 4-CARD BENTO CLONE ARMY)           */}
+      {/* ========================================================================= */}
+      <section className="py-24 px-6 max-w-7xl mx-auto w-full">
+        {/* Section Header */}
+        <div className="max-w-2xl mb-14">
+          <div className="flex items-center gap-2 mb-2">
+            <span className="w-6 h-[1px] bg-[#A3432A]" />
+            <span className="font-mono text-xs uppercase tracking-[0.2em] font-bold text-[#A3432A]">
+              Pillars of Specialty Craft
+            </span>
+          </div>
+          <h2 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-[#1A1512] tracking-tight mb-4">
+            The Himalayan Specialty Standard
+          </h2>
+          <p className="text-[#5C5042] text-[15px] md:text-base leading-relaxed">
+            Specialty coffee is not an abstract slogan—it is an empirical, calibrated protocol from extreme elevation cherries to certified Q-Grader cupping bowls.
+          </p>
+        </div>
+
+        {/* Asymmetrical 7-Col vs 5-Col Editorial Layout */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+          
+          {/* FEATURED ANCHOR (7 COLS): Flagship High-Altitude Terroir Showcase */}
+          <div className="lg:col-span-7 bg-white border border-[#E6DEC8] rounded-2xl p-8 md:p-10 flex flex-col justify-between shadow-xs">
+            <div>
+              <div className="flex flex-wrap items-center justify-between gap-2 mb-6">
+                <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#A3432A] bg-[#FAF5F2] px-3 py-1 rounded border border-[#E6DEC8]">
+                  Anchor Pillar 01 & 02 • Micro-Lot Terroir & Grading
+                </span>
+                <span className="font-mono text-xs text-[#5C5042] font-semibold">
+                  Gulmi & Ilam High Ridges
+                </span>
+              </div>
+
+              <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#1A1512] mb-4">
+                Extreme Elevation Slows Maturation
+              </h3>
+
+              <p className="text-[#5C5042] text-[15px] leading-relaxed mb-6 font-normal">
+                Nepal sits at the northern fringe of the coffee belt. Combined with elevations between 1,400m and 2,000m, freezing Himalayan night temperatures drop cherry respiration, extending fruit development from the typical 6 months to 9 full months. This extreme climatic stress packs dense sucrose, malic acids, and complex floral lipids directly into the seed.
+              </p>
+
+              {/* Technical Roastery Spec Ledger Table */}
+              <div className="border border-[#E6DEC8] rounded-xl overflow-hidden bg-[#FAF8F5] mb-6">
+                <div className="px-4 py-2.5 bg-[#EAE4D3] border-b border-[#E6DEC8] flex items-center justify-between">
+                  <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1512]">
+                    Technical Lot Specification
+                  </span>
+                  <span className="font-mono text-xs font-semibold text-[#A3432A]">
+                    Verified Lab Data
+                  </span>
+                </div>
+                <div className="divide-y divide-[#E6DEC8] text-xs font-mono">
+                  <div className="px-4 py-3 flex justify-between items-center">
+                    <span className="text-[#5C5042]">Altitude Range</span>
+                    <span className="font-bold text-[#1A1512]">1,600m – 2,000m MASL (Strictly Hard Bean)</span>
+                  </div>
+                  <div className="px-4 py-3 flex justify-between items-center">
+                    <span className="text-[#5C5042]">SCA Cupping Lot Score</span>
+                    <span className="font-bold text-[#2E6B34]">86.5 / 100 Certified Specialty Lot</span>
+                  </div>
+                  <div className="px-4 py-3 flex justify-between items-center">
+                    <span className="text-[#5C5042]">Botanical Varieties</span>
+                    <span className="font-bold text-[#1A1512]">Bourbon & Typica (100% Arabica)</span>
+                  </div>
+                  <div className="px-4 py-3 flex justify-between items-center">
+                    <span className="text-[#5C5042]">Post-Harvest Processing</span>
+                    <span className="font-bold text-[#1A1512]">Glacial Spring Wash & Raised Bamboo Beds</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div className="pt-6 border-t border-[#F0EAE1] flex flex-wrap items-center justify-between gap-4">
+              <Link
+                href="/origins?section=terroir"
+                className="font-mono text-xs uppercase tracking-wider font-bold text-[#A3432A] hover:underline flex items-center gap-1.5"
+              >
+                Inspect Elevation Terroir <ArrowRight size={13} />
+              </Link>
+              <Link
+                href="/origins?section=sca-quality"
+                className="font-mono text-xs uppercase tracking-wider font-bold text-[#5C5042] hover:text-[#1A1512] flex items-center gap-1.5"
+              >
+                View SCA Lab Protocol <ArrowRight size={13} />
+              </Link>
+            </div>
+          </div>
+
+          {/* SUPPORTING STACK (5 COLS): Direct Trade & Roast-to-Door Freshness */}
+          <div className="lg:col-span-5 flex flex-col gap-6">
+            
+            {/* Supporting Card A: 100% Farmer Direct Trade */}
+            <div className="bg-white border border-[#E6DEC8] rounded-2xl p-7 flex-1 flex flex-col justify-between shadow-xs">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#2E6B34]">
+                    Pillar 03 • Living Wages
+                  </span>
+                  <ShieldCheck size={18} className="text-[#2E6B34]" />
+                </div>
+                <h4 className="text-xl font-serif font-bold text-[#1A1512] mb-2">
+                  100% Direct-Trade Cooperative Contracts
+                </h4>
+                <p className="text-[#5C5042] text-[15px] leading-relaxed mb-4 font-normal">
+                  We bypass speculative commodity brokers. Smallholder cooperatives in Gulmi receive <strong>+40% above fair trade market minimums</strong>, paid directly into bank accounts to fund raised drying beds and organic compost.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-[#F0EAE1]">
+                <Link
+                  href="/origins?section=farmer-impact"
+                  className="font-mono text-xs uppercase tracking-wider font-bold text-[#A3432A] hover:underline inline-flex items-center gap-1.5"
+                >
+                  Verify Farmer Compensation <ArrowRight size={13} />
+                </Link>
+              </div>
+            </div>
+
+            {/* Supporting Card B: 48-Hour Roast Freshness */}
+            <div className="bg-[#1A1512] text-[#F5F2EB] border border-[#2C2420] rounded-2xl p-7 flex-1 flex flex-col justify-between shadow-sm">
+              <div>
+                <div className="flex items-center justify-between mb-3">
+                  <span className="font-mono text-xs uppercase tracking-wider font-bold text-[#E58A1F]">
+                    Pillar 04 • Small-Batch Freshness
+                  </span>
+                  <Flame size={18} className="text-[#E58A1F]" />
+                </div>
+                <h4 className="text-xl font-serif font-bold text-white mb-2">
+                  48-Hour Cast-Iron Roast Schedule
+                </h4>
+                <p className="text-[#A89F91] text-[15px] leading-relaxed mb-4 font-normal">
+                  Supermarket coffee often sits warehouse-shelved for 6 months. We roast in 5kg micro-batches in Lalitpur every Monday and Wednesday morning, dispatching at optimal CO2 stabilization for peak aroma bloom.
+                </p>
+              </div>
+
+              <div className="pt-4 border-t border-white/10">
+                <Link
+                  href="/origins?section=roast-schedule"
+                  className="font-mono text-xs uppercase tracking-wider font-bold text-[#E58A1F] hover:underline inline-flex items-center gap-1.5"
+                >
+                  View Lalitpur Roast Calendar <ArrowRight size={13} />
+                </Link>
+              </div>
+            </div>
+
+          </div>
+
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 4. VERIFIED SUBSCRIBER TASTING JOURNAL (PURGES GENERIC MARQUEE)           */}
+      {/* ========================================================================= */}
+      <section className="bg-[#FAF8F5] py-20 px-6 border-y border-[#E6DEC8]">
+        <div className="max-w-7xl mx-auto">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row md:items-end justify-between mb-12 pb-6 border-b border-[#E6DEC8] gap-4">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="w-6 h-[1px] bg-[#A3432A]" />
+                <span className="font-mono text-xs uppercase tracking-[0.2em] font-bold text-[#A3432A]">
+                  Tasting Journal Entries
+                </span>
+              </div>
+              <h3 className="text-2xl sm:text-3xl font-serif font-bold text-[#1A1512]">
+                Brewed Daily Across Nepal
+              </h3>
+            </div>
+            <div className="font-mono text-xs text-[#5C5042] flex items-center gap-3">
+              <span>Verified Direct-Trade Subscribers</span>
+              <span>•</span>
+              <span className="text-[#2E6B34] font-bold">100% Arabica Micro-Lots</span>
+            </div>
+          </div>
+
+          {/* 3 Journal Entries */}
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            
+            {/* Entry 1 */}
+            <div className="bg-white border border-[#E6DEC8] p-6 rounded-xl flex flex-col justify-between shadow-xs">
+              <div>
+                <div className="flex items-center justify-between mb-3 font-mono text-xs text-[#5C5042]">
+                  <span className="text-[#A3432A] font-bold">Entry #042</span>
+                  <span>Biratnagar • V60 Drip</span>
+                </div>
+                <p className="text-[#2C2420] text-[15px] leading-relaxed mb-6 font-normal">
+                  "The Ilam Gold natural process has genuine wild berry esters without any sour fermentation taint. Fresh roast date is stamped right on the bag valve. Unmatched morning cup."
+                </p>
+              </div>
+              <div className="pt-4 border-t border-[#F0EAE1] flex justify-between items-center text-xs">
+                <div>
+                  <p className="font-bold text-[#1A1512]">Priya Sharma</p>
+                  <p className="text-[#5C5042] font-mono">Ilam Gold • 500g Bi-Weekly</p>
+                </div>
+                <span className="font-mono text-[#2E6B34] font-bold">Verified</span>
+              </div>
+            </div>
+
+            {/* Entry 2 */}
+            <div className="bg-white border border-[#E6DEC8] p-6 rounded-xl flex flex-col justify-between shadow-xs">
+              <div>
+                <div className="flex items-center justify-between mb-3 font-mono text-xs text-[#5C5042]">
+                  <span className="text-[#A3432A] font-bold">Entry #089</span>
+                  <span>Kathmandu • Aeropress</span>
+                </div>
+                <p className="text-[#2C2420] text-[15px] leading-relaxed mb-6 font-normal">
+                  "Being able to change grind sizes or pause deliveries directly in the customer portal makes this effortless. The Gulmi Reserve has a distinct malic acidity reminiscent of high Kenyan lots."
+                </p>
+              </div>
+              <div className="pt-4 border-t border-[#F0EAE1] flex justify-between items-center text-xs">
+                <div>
+                  <p className="font-bold text-[#1A1512]">Bikash Thapa</p>
+                  <p className="text-[#5C5042] font-mono">Gulmi Reserve • Whole Bean</p>
+                </div>
+                <span className="font-mono text-[#2E6B34] font-bold">Verified</span>
+              </div>
+            </div>
+
+            {/* Entry 3 */}
+            <div className="bg-white border border-[#E6DEC8] p-6 rounded-xl flex flex-col justify-between shadow-xs">
+              <div>
+                <div className="flex items-center justify-between mb-3 font-mono text-xs text-[#5C5042]">
+                  <span className="text-[#A3432A] font-bold">Entry #114</span>
+                  <span>Lalitpur • French Press</span>
+                </div>
+                <p className="text-[#2C2420] text-[15px] leading-relaxed mb-6 font-normal">
+                  "Nuwakot Heritage has a heavy, syrupy body with walnut and dark molasses notes. It pairs wonderfully with a dash of milk while retaining distinct single-origin clarity."
+                </p>
+              </div>
+              <div className="pt-4 border-t border-[#F0EAE1] flex justify-between items-center text-xs">
+                <div>
+                  <p className="font-bold text-[#1A1512]">Dr. R. Shrestha</p>
+                  <p className="text-[#5C5042] font-mono">Nuwakot Heritage • 3M Cycle</p>
+                </div>
+                <span className="font-mono text-[#2E6B34] font-bold">Verified</span>
+              </div>
+            </div>
+
+          </div>
+        </div>
+      </section>
+
+      {/* ========================================================================= */}
+      {/* 5. GROUNDED FINAL CALL TO ACTION (PURGES "ELEVATE YOUR DAILY RITUAL")      */}
+      {/* ========================================================================= */}
+      <section className="py-24 px-6 text-center bg-[#F5F2EB]">
+        <div className="max-w-2xl mx-auto">
+          <div className="flex items-center justify-center gap-3 mb-4">
+            <span className="w-8 h-[1px] bg-[#A3432A]" />
+            <span className="font-mono text-xs uppercase tracking-[0.2em] font-bold text-[#A3432A]">
+              Freshly Roasted to Order
+            </span>
+            <span className="w-8 h-[1px] bg-[#A3432A]" />
+          </div>
+
+          <h3 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-[#1A1512] mb-4 tracking-tight">
+            Taste the Himalayan Altitude.
+          </h3>
+
+          <p className="text-[#5C5042] text-[15px] md:text-base mb-8 leading-relaxed font-normal">
+            Select your preferred single-origin lot, customize your grind for your brewing method, and receive freshly roasted batches on flexible recurring cycles.
           </p>
 
           <div className="flex flex-col sm:flex-row gap-4 justify-center">
             <Link
               href="/subscribe?plan=PAYG"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full bg-[#A3432A] text-white text-xs uppercase tracking-widest font-bold hover:bg-[#8A3722] transition-all shadow-lg hover:shadow-xl group"
+              className="min-h-[48px] inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full bg-[#1A1512] text-white text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-colors shadow-sm"
             >
-              Build Your Plan <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+              <span>Build Your Subscription</span>
+              <ArrowRight size={14} />
             </Link>
             <Link
               href="/origins"
-              className="inline-flex items-center justify-center gap-2 px-8 py-4 rounded-full border border-white/30 bg-white/5 text-[#F5F2EB] text-xs uppercase tracking-widest font-bold hover:bg-white/15 transition-all backdrop-blur-sm"
+              className="min-h-[48px] inline-flex items-center justify-center gap-2 px-8 py-3.5 rounded-full border border-[#E6DEC8] bg-[#FAF8F5] text-[#1A1512] text-xs uppercase tracking-widest font-bold hover:bg-white transition-colors"
             >
-              Explore Our Origins
+              Explore 3 Signature Lots
             </Link>
           </div>
-        </div>
-      </section>
-
-      {/* 2. THREE BENTO ACTION GATEWAYS (Roastify Pattern) */}
-      <section className="w-full -mt-1 bg-[#1A1512]">
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-0">
-          
-          {/* Bento Card 1: Single Origins */}
-          <Link 
-            href="/origins" 
-            className="group relative block overflow-hidden min-h-[380px] bg-neutral-900 border-r border-white/10"
-          >
-            <div 
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 opacity-70"
-              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?q=80&w=800&auto=format&fit=crop')` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent transition-opacity group-hover:from-black/90"></div>
-            <div className="relative h-full flex flex-col justify-end p-8 z-10">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E58A1F] mb-1">01 • Sourcing</span>
-              <h2 className="text-2xl font-serif font-bold text-white mb-2">Explore Single Origins</h2>
-              <p className="text-white/80 text-xs leading-relaxed max-w-sm mb-6">
-                Discover distinct micro-climates, altitude notes, and processing methods from Gulmi, Ilam, and Nuwakot.
-              </p>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur-md px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition-all group-hover:bg-white group-hover:text-black w-fit">
-                View Origins <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </span>
-            </div>
-          </Link>
-
-          {/* Bento Card 2: Custom Subscription */}
-          <Link 
-            href="/subscribe?plan=6M&origin=1" 
-            className="group relative block overflow-hidden min-h-[380px] bg-neutral-900 border-r border-white/10"
-          >
-            <div 
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 opacity-70"
-              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1559525839-b184a4d698c7?q=80&w=800&auto=format&fit=crop')` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent transition-opacity group-hover:from-black/90"></div>
-            <div className="relative h-full flex flex-col justify-end p-8 z-10">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E58A1F] mb-1">02 • Flexibility</span>
-              <h2 className="text-2xl font-serif font-bold text-white mb-2">Custom Subscriptions</h2>
-              <p className="text-white/80 text-xs leading-relaxed max-w-sm mb-6">
-                Select your bean, grind size, and monthly commitment. Save up to 15% with prepaid cycles and free doorstep shipping.
-              </p>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur-md px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition-all group-hover:bg-white group-hover:text-black w-fit">
-                Configure Plan <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </span>
-            </div>
-          </Link>
-
-          {/* Bento Card 3: Bulk / Wholesale */}
-          <Link 
-            href="/about#story" 
-            className="group relative block overflow-hidden min-h-[380px] bg-neutral-900"
-          >
-            <div 
-              className="absolute inset-0 bg-cover bg-center transition-transform duration-700 group-hover:scale-110 opacity-70"
-              style={{ backgroundImage: `url('https://images.unsplash.com/photo-1524350876685-274059332603?q=80&w=800&auto=format&fit=crop')` }}
-            />
-            <div className="absolute inset-0 bg-gradient-to-t from-black/95 via-black/50 to-transparent transition-opacity group-hover:from-black/90"></div>
-            <div className="relative h-full flex flex-col justify-end p-8 z-10">
-              <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#E58A1F] mb-1">03 • Heritage</span>
-              <h2 className="text-2xl font-serif font-bold text-white mb-2">Our Himalayan Story</h2>
-              <p className="text-white/80 text-xs leading-relaxed max-w-sm mb-6">
-                Learn how we unite local mountain cooperatives with craft roasting in Lalitpur to put Nepal on the global coffee map.
-              </p>
-              <span className="inline-flex items-center gap-2 rounded-full bg-white/15 backdrop-blur-md px-4 py-2 text-xs font-bold uppercase tracking-wider text-white transition-all group-hover:bg-white group-hover:text-black w-fit">
-                Read Story <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
-              </span>
-            </div>
-          </Link>
-
-        </div>
-      </section>
-
-      {/* 3. THE HIMALAYAN STANDARD: 4-COLUMN BALANCED BENTO GRID */}
-      <section className="py-24 px-6 max-w-7xl mx-auto w-full">
-        <div className="text-center mb-16">
-          <span className="inline-block text-[11px] font-bold uppercase tracking-[0.24em] text-[#A3432A] mb-2">
-            The Quality Benchmark
-          </span>
-          <h2 className="text-3xl md:text-5xl font-serif font-bold text-[#1A1512] mb-4">
-            The Himalayan Specialty Standard
-          </h2>
-          <p className="text-[#5C5042] text-sm md:text-base max-w-2xl mx-auto leading-relaxed">
-            Every batch delivered to your door adheres to strict Specialty Coffee Association guidelines, from rich Himalayan mountain soil to our Lalitpur drum roaster.
-          </p>
-        </div>
-
-        {/* 4-Column Balanced Bento Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 w-full">
-          {pillars.map((pillar) => {
-            const Icon = pillar.icon;
-
-            return (
-              <div
-                key={pillar.id}
-                onClick={() => router.push(pillar.link)}
-                className="group bg-white rounded-2xl border border-[#E6DEC8] overflow-hidden shadow-sm hover:shadow-xl hover:-translate-y-1.5 transition-all duration-300 flex flex-col justify-between cursor-pointer"
-              >
-                <div>
-                  {/* Curated Header Image with Floating Metrics */}
-                  <div className="relative h-48 w-full overflow-hidden">
-                    <img 
-                      src={pillar.image} 
-                      alt={pillar.title} 
-                      loading="lazy"
-                      decoding="async"
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105"
-                    />
-                    <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/30 to-transparent"></div>
-                    
-                    {/* Top Floating Badge */}
-                    <div className="absolute top-3 left-3 bg-[#1A1512]/80 backdrop-blur-md px-2.5 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider text-[#F5F2EB] flex items-center gap-1.5 border border-white/10">
-                      <Icon size={12} className="text-[#E58A1F]" />
-                      <span>{pillar.badge}</span>
-                    </div>
-
-                    {/* Bottom Stat Callout on Image */}
-                    <div className="absolute bottom-3 left-3 right-3 flex items-baseline justify-between text-white">
-                      <span className="text-lg font-serif font-bold tracking-tight">
-                        {pillar.metric}
-                      </span>
-                    </div>
-                  </div>
-
-                  {/* Body Content */}
-                  <div className="p-6">
-                    <h3 className="text-lg font-serif font-bold text-[#1A1512] tracking-tight mb-2 group-hover:text-[#A3432A] transition-colors">
-                      {pillar.title}
-                    </h3>
-                    <p className="text-xs text-[#5C5042] leading-relaxed">
-                      {pillar.desc}
-                    </p>
-                  </div>
-                </div>
-
-                {/* Card Action Footer */}
-                <div className="p-6 pt-0">
-                  <div className="pt-4 border-t border-[#F0EAE1]">
-                    <Link
-                      href={pillar.link}
-                      onClick={(e) => e.stopPropagation()}
-                      className="inline-flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-[#A3432A] hover:text-[#8A3722] group-hover:gap-2.5 transition-all"
-                    >
-                      <span>{pillar.linkText}</span>
-                      <ArrowRight size={13} />
-                    </Link>
-                  </div>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </section>
-
-      {/* 4. VERIFIED SUBSCRIBER MARQUEE (Social Proof) */}
-      <section className="bg-[#EAE4D3] py-16 px-6 border-y border-[#D3C7B1]">
-        <div className="max-w-6xl mx-auto">
-          <div className="flex flex-col md:flex-row items-center justify-between mb-10 pb-6 border-b border-[#D3C7B1] gap-4">
-            <div>
-              <p className="text-[#5C5042] text-[10px] uppercase tracking-[0.24em] font-bold mb-1">Empirical Proof</p>
-              <h3 className="text-2xl font-serif font-bold text-[#1A1512]">Trusted Across Nepal</h3>
-            </div>
-            <div className="flex items-center gap-6 text-sm text-[#8A7966] font-serif italic">
-              <span>The Kathmandu Post</span>
-              <span>•</span>
-              <span>Himalayan Times</span>
-              <span>•</span>
-              <span>Republica</span>
-            </div>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-            <div className="bg-white border border-[#E6DEC8] p-6 rounded-lg shadow-sm">
-              <div className="flex gap-1 text-[#A3432A] mb-3">
-                {[1,2,3,4,5].map(i => <Star key={i} size={14} fill="currentColor" />)}
-              </div>
-              <p className="text-xs text-[#5C5042] leading-relaxed mb-4">
-                "The Ilam Gold beans completely changed my morning routine. Freshly roasted, never bitter, and always delivered on schedule."
-              </p>
-              <div className="border-t border-[#F0EAE1] pt-3 text-[11px]">
-                <p className="font-bold text-[#1A1512]">Priya Sharma</p>
-                <p className="text-[#8A7966]">Biratnagar • Subscriber since 2024</p>
-              </div>
-            </div>
-
-            <div className="bg-white border border-[#E6DEC8] p-6 rounded-lg shadow-sm">
-              <div className="flex gap-1 text-[#A3432A] mb-3">
-                {[1,2,3,4,5].map(i => <Star key={i} size={14} fill="currentColor" />)}
-              </div>
-              <p className="text-xs text-[#5C5042] leading-relaxed mb-4">
-                "Being able to skip or pause directly from the dashboard makes this feel like a modern international app. Truly specialty grade."
-              </p>
-              <div className="border-t border-[#F0EAE1] pt-3 text-[11px]">
-                <p className="font-bold text-[#1A1512]">Bikash Thapa</p>
-                <p className="text-[#8A7966]">Kathmandu • Whole Bean (500g)</p>
-              </div>
-            </div>
-
-            <div className="bg-white border border-[#E6DEC8] p-6 rounded-lg shadow-sm">
-              <div className="flex gap-1 text-[#A3432A] mb-3">
-                {[1,2,3,4,5].map(i => <Star key={i} size={14} fill="currentColor" />)}
-              </div>
-              <p className="text-xs text-[#5C5042] leading-relaxed mb-4">
-                "Gulmi Reserve is velvety with distinct citrus notes. You can immediately taste that this was grown at high altitude."
-              </p>
-              <div className="border-t border-[#F0EAE1] pt-3 text-[11px]">
-                <p className="font-bold text-[#1A1512]">Dr. R. Shrestha</p>
-                <p className="text-[#8A7966]">Nepalgunj • 3-Month Prepaid</p>
-              </div>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 5. FINAL CALL TO ACTION */}
-      <section className="py-24 px-6 text-center bg-[#F5F2EB]">
-        <div className="max-w-2xl mx-auto">
-          <h3 className="text-3xl md:text-4xl font-serif font-bold text-[#1A1512] mb-4">
-            Elevate Your Daily Ritual
-          </h3>
-          <p className="text-[#5C5042] text-sm mb-8 leading-relaxed">
-            Experience what true Himalayan altitude coffee tastes like. Start with a flexible prepaid subscription today.
-          </p>
-          <Link
-            href="/subscribe?plan=3M"
-            className="inline-flex items-center justify-center gap-2 px-10 py-4 rounded-full bg-[#1A1512] text-white text-xs uppercase tracking-widest font-bold hover:bg-[#2C2420] transition-all shadow-md hover:shadow-xl"
-          >
-            Start Your Subscription <ArrowRight size={14} />
-          </Link>
         </div>
       </section>
 

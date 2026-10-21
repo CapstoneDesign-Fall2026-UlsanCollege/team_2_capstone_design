@@ -1,11 +1,12 @@
 "use client";
 
 import { useState, useEffect, Suspense } from "react";
-import { Sparkles, Package, Check } from "lucide-react";
+import { Package, Check, X, ChevronUp, ArrowRight } from "lucide-react";
 import { useSearchParams } from "next/navigation";
 import OriginCard, { OriginItem } from "@/components/subscribe/OriginCard";
 import TasteMatcher from "@/components/subscribe/TasteMatcher";
 import UnboxingReceipt from "@/components/subscribe/UnboxingReceipt";
+import Link from "next/link";
 
 // 1. BASE ORIGIN SPECIFICATIONS (Clean, Professional Typography)
 const ORIGINS: OriginItem[] = [
@@ -110,6 +111,9 @@ function SubscribeContent() {
   const [selectedPlan, setSelectedPlan] = useState(initialPlan);
   const [customer, setCustomer] = useState<{ name?: string; email?: string } | null>(null);
   const [matchedOriginId, setMatchedOriginId] = useState<number | null>(null);
+
+  // Mobile Bottom Sheet Drawer State
+  const [isMobileDrawerOpen, setIsMobileDrawerOpen] = useState(false);
 
   useEffect(() => {
     if (urlOriginId && boxFormat.bags === 1) {
@@ -261,26 +265,30 @@ function SubscribeContent() {
   const checkoutHref = `/checkout?origin=${primaryOriginId}&name=${encodeURIComponent(getBoxSummaryName())}&weight=${totalWeightKg}&price=${totalDueToday}&plan_id=${isTrialMode ? "TRIAL_ONETIME" : selectedPlan.id}&plan_name=${encodeURIComponent(isTrialMode ? "One-Time Trial Pack" : selectedPlan.name)}`;
 
   return (
-    <div className="flex flex-col min-h-screen bg-[#F5F2EB] text-[#2C2420] font-sans">
+    <div className="flex flex-col min-h-screen bg-[#F5F2EB] text-[#1A1512] font-sans">
       
-      {/* 1. BUILDER HERO */}
-      <div className="bg-[#1A1512] text-[#F5F2EB] pt-20 pb-12 px-6 relative overflow-hidden border-b border-[#2C2420]">
+      {/* 1. BUILDER HERO (Editorial Roastery Ledger Style) */}
+      <section className="bg-[#1A1512] text-[#F5F2EB] pt-24 pb-14 px-6 relative border-b border-[#3E342F]">
         <div className="max-w-4xl mx-auto text-center relative z-10">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-white/10 text-[#E58A1F] text-xs font-bold uppercase tracking-[0.2em] mb-3">
-            <Sparkles size={12} /> Himalayan Artisanal Coffee
+          <div className="flex items-center justify-center gap-3 mb-3">
+            <span className="w-8 h-[1px] bg-[#E58A1F]/60" />
+            <span className="font-mono text-xs uppercase tracking-[0.2em] font-bold text-[#E58A1F]">
+              Roastery Dispatch Builder • Lalitpur, Nepal
+            </span>
+            <span className="w-8 h-[1px] bg-[#E58A1F]/60" />
           </div>
-          <h1 className="text-3xl md:text-5xl font-serif font-bold text-white mb-2.5">
-            Build Your Coffee Ritual.
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-serif font-bold text-white mb-3 tracking-tight">
+            Calibrate Your Himalayan Coffee Manifest.
           </h1>
-          <p className="text-[#A89F91] text-xs md:text-sm max-w-md mx-auto">
-            Order a zero-commitment trial sample or subscribe to smallholder micro-lots fresh roasted in Lalitpur.
+          <p className="text-[#C8BFAB] text-sm md:text-base max-w-xl mx-auto font-sans leading-relaxed">
+            Configure single-origin micro-lots roasted fresh to order in Lalitpur. Available as an uncommitted 150g tasting sample or an automated roastery subscription.
           </p>
         </div>
-      </div>
+      </section>
 
-      {/* 2. THE BEAN BOX / MISTOBOX EXPERIENCE FORK */}
-      <div className="bg-[#EAE4D7] border-b border-[#DDD4C3] py-4 px-4 sticky top-16 z-30 shadow-xs">
-        <div className="max-w-md mx-auto bg-white/70 backdrop-blur-md p-1.5 rounded-2xl flex gap-1.5 border border-[#DDD4C3]">
+      {/* 2. THE EXPERIENCE FORK (Editorial Switcher) */}
+      <div className="bg-[#EAE4D7] border-b border-[#DDD4C3] py-3.5 px-4 sticky top-16 z-30 shadow-xs">
+        <div className="max-w-md mx-auto bg-white/90 p-1.5 rounded-xl flex gap-1.5 border border-[#DDD4C3] shadow-xs">
           <button
             type="button"
             aria-pressed={experienceType === "trial"}
@@ -288,14 +296,14 @@ function SubscribeContent() {
               setExperienceType("trial");
               handleSelectFormat(BOX_FORMATS[0]);
             }}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 min-h-[44px] py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
               experienceType === "trial"
                 ? "bg-[#1A1512] text-white shadow-sm font-bold"
-                : "text-[#5C5042] hover:text-[#1A1512]"
+                : "text-[#5C5042] hover:text-[#1A1512] hover:bg-black/5"
             }`}
           >
-            <Sparkles size={13} className={experienceType === "trial" ? "text-[#E58A1F]" : "text-[#8A7966]"} />
-            <span>150g Trial (One-Time)</span>
+            <span className="font-mono text-[11px] text-[#E58A1F] font-bold">01</span>
+            <span>150g Trial Sample</span>
           </button>
           <button
             type="button"
@@ -303,35 +311,36 @@ function SubscribeContent() {
             onClick={() => {
               setExperienceType("subscription");
             }}
-            className={`flex-1 py-2.5 px-3 rounded-xl text-xs font-semibold transition-all flex items-center justify-center gap-1.5 ${
+            className={`flex-1 min-h-[44px] py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all flex items-center justify-center gap-2 cursor-pointer ${
               experienceType === "subscription"
                 ? "bg-[#1A1512] text-white shadow-sm font-bold"
-                : "text-[#5C5042] hover:text-[#1A1512]"
+                : "text-[#5C5042] hover:text-[#1A1512] hover:bg-black/5"
             }`}
           >
-            <Package size={13} className={experienceType === "subscription" ? "text-[#E58A1F]" : "text-[#8A7966]"} />
-            <span>Monthly Subscription</span>
+            <span className="font-mono text-[11px] text-[#E58A1F] font-bold">02</span>
+            <span>Roastery Subscription</span>
           </button>
         </div>
       </div>
 
       {/* 3. MAIN BUILDER CONTAINER */}
-      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-10">
+      {/* pb-44 ensures plenty of clearance for the mobile sticky bar + MobileNav dock */}
+      <main className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-10 pb-44 lg:pb-16">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-10 items-start">
           
-          {/* LEFT COLUMN: Clean, Breathable Steps (7 Cols) */}
-          <div className="lg:col-span-7 space-y-10">
+          {/* LEFT COLUMN: Configuration Steps (7 Cols) */}
+          <div className="lg:col-span-7 space-y-12">
             
             {experienceType === "trial" ? (
               /* EXPERIENCE A: 150g TRIAL FLOW */
               <>
-                <section id="trial-origin">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs uppercase tracking-widest font-bold text-[#A3432A]">
-                      Step 01 • Choose Your 150g Trial Sample
+                <section id="trial-origin" className="space-y-4">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2 pb-2 border-b border-[#1A1512]/15">
+                    <span className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A]">
+                      STEP 01 // 150G TRIAL LOT SELECTION
                     </span>
-                    <span className="text-xs font-semibold text-[#2E6B34]">
-                      Single Purchase • No Subscription
+                    <span className="font-mono text-xs font-semibold text-[#2E6B34] bg-[#E7F3E8] px-2.5 py-0.5 rounded-full border border-[#C3E4C6]">
+                      Single Purchase • Free Shipping
                     </span>
                   </div>
 
@@ -355,10 +364,10 @@ function SubscribeContent() {
                   </div>
                 </section>
 
-                <section id="trial-grind">
-                  <div className="mb-3">
-                    <span className="text-xs uppercase tracking-widest font-bold text-[#A3432A]">
-                      Step 02 • Select Grind Preparation
+                <section id="trial-grind" className="space-y-4">
+                  <div className="pb-2 border-b border-[#1A1512]/15">
+                    <span className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A]">
+                      STEP 02 // GRIND CALIBRATION
                     </span>
                   </div>
 
@@ -371,14 +380,14 @@ function SubscribeContent() {
                           type="button"
                           aria-pressed={isSelected}
                           onClick={() => setSelectedGrind(grind)}
-                          className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all ${
+                          className={`min-h-[56px] p-3.5 rounded-xl border text-left cursor-pointer transition-all active:scale-[0.99] ${
                             isSelected 
                               ? "bg-[#1A1512] text-white border-[#1A1512] shadow-sm" 
-                              : "bg-white border-[#E6DEC8] text-[#2C2420] hover:bg-[#FAF8F5]"
+                              : "bg-white border-[#E6DEC8] text-[#1A1512] hover:bg-[#FAF8F5]"
                           }`}
                         >
-                          <div className="flex justify-between items-start mb-0.5">
-                            <span className="text-xs font-bold uppercase tracking-wider">{grind.name}</span>
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-mono text-xs font-bold uppercase tracking-wider">{grind.name}</span>
                             <span
                               className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center shrink-0 ${
                                 isSelected
@@ -389,7 +398,7 @@ function SubscribeContent() {
                               {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
                             </span>
                           </div>
-                          <p className={`text-[11px] ${isSelected ? "text-[#A89F91]" : "text-[#8A7966]"}`}>
+                          <p className={`text-xs ${isSelected ? "text-[#C8BFAB]" : "text-[#5C5042]"}`}>
                             {grind.desc}
                           </p>
                         </button>
@@ -401,20 +410,21 @@ function SubscribeContent() {
             ) : (
               /* EXPERIENCE B: RECURRING SUBSCRIPTION FLOW */
               <>
-                <section id="step-origin">
-                  <div className="flex items-center justify-between mb-3">
-                    <span className="text-xs uppercase tracking-widest font-bold text-[#A3432A]">
-                      Step 01 • Choose Format & Origins
+                {/* Step 1: Format & Origins */}
+                <section id="step-origin" className="space-y-4">
+                  <div className="flex flex-wrap items-baseline justify-between gap-2 pb-2 border-b border-[#1A1512]/15">
+                    <span className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A]">
+                      STEP 01 // FORMAT & ORIGIN SELECTION
                     </span>
                     {boxFormat.bags > 1 && (
-                      <span className="text-xs font-bold text-[#2E6B34] flex items-center gap-1">
+                      <span className="font-mono text-xs font-bold text-[#2E6B34] bg-[#E7F3E8] px-2.5 py-0.5 rounded-full border border-[#C3E4C6] flex items-center gap-1.5">
                         <Check size={13} className="stroke-[3]" /> {totalSelectedBags} of {boxFormat.bags} bags filled
                       </span>
                     )}
                   </div>
 
-                  {/* Format Bar */}
-                  <div className="bg-[#EAE4D7] p-1 rounded-xl flex gap-1 mb-4 border border-[#DDD4C3]">
+                  {/* Format Switcher */}
+                  <div className="bg-[#EAE4D7] p-1.5 rounded-xl flex gap-1.5 border border-[#DDD4C3]">
                     {BOX_FORMATS.map((fmt) => {
                       const isSelected = boxFormat.id === fmt.id;
                       return (
@@ -423,14 +433,14 @@ function SubscribeContent() {
                           type="button"
                           aria-pressed={isSelected}
                           onClick={() => handleSelectFormat(fmt)}
-                          className={`flex-1 py-2 px-3 rounded-lg text-xs font-semibold transition-all text-center ${
+                          className={`flex-1 min-h-[48px] py-2 px-3 rounded-lg text-xs md:text-sm font-semibold transition-all text-center cursor-pointer active:scale-[0.99] ${
                             isSelected
                               ? "bg-white text-[#1A1512] shadow-sm font-bold"
-                              : "text-[#6B5E4F] hover:text-[#1A1512]"
+                              : "text-[#5C5042] hover:text-[#1A1512]"
                           }`}
                         >
-                          <span className="block">{fmt.name}</span>
-                          <span className={`text-[10px] block font-normal ${isSelected ? "text-[#A3432A] font-semibold" : "text-[#8A7966]"}`}>
+                          <span className="block font-serif font-bold text-sm">{fmt.name}</span>
+                          <span className={`font-mono text-xs block font-medium mt-0.5 ${isSelected ? "text-[#A3432A] font-bold" : "text-[#5C5042]"}`}>
                             {fmt.subtitle}
                           </span>
                         </button>
@@ -438,50 +448,50 @@ function SubscribeContent() {
                     })}
                   </div>
 
-                  {/* Visual Parcel Slots (Duo) */}
+                  {/* Visual Parcel Slots (Duo Mode) */}
                   {boxFormat.bags === 2 && (
-                    <div className="bg-white border border-[#E6DEC8] rounded-2xl p-4 mb-4 shadow-xs">
-                      <div className="flex items-center justify-between mb-2.5">
-                        <span className="text-xs font-bold text-[#1A1512] flex items-center gap-1.5">
-                          <Package size={14} className="text-[#A3432A]" />
-                          Your 2-Bag Parcel Slots
+                    <div className="bg-white border border-[#E6DEC8] rounded-2xl p-4 shadow-xs space-y-3">
+                      <div className="flex items-center justify-between">
+                        <span className="font-mono text-xs font-bold uppercase tracking-wider text-[#1A1512] flex items-center gap-2">
+                          <Package size={15} className="text-[#A3432A]" />
+                          Duo Batch Parcel Slots
                         </span>
-                        <span className="text-[10px] text-[#2E6B34] font-bold bg-[#E7F3E8] px-2 py-0.5 rounded-full">
+                        <span className="font-mono text-xs text-[#2E6B34] font-bold bg-[#E7F3E8] border border-[#C3E4C6] px-2.5 py-0.5 rounded-full">
                           5% Duo Discount Active
                         </span>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-3 mb-3">
+                      <div className="grid grid-cols-2 gap-3">
                         <div className="bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl p-3 flex items-center gap-2.5">
-                          <span className="w-5 h-5 rounded-full bg-[#1A1512] text-white text-[10px] font-bold flex items-center justify-center shrink-0">1</span>
+                          <span className="w-5 h-5 rounded-full bg-[#1A1512] text-white font-mono text-xs font-bold flex items-center justify-center shrink-0">1</span>
                           <div className="min-w-0 flex-1">
-                            <span className="text-[10px] uppercase tracking-wider font-bold text-[#8A7966] block">Slot 1 ({activeSize.label})</span>
-                            <strong className="text-xs font-serif text-[#1A1512] block truncate">
+                            <span className="font-mono text-xs uppercase tracking-wider text-[#5C5042] block">Slot 1 ({activeSize.label})</span>
+                            <strong className="text-sm font-serif font-bold text-[#1A1512] block truncate">
                               {slot1Origin ? slot1Origin.name : "Select Coffee"}
                             </strong>
                           </div>
                         </div>
 
                         <div className="bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl p-3 flex items-center gap-2.5">
-                          <span className="w-5 h-5 rounded-full bg-[#1A1512] text-white text-[10px] font-bold flex items-center justify-center shrink-0">2</span>
+                          <span className="w-5 h-5 rounded-full bg-[#1A1512] text-white font-mono text-xs font-bold flex items-center justify-center shrink-0">2</span>
                           <div className="min-w-0 flex-1">
-                            <span className="text-[10px] uppercase tracking-wider font-bold text-[#8A7966] block">Slot 2 ({activeSize.label})</span>
-                            <strong className="text-xs font-serif text-[#1A1512] block truncate">
+                            <span className="font-mono text-xs uppercase tracking-wider text-[#5C5042] block">Slot 2 ({activeSize.label})</span>
+                            <strong className="text-sm font-serif font-bold text-[#1A1512] block truncate">
                               {slot2Origin ? slot2Origin.name : "Select Coffee"}
                             </strong>
                           </div>
                         </div>
                       </div>
 
-                      <div className="flex items-center gap-1.5 overflow-x-auto no-scrollbar text-xs">
-                        <span className="text-[#8A7966] text-[11px] font-medium shrink-0">Quick pairings:</span>
+                      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pt-1">
+                        <span className="font-mono text-xs text-[#5C5042] font-semibold shrink-0">Quick Pairings:</span>
                         <button
                           type="button"
                           onClick={() => setDuoPreset(1, 2)}
-                          className={`px-2.5 py-1 rounded-full border transition-colors ${
+                          className={`min-h-[40px] px-3 py-1.5 rounded-lg border font-mono text-xs transition-colors cursor-pointer shrink-0 ${
                             bagCounts[1] === 1 && bagCounts[2] === 1
-                              ? "bg-[#1A1512] text-white border-[#1A1512] font-semibold"
-                              : "bg-white text-[#5C5042] border-[#E6DEC8] hover:bg-[#FAF8F5]"
+                              ? "bg-[#1A1512] text-white border-[#1A1512] font-bold"
+                              : "bg-[#FAF8F5] text-[#1A1512] border-[#E6DEC8] hover:bg-white"
                           }`}
                         >
                           Gulmi + Ilam (Mix)
@@ -489,10 +499,10 @@ function SubscribeContent() {
                         <button
                           type="button"
                           onClick={() => setDuoPreset(1, 1)}
-                          className={`px-2.5 py-1 rounded-full border transition-colors ${
+                          className={`min-h-[40px] px-3 py-1.5 rounded-lg border font-mono text-xs transition-colors cursor-pointer shrink-0 ${
                             bagCounts[1] === 2
-                              ? "bg-[#1A1512] text-white border-[#1A1512] font-semibold"
-                              : "bg-white text-[#5C5042] border-[#E6DEC8] hover:bg-[#FAF8F5]"
+                              ? "bg-[#1A1512] text-white border-[#1A1512] font-bold"
+                              : "bg-[#FAF8F5] text-[#1A1512] border-[#E6DEC8] hover:bg-white"
                           }`}
                         >
                           2x Gulmi Reserve
@@ -500,10 +510,10 @@ function SubscribeContent() {
                         <button
                           type="button"
                           onClick={() => setDuoPreset(2, 2)}
-                          className={`px-2.5 py-1 rounded-full border transition-colors ${
+                          className={`min-h-[40px] px-3 py-1.5 rounded-lg border font-mono text-xs transition-colors cursor-pointer shrink-0 ${
                             bagCounts[2] === 2
-                              ? "bg-[#1A1512] text-white border-[#1A1512] font-semibold"
-                              : "bg-white text-[#5C5042] border-[#E6DEC8] hover:bg-[#FAF8F5]"
+                              ? "bg-[#1A1512] text-white border-[#1A1512] font-bold"
+                              : "bg-[#FAF8F5] text-[#1A1512] border-[#E6DEC8] hover:bg-white"
                           }`}
                         >
                           2x Ilam Gold
@@ -533,11 +543,11 @@ function SubscribeContent() {
                   </div>
                 </section>
 
-                {/* Step 2: Grind */}
-                <section id="step-grind">
-                  <div className="mb-3">
-                    <span className="text-xs uppercase tracking-widest font-bold text-[#A3432A]">
-                      Step 02 • Select Grind Preparation
+                {/* Step 2: Grind Calibration */}
+                <section id="step-grind" className="space-y-4">
+                  <div className="pb-2 border-b border-[#1A1512]/15">
+                    <span className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A]">
+                      STEP 02 // GRIND CALIBRATION
                     </span>
                   </div>
 
@@ -550,14 +560,14 @@ function SubscribeContent() {
                           type="button"
                           aria-pressed={isSelected}
                           onClick={() => setSelectedGrind(grind)}
-                          className={`p-3 rounded-xl border text-left cursor-pointer transition-all ${
+                          className={`min-h-[56px] p-3.5 rounded-xl border text-left cursor-pointer transition-all active:scale-[0.99] ${
                             isSelected 
                               ? "bg-[#1A1512] text-white border-[#1A1512] shadow-sm" 
-                              : "bg-white border-[#E6DEC8] text-[#2C2420] hover:bg-[#FAF8F5]"
+                              : "bg-white border-[#E6DEC8] text-[#1A1512] hover:bg-[#FAF8F5]"
                           }`}
                         >
-                          <div className="flex justify-between items-start mb-0.5">
-                            <span className="text-xs font-bold uppercase tracking-wider">{grind.name}</span>
+                          <div className="flex justify-between items-start mb-1">
+                            <span className="font-mono text-xs font-bold uppercase tracking-wider">{grind.name}</span>
                             <span
                               className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center shrink-0 ${
                                 isSelected
@@ -568,7 +578,7 @@ function SubscribeContent() {
                               {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
                             </span>
                           </div>
-                          <p className={`text-[11px] ${isSelected ? "text-[#A89F91]" : "text-[#8A7966]"}`}>
+                          <p className={`text-xs ${isSelected ? "text-[#C8BFAB]" : "text-[#5C5042]"}`}>
                             {grind.desc}
                           </p>
                         </button>
@@ -577,11 +587,11 @@ function SubscribeContent() {
                   </div>
                 </section>
 
-                {/* Step 3: Size */}
-                <section id="step-size">
-                  <div className="mb-3">
-                    <span className="text-xs uppercase tracking-widest font-bold text-[#A3432A]">
-                      Step 03 • Select Pack Size per Bag
+                {/* Step 3: Size Selection */}
+                <section id="step-size" className="space-y-4">
+                  <div className="pb-2 border-b border-[#1A1512]/15">
+                    <span className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A]">
+                      STEP 03 // BATCH SIZE PER SHIPMENT
                     </span>
                   </div>
 
@@ -594,15 +604,15 @@ function SubscribeContent() {
                           type="button"
                           aria-pressed={isSelected}
                           onClick={() => setSelectedSubSize(size)}
-                          className={`p-3.5 rounded-xl border text-left cursor-pointer transition-all relative flex flex-col justify-between ${
+                          className={`min-h-[72px] p-4 rounded-xl border text-left cursor-pointer transition-all relative flex flex-col justify-between active:scale-[0.99] ${
                             isSelected 
                               ? "bg-[#1A1512] text-white border-[#1A1512] shadow-sm" 
-                              : "bg-white border-[#E6DEC8] text-[#2C2420] hover:bg-[#FAF8F5]"
+                              : "bg-white border-[#E6DEC8] text-[#1A1512] hover:bg-[#FAF8F5]"
                           }`}
                         >
                           <div>
                             <div className="flex justify-between items-center mb-1">
-                              <span className="text-base font-serif font-bold">{size.label}</span>
+                              <span className="text-lg font-serif font-bold">{size.label}</span>
                               <span
                                 className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center shrink-0 ${
                                   isSelected
@@ -613,11 +623,11 @@ function SubscribeContent() {
                                 {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
                               </span>
                             </div>
-                            <span className={`text-[11px] font-semibold block ${isSelected ? "text-[#E58A1F]" : "text-[#A3432A]"}`}>
+                            <span className={`font-mono text-xs font-bold block ${isSelected ? "text-[#E58A1F]" : "text-[#A3432A]"}`}>
                               {size.tag}
                             </span>
                           </div>
-                          <p className={`text-[11px] mt-2 pt-2 border-t ${isSelected ? "border-white/10 text-[#A89F91]" : "border-[#F0EAE1] text-[#8A7966]"}`}>
+                          <p className={`font-mono text-xs mt-3 pt-2 border-t ${isSelected ? "border-white/10 text-[#C8BFAB]" : "border-[#F0EAE1] text-[#5C5042]"}`}>
                             {size.cups}
                           </p>
                         </button>
@@ -627,10 +637,10 @@ function SubscribeContent() {
                 </section>
 
                 {/* Step 4: Commitment Plan */}
-                <section id="step-plan">
-                  <div className="mb-3">
-                    <span className="text-xs uppercase tracking-widest font-bold text-[#A3432A]">
-                      Step 04 • Choose Commitment & Savings
+                <section id="step-plan" className="space-y-4">
+                  <div className="pb-2 border-b border-[#1A1512]/15">
+                    <span className="font-mono text-xs uppercase tracking-[0.18em] font-bold text-[#A3432A]">
+                      STEP 04 // ROASTERY SCHEDULE & SAVINGS
                     </span>
                   </div>
 
@@ -643,15 +653,15 @@ function SubscribeContent() {
                           type="button"
                           aria-pressed={isSelected}
                           onClick={() => setSelectedPlan(plan)}
-                          className={`p-3 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between ${
+                          className={`min-h-[72px] p-3.5 rounded-xl border text-left cursor-pointer transition-all flex flex-col justify-between active:scale-[0.99] ${
                             isSelected 
                               ? "bg-[#1A1512] text-white border-[#1A1512] shadow-sm" 
-                              : "bg-white border-[#E6DEC8] text-[#2C2420] hover:bg-[#FAF8F5]"
+                              : "bg-white border-[#E6DEC8] text-[#1A1512] hover:bg-[#FAF8F5]"
                           }`}
                         >
                           <div>
                             <div className="flex justify-between items-start mb-1">
-                              <span className="text-xs font-bold">{plan.name}</span>
+                              <span className="font-mono text-xs font-bold uppercase tracking-wider">{plan.name}</span>
                               <span
                                 className={`w-3.5 h-3.5 rounded-full border transition-all flex items-center justify-center shrink-0 ${
                                   isSelected
@@ -662,12 +672,12 @@ function SubscribeContent() {
                                 {isSelected && <span className="w-1.5 h-1.5 rounded-full bg-white block" />}
                               </span>
                             </div>
-                            <span className={`text-[11px] font-semibold block ${plan.discount > 0 ? (isSelected ? "text-green-400" : "text-[#2E6B34]") : (isSelected ? "text-[#A89F91]" : "text-[#8A7966]")}`}>
+                            <span className={`font-mono text-xs font-bold block ${plan.discount > 0 ? (isSelected ? "text-green-400" : "text-[#2E6B34]") : (isSelected ? "text-[#C8BFAB]" : "text-[#5C5042]")}`}>
                               {plan.tag}
                             </span>
                           </div>
-                          <span className={`text-[10px] block mt-2 pt-1.5 border-t ${isSelected ? "border-white/10 text-[#A89F91]" : "border-[#F0EAE1] text-[#8A7966]"}`}>
-                            {plan.months === 1 ? "1 cycle" : `${plan.months} deliveries`}
+                          <span className={`font-mono text-xs block mt-3 pt-2 border-t ${isSelected ? "border-white/10 text-[#C8BFAB]" : "border-[#F0EAE1] text-[#5C5042]"}`}>
+                            {plan.months === 1 ? "Single cycle" : `${plan.months} deliveries`}
                           </span>
                         </button>
                       );
@@ -679,8 +689,8 @@ function SubscribeContent() {
 
           </div>
 
-          {/* RIGHT COLUMN: Modular Sticky Unboxing Manifest (5 Cols) */}
-          <div className="lg:col-span-5">
+          {/* RIGHT COLUMN: Modular Sticky Unboxing Manifest (Desktop Only: 5 Cols) */}
+          <div className="hidden lg:block lg:col-span-5">
             <UnboxingReceipt
               isTrialMode={isTrialMode}
               summaryName={getBoxSummaryName()}
@@ -707,6 +717,103 @@ function SubscribeContent() {
 
         </div>
       </main>
+
+      {/* 4. MOBILE STICKY CHECKOUT BAR (Anchored directly above MobileNav at 4rem) */}
+      <aside 
+        aria-label="Mobile Order Summary and Checkout Bar"
+        className="fixed bottom-[calc(4rem+env(safe-area-inset-bottom,0px))] left-0 right-0 z-40 bg-[#1A1512] text-[#F5F2EB] border-t border-[#3E342F] px-4 py-3 shadow-2xl flex items-center justify-between lg:hidden"
+      >
+        <div className="flex flex-col">
+          <div className="flex items-baseline gap-2">
+            <span className="font-mono text-lg font-bold text-white tracking-tight">
+              Rs. {totalDueToday.toLocaleString()}
+            </span>
+            <span className="font-mono text-xs text-[#E58A1F] font-semibold">
+              {activeSize.label} • {isTrialMode ? "Trial" : selectedPlan.name}
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => setIsMobileDrawerOpen(true)}
+            className="text-xs font-mono text-[#C8BFAB] hover:text-white flex items-center gap-1 font-semibold touch-manipulation cursor-pointer mt-0.5"
+          >
+            <span>View Lot Manifest</span>
+            <ChevronUp size={13} className="text-[#E58A1F]" />
+          </button>
+        </div>
+
+        <Link
+          href={checkoutHref}
+          className="min-h-[48px] px-5 py-2.5 rounded-xl bg-[#A3432A] hover:bg-[#8A3722] text-white font-mono text-xs font-bold uppercase tracking-wider flex items-center justify-center gap-2 shadow-md active:scale-95 transition-all cursor-pointer"
+        >
+          <span>Checkout</span>
+          <ArrowRight size={14} />
+        </Link>
+      </aside>
+
+      {/* 5. MOBILE EXPANDABLE RECEIPT DRAWER (Bottom Sheet Modal) */}
+      {isMobileDrawerOpen && (
+        <div 
+          role="dialog"
+          aria-modal="true"
+          aria-label="Order Lot Manifest & Breakdown"
+          className="fixed inset-0 z-50 bg-black/60 backdrop-blur-xs flex flex-col justify-end lg:hidden transition-opacity"
+        >
+          {/* Backdrop click area */}
+          <div 
+            className="flex-1 w-full"
+            onClick={() => setIsMobileDrawerOpen(false)}
+          />
+
+          {/* Drawer Content */}
+          <div className="relative w-full max-h-[85vh] bg-[#FAF8F5] rounded-t-2xl shadow-2xl border-t border-[#E6DEC8] overflow-hidden flex flex-col animate-in slide-in-from-bottom duration-200">
+            {/* Header Ribbon */}
+            <div className="bg-[#1A1512] text-white px-5 py-3.5 flex items-center justify-between border-b border-[#3E342F]">
+              <div className="flex items-center gap-2">
+                <Package size={16} className="text-[#E58A1F]" />
+                <span className="font-mono text-xs uppercase tracking-widest font-bold">
+                  Roastery Dispatch Manifest
+                </span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setIsMobileDrawerOpen(false)}
+                className="w-8 h-8 rounded-full bg-white/10 hover:bg-white/20 flex items-center justify-center text-white cursor-pointer"
+                aria-label="Close Manifest Drawer"
+              >
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Scrollable Receipt Container */}
+            <div className="overflow-y-auto p-4 pb-safe">
+              <UnboxingReceipt
+                isTrialMode={isTrialMode}
+                summaryName={getBoxSummaryName()}
+                selectedOriginsList={selectedOriginsList}
+                bagCounts={bagCounts}
+                activeSize={activeSize}
+                selectedGrind={selectedGrind}
+                selectedPlan={selectedPlan}
+                totalSelectedBags={totalSelectedBags}
+                totalWeightKg={totalWeightKg}
+                rawSubtotal={rawSubtotal}
+                bundleDiscountPercent={bundleDiscountPercent}
+                bundleDiscountAmount={bundleDiscountAmount}
+                monthlyAfterBundle={monthlyAfterBundle}
+                planDiscountPercent={planDiscountPercent}
+                planDiscountAmount={planDiscountAmount}
+                totalDueToday={totalDueToday}
+                effectiveMonthlyPrice={effectiveMonthlyPrice}
+                totalSavings={totalSavings}
+                customer={customer}
+                checkoutHref={checkoutHref}
+                isDrawer={true}
+              />
+            </div>
+          </div>
+        </div>
+      )}
 
     </div>
   );

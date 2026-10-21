@@ -1,7 +1,7 @@
 "use client";
 
 import Link from "next/link";
-import { ShieldCheck, ArrowRight, Package, Scale, Sparkles, UserCheck } from "lucide-react";
+import { ShieldCheck, ArrowRight, Package, Scale, UserCheck, Clock } from "lucide-react";
 import { OriginItem } from "./OriginCard";
 
 interface UnboxingReceiptProps {
@@ -25,6 +25,7 @@ interface UnboxingReceiptProps {
   totalSavings: number;
   customer: { name?: string; email?: string } | null;
   checkoutHref: string;
+  isDrawer?: boolean;
 }
 
 export default function UnboxingReceipt({
@@ -48,47 +49,52 @@ export default function UnboxingReceipt({
   totalSavings,
   customer,
   checkoutHref,
+  isDrawer = false,
 }: UnboxingReceiptProps) {
   return (
-    <div className="bg-white rounded-2xl border border-[#E6DEC8] shadow-md p-6 sticky top-28">
-      {/* Header Badge */}
-      <div className="flex items-center justify-between pb-4 border-b border-[#F0EAE1] mb-5">
+    <div
+      className={`bg-white rounded-2xl border border-[#E6DEC8] shadow-sm p-6 ${
+        isDrawer ? "" : "lg:sticky lg:top-28"
+      }`}
+    >
+      {/* Header Manifest Ribbon */}
+      <div className="flex items-center justify-between pb-4 border-b border-dashed border-[#1A1512]/20 mb-5">
         <div>
-          <span className="text-[10px] uppercase font-bold tracking-widest text-[#A3432A] block">
-            {isTrialMode ? "Trial Parcel Manifest" : "Monthly Unboxing Manifest"}
+          <span className="font-mono text-xs uppercase font-bold tracking-widest text-[#A3432A] block">
+            {isTrialMode ? "Trial Parcel Manifest" : "Roastery Dispatch Manifest"}
           </span>
-          <h2 className="text-lg font-serif font-bold text-[#1A1512]">
-            {isTrialMode ? "150g Trial Box" : `${selectedPlan.name}`}
+          <h2 className="text-xl font-serif font-bold text-[#1A1512] mt-0.5">
+            {isTrialMode ? "150g Trial Lot" : `${selectedPlan.name}`}
           </h2>
         </div>
         <span
-          className={`text-[10px] font-bold px-2.5 py-1 rounded-full ${
+          className={`font-mono text-xs font-bold px-3 py-1 rounded-full border ${
             isTrialMode
-              ? "bg-[#FAF5EC] text-[#A3432A] border border-[#E58A1F]/30"
-              : "bg-[#E7F3E8] text-[#2E6B34]"
+              ? "bg-[#FAF5EC] text-[#A3432A] border-[#E58A1F]/30"
+              : "bg-[#E7F3E8] text-[#2E6B34] border-[#C3E4C6]"
           }`}
         >
-          {isTrialMode ? "One-Time Order" : "Prepaid Roastery Club"}
+          {isTrialMode ? "One-Time Order" : "Roastery Club"}
         </span>
       </div>
 
       {/* Box Contents Breakdown */}
-      <div className="space-y-3.5 mb-6 text-xs">
-        {/* Curated Coffees */}
-        <div className="flex items-start gap-2.5 pb-3 border-b border-[#FAF8F5]">
-          <Package size={15} className="text-[#A3432A] shrink-0 mt-0.5" />
+      <div className="space-y-4 mb-6 text-xs">
+        {/* Curated Coffees List */}
+        <div className="flex items-start gap-3 pb-3.5 border-b border-[#F0EAE1]">
+          <Package size={16} className="text-[#A3432A] shrink-0 mt-0.5" />
           <div className="flex-1 min-w-0">
-            <span className="text-[#8A7966] text-[10px] uppercase font-bold block">
-              Curated Coffees
+            <span className="font-mono text-xs text-[#5C5042] uppercase font-bold block mb-1">
+              Curated Micro-Lots ({totalSelectedBags} Total)
             </span>
-            <div className="font-semibold text-[#1A1512] mt-0.5 space-y-1">
+            <div className="font-semibold text-[#1A1512] space-y-1.5">
               {selectedOriginsList.map((o) => (
                 <div key={o.id} className="flex justify-between items-center text-xs">
-                  <span className="truncate">
+                  <span className="truncate font-serif text-sm">
                     {bagCounts[o.id]}x {o.name}
                   </span>
-                  <span className="text-[#8A7966] text-[11px] shrink-0 font-mono ml-2">
-                    {activeSize.label}
+                  <span className="font-mono text-[#5C5042] shrink-0 ml-2 font-semibold">
+                    {activeSize.label} ({o.process})
                   </span>
                 </div>
               ))}
@@ -96,97 +102,98 @@ export default function UnboxingReceipt({
           </div>
         </div>
 
-        {/* Total Batch Weight */}
-        <div className="flex items-center gap-2.5 pb-3 border-b border-[#FAF8F5]">
-          <Scale size={15} className="text-[#A3432A] shrink-0" />
+        {/* Total Batch Weight & Yield */}
+        <div className="flex items-center gap-3 pb-3.5 border-b border-[#F0EAE1]">
+          <Scale size={16} className="text-[#A3432A] shrink-0" />
           <div className="flex-1 flex justify-between items-center">
-            <span className="text-[#8A7966] text-[10px] uppercase font-bold">
-              Total Parcel Volume
+            <span className="font-mono text-xs text-[#5C5042] uppercase font-bold">
+              Total Batch Weight
             </span>
-            <span className="font-bold text-[#1A1512] text-xs">
-              {totalSelectedBags} Bag{totalSelectedBags > 1 ? "s" : ""} • {totalWeightKg} kg (
-              {activeSize.cups})
+            <span className="font-mono font-bold text-[#1A1512] text-xs">
+              {totalWeightKg} kg • {activeSize.cups}
             </span>
           </div>
         </div>
 
         {/* Grind Type */}
-        <div className="flex items-center justify-between text-xs pb-3 border-b border-[#FAF8F5]">
-          <span className="text-[#8A7966] text-[10px] uppercase font-bold">Grind Setting</span>
-          <span className="font-semibold text-[#1A1512] bg-[#FAF8F5] px-2 py-0.5 rounded border border-[#E6DEC8]">
+        <div className="flex items-center justify-between text-xs pb-3.5 border-b border-[#F0EAE1]">
+          <span className="font-mono text-xs text-[#5C5042] uppercase font-bold">Grind Setting</span>
+          <span className="font-mono font-bold text-[#1A1512] bg-[#FAF8F5] px-2.5 py-1 rounded-md border border-[#E6DEC8]">
             {selectedGrind.name}
           </span>
         </div>
 
-        {/* Shipping Schedule */}
+        {/* Roastery Dispatch Schedule */}
         <div className="flex items-center justify-between text-xs">
-          <span className="text-[#8A7966] text-[10px] uppercase font-bold">Courier Shipping</span>
-          <span className="font-bold text-[#2E6B34] flex items-center gap-1">
-            <Sparkles size={11} /> Free Kathmandu Valley
+          <span className="font-mono text-xs text-[#5C5042] uppercase font-bold flex items-center gap-1.5">
+            <Clock size={13} className="text-[#A3432A]" /> Courier Dispatch
+          </span>
+          <span className="font-mono font-bold text-[#2E6B34]">
+            Free Doorstep Shipping
           </span>
         </div>
       </div>
 
-      {/* Mathematical Pricing Ledger */}
+      {/* Roastery Pricing Ledger */}
       <div className="bg-[#FAF8F5] border border-[#E6DEC8] rounded-xl p-4 mb-6 space-y-2 text-xs">
         {isTrialMode ? (
           <>
-            <div className="flex justify-between text-[#8A7966]">
-              <span>Sample Bag (150g)</span>
-              <span className="font-mono text-[#1A1512]">Rs. {rawSubtotal}</span>
+            <div className="flex justify-between text-[#5C5042]">
+              <span className="font-mono">Sample Micro-Lot (150g)</span>
+              <span className="font-mono font-bold text-[#1A1512]">Rs. {rawSubtotal}</span>
             </div>
-            <div className="flex justify-between text-[#8A7966]">
-              <span>Kathmandu Valley Express</span>
-              <span className="font-bold text-[#2E6B34]">FREE</span>
+            <div className="flex justify-between text-[#5C5042]">
+              <span className="font-mono">Express Courier Shipping</span>
+              <span className="font-mono font-bold text-[#2E6B34]">FREE (Kathmandu Valley)</span>
             </div>
-            <div className="pt-2 border-t border-[#E6DEC8] flex justify-between items-baseline font-bold">
-              <span className="text-xs uppercase tracking-wider text-[#1A1512]">Total Due Today</span>
-              <span className="text-xl font-serif text-[#A3432A]">Rs. {totalDueToday}</span>
+            <div className="pt-2.5 border-t border-dashed border-[#1A1512]/20 flex justify-between items-baseline font-bold">
+              <span className="font-mono text-xs uppercase tracking-wider text-[#1A1512]">Total Due Today</span>
+              <span className="text-2xl font-serif text-[#A3432A]">Rs. {totalDueToday}</span>
             </div>
           </>
         ) : (
           <>
-            <div className="flex justify-between text-[#8A7966]">
-              <span>Box Base ({totalSelectedBags} bags / mo)</span>
-              <span className="font-mono text-[#1A1512]">Rs. {rawSubtotal}</span>
+            <div className="flex justify-between text-[#5C5042]">
+              <span className="font-mono">Box Base ({totalSelectedBags} bag{totalSelectedBags > 1 ? "s" : ""} / cycle)</span>
+              <span className="font-mono font-bold text-[#1A1512]">Rs. {rawSubtotal}</span>
             </div>
 
             {bundleDiscountPercent > 0 && (
               <div className="flex justify-between text-[#2E6B34] font-medium">
-                <span>Multi-Bag Bundle ({bundleDiscountPercent}% Off)</span>
-                <span className="font-mono">-Rs. {bundleDiscountAmount}</span>
+                <span className="font-mono">Multi-Bag Bundle ({bundleDiscountPercent}% Off)</span>
+                <span className="font-mono font-bold">-Rs. {bundleDiscountAmount}</span>
               </div>
             )}
 
-            <div className="flex justify-between text-[#5C5042] font-semibold pt-1 border-t border-[#E6DEC8]/60">
-              <span>Standard Monthly Cycle</span>
-              <span className="font-mono text-[#1A1512]">Rs. {monthlyAfterBundle}</span>
+            <div className="flex justify-between text-[#1A1512] font-semibold pt-1 border-t border-[#E6DEC8]">
+              <span className="font-mono">Standard Monthly Cycle</span>
+              <span className="font-mono font-bold">Rs. {monthlyAfterBundle}</span>
             </div>
 
             {selectedPlan.months > 1 && (
               <>
-                <div className="flex justify-between text-[#8A7966]">
-                  <span>Cycle Contract ({selectedPlan.months} Months)</span>
+                <div className="flex justify-between text-[#5C5042]">
+                  <span className="font-mono">Prepaid Period ({selectedPlan.months} Months)</span>
                   <span className="font-mono text-[#1A1512]">
                     Rs. {monthlyAfterBundle * selectedPlan.months}
                   </span>
                 </div>
                 {planDiscountPercent > 0 && (
                   <div className="flex justify-between text-[#2E6B34] font-bold">
-                    <span>Prepay Discount ({planDiscountPercent}% Off)</span>
+                    <span className="font-mono">Prepay Commitment ({planDiscountPercent}% Off)</span>
                     <span className="font-mono">-Rs. {planDiscountAmount}</span>
                   </div>
                 )}
               </>
             )}
 
-            <div className="pt-2.5 border-t border-[#E6DEC8] flex justify-between items-baseline">
+            <div className="pt-3 border-t border-dashed border-[#1A1512]/20 flex justify-between items-baseline">
               <div>
-                <span className="text-[10px] uppercase font-bold text-[#8A7966] block">
+                <span className="font-mono text-xs uppercase font-bold text-[#5C5042] block">
                   Total Due Today ({selectedPlan.months} Mo)
                 </span>
                 {selectedPlan.months > 1 && (
-                  <span className="text-[11px] text-[#2E6B34] font-bold">
+                  <span className="font-mono text-xs text-[#2E6B34] font-bold block mt-0.5">
                     Effective: Rs. {effectiveMonthlyPrice} / month
                   </span>
                 )}
@@ -197,9 +204,9 @@ export default function UnboxingReceipt({
             </div>
 
             {totalSavings > 0 && (
-              <div className="text-center pt-1.5">
-                <span className="inline-block bg-[#E7F3E8] text-[#2E6B34] px-2.5 py-0.5 rounded-full text-[10px] font-bold">
-                  Total Saved: Rs. {totalSavings.toLocaleString()} NPR
+              <div className="text-center pt-2">
+                <span className="inline-block bg-[#E7F3E8] border border-[#C3E4C6] text-[#2E6B34] px-3 py-1 rounded-full font-mono text-xs font-bold">
+                  Total Savings: Rs. {totalSavings.toLocaleString()} NPR
                 </span>
               </div>
             )}
@@ -207,25 +214,25 @@ export default function UnboxingReceipt({
         )}
       </div>
 
-      {/* Checkout CTA */}
+      {/* Primary Checkout CTA Button */}
       <Link
         href={checkoutHref}
-        className="w-full py-3.5 rounded-xl bg-[#A3432A] hover:bg-[#8A3722] text-white text-center uppercase tracking-widest text-xs font-bold transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2 group focus:outline-hidden focus:ring-2 focus:ring-[#A3432A]"
+        className="w-full min-h-[48px] py-3.5 rounded-xl bg-[#A3432A] hover:bg-[#8A3722] text-white text-center uppercase tracking-widest text-xs font-bold transition-all shadow-md hover:shadow-xl flex items-center justify-center gap-2 group cursor-pointer focus:outline-hidden focus:ring-2 focus:ring-[#A3432A] active:scale-[0.99]"
       >
         <span>Proceed To Delivery</span>
-        <ArrowRight size={14} className="group-hover:translate-x-1 transition-transform" />
+        <ArrowRight size={15} className="group-hover:translate-x-1 transition-transform" />
       </Link>
 
-      {/* Trust & Guarantee */}
-      <div className="mt-4 pt-4 border-t border-[#F0EAE1] space-y-2 text-[11px] text-[#8A7966]">
+      {/* Trust & Guarantee Ledger Footnotes */}
+      <div className="mt-5 pt-4 border-t border-[#F0EAE1] space-y-2 text-xs text-[#5C5042]">
         <div className="flex items-center gap-2">
-          <ShieldCheck size={14} className="text-[#2E6B34] shrink-0" />
-          <span>Roasted fresh in Lalitpur • Dispatched within 24 hours</span>
+          <ShieldCheck size={15} className="text-[#2E6B34] shrink-0" />
+          <span>Roasted fresh in Lalitpur • Dispatched within 48h of roast</span>
         </div>
         {!isTrialMode && (
           <div className="flex items-center gap-2">
-            <UserCheck size={14} className="text-[#2E6B34] shrink-0" />
-            <span>Pause, swap beans, or cancel anytime from your dashboard</span>
+            <UserCheck size={15} className="text-[#2E6B34] shrink-0" />
+            <span>Pause, swap micro-lots, or cancel anytime from dashboard</span>
           </div>
         )}
       </div>
