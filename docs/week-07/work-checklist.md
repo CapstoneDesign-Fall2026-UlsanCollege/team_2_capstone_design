@@ -15,7 +15,7 @@
 - [x] Name the target user, the problem, and the one path the demo will show (Specialty coffee lovers in Nepal; origin transparency; Home $\rightarrow$ `/origins` $\rightarrow$ `/checkout`).
 - [x] Write the main demo steps in the reusable [Midterm Demo Script](midterm-demo-script.md).
 - [x] Mark what is working, simulated, incomplete, or unverified. Do not present a mock-up, recording, or plan as proof of a live behavior (Payment explicitly labeled as `is_fake_payment=True`).
-- [x] Give each speaker a short part, including each student's evidence-backed contribution (Aanchal: Problem & Mobile; Aditya: Live Demo & Core Slice; Kushan: Independent Test & Empty Cart; Rohit: Outage Test & Roadmap).
+- [x] Give each speaker a short part, including each student's evidence-backed contribution (Aanchal: Problem & Mobile A11y; Aditya: Scope, Live Slice Demo, Full-Stack Architecture & Sprint 2 Roadmap; Kushan: Non-Author Test & Defensive Empty Cart; Rohit: Backend Resilience & Quality Checks).
 - [x] Keep one limitation or risk and one realistic next step in the story (Live Khalti integration and automated dispatch emails scheduled for Sprint 2).
 
 ### Check Sprint 1 and current status
@@ -40,7 +40,7 @@
 
 - [x] Midterm prep Issue with owner, current status, risks, and next actions ([Issue #43](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/43) / [Issue #54](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/54)).
 - [x] Midterm demo script and run steps ([midterm-demo-script.md](midterm-demo-script.md)).
-- [x] Slide presentation deck ([presentation-slides.md](presentation-slides.md)).
+- [x] Slide presentation deck ([presentation-slides.md](presentation-slides.md), [`BrewMellow_Midterm_Presentation.pptx`](BrewMellow_Midterm_Presentation.pptx), and [`slides.html`](slides.html)).
 - [x] Current screenshot, test note, live demo, or recording that supports the claims being made ([docs/week-06/evidence/](../week-06/evidence/)).
 - [x] Completed Sprint 1 quality quick checks ([sprint-1-quality-quick-checks.md](sprint-1-quality-quick-checks.md)).
 - [x] Shared Weekly Report with a row from every student and each student's receipt link ([weekly-report.md](weekly-report.md)).
