@@ -54,5 +54,5 @@ By signing, each member agrees to follow this plan, raise concerns early, and up
 | --- | --- | --- |
 | Aditya Kumar Gupta | @notyouradhee (confirmed) | 2026-09-06 |
 | Kushan Sunuwar | @Kushan2191 (confirmed) | 2026-09-08 |
-| Rohit Chhantiyal | @Rohit-coder201 (confirmed) | 2026-09-09 |
+| Rohit Chhantyal | @Rohit-coder201 (confirmed) | 2026-09-09 |
 | Aanchal Chand Thakuri | @jaasly07 (confirmed) | 2026-09-06 |

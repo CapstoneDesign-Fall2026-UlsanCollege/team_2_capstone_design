@@ -57,7 +57,7 @@ This document records the individual evidence receipts for each enrolled student
 
 ---
 
-## 4. Student: Rohit Chhantiyal (`Rohit-coder201`)
+## 4. Student: Rohit Chhantyal (`Rohit-coder201`)
 
 ### Receipt 1: End-to-End API Smoke Testing & Recovery Validation
 - **What I did:** Conducted API integration smoke tests on `POST /api/orders/` under two test scenarios: backend service active vs. backend service stopped.

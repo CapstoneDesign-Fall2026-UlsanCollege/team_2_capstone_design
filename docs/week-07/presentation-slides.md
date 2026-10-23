@@ -19,7 +19,7 @@
   - **Aanchal Chand Thakuri** (`@jaasly07`)
   - **Aditya Kumar Gupta** (`@notyouradhee`)
   - **Kushan Sunuwar** (`@Kushan2191`)
-  - **Rohit Chhantiyal** (`@Rohit-coder201`)
+  - **Rohit Chhantyal** (`@Rohit-coder201`)
 - **GitHub Link:** [https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design)
 - **Live Demo:** [https://team-2-capstone-design-one.vercel.app](https://team-2-capstone-design-one.vercel.app)
 
@@ -118,8 +118,8 @@
 
 ---
 
-## Slide 8 (7/8): Individual Contribution: Rohit Chhantiyal (@Rohit-coder201)
-**Role:** DevOps & Resilience Lead | **Presenter:** Rohit Chhantiyal | **Slide:** 7/8
+## Slide 8 (7/8): Individual Contribution: Rohit Chhantyal (@Rohit-coder201)
+**Role:** DevOps & Resilience Lead | **Presenter:** Rohit Chhantyal | **Slide:** 7/8
 
 ### CONCRETE CONTRIBUTIONS
 - Ran backend outage testing: stopped the Django server and verified the frontend handles the dropped connection with an explicit alert.

@@ -1,6 +1,6 @@
-# Individual Evidence Receipt — Rohit Chhantiyal
+# Individual Evidence Receipt — Rohit Chhantyal
 
-**Student:** `Rohit-coder201` (Rohit Chhantiyal)  
+**Student:** `Rohit-coder201` (Rohit Chhantyal)  
 **Team:** Team 2 — BrewMellow  
 **Week:** 6  
 **Date:** October 14, 2026  

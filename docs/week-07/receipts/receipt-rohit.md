@@ -1,6 +1,6 @@
-# Individual Evidence Receipt — Rohit Chhantiyal
+# Individual Evidence Receipt — Rohit Chhantyal
 
-**Student:** Rohit Chhantiyal  
+**Student:** Rohit Chhantyal  
 **GitHub Login:** `Rohit-coder201`  
 **Team:** Team 2 — BrewMellow  
 **Week:** 7  
@@ -11,7 +11,7 @@
 ## Receipt 1: Backend Resilience & Dedicated Slide 8 Presentation
 
 - **What I did:** Prepared and rehearsed Slide 8 of the midterm presentation, explaining how our system handles backend API downtime and network interruptions gracefully with explicit frontend connection alerts instead of white-screen crashes, backed by repeatable README curl smoke tests.
-- **Evidence link:** [api-smoke-test-record.md](../../week-06/api-smoke-test-record.md), [presentation-slides.md](../presentation-slides.md#slide-8-78-individual-contribution-rohit-chhantiyal-rohit-coder201), [midterm-demo-script.md](../midterm-demo-script.md#slide-8-78-individual-contribution-rohit-chhantiyal-315--340)
+- **Evidence link:** [api-smoke-test-record.md](../../week-06/api-smoke-test-record.md), [presentation-slides.md](../presentation-slides.md#slide-8-78-individual-contribution-rohit-chhantyal-rohit-coder201), [midterm-demo-script.md](../midterm-demo-script.md#slide-8-78-individual-contribution-rohit-chhantyal-315--340)
 - **How I checked it:** Re-verified the repeatable curl command against `http://localhost:8000/api/orders/` and confirmed that stopping the backend triggers an explicit user alert rather than an unhandled frontend white-screen crash.
 - **What I learned or changed:** Addressing failure modes and system recovery demonstrates technical depth and fulfills the resilience aspects of the midterm rubric.
 

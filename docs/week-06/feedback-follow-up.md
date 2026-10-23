@@ -45,7 +45,7 @@
   3. Documented full audit and WCAG 2.1 touch target verifications in [`accessibility-and-mobile-check.md`](accessibility-and-mobile-check.md) with proof screenshot [`evidence/origins-mobile.png`](evidence/origins-mobile.png).
 - **Status:** **COMPLETE**
 
-### Rohit Chhantiyal (`Rohit-coder201`)
+### Rohit Chhantyal (`Rohit-coder201`)
 - **Instructor Note:** *"Add a personal row and run a specific checkout/API test with expected and actual results. Stretch: turn the test into a documented smoke check that another teammate can repeat after a frontend or backend change."*
 - **Action Taken:**
   1. Tested `POST /api/orders/` under live Django/Neon DB execution (HTTP 201) vs. terminated backend process (connection error & offline fallback banner).

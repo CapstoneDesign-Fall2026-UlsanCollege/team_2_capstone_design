@@ -126,8 +126,8 @@ gantt
 
 ---
 
-### Slide 8 (7/8): Individual Contribution: Rohit Chhantiyal (3:15 – 3:40)
-**Speaker:** **Rohit Chhantiyal (`@Rohit-coder201`)**  
+### Slide 8 (7/8): Individual Contribution: Rohit Chhantyal (3:15 – 3:40)
+**Speaker:** **Rohit Chhantyal (`@Rohit-coder201`)**  
 **Role:** DevOps & Resilience Lead  
 **Visual on Screen:** Slide 8 — Concrete Contributions (Left) & GitHub README Smoke Script Screenshot (Right)
 

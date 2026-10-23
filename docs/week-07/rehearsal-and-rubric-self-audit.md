@@ -52,7 +52,7 @@
 | **`jaasly07`**<br>(Aanchal Chand Thakuri) | **Slide 1, Slide 2 & Slide 5**<br>Opening, User Persona & Frontend A11y | Formulated target persona; audited 390px mobile viewport against WCAG 2.1 AA; verified 52px touch targets; resolved sticky bar collision via `pb-28` (Commit `ca35b07`). | **4 / 4** |
 | **`notyouradhee`**<br>(Aditya Kumar Gupta) | **Slide 3, Slide 4, Slide 6 & Slide 9**<br>Scope, Live Demo, Full-Stack & Roadmap | Architected Next.js/Django/Neon stack; built URL parameter state sync; deployed Vercel production app; articulated simulated payment boundary; authored post-midterm roadmap (Issue #43, PR #44). | **4 / 4** |
 | **`Kushan2191`**<br>(Kushan Sunuwar) | **Slide 7**<br>QA Lead & Defensive Edge Case | Ran independent clean-clone test on separate computer without coaching; reviewed and merged PR #44 (Commit `9d45f95`); verified empty-cart fallback error handling (Commit `f69700e`). | **4 / 4** |
-| **`Rohit-coder201`**<br>(Rohit Chhantiyal) | **Slide 8**<br>DevOps & Resilience Lead | Executed backend outage test verifying explicit frontend connection alert; wrote repeatable curl smoke tests in README; completed Sprint 1 quality checks verifying zero secrets. | **4 / 4** |
+| **`Rohit-coder201`**<br>(Rohit Chhantyal) | **Slide 8**<br>DevOps & Resilience Lead | Executed backend outage test verifying explicit frontend connection alert; wrote repeatable curl smoke tests in README; completed Sprint 1 quality checks verifying zero secrets. | **4 / 4** |
 
 ---
 
