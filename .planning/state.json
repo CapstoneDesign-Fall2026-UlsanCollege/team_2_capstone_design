@@ -6,7 +6,7 @@
     {
       "number": "1",
       "name": "Foundation, Auth & Tenant Core",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "2",
@@ -27,7 +27,7 @@
   "next": {
     "command": "/gsd-progress --next",
     "label": "Advance to the next step",
-    "reason": "Phase 1 of 4 · 0% · executing"
+    "reason": "Phase 1 of 4 · Plan 1/5 done · executing Plan 2"
   },
-  "updated_at": "2026-10-29T19:33:12.105Z"
+  "updated_at": "2026-10-30T01:35:00.000Z"
 }
