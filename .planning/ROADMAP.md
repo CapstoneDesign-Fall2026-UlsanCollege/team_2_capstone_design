@@ -18,7 +18,7 @@ ShopCraft pivots the single-tenant BrewMellow app into a production-structured m
 ## Phase Details
 
 ### Phase 1: Foundation, Auth & Tenant Core
-**Goal**: Stand up the consolidated Django 5 + DRF backend, staging/CI pipeline, real session authentication, core tenant-scoped schema, BrewMellow Store #1 seed, and automated cross-tenant isolation tests while keeping legacy BrewMellow untouched.
+**Goal:** As a shopper or merchant, I want to sign in passwordlessly on an isolated multi-tenant store core, so that every store keeps its data private.
 **Mode:** mvp
 **UI hint**: yes
 **Depends on**: Nothing (first phase)
@@ -28,7 +28,14 @@ ShopCraft pivots the single-tenant BrewMellow app into a production-structured m
   2. A user can sign in passwordlessly via 6-digit Email OTP or Google OAuth with `HttpOnly` session cookies and manage saved Nepali delivery addresses (`localStorage["demo_user"]` and Next.js SQL routes are gone).
   3. Core models (`Store`, `StoreMembership`, `Customer`, `Product`, `Variant`, `SellingPlan`, `Order`, `OrderItem`, `OrderEvent`, `Subscription`) exist on a fresh migration graph and `manage.py seed_brewmellow` idempotently populates BrewMellow as Store #1.
   4. Automated isolation tests prove Merchant A receives HTTP 404 on Merchant B's store endpoints and Shopper X receives HTTP 404 on Shopper Y's orders/addresses.
-**Plans**: TBD
+**Plans**: 5 plans
+
+Plans:
+- [ ] `01-01-PLAN.md` — Walking Skeleton: custom email `User`, `Store`/`StoreMembership`/`Customer` core, `/api/health/` + Next.js `/api/*` proxy, legacy Next.js SQL removal, hardened settings, `Procfile` & CI (Wave 1)
+- [ ] `01-02-PLAN.md` — Passwordless 6-digit Email OTP + Google OAuth session API, Nepali `DeliveryAddress` CRUD, typed CSRF client, `OtpInput` & `check-surfaces.mjs` guard (Wave 2)
+- [ ] `01-03-PLAN.md` — Multi-tenant `Product`/`Variant`/`SellingPlan`/`Order`/`Subscription` models, `StoreScopedAPIViewMixin` isolation guards, `seed_brewmellow` & automated HTTP 404 isolation suite (Wave 3)
+- [ ] `01-04-PLAN.md` — Three-surface CSS token architecture (`--sc-*`, `.console`, `--sf-*`), routable storefront & console shells (`s/[storeSlug]` & `merchant/[storeSlug]`), and `utils.ts` (Wave 3)
+- [ ] `01-05-PLAN.md` — Passwordless `/login` & `/signup` Platform screens, complete `demo_user` removal, and `/account/addresses` cascading `AddressSheet` UI (Wave 4)
 
 ### Phase 2: Merchant Onboarding, Console & Catalog
 **Goal**: Enable any authenticated user to launch a new store and manage its branding, products, variants, Cloudinary images, selling plans, and Khalti payment credentials from a scoped merchant console.
@@ -76,7 +83,7 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Tenant Core | 0/TBD | Not started | - |
+| 1. Foundation, Auth & Tenant Core | 0/5 | Not started | - |
 | 2. Merchant Onboarding, Console & Catalog | 0/TBD | Not started | - |
 | 3. Multi-Tenant Storefront, Checkout & Payments | 0/TBD | Not started | - |
 | 4. Subscriptions, SaaS Landing & Production Launch | 0/TBD | Not started | - |
