@@ -2,6 +2,8 @@
 .env*
 __pycache__/
 *.pyc
+*.sqlite3
+staticfiles/
 
 audit/
 .agents/.gsd-staging/
