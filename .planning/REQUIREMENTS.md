@@ -17,8 +17,8 @@ Requirements for the capstone SaaS release (deadline: 2026-11-26). Each maps to 
 
 ### Identity & Accounts
 
-- [ ] **AUTH-01**: User can register and log in with email and password (`accounts.User` custom user model) using `HttpOnly` first-party Django session cookies and rate-limited auth endpoints
-- [ ] **AUTH-02**: User receives email verification on registration and can reset a forgotten password via email token link (`django-anymail` + Resend)
+- [ ] **AUTH-01**: User can sign up and sign in passwordlessly via 6-digit Email OTP (Resend, with console OTP banner in local dev) or Google OAuth on `accounts.User`, persisted with `HttpOnly` first-party Django session cookies and rate-limited endpoints
+- [ ] **AUTH-02**: Auth flows enforce single-step progressive disclosure (email → 6-digit auto-advance code) with zero password-reset friction and automatic redirect back to Store Creation (`?name=`) or Checkout
 - [ ] **AUTH-03**: One global `User` account automatically provisions per-store `Customer(store, user)` records on first interaction with a store so merchants only view customers of their own store
 - [ ] **AUTH-04**: Authenticated shopper can create, edit, and select saved Nepali delivery addresses (Province, District, Municipality, Ward, Street/Landmark, and `98/97xxxxxxxx` mobile validation)
 

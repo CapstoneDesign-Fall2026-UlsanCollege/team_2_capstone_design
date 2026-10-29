@@ -1,3 +1,7 @@
+## Mandatory UI Rule
+
+Before any UI work, read `DESIGN.md` fully. Its rules override your defaults. Never deviate without asking the user. If chat messages and `DESIGN.md` ever disagree, `DESIGN.md` wins.
+
 <!-- GSD:project-start source:PROJECT.md -->
 
 ## Project

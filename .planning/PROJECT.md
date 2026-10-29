@@ -25,7 +25,8 @@ Strict multi-tenant isolation and end-to-end checkout integrity — any merchant
 
 - [ ] Consolidate on Django 5 + DRF as the sole backend of record behind Next.js same-origin `/api/*` rewrites on a fresh Neon database
 - [ ] Enforce shared-schema `store_id` isolation via `StoreScopedManager`, URL-slug DRF permission mixins, and automated cross-tenant 404 tests
-- [ ] Implement real email/password authentication (`accounts.User`), `HttpOnly` session cookies, email verification, password reset, and per-store `Customer` records
+- [ ] Implement passwordless 6-digit Email OTP (Resend) + Google OAuth authentication (`accounts.User`), `HttpOnly` session cookies, and per-store `Customer` records
+- [ ] Enforce `DESIGN.md` across all 3 isolated surfaces: Platform (`--sc-*`), Neutral Console (`.console` zinc), and Token-Scoped Storefront (`[data-store-theme]` presets: `editorial-warm`, `pahadi-sage`, `ktm-bold`)
 - [ ] Build self-serve merchant onboarding ("Create Store" wizard) and scoped `/merchant/[storeSlug]` console (products, variants, Cloudinary images, selling plans, branding, Khalti keys, orders)
 - [ ] Deliver themed `/s/[storeSlug]` storefronts, store-namespaced multi-item cart, structured Nepali address capture, Khalti ePayment v2 sandbox (`initiate` + `lookup`) + COD checkout, and confirmation emails
 - [ ] Deliver non-recurring subscriptions (prepaid 3/6/12-cycle commitments + pay-per-delivery renewal orders with "Pay Now" links, pause/skip/cancel) and public ShopCraft SaaS landing page (`/`)

@@ -25,7 +25,7 @@ ShopCraft pivots the single-tenant BrewMellow app into a production-structured m
 **Requirements**: [FOUND-01, FOUND-02, FOUND-03, FOUND-04, FOUND-05, AUTH-01, AUTH-02, AUTH-03, AUTH-04]
 **Success Criteria** (what must be TRUE):
   1. Legacy BrewMellow demo remains live and unmodified while ShopCraft runs against separate Neon branches, GitHub Actions CI is green, and `/api/health/` responds 200 through Next.js `/api/*` same-origin rewrites on staging.
-  2. A user can sign up with email/password, verify email, log in/out via `HttpOnly` session cookies, reset password, and manage saved Nepali delivery addresses (`localStorage["demo_user"]` and Next.js SQL routes are gone).
+  2. A user can sign in passwordlessly via 6-digit Email OTP or Google OAuth with `HttpOnly` session cookies and manage saved Nepali delivery addresses (`localStorage["demo_user"]` and Next.js SQL routes are gone).
   3. Core models (`Store`, `StoreMembership`, `Customer`, `Product`, `Variant`, `SellingPlan`, `Order`, `OrderItem`, `OrderEvent`, `Subscription`) exist on a fresh migration graph and `manage.py seed_brewmellow` idempotently populates BrewMellow as Store #1.
   4. Automated isolation tests prove Merchant A receives HTTP 404 on Merchant B's store endpoints and Shopper X receives HTTP 404 on Shopper Y's orders/addresses.
 **Plans**: TBD
