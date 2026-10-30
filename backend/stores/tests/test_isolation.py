@@ -275,3 +275,45 @@ class TenantIsolationTests(APITestCase):
         del_res = self.client.delete(f"/api/merchant/stores/brewmellow/products/{new_prod_id}/")
         self.assertEqual(del_res.status_code, status.HTTP_200_OK)
         self.assertFalse(del_res.data["is_active"])
+
+    def test_merchant_variant_crud_and_selling_plan_isolation(self):
+        self.client.force_login(self.owner_a)
+
+        # Get first product of Store A
+        prod = Product.objects.for_store(self.store_a).first()
+        self.assertIsNotNone(prod)
+
+        # Create new variant on Store A
+        res_v = self.client.post(
+            f"/api/merchant/stores/brewmellow/products/{prod.id}/variants/",
+            {
+                "label": "1kg Big Bag",
+                "price_minor": 285000,
+                "in_stock": True,
+                "allow_subscription": True,
+            },
+            format="json",
+        )
+        self.assertEqual(res_v.status_code, status.HTTP_201_CREATED)
+        variant_id = res_v.data["id"]
+        self.assertEqual(res_v.data["price_minor"], 285000)
+
+        # Owner A patches variant
+        patch_v = self.client.patch(
+            f"/api/merchant/stores/brewmellow/products/{prod.id}/variants/{variant_id}/",
+            {"price_minor": 290000},
+            format="json",
+        )
+        self.assertEqual(patch_v.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_v.data["price_minor"], 290000)
+
+        # Owner B accessing Store A's variant -> 404
+        self.client.force_login(self.owner_b)
+        cross_b = self.client.get(
+            f"/api/merchant/stores/brewmellow/products/{prod.id}/variants/{variant_id}/"
+        )
+        self.assertEqual(cross_b.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Owner B accessing Store A selling plans -> 404 on cross store
+        cross_plans = self.client.get("/api/merchant/stores/brewmellow/selling-plans/")
+        self.assertEqual(cross_plans.status_code, status.HTTP_404_NOT_FOUND)

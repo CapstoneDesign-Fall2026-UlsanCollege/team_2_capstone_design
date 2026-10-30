@@ -464,6 +464,75 @@ class MerchantProductDetailView(StoreMerchantMixin, APIView):
         return Response({"detail": "Product archived.", "id": product.id, "is_active": False})
 
 
+class MerchantVariantListCreateView(StoreMerchantMixin, APIView):
+    def get_product(self, product_id):
+        product = Product.objects.for_store(self.store).filter(id=product_id).first()
+        if not product:
+            raise Http404("Product not found.")
+        return product
+
+    def get(self, request, store_slug, product_id):
+        product = self.get_product(product_id)
+        variants = product.variants.all().order_by("sort_order", "price_minor", "id")
+        return Response(VariantSerializer(variants, many=True).data)
+
+    def post(self, request, store_slug, product_id):
+        product = self.get_product(product_id)
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        if "sku" not in data or not data["sku"]:
+            count = product.variants.count() + 1
+            data["sku"] = f"{self.store.slug.upper()[:4]}-{product.id}-{count}"
+
+        serializer = VariantSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        variant = serializer.save(store=self.store, product=product)
+        return Response(VariantSerializer(variant).data, status=status.HTTP_201_CREATED)
+
+
+class MerchantVariantDetailView(StoreMerchantMixin, APIView):
+    def get_variant(self, product_id, variant_id):
+        product = Product.objects.for_store(self.store).filter(id=product_id).first()
+        if not product:
+            raise Http404("Product not found.")
+        variant = product.variants.filter(id=variant_id).first()
+        if not variant:
+            raise Http404("Variant not found.")
+        return variant
+
+    def get(self, request, store_slug, product_id, variant_id):
+        variant = self.get_variant(product_id, variant_id)
+        return Response(VariantSerializer(variant).data)
+
+    def patch(self, request, store_slug, product_id, variant_id):
+        variant = self.get_variant(product_id, variant_id)
+        serializer = VariantSerializer(variant, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(VariantSerializer(variant).data)
+
+    def delete(self, request, store_slug, product_id, variant_id):
+        variant = self.get_variant(product_id, variant_id)
+        if request.query_params.get("permanent") == "true":
+            variant.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        variant.is_active = False
+        variant.save(update_fields=["is_active"])
+        return Response({"detail": "Variant archived.", "id": variant.id, "is_active": False})
+
+
+class MerchantSellingPlanListCreateView(StoreMerchantMixin, APIView):
+    def get(self, request, store_slug):
+        plans = SellingPlan.objects.for_store(self.store).order_by("sort_order", "id")
+        return Response(SellingPlanSerializer(plans, many=True).data)
+
+    def post(self, request, store_slug):
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        serializer = SellingPlanSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        plan = serializer.save(store=self.store)
+        return Response(SellingPlanSerializer(plan).data, status=status.HTTP_201_CREATED)
+
+
 class MerchantOrderListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
         orders = Order.objects.for_store(self.store).order_by("-created_at")
@@ -589,6 +658,9 @@ urlpatterns = [
     path("merchant/stores/<slug:store_slug>/settings/", MerchantStoreSettingsView.as_view(), name="merchant_store_settings"),
     path("merchant/stores/<slug:store_slug>/products/", MerchantProductListCreateView.as_view(), name="merchant_product_list_create"),
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/", MerchantProductDetailView.as_view(), name="merchant_product_detail"),
+    path("merchant/stores/<slug:store_slug>/products/<int:product_id>/variants/", MerchantVariantListCreateView.as_view(), name="merchant_variant_list_create"),
+    path("merchant/stores/<slug:store_slug>/products/<int:product_id>/variants/<int:variant_id>/", MerchantVariantDetailView.as_view(), name="merchant_variant_detail"),
+    path("merchant/stores/<slug:store_slug>/selling-plans/", MerchantSellingPlanListCreateView.as_view(), name="merchant_selling_plan_list_create"),
     path("merchant/stores/<slug:store_slug>/orders/", MerchantOrderListView.as_view(), name="merchant_order_list"),
     path("merchant/stores/<slug:store_slug>/customers/", MerchantCustomerListView.as_view(), name="merchant_customer_list"),
     path("merchant/stores/<slug:store_slug>/subscriptions/", MerchantSubscriptionListView.as_view(), name="merchant_subscription_list"),

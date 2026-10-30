@@ -406,3 +406,97 @@ export async function deleteMerchantProduct(
     }
   );
 }
+
+export interface VariantPayload {
+  label: string;
+  sku?: string;
+  price_minor: number;
+  weight_grams?: number | null;
+  allow_one_time?: boolean;
+  allow_subscription?: boolean;
+  in_stock?: boolean;
+  is_active?: boolean;
+  sort_order?: number;
+}
+
+export interface SellingPlanItem {
+  id: number;
+  code: string;
+  name: string;
+  interval_unit: "WEEK" | "MONTH";
+  interval_count: number;
+  commitment_cycles: number;
+  discount_pct: number;
+  is_prepaid: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export async function fetchProductVariants(storeSlug: string, productId: number) {
+  return apiFetch<ProductVariant[]>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/${productId}/variants/`
+  );
+}
+
+export async function createProductVariant(
+  storeSlug: string,
+  productId: number,
+  payload: VariantPayload
+) {
+  return apiFetch<ProductVariant>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/${productId}/variants/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function updateProductVariant(
+  storeSlug: string,
+  productId: number,
+  variantId: number,
+  payload: Partial<VariantPayload>
+) {
+  return apiFetch<ProductVariant>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/${productId}/variants/${variantId}/`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function deleteProductVariant(
+  storeSlug: string,
+  productId: number,
+  variantId: number,
+  permanent: boolean = false
+) {
+  const query = permanent ? "?permanent=true" : "";
+  return apiFetch<{ detail: string; id?: number; is_active?: boolean }>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/${productId}/variants/${variantId}/${query}`,
+    {
+      method: "DELETE",
+    }
+  );
+}
+
+export async function fetchMerchantSellingPlans(storeSlug: string) {
+  return apiFetch<SellingPlanItem[]>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/selling-plans/`
+  );
+}
+
+export async function createMerchantSellingPlan(
+  storeSlug: string,
+  payload: Partial<SellingPlanItem>
+) {
+  return apiFetch<SellingPlanItem>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/selling-plans/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
