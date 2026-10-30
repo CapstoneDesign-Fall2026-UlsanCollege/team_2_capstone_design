@@ -52,7 +52,7 @@ export default function MerchantProductsPage({ params }: PageProps) {
           msg.toLowerCase().includes("credentials");
 
         if (isAuth) {
-          router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/products`);
+          setTimeout(() => router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/products`), 0);
           return;
         }
         setError(msg);
@@ -112,7 +112,7 @@ export default function MerchantProductsPage({ params }: PageProps) {
   const handleSheetOpenChange = (isOpen: boolean) => {
     setUserSheetOpen(isOpen);
     if (!isOpen && actionNew) {
-      router.replace(`/merchant/${encodeURIComponent(storeSlug)}/products`);
+      setTimeout(() => router.replace(`/merchant/${encodeURIComponent(storeSlug)}/products`), 0);
     }
   };
 

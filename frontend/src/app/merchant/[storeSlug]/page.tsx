@@ -43,7 +43,7 @@ export default function MerchantOverviewPage({ params }: PageProps) {
           msg.toLowerCase().includes("credentials");
 
         if (isAuth) {
-          router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}`);
+          setTimeout(() => router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}`), 0);
           return;
         }
         setError(msg);

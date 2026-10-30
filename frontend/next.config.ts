@@ -6,7 +6,7 @@ const djangoApiOrigin = (process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000
 const withPWA = withPWAInit({
   dest: "public",
   disable: process.env.NODE_ENV === "development",
-  register: true,
+  register: false,
   cacheOnFrontEndNav: false,
   aggressiveFrontEndNavCaching: false,
   reloadOnOnline: false,

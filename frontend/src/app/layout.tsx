@@ -37,6 +37,11 @@ export default function RootLayout({
         suppressHydrationWarning
         className="min-h-dvh antialiased bg-[var(--sc-paper)] text-[var(--sc-ink)]"
       >
+        <script
+          dangerouslySetInnerHTML={{
+            __html: `if (typeof window !== 'undefined' && 'serviceWorker' in navigator) { navigator.serviceWorker.getRegistrations().then(function(r) { for (var i = 0; i < r.length; i++) { r[i].unregister(); } }); if ('caches' in window) { caches.keys().then(function(k) { for (var j = 0; j < k.length; j++) { caches.delete(k[j]); } }); } }`,
+          }}
+        />
         {children}
       </body>
     </html>

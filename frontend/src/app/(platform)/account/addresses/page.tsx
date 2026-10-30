@@ -36,7 +36,7 @@ export default function AddressesPage() {
         if (!mounted) return;
 
         if (!session.authenticated) {
-          router.replace("/login?next=/account/addresses");
+          setTimeout(() => router.replace("/login?next=/account/addresses"), 0);
           return;
         }
 
@@ -45,7 +45,7 @@ export default function AddressesPage() {
         setAddresses(list);
       } catch {
         if (!mounted) return;
-        router.replace("/login?next=/account/addresses");
+        setTimeout(() => router.replace("/login?next=/account/addresses"), 0);
       } finally {
         if (mounted) setLoading(false);
       }

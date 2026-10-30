@@ -66,14 +66,14 @@ function CreateStoreContent() {
         if (!mounted) return;
         if (!session.authenticated) {
           const nextTarget = `/merchant/new?name=${encodeURIComponent(storeName)}`;
-          router.replace(`/login?next=${encodeURIComponent(nextTarget)}`);
+          setTimeout(() => router.replace(`/login?next=${encodeURIComponent(nextTarget)}`), 0);
           return;
         }
       })
       .catch(() => {
         if (!mounted) return;
         const nextTarget = `/merchant/new?name=${encodeURIComponent(storeName)}`;
-        router.replace(`/login?next=${encodeURIComponent(nextTarget)}`);
+        setTimeout(() => router.replace(`/login?next=${encodeURIComponent(nextTarget)}`), 0);
       })
       .finally(() => {
         if (mounted) setLoadingSession(false);

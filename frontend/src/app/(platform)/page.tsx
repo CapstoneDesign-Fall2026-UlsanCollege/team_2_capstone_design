@@ -78,7 +78,7 @@ export default function PlatformHomePage() {
                 className="w-2 h-2 rounded-full bg-[var(--sc-marigold,#F2A900)] inline-block animate-pulse"
                 aria-hidden="true"
               />
-              <span className="font-medium">Nepal&apos;s Multi-Tenant E-Commerce &amp; Subscription OS</span>
+              <span suppressHydrationWarning className="font-medium">Nepal&apos;s Multi-Tenant E-Commerce &amp; Subscription OS</span>
             </div>
 
             <div className="space-y-3">
