@@ -70,7 +70,10 @@ export default function PlatformHomePage() {
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
           {/* Left Column (Hero Copy & Interactive Name Claim) */}
           <div className="lg:col-span-7 space-y-6 sm:space-y-8">
-            <div className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-xs text-[var(--sc-ink-2,#4B5060)] shadow-2xs">
+            <div
+              suppressHydrationWarning
+              className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-xs text-[var(--sc-ink-2,#4B5060)] shadow-2xs"
+            >
               <span
                 className="w-2 h-2 rounded-full bg-[var(--sc-marigold,#F2A900)] inline-block animate-pulse"
                 aria-hidden="true"
