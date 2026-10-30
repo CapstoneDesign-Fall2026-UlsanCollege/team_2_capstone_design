@@ -23,6 +23,7 @@ const withPWA = withPWAInit({
 
 const nextConfig: NextConfig = {
   turbopack: {},
+  skipTrailingSlashRedirect: true,
   async rewrites() {
     return {
       beforeFiles: [
@@ -32,6 +33,10 @@ const nextConfig: NextConfig = {
         },
       ],
       afterFiles: [
+        {
+          source: "/api/:path*/",
+          destination: `${djangoApiOrigin}/api/:path*/`,
+        },
         {
           source: "/api/:path*",
           destination: `${djangoApiOrigin}/api/:path*`,
