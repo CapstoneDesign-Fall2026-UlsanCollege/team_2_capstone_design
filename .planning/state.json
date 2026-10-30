@@ -6,7 +6,7 @@
     {
       "number": "1",
       "name": "Foundation, Auth & Tenant Core",
-      "status": "in_progress"
+      "status": "completed"
     },
     {
       "number": "2",
@@ -25,9 +25,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-progress --next",
-    "label": "Advance to the next step",
-    "reason": "Phase 1 of 4 · Plans 1, 2, 3 done (60%) · executing Plan 4"
+    "command": "/gsd-discuss-phase 2",
+    "label": "Discuss Phase 2 scope or plan Phase 2",
+    "reason": "Phase 1 complete (100%) · ready for Phase 2: Merchant Onboarding, Console & Catalog"
   },
-  "updated_at": "2026-10-30T08:48:00.000Z"
+  "updated_at": "2026-10-30T09:15:00.000Z"
 }
