@@ -124,6 +124,7 @@ def provision_store_customer(store: Store, user) -> Customer:
     email = user.email.strip().lower()
     with transaction.atomic():
         customer, created = Customer.objects.for_store(store).get_or_create(
+            store=store,
             email=email,
             defaults={
                 "user": user,

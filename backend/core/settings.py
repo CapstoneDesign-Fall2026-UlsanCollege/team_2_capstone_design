@@ -48,6 +48,9 @@ INSTALLED_APPS = [
     "anymail",
     "accounts",
     "stores",
+    "catalog",
+    "orders",
+    "subscriptions",
 ]
 
 AUTH_USER_MODEL = "accounts.User"
