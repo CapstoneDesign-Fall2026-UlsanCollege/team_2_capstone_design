@@ -225,6 +225,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     variant_label = serializers.CharField(source="variant.label", read_only=True)
     product_name = serializers.CharField(source="variant.product.name", read_only=True)
     plan_name = serializers.CharField(source="selling_plan.name", read_only=True)
+    plan_code = serializers.CharField(source="selling_plan.code", read_only=True)
+    is_prepaid = serializers.BooleanField(source="selling_plan.is_prepaid", read_only=True)
+    customer_email = serializers.CharField(source="customer.email", read_only=True)
+    customer_name = serializers.CharField(source="customer.user.full_name", default="", read_only=True)
+    customer_phone = serializers.CharField(source="customer.phone", default="", read_only=True)
 
     class Meta:
         model = Subscription
@@ -239,6 +244,11 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             "variant_label",
             "product_name",
             "plan_name",
+            "plan_code",
+            "is_prepaid",
+            "customer_email",
+            "customer_name",
+            "customer_phone",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
@@ -439,7 +449,12 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 customer.phone = phone
                 customer.save(update_fields=["phone"])
         else:
-            customer_email = str(request.data.get("customer_email", "")).strip().lower()
+            customer_email = str(
+                request.data.get("customer_email")
+                or request.data.get("email")
+                or shipping_address.get("email")
+                or ""
+            ).strip().lower()
             if not customer_email:
                 return Response(
                     {"error": "Customer email is required for order confirmation."},
@@ -500,6 +515,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             subtotal_minor += line_total
             order_items_to_create.append({
                 "variant": v,
+                "plan": plan,
                 "product_name_snapshot": v.product.name,
                 "variant_label_snapshot": variant_label,
                 "unit_price_minor": unit_price,
@@ -552,6 +568,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 is_test=True,
             )
 
+            from subscriptions.services import create_subscription_for_item
             for item_info in order_items_to_create:
                 OrderItem.objects.create(
                     store=self.store,
@@ -563,6 +580,18 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                     quantity=item_info["quantity"],
                     line_total_minor=item_info["line_total_minor"],
                 )
+                if item_info.get("plan"):
+                    sub_status = "ACTIVE" if payment_method == "COD" else "PENDING_PAYMENT"
+                    create_subscription_for_item(
+                        store=self.store,
+                        customer=customer,
+                        variant=item_info["variant"],
+                        selling_plan=item_info["plan"],
+                        order=order,
+                        shipping_address=shipping_address,
+                        unit_price_minor=item_info["unit_price_minor"],
+                        status=sub_status,
+                    )
 
             OrderEvent.objects.create(
                 store=self.store,
@@ -707,6 +736,9 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
                 order.payment_status = "PAID"
                 order.payment_ref = pidx
                 order.save(update_fields=["status", "payment_status", "payment_ref", "updated_at"])
+
+                from subscriptions.services import activate_order_subscriptions
+                activate_order_subscriptions(order)
 
                 OrderEvent.objects.create(
                     store=self.store,
@@ -1199,6 +1231,26 @@ class StoreCreateView(APIView):
         return Response(StorePublicSerializer(store).data, status=status.HTTP_201_CREATED)
 
 
+class MerchantRunSubscriptionCyclesView(StoreMerchantMixin, APIView):
+    def post(self, request, store_slug):
+        from subscriptions.services import execute_due_subscription_cycles
+        from datetime import datetime
+        target_date_str = request.data.get("target_date")
+        target_date = None
+        if target_date_str:
+            try:
+                target_date = datetime.strptime(str(target_date_str).strip(), "%Y-%m-%d").date()
+            except ValueError:
+                pass
+
+        result = execute_due_subscription_cycles(store=self.store, target_date=target_date)
+        return Response({
+            "success": True,
+            "orders_generated": result["orders_generated"],
+            "completed_subscriptions": result["completed_subscriptions"],
+        })
+
+
 # -----------------------------------------------------------------------------
 # URL Patterns
 # -----------------------------------------------------------------------------
@@ -1233,4 +1285,5 @@ urlpatterns = [
     path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/transition/", MerchantOrderStatusTransitionView.as_view(), name="merchant_order_transition"),
     path("merchant/stores/<slug:store_slug>/customers/", MerchantCustomerListView.as_view(), name="merchant_customer_list"),
     path("merchant/stores/<slug:store_slug>/subscriptions/", MerchantSubscriptionListView.as_view(), name="merchant_subscription_list"),
+    path("merchant/stores/<slug:store_slug>/subscriptions/run-cycles/", MerchantRunSubscriptionCyclesView.as_view(), name="merchant_subscription_run_cycles"),
 ]

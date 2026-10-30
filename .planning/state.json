@@ -25,9 +25,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-execute-phase 4 --plan 1",
-    "label": "Execute Phase 4 Plan 01",
-    "reason": "Phase 4 planned — execute Plan 04-01 (Subscription Checkout & Idempotent Recurring Cycle Runner)"
+    "command": "/gsd-execute-phase 4 --plan 2",
+    "label": "Execute Phase 4 Plan 02",
+    "reason": "Plan 04-01 complete — execute Plan 04-02 (Merchant Subscriptions Workspace & Shopper Lifecycle Controls)"
   },
-  "updated_at": "2026-10-31T00:04:00.000Z"
+  "updated_at": "2026-10-31T00:12:00.000Z"
 }

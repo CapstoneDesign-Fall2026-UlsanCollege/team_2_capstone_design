@@ -2,18 +2,18 @@
 gsd_state_version: "1.0"
 current_phase: 4
 current_phase_name: Subscriptions, SaaS Landing & Production Launch
-status: ready
-stopped_at: Completed Phase 3 (Multi-Tenant Storefront, Checkout & Payments - Plan 03-04); ready for Phase 4 planning & execution
-last_updated: "2026-10-30T22:25:00.000Z"
-last_activity: 2026-10-30
-last_activity_desc: Completed Plan 03-04 (Merchant Order Queue, slide-over drawer & fulfillment pipeline)
-state_head: 1374b23
+status: executing
+stopped_at: Completed Plan 04-01 (Subscription Checkout & Idempotent Recurring Cycle Runner); ready for Plan 04-02 (Merchant Subscriptions Workspace & Shopper Lifecycle Controls)
+last_updated: "2026-10-31T00:12:00.000Z"
+last_activity: 2026-10-31
+last_activity_desc: Completed Plan 04-01 (Subscription services, checkout activation, run_subscription_cycles CLI & tests)
+state_head: a0b9f42
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 17
-  completed_plans: 13
-  percent: 76
+  completed_plans: 14
+  percent: 82
 ---
 
 # Project State
@@ -27,12 +27,12 @@ See: .planning/PROJECT.md (updated 2026-10-29)
 
 ## Current Position
 
-Phase: 4 (Subscriptions, SaaS Landing & Production Launch) — READY
-Plan: 0 of 4 (Phase 4)
-Status: Completed Phase 3 (Multi-Tenant Storefront, Checkout & Payments); ready for Phase 4 (Subscriptions, SaaS Landing & Production Launch)
-Last activity: 2026-10-30 — Completed Plan 03-04 (Merchant Order Queue & fulfillment pipeline)
+Phase: 4 (Subscriptions, SaaS Landing & Production Launch) — EXECUTING
+Plan: 1 of 4 (Phase 4)
+Status: Completed Plan 04-01 (Subscription Checkout & Idempotent Recurring Cycle Runner); ready for Plan 04-02 (Merchant Subscriptions Workspace & Shopper Controls)
+Last activity: 2026-10-31 — Completed Plan 04-01 (Subscription services, checkout activation, CLI runner & tests)
 
-Progress: [████████░░] 76%
+Progress: [████████░░] 82%
 
 ## Performance Metrics
 

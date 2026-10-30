@@ -493,3 +493,161 @@ class TenantIsolationTests(APITestCase):
             format="json",
         )
         self.assertEqual(res_b_trans.status_code, status.HTTP_404_NOT_FOUND)
+
+
+    def test_prepaid_subscription_checkout_and_idempotent_cycles(self):
+        """
+        SUBS-01 and SUBS-02:
+        Verifies checkout subscription creation, upfront payment activation,
+        and idempotent $0 cycle order generation with cycle countdown.
+        """
+        from datetime import timedelta
+        from django.utils import timezone
+        from catalog.models import Product, SellingPlan, Variant
+        from orders.models import Order
+        from subscriptions.models import Subscription
+        from subscriptions.services import execute_due_subscription_cycles
+
+        # 1. Setup subscription product & 3M prepaid plan
+        plan_3m, _ = SellingPlan.objects.get_or_create(
+            store=self.store_a,
+            code="test-3m-plan",
+            defaults={
+                "name": "3 Months Prepaid",
+                "interval_unit": "MONTH",
+                "interval_count": 1,
+                "commitment_cycles": 3,
+                "discount_pct": 10,
+                "is_prepaid": True,
+                "is_active": True,
+                "sort_order": 1,
+            },
+        )
+        prod = Product.objects.create(
+            store=self.store_a,
+            slug="sub-tea",
+            name="Subscription Tea",
+            allow_one_time=True,
+            allow_subscription=True,
+        )
+        variant = Variant.objects.create(
+            store=self.store_a,
+            product=prod,
+            sku="TEA-SUB-01",
+            label="250g",
+            price_minor=100000,  # Rs. 1,000 base
+            allow_one_time=True,
+            allow_subscription=True,
+            in_stock=True,
+            is_active=True,
+        )
+
+        # 2. Place checkout order with 3M prepaid plan
+        shipping_addr = {
+            "recipient_name": "Suman Thapa",
+            "phone": "9841223344",
+            "province": "Bagmati",
+            "district": "Kathmandu",
+            "municipality": "Kathmandu Metro",
+            "ward": "3",
+            "street_address": "Lazimpat",
+        }
+        res_place = self.client.post(
+            f"/api/stores/{self.store_a.slug}/checkout/place/",
+            {
+                "customer_email": "suman.thapa@example.com", "email": "suman.thapa@example.com",
+                "items": [
+                    {
+                        "variant_id": variant.id,
+                        "quantity": 1,
+                        "purchase_type": "subscription",
+                        "selling_plan_id": plan_3m.id,
+                    }
+                ],
+                "shipping_address": shipping_addr,
+                "payment_method": "KHALTI",
+            },
+            format="json",
+        )
+        if res_place.status_code != 201: print("RES PLACE ERROR:", res_place.status_code, res_place.data)
+        self.assertEqual(res_place.status_code, status.HTTP_201_CREATED)
+        order_id = res_place.data["order_id"]
+        pidx = res_place.data["pidx"]
+
+        # Initial subscription created in PENDING_PAYMENT
+        sub = Subscription.objects.get(order_id=order_id)
+        self.assertEqual(sub.status, "PENDING_PAYMENT")
+        self.assertEqual(sub.cycles_total, 3)
+        self.assertEqual(sub.cycles_remaining, 2)
+
+        # 3. Verify Khalti Payment
+        res_verify = self.client.post(
+            f"/api/stores/{self.store_a.slug}/checkout/khalti-verify/",
+            {"pidx": pidx, "order_id": order_id},
+            format="json",
+        )
+        self.assertEqual(res_verify.status_code, status.HTTP_200_OK)
+
+        # Subscription is now ACTIVE
+        sub.refresh_from_db()
+        self.assertEqual(sub.status, "ACTIVE")
+
+        # 4. Run cycle runner for next month (Cycle 2)
+        target_cycle_2 = timezone.now().date() + timedelta(days=32)
+        sub.next_delivery_date = target_cycle_2
+        sub.save()
+
+        res_cycle_2 = execute_due_subscription_cycles(store=self.store_a, target_date=target_cycle_2)
+        self.assertGreaterEqual(res_cycle_2["orders_generated"], 1)
+
+        # Cycle 2 order for our subscription must be $0 / Rs. 0 because it was prepaid
+        sub_order = next((o for o in res_cycle_2["orders"] if o.customer.email == "suman.thapa@example.com"), None)
+        self.assertIsNotNone(sub_order)
+        self.assertEqual(sub_order.order_type, "SUBSCRIPTION_CYCLE")
+        self.assertEqual(sub_order.total_minor, 0)
+        self.assertEqual(sub_order.status, "CONFIRMED")
+        self.assertEqual(sub_order.payment_status, "PAID")
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.cycles_remaining, 1)
+        self.assertEqual(sub.status, "ACTIVE")
+
+        # 5. Idempotency test: Re-running on same date must NEVER duplicate orders
+        res_repeat = execute_due_subscription_cycles(store=self.store_a, target_date=target_cycle_2)
+        self.assertEqual(res_repeat["orders_generated"], 0)
+
+        # 6. Cycle 3 (Final commitment delivery): Completes subscription
+        target_cycle_3 = target_cycle_2 + timedelta(days=32)
+        sub.next_delivery_date = target_cycle_3
+        sub.save()
+
+        res_cycle_3 = execute_due_subscription_cycles(store=self.store_a, target_date=target_cycle_3)
+        self.assertGreaterEqual(res_cycle_3["orders_generated"], 1)
+        self.assertGreaterEqual(res_cycle_3["completed_subscriptions"], 1)
+
+        sub.refresh_from_db()
+        self.assertEqual(sub.cycles_remaining, 0)
+        self.assertEqual(sub.status, "COMPLETED")
+
+    def test_merchant_run_subscription_cycles_isolation(self):
+        """
+        Verifies merchant can trigger cycle processing and cross-tenant access returns 404.
+        """
+        # Owner A can trigger on their store
+        self.client.force_login(self.owner_a)
+        res_a = self.client.post(
+            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/run-cycles/",
+            {},
+            format="json",
+        )
+        self.assertEqual(res_a.status_code, status.HTTP_200_OK)
+        self.assertTrue(res_a.data["success"])
+
+        # Owner B cannot trigger on Store A
+        self.client.force_login(self.owner_b)
+        res_b = self.client.post(
+            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/run-cycles/",
+            {},
+            format="json",
+        )
+        self.assertEqual(res_b.status_code, status.HTTP_404_NOT_FOUND)
