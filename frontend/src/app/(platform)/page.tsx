@@ -30,8 +30,31 @@ function slugify(text: string): string {
 export default function PlatformHomePage() {
   const router = useRouter();
   const [storeName, setStoreName] = useState("Pahadi Goods");
+  const [slugStatus, setSlugStatus] = useState<"checking" | "available" | "unavailable">("available");
 
   const slug = slugify(storeName) || "your-shop";
+
+  React.useEffect(() => {
+    if (!slug || slug === "your-shop") {
+      setSlugStatus("available");
+      return;
+    }
+    setSlugStatus("checking");
+    const timer = setTimeout(async () => {
+      try {
+        const res = await fetch(`/api/stores/check-slug/?slug=${encodeURIComponent(slug)}`);
+        if (res.ok) {
+          const data = await res.json();
+          setSlugStatus(data.available ? "available" : "unavailable");
+        } else {
+          setSlugStatus("available");
+        }
+      } catch {
+        setSlugStatus("available");
+      }
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [slug]);
 
   const handleStartFree = (e: React.FormEvent) => {
     e.preventDefault();
@@ -99,9 +122,19 @@ export default function PlatformHomePage() {
                 <span className="text-[var(--sc-ink,#111318)] font-semibold relative">
                   shopcraft.com.np/s/{slug}
                 </span>
-                <span className="text-[var(--sc-success,#15803D)] text-[11px] font-sans font-medium ml-2">
-                  ✓ available
-                </span>
+                {slugStatus === "checking" ? (
+                  <span className="text-zinc-500 text-[11px] font-sans font-medium ml-2 animate-pulse">
+                    checking...
+                  </span>
+                ) : slugStatus === "available" ? (
+                  <span className="text-[var(--sc-success,#15803D)] text-[11px] font-sans font-medium ml-2">
+                    ✓ available
+                  </span>
+                ) : (
+                  <span className="text-red-600 text-[11px] font-sans font-medium ml-2">
+                    ✕ taken
+                  </span>
+                )}
               </div>
             </form>
 
