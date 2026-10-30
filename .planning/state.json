@@ -25,9 +25,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-execute-phase 3 --plan 3",
-    "label": "Execute Phase 3 Plan 03",
-    "reason": "Plan 03-02 complete · execute Plan 03-03 (Single-Screen Checkout, Khalti Sandbox & Cash on Delivery)"
+    "command": "/gsd-execute-phase 3 --plan 4",
+    "label": "Execute Phase 3 Plan 04",
+    "reason": "Plan 03-03 complete · execute Plan 03-04 (Merchant Order Queue & Fulfillment Pipeline)"
   },
-  "updated_at": "2026-10-30T22:00:00.000Z"
+  "updated_at": "2026-10-30T22:13:00.000Z"
 }

@@ -317,3 +317,105 @@ class TenantIsolationTests(APITestCase):
         # Owner B accessing Store A selling plans -> 404 on cross store
         cross_plans = self.client.get("/api/merchant/stores/brewmellow/selling-plans/")
         self.assertEqual(cross_plans.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_store_checkout_quote_and_placement_isolation(self):
+        """Verify server-authoritative checkout quote, COD placement, and Khalti verify with strict multi-tenant isolation."""
+        self.client.logout()
+        prod = Product.objects.for_store(self.store_a).first()
+        variant = prod.variants.first()
+
+        # 1. Checkout Quote: Inside Valley Kathmandu
+        res_quote = self.client.post(
+            "/api/stores/brewmellow/checkout/quote/",
+            {
+                "items": [{"variant_id": variant.id, "quantity": 2}],
+                "district": "Kathmandu",
+            },
+            format="json",
+        )
+        self.assertEqual(res_quote.status_code, status.HTTP_200_OK)
+        expected_subtotal = variant.price_minor * 2
+        self.assertEqual(res_quote.data["subtotal_minor"], expected_subtotal)
+        self.assertEqual(res_quote.data["shipping_minor"], self.store_a.inside_valley_shipping_minor)
+        self.assertEqual(res_quote.data["total_minor"], expected_subtotal + self.store_a.inside_valley_shipping_minor)
+
+        # 2. Checkout Quote: Outside Valley Kaski
+        res_quote_outside = self.client.post(
+            "/api/stores/brewmellow/checkout/quote/",
+            {
+                "items": [{"variant_id": variant.id, "quantity": 1}],
+                "district": "Kaski",
+            },
+            format="json",
+        )
+        self.assertEqual(res_quote_outside.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_quote_outside.data["shipping_minor"], self.store_a.outside_valley_shipping_minor)
+
+        # 3. Order Place via COD
+        shipping_payload = {
+            "recipient_name": "Aayush Shrestha",
+            "phone": "9841999888",
+            "province": "Bagmati",
+            "district": "Kathmandu",
+            "municipality": "Kathmandu Metropolitan City",
+            "ward": 3,
+            "street_landmark": "Near Maharajgunj",
+        }
+        res_cod = self.client.post(
+            "/api/stores/brewmellow/checkout/place/",
+            {
+                "customer_email": "aayush@example.com",
+                "items": [{"variant_id": variant.id, "quantity": 1}],
+                "shipping_address": shipping_payload,
+                "payment_method": "COD",
+            },
+            format="json",
+        )
+        self.assertEqual(res_cod.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res_cod.data["payment_method"], "COD")
+        self.assertEqual(res_cod.data["status"], "CONFIRMED")
+        cod_order_id = res_cod.data["order_id"]
+
+        # Verify public order detail retrieval
+        res_order = self.client.get(f"/api/stores/brewmellow/public-orders/{cod_order_id}/")
+        self.assertEqual(res_order.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_order.data["order_number"], res_cod.data["order_number"])
+        self.assertEqual(len(res_order.data["items"]), 1)
+
+        # 4. Multi-Tenant Cross-Store Isolation: Store B cannot see Store A's order
+        res_cross = self.client.get(f"/api/stores/himalayan-craft/public-orders/{cod_order_id}/")
+        self.assertEqual(res_cross.status_code, status.HTTP_404_NOT_FOUND)
+
+        # 5. Order Place via Khalti
+        res_khalti = self.client.post(
+            "/api/stores/brewmellow/checkout/place/",
+            {
+                "customer_email": "aayush@example.com",
+                "items": [{"variant_id": variant.id, "quantity": 1}],
+                "shipping_address": shipping_payload,
+                "payment_method": "KHALTI",
+            },
+            format="json",
+        )
+        self.assertEqual(res_khalti.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(res_khalti.data["status"], "PENDING_PAYMENT")
+        khalti_order_id = res_khalti.data["order_id"]
+        pidx = res_khalti.data["pidx"]
+        self.assertTrue(bool(pidx))
+
+        # 6. Verify Khalti Payment
+        res_verify = self.client.post(
+            "/api/stores/brewmellow/checkout/khalti-verify/",
+            {"pidx": pidx, "order_id": khalti_order_id},
+            format="json",
+        )
+        self.assertEqual(res_verify.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_verify.data["status"], "PAID")
+
+        # Cross store cannot verify Store A's order
+        res_cross_verify = self.client.post(
+            "/api/stores/himalayan-craft/checkout/khalti-verify/",
+            {"pidx": pidx, "order_id": khalti_order_id},
+            format="json",
+        )
+        self.assertEqual(res_cross_verify.status_code, status.HTTP_404_NOT_FOUND)

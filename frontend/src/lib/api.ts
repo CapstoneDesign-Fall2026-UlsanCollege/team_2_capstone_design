@@ -511,3 +511,161 @@ export async function createMerchantSellingPlan(
     }
   );
 }
+
+// -----------------------------------------------------------------------------
+// Checkout & Order APIs
+// -----------------------------------------------------------------------------
+
+export interface CheckoutAddressPayload {
+  recipient_name: string;
+  phone: string;
+  province: string;
+  district: string;
+  municipality: string;
+  ward: number | string;
+  street_landmark: string;
+}
+
+export interface CheckoutQuotePayload {
+  items: Array<{
+    variant_id: number;
+    quantity: number;
+    purchase_type?: "one_time" | "subscription";
+    selling_plan_id?: number | null;
+  }>;
+  district?: string;
+}
+
+export interface CheckoutQuoteResponse {
+  subtotal_minor: number;
+  shipping_minor: number;
+  discount_minor: number;
+  total_minor: number;
+  is_free_shipping: boolean;
+  has_prepaid_subscription: boolean;
+  currency: string;
+  items: Array<{
+    variant_id: number;
+    product_name: string;
+    variant_label: string;
+    unit_price_minor: number;
+    quantity: number;
+    line_total_minor: number;
+    purchase_type: string;
+    selling_plan?: string | null;
+  }>;
+}
+
+export interface CheckoutPlacePayload {
+  items: Array<{
+    variant_id: number;
+    quantity: number;
+    purchase_type?: "one_time" | "subscription";
+    selling_plan_id?: number | null;
+  }>;
+  shipping_address: CheckoutAddressPayload;
+  customer_email?: string;
+  payment_method: "KHALTI" | "COD";
+  return_url?: string;
+}
+
+export interface CheckoutPlaceResponse {
+  order_id: number;
+  order_number: string;
+  status: string;
+  payment_method: string;
+  payment_status?: string;
+  total_minor?: number;
+  pidx?: string;
+  payment_url?: string;
+  is_sandbox?: boolean;
+}
+
+export interface KhaltiVerifyResponse {
+  success: boolean;
+  order_id: number;
+  order_number: string;
+  status: string;
+}
+
+export interface OrderItemDetail {
+  id: number;
+  product_name_snapshot: string;
+  variant_label_snapshot: string;
+  unit_price_minor: number;
+  quantity: number;
+  line_total_minor: number;
+}
+
+export interface OrderEventDetail {
+  id: number;
+  from_status: string;
+  to_status: string;
+  note: string;
+  created_at: string;
+}
+
+export interface OrderDetail {
+  id: number;
+  order_number: string;
+  order_type: string;
+  status: string;
+  payment_method: "KHALTI" | "COD" | string;
+  payment_status: string;
+  payment_ref: string;
+  subtotal_minor: number;
+  shipping_minor: number;
+  discount_minor: number;
+  total_minor: number;
+  currency: string;
+  shipping_address_snapshot: CheckoutAddressPayload;
+  created_at: string;
+  items: OrderItemDetail[];
+  events: OrderEventDetail[];
+}
+
+export async function fetchCheckoutQuote(
+  storeSlug: string,
+  payload: CheckoutQuotePayload
+) {
+  return apiFetch<CheckoutQuoteResponse>(
+    `/api/stores/${encodeURIComponent(storeSlug)}/checkout/quote/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function placeCheckoutOrder(
+  storeSlug: string,
+  payload: CheckoutPlacePayload
+) {
+  return apiFetch<CheckoutPlaceResponse>(
+    `/api/stores/${encodeURIComponent(storeSlug)}/checkout/place/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function verifyKhaltiPayment(
+  storeSlug: string,
+  pidx: string,
+  orderId: number | string
+) {
+  return apiFetch<KhaltiVerifyResponse>(
+    `/api/stores/${encodeURIComponent(storeSlug)}/checkout/khalti-verify/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ pidx, order_id: orderId }),
+    }
+  );
+}
+
+export async function fetchPublicOrder(storeSlug: string, orderId: number | string) {
+  return apiFetch<OrderDetail>(
+    `/api/stores/${encodeURIComponent(storeSlug)}/public-orders/${orderId}/`
+  );
+}
