@@ -1,4 +1,5 @@
 import requests
+from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
 from django.db.models import Sum
@@ -1142,8 +1143,81 @@ class MerchantCustomerListView(StoreMerchantMixin, APIView):
 
 class MerchantSubscriptionListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
-        subs = Subscription.objects.for_store(self.store).order_by("-created_at")
-        return Response(SubscriptionSerializer(subs, many=True).data)
+        all_subs = (
+            Subscription.objects.for_store(self.store)
+            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan")
+            .order_by("-created_at")
+        )
+
+        active_count = all_subs.filter(status="ACTIVE").count()
+        paused_count = all_subs.filter(status="PAUSED").count()
+        completed_count = all_subs.filter(status="COMPLETED").count()
+        cancelled_count = all_subs.filter(status="CANCELLED").count()
+
+        mrr_minor = sum(s.unit_price_minor for s in all_subs.filter(status="ACTIVE"))
+
+        status_filter = request.query_params.get("status", "").strip().upper()
+        q = request.query_params.get("q", "").strip().lower()
+
+        filtered_subs = all_subs
+        if status_filter in ["ACTIVE", "PAUSED", "COMPLETED", "CANCELLED"]:
+            filtered_subs = filtered_subs.filter(status=status_filter)
+
+        if q:
+            filtered_subs = [
+                s
+                for s in filtered_subs
+                if q in s.customer.email.lower()
+                or (s.customer.user and q in (s.customer.user.full_name or "").lower())
+                or q in s.variant.product.name.lower()
+            ]
+
+        serializer = SubscriptionSerializer(filtered_subs, many=True)
+        return Response({
+            "metrics": {
+                "active_count": active_count,
+                "paused_count": paused_count,
+                "completed_count": completed_count,
+                "cancelled_count": cancelled_count,
+                "mrr_minor": mrr_minor,
+            },
+            "subscriptions": serializer.data,
+        })
+
+
+class MerchantSubscriptionActionView(StoreMerchantMixin, APIView):
+    def post(self, request, store_slug, sub_id):
+        sub = Subscription.objects.for_store(self.store).filter(id=sub_id).first()
+        if not sub:
+            raise Http404("Subscription not found for this store.")
+
+        action = str(request.data.get("action", "")).strip().lower()
+
+        if action == "pause":
+            if sub.status != "ACTIVE":
+                return Response({"error": "Only active subscriptions can be paused."}, status=status.HTTP_400_BAD_REQUEST)
+            sub.status = "PAUSED"
+            sub.save(update_fields=["status", "updated_at"])
+        elif action == "resume":
+            if sub.status != "PAUSED":
+                return Response({"error": "Only paused subscriptions can be resumed."}, status=status.HTTP_400_BAD_REQUEST)
+            sub.status = "ACTIVE"
+            sub.save(update_fields=["status", "updated_at"])
+        elif action == "skip_cycle":
+            if sub.status not in ["ACTIVE", "PAUSED"]:
+                return Response({"error": "Only active or paused subscriptions can skip a cycle."}, status=status.HTTP_400_BAD_REQUEST)
+            interval_days = 30 * getattr(sub.selling_plan, "interval_count", 1)
+            sub.next_delivery_date = sub.next_delivery_date + timedelta(days=interval_days)
+            sub.save(update_fields=["next_delivery_date", "updated_at"])
+        elif action == "cancel":
+            if sub.status in ["CANCELLED", "COMPLETED"]:
+                return Response({"error": "Subscription is already terminated."}, status=status.HTTP_400_BAD_REQUEST)
+            sub.status = "CANCELLED"
+            sub.save(update_fields=["status", "updated_at"])
+        else:
+            return Response({"error": "Invalid action. Choose pause, resume, skip_cycle, or cancel."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(SubscriptionSerializer(sub).data)
 
 
 class ShopperSubscriptionListView(StorePublicMixin, APIView):
@@ -1153,9 +1227,47 @@ class ShopperSubscriptionListView(StorePublicMixin, APIView):
         subs = (
             Subscription.objects.for_store(self.store)
             .filter(customer__user=request.user)
+            .select_related("variant", "variant__product", "selling_plan")
             .order_by("-created_at")
         )
         return Response(SubscriptionSerializer(subs, many=True).data)
+
+
+class ShopperSubscriptionActionView(StorePublicMixin, APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request, store_slug, sub_id):
+        sub = Subscription.objects.for_store(self.store).filter(
+            id=sub_id, customer__user=request.user
+        ).first()
+        if not sub:
+            raise Http404("Subscription not found.")
+
+        action = str(request.data.get("action", "")).strip().lower()
+
+        if action == "pause":
+            if sub.status != "ACTIVE":
+                return Response({"error": "Only active subscriptions can be paused."}, status=status.HTTP_400_BAD_REQUEST)
+            sub.status = "PAUSED"
+            sub.save(update_fields=["status", "updated_at"])
+        elif action == "resume":
+            if sub.status != "PAUSED":
+                return Response({"error": "Only paused subscriptions can be resumed."}, status=status.HTTP_400_BAD_REQUEST)
+            sub.status = "ACTIVE"
+            sub.save(update_fields=["status", "updated_at"])
+        elif action == "skip_cycle":
+            interval_days = 30 * getattr(sub.selling_plan, "interval_count", 1)
+            sub.next_delivery_date = sub.next_delivery_date + timedelta(days=interval_days)
+            sub.save(update_fields=["next_delivery_date", "updated_at"])
+        elif action == "cancel":
+            if sub.status in ["CANCELLED", "COMPLETED"]:
+                return Response({"error": "Subscription is already terminated."}, status=status.HTTP_400_BAD_REQUEST)
+            sub.status = "CANCELLED"
+            sub.save(update_fields=["status", "updated_at"])
+        else:
+            return Response({"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
+
+        return Response(SubscriptionSerializer(sub).data)
 
 
 class StoreSlugCheckView(APIView):
@@ -1285,5 +1397,7 @@ urlpatterns = [
     path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/transition/", MerchantOrderStatusTransitionView.as_view(), name="merchant_order_transition"),
     path("merchant/stores/<slug:store_slug>/customers/", MerchantCustomerListView.as_view(), name="merchant_customer_list"),
     path("merchant/stores/<slug:store_slug>/subscriptions/", MerchantSubscriptionListView.as_view(), name="merchant_subscription_list"),
+    path("stores/<slug:store_slug>/subscriptions/<int:sub_id>/action/", ShopperSubscriptionActionView.as_view(), name="shopper_subscription_action"),
     path("merchant/stores/<slug:store_slug>/subscriptions/run-cycles/", MerchantRunSubscriptionCyclesView.as_view(), name="merchant_subscription_run_cycles"),
+    path("merchant/stores/<slug:store_slug>/subscriptions/<int:sub_id>/action/", MerchantSubscriptionActionView.as_view(), name="merchant_subscription_action"),
 ]

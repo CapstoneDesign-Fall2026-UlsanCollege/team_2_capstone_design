@@ -31,6 +31,12 @@ export function MerchantBottomNav({ storeSlug }: MerchantBottomNavProps) {
       icon: "◎",
     },
     {
+      label: "Subs",
+      href: `/merchant/${encodeURIComponent(storeSlug)}/subscriptions`,
+      exact: false,
+      icon: "↻",
+    },
+    {
       label: "Settings",
       href: `/merchant/${encodeURIComponent(storeSlug)}/settings`,
       exact: false,

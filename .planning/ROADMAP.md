@@ -90,7 +90,7 @@ Plans:
 
 Plans:
 - [x] `04-01-PLAN.md` — Subscription Checkout & Idempotent Recurring Cycle Runner (Wave 1)
-- [ ] `04-02-PLAN.md` — Merchant Subscriptions Workspace & Shopper Lifecycle Controls (Wave 2)
+- [x] `04-02-PLAN.md` — Merchant Subscriptions Workspace & Shopper Lifecycle Controls (Wave 2)
 - [ ] `04-03-PLAN.md` — Second Demo Store (Himalayan Artisans) & Legacy Next.js Redirects (Wave 3)
 - [ ] `04-04-PLAN.md` — Public SaaS Platform Landing Page & Production Launch Readiness (Wave 4)
 
@@ -104,4 +104,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation, Auth & Tenant Core | 5/5 | Completed | 2026-10-30 |
 | 2. Merchant Onboarding, Console & Catalog | 4/4 | Completed | 2026-10-30 |
 | 3. Multi-Tenant Storefront, Checkout & Payments | 4/4 | Completed | 2026-10-30 |
-| 4. Subscriptions, SaaS Landing & Production Launch | 1/4 | In Progress | - |
+| 4. Subscriptions, SaaS Landing & Production Launch | 2/4 | In Progress | - |

@@ -722,3 +722,97 @@ export async function transitionMerchantOrderStatus(
     }
   );
 }
+
+
+export interface SubscriptionItem {
+  id: number;
+  status: "ACTIVE" | "PAUSED" | "CANCELLED" | "COMPLETED" | "PENDING_PAYMENT";
+  unit_price_minor: number;
+  next_delivery_date: string;
+  cycles_total: number | null;
+  cycles_remaining: number | null;
+  shipping_address_snapshot: Record<string, string>;
+  variant_label: string;
+  product_name: string;
+  plan_name: string;
+  plan_code: string;
+  is_prepaid: boolean;
+  customer_email: string;
+  customer_name: string;
+  customer_phone: string;
+  created_at: string;
+}
+
+export interface SubscriptionMetrics {
+  active_count: number;
+  paused_count: number;
+  completed_count: number;
+  cancelled_count: number;
+  mrr_minor: number;
+}
+
+export interface MerchantSubscriptionsResponse {
+  metrics: SubscriptionMetrics;
+  subscriptions: SubscriptionItem[];
+}
+
+export async function fetchMerchantSubscriptions(
+  storeSlug: string,
+  params?: { status?: string; q?: string }
+) {
+  const query = new URLSearchParams();
+  if (params?.status && params.status !== "ALL") query.set("status", params.status);
+  if (params?.q) query.set("q", params.q);
+  const qStr = query.toString() ? `?${query.toString()}` : "";
+
+  return apiFetch<MerchantSubscriptionsResponse>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/subscriptions/${qStr}`
+  );
+}
+
+export async function performMerchantSubscriptionAction(
+  storeSlug: string,
+  subId: number,
+  action: "pause" | "resume" | "skip_cycle" | "cancel"
+) {
+  return apiFetch<SubscriptionItem>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/subscriptions/${subId}/action/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ action }),
+    }
+  );
+}
+
+export async function runMerchantSubscriptionCycles(
+  storeSlug: string,
+  targetDate?: string
+) {
+  return apiFetch<{ success: boolean; orders_generated: number; completed_subscriptions: number }>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/subscriptions/run-cycles/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ target_date: targetDate }),
+    }
+  );
+}
+
+export async function fetchShopperSubscriptions(storeSlug: string) {
+  return apiFetch<SubscriptionItem[]>(
+    `/api/stores/${encodeURIComponent(storeSlug)}/subscriptions/`
+  );
+}
+
+export async function performShopperSubscriptionAction(
+  storeSlug: string,
+  subId: number,
+  action: "pause" | "resume" | "skip_cycle" | "cancel"
+) {
+  return apiFetch<SubscriptionItem>(
+    `/api/stores/${encodeURIComponent(storeSlug)}/subscriptions/${subId}/action/`,
+    {
+      method: "POST",
+      body: JSON.stringify({ action }),
+    }
+  );
+}

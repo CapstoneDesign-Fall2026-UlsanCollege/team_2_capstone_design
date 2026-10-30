@@ -32,6 +32,12 @@ export function MerchantSidebar({ storeSlug, onOpenCommandPalette }: MerchantSid
       icon: "◎",
     },
     {
+      label: "Subscriptions",
+      href: `/merchant/${encodeURIComponent(storeSlug)}/subscriptions`,
+      exact: false,
+      icon: "↻",
+    },
+    {
       label: "Settings",
       href: `/merchant/${encodeURIComponent(storeSlug)}/settings`,
       exact: false,

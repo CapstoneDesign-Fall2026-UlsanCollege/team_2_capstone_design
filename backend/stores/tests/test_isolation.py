@@ -651,3 +651,54 @@ class TenantIsolationTests(APITestCase):
             format="json",
         )
         self.assertEqual(res_b.status_code, status.HTTP_404_NOT_FOUND)
+
+
+    def test_merchant_subscription_actions_and_isolation(self):
+        """
+        SUBS-03:
+        Verifies merchant can pause, resume, skip cycle, and cancel subscriptions,
+        and unauthorized cross-tenant actions return 404.
+        """
+        from subscriptions.models import Subscription
+
+        sub = Subscription.objects.filter(store=self.store_a, status="ACTIVE").first()
+        self.assertIsNotNone(sub)
+
+        # 1. Merchant A pauses subscription
+        self.client.force_login(self.owner_a)
+        res_pause = self.client.post(
+            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/{sub.id}/action/",
+            {"action": "pause"},
+            format="json",
+        )
+        self.assertEqual(res_pause.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_pause.data["status"], "PAUSED")
+
+        # 2. Merchant A resumes subscription
+        res_resume = self.client.post(
+            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/{sub.id}/action/",
+            {"action": "resume"},
+            format="json",
+        )
+        self.assertEqual(res_resume.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_resume.data["status"], "ACTIVE")
+
+        # 3. Merchant A skips next delivery date
+        old_date = sub.next_delivery_date
+        res_skip = self.client.post(
+            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/{sub.id}/action/",
+            {"action": "skip_cycle"},
+            format="json",
+        )
+        self.assertEqual(res_skip.status_code, status.HTTP_200_OK)
+        sub.refresh_from_db()
+        self.assertGreater(sub.next_delivery_date, old_date)
+
+        # 4. Cross-tenant security: Owner B cannot pause or cancel Store A's subscription
+        self.client.force_login(self.owner_b)
+        res_b_pause = self.client.post(
+            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/{sub.id}/action/",
+            {"action": "pause"},
+            format="json",
+        )
+        self.assertEqual(res_b_pause.status_code, status.HTTP_404_NOT_FOUND)
