@@ -67,7 +67,13 @@ Plans:
   2. Shopper adds one-time items to a store-namespaced cart, selects/adds a Nepali address, and completes both a Khalti Sandbox payment (verified server-side via `epayment/lookup/` with `pidx` idempotency) and a COD order with server-authoritative pricing.
   3. Confirmed orders trigger an email receipt and appear in `/s/[storeSlug]/account` with immutable price/address snapshots.
   4. Merchant views store KPIs and customers in `/merchant/[storeSlug]` and transitions order statuses (`PAID/CONFIRMED → PROCESSING → SHIPPED → DELIVERED`), appending `OrderEvent` entries visible to the shopper.
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] `03-01-PLAN.md` — Dynamic Storefront Catalog & Scoped Product Detail (Wave 1)
+- [ ] `03-02-PLAN.md` — Store-Scoped Cart Drawer & Server Price Calculation (Wave 2)
+- [ ] `03-03-PLAN.md` — Checkout, Khalti Sandbox & Cash on Delivery (Wave 3)
+- [ ] `03-04-PLAN.md` — Merchant Order Queue & Fulfillment Pipeline (Wave 4)
 
 ### Phase 4: Subscriptions, SaaS Landing & Production Launch
 **Goal**: Ship prepaid and pay-per-delivery subscription lifecycles, the public ShopCraft SaaS marketing experience, a polished second non-coffee demo tenant, legacy BrewMellow URL redirects, and production cutover before Nov 26.
@@ -88,8 +94,8 @@ Plans:
 Phases execute in numeric order: 1 → 2 → 3 → 4
 
 | Phase | Plans Complete | Status | Completed |
-|-------|----------------|--------|-----------|
-| 1. Foundation, Auth & Tenant Core | 0/5 | Not started | - |
-| 2. Merchant Onboarding, Console & Catalog | 0/TBD | Not started | - |
-| 3. Multi-Tenant Storefront, Checkout & Payments | 0/TBD | Not started | - |
+|---|---|---|---|
+| 1. Foundation, Auth & Tenant Core | 5/5 | Completed | 2026-10-30 |
+| 2. Merchant Onboarding, Console & Catalog | 4/4 | Completed | 2026-10-30 |
+| 3. Multi-Tenant Storefront, Checkout & Payments | 1/4 | In Progress | - |
 | 4. Subscriptions, SaaS Landing & Production Launch | 0/TBD | Not started | - |

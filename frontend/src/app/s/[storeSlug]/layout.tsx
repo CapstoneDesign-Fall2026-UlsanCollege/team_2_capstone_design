@@ -1,5 +1,4 @@
 import type { Metadata } from "next";
-import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
   Fraunces,
@@ -146,30 +145,7 @@ export default async function StorefrontLayout({
       data-store-theme={themePreset}
       className={`${fontClasses} min-h-dvh bg-sf-canvas text-sf-ink font-sf-body flex flex-col`}
     >
-      <header className="sticky top-0 z-30 w-full border-b border-sf-line bg-sf-surface/90 backdrop-blur-xs">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between">
-          <Link
-            href={`/s/${encodeURIComponent(storeSlug)}`}
-            className="font-sf-display text-base sm:text-lg font-bold tracking-tight text-sf-ink"
-          >
-            {store.name}
-          </Link>
-
-          <nav className="flex items-center gap-3 text-xs font-sf-mono">
-            <span className="text-sf-muted text-xs">
-              {store.contact_phone ? `Call: ${store.contact_phone}` : "Nepal"}
-            </span>
-          </nav>
-        </div>
-      </header>
-
-      <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8">
-        {children}
-      </main>
-
-      <footer className="border-t border-sf-line bg-sf-surface py-6 px-4 text-center text-xs text-sf-muted font-sf-mono">
-        <p>Powered by ShopCraft · Kathmandu, Nepal</p>
-      </footer>
+      {children}
     </div>
   );
 }

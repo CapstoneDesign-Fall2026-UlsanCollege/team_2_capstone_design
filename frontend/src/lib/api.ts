@@ -237,6 +237,17 @@ export async function fetchStorePublic(storeSlug: string) {
   return apiFetch<StorePublicMetadata>(`/api/stores/${storeSlug}/`);
 }
 
+export interface StoreCatalogResponse {
+  products: ProductItem[];
+  selling_plans: SellingPlanItem[];
+}
+
+export async function fetchStoreCatalog(storeSlug: string) {
+  return apiFetch<StoreCatalogResponse>(
+    `/api/stores/${encodeURIComponent(storeSlug)}/catalog/`
+  );
+}
+
 export async function checkStoreSlug(slug: string) {
   return apiFetch<{ available: boolean; slug?: string; reason?: string }>(
     `/api/stores/check-slug/?slug=${encodeURIComponent(slug)}`
@@ -335,7 +346,7 @@ export interface ProductItem {
   name: string;
   description: string;
   image_url: string;
-  attributes: Record<string, string>;
+  attributes: Record<string, any>;
   allow_one_time: boolean;
   allow_subscription: boolean;
   is_active: boolean;

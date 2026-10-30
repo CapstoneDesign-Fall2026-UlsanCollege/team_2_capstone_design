@@ -7,9 +7,17 @@ const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const frontendRoot = path.resolve(__dirname, "..");
 const srcApp = path.join(frontendRoot, "src", "app");
+const srcComponents = path.join(frontendRoot, "src", "components");
 
-const storefrontDir = path.join(srcApp, "s");
-const merchantDir = path.join(srcApp, "merchant");
+const storefrontDirs = [
+  path.join(srcApp, "s"),
+  path.join(srcComponents, "storefront"),
+];
+
+const merchantDirs = [
+  path.join(srcApp, "merchant"),
+  path.join(srcComponents, "merchant"),
+];
 
 const VALID_EXTENSIONS = new Set([".ts", ".tsx", ".js", ".jsx", ".css"]);
 const HEX_REGEX = /#[0-9a-fA-F]{3,8}\b/;
@@ -36,37 +44,41 @@ function walkDir(dir, callback) {
   }
 }
 
-// 1. Check Storefront surface: Banned raw hex colors in /s/**
-walkDir(storefrontDir, (filePath) => {
-  const content = fs.readFileSync(filePath, "utf-8");
-  const stripped = stripComments(content);
-  const lines = stripped.split("\n");
-  lines.forEach((line, index) => {
-    if (HEX_REGEX.test(line)) {
-      console.error(
-        `[SURFACE VIOLATION: STOREFRONT HEX] ${path.relative(frontendRoot, filePath)}:${index + 1}`
-      );
-      console.error(`  Line: ${line.trim()}`);
-      violationsCount++;
-    }
+// 1. Check Storefront surface: Banned raw hex colors in /s/** and components/storefront/**
+for (const dir of storefrontDirs) {
+  walkDir(dir, (filePath) => {
+    const content = fs.readFileSync(filePath, "utf-8");
+    const stripped = stripComments(content);
+    const lines = stripped.split("\n");
+    lines.forEach((line, index) => {
+      if (HEX_REGEX.test(line)) {
+        console.error(
+          `[SURFACE VIOLATION: STOREFRONT HEX] ${path.relative(frontendRoot, filePath)}:${index + 1}`
+        );
+        console.error(`  Line: ${line.trim()}`);
+        violationsCount++;
+      }
+    });
   });
-});
+}
 
-// 2. Check Console surface: Banned --sf-* tokens in /merchant/**
-walkDir(merchantDir, (filePath) => {
-  const content = fs.readFileSync(filePath, "utf-8");
-  const stripped = stripComments(content);
-  const lines = stripped.split("\n");
-  lines.forEach((line, index) => {
-    if (SF_TOKEN_REGEX.test(line)) {
-      console.error(
-        `[SURFACE VIOLATION: CONSOLE SF-TOKEN] ${path.relative(frontendRoot, filePath)}:${index + 1}`
-      );
-      console.error(`  Line: ${line.trim()}`);
-      violationsCount++;
-    }
+// 2. Check Console surface: Banned --sf-* tokens in /merchant/** and components/merchant/**
+for (const dir of merchantDirs) {
+  walkDir(dir, (filePath) => {
+    const content = fs.readFileSync(filePath, "utf-8");
+    const stripped = stripComments(content);
+    const lines = stripped.split("\n");
+    lines.forEach((line, index) => {
+      if (SF_TOKEN_REGEX.test(line)) {
+        console.error(
+          `[SURFACE VIOLATION: CONSOLE SF-TOKEN] ${path.relative(frontendRoot, filePath)}:${index + 1}`
+        );
+        console.error(`  Line: ${line.trim()}`);
+        violationsCount++;
+      }
+    });
   });
-});
+}
 
 if (violationsCount > 0) {
   console.error(`\nFound ${violationsCount} surface isolation violation(s). Exiting with error.`);
