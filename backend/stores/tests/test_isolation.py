@@ -197,3 +197,39 @@ class TenantIsolationTests(APITestCase):
         reloaded = Store.objects.get(slug="brewmellow")
         self.assertNotEqual(reloaded.khalti_secret_key_encrypted, "test_secret_key_12345")
         self.assertEqual(reloaded.get_khalti_secret_key(), "test_secret_key_12345")
+
+    def test_merchant_settings_isolation_and_encryption(self):
+        # Owner A can read Store A settings
+        self.client.force_login(self.owner_a)
+        res_a = self.client.get("/api/merchant/stores/brewmellow/settings/")
+        self.assertEqual(res_a.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_a.data["slug"], "brewmellow")
+
+        # Owner A updating Store A settings
+        patch_res = self.client.patch(
+            "/api/merchant/stores/brewmellow/settings/",
+            {
+                "inside_valley_shipping_minor": 15000,
+                "khalti_mode": "LIVE",
+                "khalti_secret_key": "live_secret_key_abcdef123456",
+            },
+            format="json",
+        )
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_res.data["inside_valley_shipping_minor"], 15000)
+        self.assertEqual(patch_res.data["khalti_mode"], "LIVE")
+        self.assertTrue(patch_res.data["has_custom_khalti_key"])
+        self.assertTrue(patch_res.data["khalti_key_masked"].endswith("3456"))
+
+        # Owner A accessing Store B settings -> 404
+        cross_res = self.client.get("/api/merchant/stores/pahadi-honey/settings/")
+        self.assertEqual(cross_res.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Owner B accessing Store A settings -> 404
+        self.client.force_login(self.owner_b)
+        cross_b = self.client.patch(
+            "/api/merchant/stores/brewmellow/settings/",
+            {"inside_valley_shipping_minor": 5000},
+            format="json",
+        )
+        self.assertEqual(cross_b.status_code, status.HTTP_404_NOT_FOUND)

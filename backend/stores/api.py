@@ -315,6 +315,85 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
         })
 
 
+class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
+    def get(self, request, store_slug):
+        data = StorePublicSerializer(self.store).data
+        has_custom_key = bool(self.store.khalti_secret_key_encrypted)
+        masked_key = ""
+        if has_custom_key:
+            try:
+                raw_key = self.store.get_khalti_secret_key()
+                if len(raw_key) > 4:
+                    masked_key = "••••••••••••" + raw_key[-4:]
+                else:
+                    masked_key = "••••••••••••"
+            except Exception:
+                masked_key = "••••••••••••"
+
+        data["has_custom_khalti_key"] = has_custom_key
+        data["khalti_mode"] = self.store.khalti_mode
+        data["khalti_key_masked"] = masked_key
+        return Response(data)
+
+    def patch(self, request, store_slug):
+        store = self.store
+        data = request.data
+
+        if "name" in data and str(data["name"]).strip():
+            store.name = str(data["name"]).strip()
+        if "tagline" in data:
+            store.tagline = str(data["tagline"]).strip()
+        if "contact_phone" in data:
+            store.contact_phone = str(data["contact_phone"]).strip()
+        if "theme_preset" in data:
+            preset = str(data["theme_preset"]).strip()
+            if preset in [c[0] for c in Store.THEME_PRESET_CHOICES]:
+                store.theme_preset = preset
+        if "accent_color" in data:
+            store.accent_color = str(data["accent_color"]).strip()
+        if "logo_url" in data:
+            store.logo_url = str(data["logo_url"]).strip()
+
+        if "inside_valley_shipping_minor" in data:
+            try:
+                val = int(data["inside_valley_shipping_minor"])
+                if val >= 0:
+                    store.inside_valley_shipping_minor = val
+            except (ValueError, TypeError):
+                pass
+
+        if "outside_valley_shipping_minor" in data:
+            try:
+                val = int(data["outside_valley_shipping_minor"])
+                if val >= 0:
+                    store.outside_valley_shipping_minor = val
+            except (ValueError, TypeError):
+                pass
+
+        if "free_shipping_threshold_minor" in data:
+            raw_threshold = data["free_shipping_threshold_minor"]
+            if raw_threshold is None or raw_threshold == "":
+                store.free_shipping_threshold_minor = None
+            else:
+                try:
+                    val = int(raw_threshold)
+                    store.free_shipping_threshold_minor = val if val >= 0 else None
+                except (ValueError, TypeError):
+                    pass
+
+        if "khalti_mode" in data:
+            mode = str(data["khalti_mode"]).strip().upper()
+            if mode in ["TEST", "LIVE"]:
+                store.khalti_mode = mode
+
+        if "khalti_secret_key" in data:
+            raw_key = str(data["khalti_secret_key"]).strip()
+            store.set_khalti_secret_key(raw_key)
+
+        store.save()
+        return self.get(request, store_slug)
+
+
 class MerchantProductListCreateView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
         products = Product.objects.for_store(self.store).order_by("sort_order", "-id")
@@ -449,6 +528,7 @@ urlpatterns = [
 
     # Merchant Console
     path("merchant/stores/<slug:store_slug>/overview/", MerchantStoreOverviewView.as_view(), name="merchant_store_overview"),
+    path("merchant/stores/<slug:store_slug>/settings/", MerchantStoreSettingsView.as_view(), name="merchant_store_settings"),
     path("merchant/stores/<slug:store_slug>/products/", MerchantProductListCreateView.as_view(), name="merchant_product_list_create"),
     path("merchant/stores/<slug:store_slug>/orders/", MerchantOrderListView.as_view(), name="merchant_order_list"),
     path("merchant/stores/<slug:store_slug>/customers/", MerchantCustomerListView.as_view(), name="merchant_customer_list"),

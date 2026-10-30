@@ -276,3 +276,42 @@ export async function fetchMerchantStoreOverview(storeSlug: string) {
     `/api/merchant/stores/${encodeURIComponent(storeSlug)}/overview/`
   );
 }
+
+export interface MerchantStoreSettings extends StorePublicMetadata {
+  has_custom_khalti_key: boolean;
+  khalti_mode: "TEST" | "LIVE";
+  khalti_key_masked: string;
+}
+
+export interface MerchantSettingsUpdatePayload {
+  name?: string;
+  tagline?: string;
+  contact_phone?: string;
+  theme_preset?: string;
+  accent_color?: string;
+  logo_url?: string;
+  inside_valley_shipping_minor?: number;
+  outside_valley_shipping_minor?: number;
+  free_shipping_threshold_minor?: number | null;
+  khalti_mode?: "TEST" | "LIVE";
+  khalti_secret_key?: string;
+}
+
+export async function fetchMerchantSettings(storeSlug: string) {
+  return apiFetch<MerchantStoreSettings>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/settings/`
+  );
+}
+
+export async function updateMerchantSettings(
+  storeSlug: string,
+  payload: MerchantSettingsUpdatePayload
+) {
+  return apiFetch<MerchantStoreSettings>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/settings/`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }
+  );
+}
