@@ -33,7 +33,7 @@ ShopCraft pivots the single-tenant BrewMellow app into a production-structured m
 Plans:
 - [x] `01-01-PLAN.md` — Walking Skeleton: custom email `User`, `Store`/`StoreMembership`/`Customer` core, `/api/health/` + Next.js `/api/*` proxy, legacy Next.js SQL removal, hardened settings, `Procfile` & CI (Wave 1)
 - [x] `01-02-PLAN.md` — Passwordless 6-digit Email OTP + Google OAuth session API, Nepali `DeliveryAddress` CRUD, typed CSRF client, `OtpInput` & `check-surfaces.mjs` guard (Wave 2)
-- [ ] `01-03-PLAN.md` — Multi-tenant `Product`/`Variant`/`SellingPlan`/`Order`/`Subscription` models, `StoreScopedAPIViewMixin` isolation guards, `seed_brewmellow` & automated HTTP 404 isolation suite (Wave 3)
+- [x] `01-03-PLAN.md` — Multi-tenant `Product`/`Variant`/`SellingPlan`/`Order`/`Subscription` models, `StoreScopedAPIViewMixin` isolation guards, `seed_brewmellow` & automated HTTP 404 isolation suite (Wave 3)
 - [ ] `01-04-PLAN.md` — Three-surface CSS token architecture (`--sc-*`, `.console`, `--sf-*`), routable storefront & console shells (`s/[storeSlug]` & `merchant/[storeSlug]`), and `utils.ts` (Wave 3)
 - [ ] `01-05-PLAN.md` — Passwordless `/login` & `/signup` Platform screens, complete `demo_user` removal, and `/account/addresses` cascading `AddressSheet` UI (Wave 4)
 
