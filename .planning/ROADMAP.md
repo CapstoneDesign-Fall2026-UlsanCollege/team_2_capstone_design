@@ -12,7 +12,7 @@ ShopCraft pivots the single-tenant BrewMellow app into a production-structured m
 
 - [ ] **Phase 1: Foundation, Auth & Tenant Core** - Single Django/DRF backend, CI/staging pipeline, real session auth, core multi-tenant models, isolation guards, and `seed_brewmellow` (Oct 30 – Nov 5)
 - [ ] **Phase 2: Merchant Onboarding, Console & Catalog** - Self-serve "Create Store" wizard, `/merchant/[storeSlug]` console, products/variants/images, selling plans, branding, and Khalti key config (Nov 6 – Nov 12)
-- [ ] **Phase 3: Multi-Tenant Storefront, Checkout & Payments** - Themed `/s/[storeSlug]` storefronts, cart, Nepali addresses, Khalti ePayment v2 sandbox + COD, emails, shopper account, and merchant order management (Nov 13 – Nov 19)
+- [x] **Phase 3: Multi-Tenant Storefront, Checkout & Payments** - Themed `/s/[storeSlug]` storefronts, cart, Nepali addresses, Khalti ePayment v2 sandbox + COD, emails, shopper account, and merchant order management (Nov 13 – Nov 19)
 - [ ] **Phase 4: Subscriptions, SaaS Landing & Production Launch** - Prepaid & pay-per-delivery subscriptions, cycle generator, pause/skip/cancel, ShopCraft `/` landing page, 2nd demo tenant, redirects, and cutover (Nov 20 – Nov 26; Freeze Nov 24)
 
 ## Phase Details
@@ -70,10 +70,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] `03-01-PLAN.md` — Dynamic Storefront Catalog & Scoped Product Detail (Wave 1)
-- [ ] `03-02-PLAN.md` — Store-Scoped Cart Drawer & Server Price Calculation (Wave 2)
-- [ ] `03-03-PLAN.md` — Checkout, Khalti Sandbox & Cash on Delivery (Wave 3)
-- [ ] `03-04-PLAN.md` — Merchant Order Queue & Fulfillment Pipeline (Wave 4)
+- [x] `03-01-PLAN.md` — Dynamic Storefront Catalog & Scoped Product Detail (Wave 1)
+- [x] `03-02-PLAN.md` — Store-Scoped Cart Drawer & Server Price Calculation (Wave 2)
+- [x] `03-03-PLAN.md` — Checkout, Khalti Sandbox & Cash on Delivery (Wave 3)
+- [x] `03-04-PLAN.md` — Merchant Order Queue & Fulfillment Pipeline (Wave 4)
 
 ### Phase 4: Subscriptions, SaaS Landing & Production Launch
 **Goal**: Ship prepaid and pay-per-delivery subscription lifecycles, the public ShopCraft SaaS marketing experience, a polished second non-coffee demo tenant, legacy BrewMellow URL redirects, and production cutover before Nov 26.
@@ -97,5 +97,5 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 |---|---|---|---|
 | 1. Foundation, Auth & Tenant Core | 5/5 | Completed | 2026-10-30 |
 | 2. Merchant Onboarding, Console & Catalog | 4/4 | Completed | 2026-10-30 |
-| 3. Multi-Tenant Storefront, Checkout & Payments | 3/4 | In Progress | - |
-| 4. Subscriptions, SaaS Landing & Production Launch | 0/TBD | Not started | - |
+| 3. Multi-Tenant Storefront, Checkout & Payments | 4/4 | Completed | 2026-10-30 |
+| 4. Subscriptions, SaaS Landing & Production Launch | 0/4 | Planned | - |

@@ -8,7 +8,7 @@ from rest_framework.test import APITestCase
 from accounts.models import DeliveryAddress
 from catalog.models import Product, SellingPlan, Variant
 from orders.models import Order, OrderItem
-from stores.models import Customer, Store, StoreMembership
+from stores.models import Customer, Store, StoreMembership, provision_store_customer
 from subscriptions.models import Subscription
 
 User = get_user_model()
@@ -419,3 +419,77 @@ class TenantIsolationTests(APITestCase):
             format="json",
         )
         self.assertEqual(res_cross_verify.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_merchant_order_queue_and_transition_isolation(self):
+        """Verify merchant order queue status tabs, transitions with COD cash confirmation, and multi-tenant security."""
+        self.client.force_login(self.owner_a)
+
+        # 1. Fetch merchant orders queue with status counts
+        res_list = self.client.get("/api/merchant/stores/brewmellow/orders/")
+        self.assertEqual(res_list.status_code, status.HTTP_200_OK)
+        self.assertIn("counts", res_list.data)
+        self.assertIn("orders", res_list.data)
+
+        # Create a new test order for Store A
+        customer = provision_store_customer(self.store_a, self.owner_a)
+        order = Order.objects.create(
+            store=self.store_a,
+            customer=customer,
+            order_number="#BM-TEST-0099",
+            status="CONFIRMED",
+            payment_method="COD",
+            payment_status="COD_PENDING",
+            subtotal_minor=85000,
+            shipping_minor=10000,
+            total_minor=95000,
+        )
+
+        # 2. Advance CONFIRMED -> PROCESSING (Packed)
+        res_pack = self.client.post(
+            f"/api/merchant/stores/brewmellow/orders/{order.id}/transition/",
+            {"to_status": "PROCESSING", "note": "All items freshly roasted and boxed."},
+            format="json",
+        )
+        self.assertEqual(res_pack.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_pack.data["status"], "PROCESSING")
+
+        # 3. Advance PROCESSING -> SHIPPED
+        res_ship = self.client.post(
+            f"/api/merchant/stores/brewmellow/orders/{order.id}/transition/",
+            {"to_status": "SHIPPED", "note": "Handed to Pathao Courier."},
+            format="json",
+        )
+        self.assertEqual(res_ship.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_ship.data["status"], "SHIPPED")
+
+        # 4. Advance SHIPPED -> DELIVERED (Confirms Cash on Delivery)
+        res_deliver = self.client.post(
+            f"/api/merchant/stores/brewmellow/orders/{order.id}/transition/",
+            {"to_status": "DELIVERED"},
+            format="json",
+        )
+        self.assertEqual(res_deliver.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_deliver.data["status"], "DELIVERED")
+        self.assertEqual(res_deliver.data["payment_status"], "PAID")
+
+        # 5. Non-blocking Undo: DELIVERED -> SHIPPED (Reverts cash collection)
+        res_undo = self.client.post(
+            f"/api/merchant/stores/brewmellow/orders/{order.id}/transition/",
+            {"to_status": "SHIPPED"},
+            format="json",
+        )
+        self.assertEqual(res_undo.status_code, status.HTTP_200_OK)
+        self.assertEqual(res_undo.data["status"], "SHIPPED")
+        self.assertEqual(res_undo.data["payment_status"], "COD_PENDING")
+
+        # 6. Multi-Tenant Cross Store Access: Owner B cannot view or transition Store A's order
+        self.client.force_login(self.owner_b)
+        res_b_view = self.client.get(f"/api/merchant/stores/brewmellow/orders/{order.id}/")
+        self.assertEqual(res_b_view.status_code, status.HTTP_404_NOT_FOUND)
+
+        res_b_trans = self.client.post(
+            f"/api/merchant/stores/brewmellow/orders/{order.id}/transition/",
+            {"to_status": "DELIVERED"},
+            format="json",
+        )
+        self.assertEqual(res_b_trans.status_code, status.HTTP_404_NOT_FOUND)

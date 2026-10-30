@@ -191,6 +191,9 @@ class OrderEventSerializer(serializers.ModelSerializer):
 class OrderSerializer(serializers.ModelSerializer):
     items = OrderItemSerializer(many=True, read_only=True)
     events = OrderEventSerializer(many=True, read_only=True)
+    customer_name = serializers.CharField(source="customer.full_name", read_only=True)
+    customer_email = serializers.CharField(source="customer.email", read_only=True)
+    customer_phone = serializers.CharField(source="customer.phone", read_only=True)
 
     class Meta:
         model = Order
@@ -211,6 +214,9 @@ class OrderSerializer(serializers.ModelSerializer):
             "created_at",
             "items",
             "events",
+            "customer_name",
+            "customer_email",
+            "customer_phone",
         ]
         read_only_fields = ["id", "created_at"]
 
@@ -989,8 +995,111 @@ class MerchantSellingPlanListCreateView(StoreMerchantMixin, APIView):
 
 class MerchantOrderListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
-        orders = Order.objects.for_store(self.store).order_by("-created_at")
-        return Response(OrderSerializer(orders, many=True).data)
+        qs = Order.objects.for_store(self.store).order_by("-created_at")
+
+        # Counts across all status categories
+        all_count = qs.count()
+        new_count = qs.filter(status__in=["CONFIRMED", "PAID"]).count()
+        packed_count = qs.filter(status__in=["PROCESSING", "PACKED"]).count()
+        shipped_count = qs.filter(status="SHIPPED").count()
+        delivered_count = qs.filter(status="DELIVERED").count()
+
+        status_filter = request.query_params.get("status", "").strip().lower()
+        if status_filter == "new":
+            qs = qs.filter(status__in=["CONFIRMED", "PAID"])
+        elif status_filter == "packed":
+            qs = qs.filter(status__in=["PROCESSING", "PACKED"])
+        elif status_filter == "shipped":
+            qs = qs.filter(status="SHIPPED")
+        elif status_filter == "delivered":
+            qs = qs.filter(status="DELIVERED")
+
+        search = request.query_params.get("search", "").strip()
+        if search:
+            from django.db.models import Q
+            qs = qs.filter(
+                Q(order_number__icontains=search)
+                | Q(customer__full_name__icontains=search)
+                | Q(customer__email__icontains=search)
+                | Q(customer__phone__icontains=search)
+            )
+
+        return Response({
+            "orders": OrderSerializer(qs, many=True).data,
+            "counts": {
+                "all": all_count,
+                "new": new_count,
+                "packed": packed_count,
+                "shipped": shipped_count,
+                "delivered": delivered_count,
+            },
+        })
+
+
+class MerchantOrderDetailView(StoreMerchantMixin, APIView):
+    def get(self, request, store_slug, order_id):
+        order = Order.objects.for_store(self.store).filter(id=order_id).first()
+        if not order:
+            raise Http404("Order not found.")
+        return Response(OrderSerializer(order).data)
+
+
+class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
+    def post(self, request, store_slug, order_id):
+        order = Order.objects.for_store(self.store).filter(id=order_id).first()
+        if not order:
+            raise Http404("Order not found.")
+
+        target_status = str(request.data.get("to_status", "")).strip().upper()
+        note = str(request.data.get("note", "")).strip()
+
+        VALID_FORWARD = {
+            "CONFIRMED": ["PROCESSING", "CANCELLED"],
+            "PAID": ["PROCESSING", "CANCELLED"],
+            "PROCESSING": ["SHIPPED", "CANCELLED"],
+            "SHIPPED": ["DELIVERED"],
+        }
+        VALID_UNDO = {
+            "PROCESSING": ["CONFIRMED", "PAID"],
+            "SHIPPED": ["PROCESSING"],
+            "DELIVERED": ["SHIPPED"],
+        }
+
+        current = order.status.upper()
+        is_forward = target_status in VALID_FORWARD.get(current, [])
+        is_undo = target_status in VALID_UNDO.get(current, [])
+
+        if not is_forward and not is_undo:
+            return Response(
+                {"error": f"Invalid transition from {current} to {target_status}."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        with transaction.atomic():
+            old_status = order.status
+            order.status = target_status
+
+            if target_status == "DELIVERED" and order.payment_method == "COD":
+                order.payment_status = "PAID"
+                if not note:
+                    note = f"Delivered · Cash of Rs. {order.total_minor // 100} collected."
+            elif old_status == "DELIVERED" and is_undo and order.payment_method == "COD":
+                order.payment_status = "COD_PENDING"
+                if not note:
+                    note = "Undone delivery · Reverted cash collection."
+
+            order.save()
+
+            OrderEvent.objects.create(
+                store=self.store,
+                order=order,
+                from_status=old_status,
+                to_status=target_status,
+                note=note or f"Status changed from {old_status} to {target_status}",
+                actor=request.user,
+            )
+
+        return Response(OrderSerializer(order).data)
 
 
 class MerchantCustomerListView(StoreMerchantMixin, APIView):
@@ -1120,6 +1229,8 @@ urlpatterns = [
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/variants/<int:variant_id>/", MerchantVariantDetailView.as_view(), name="merchant_variant_detail"),
     path("merchant/stores/<slug:store_slug>/selling-plans/", MerchantSellingPlanListCreateView.as_view(), name="merchant_selling_plan_list_create"),
     path("merchant/stores/<slug:store_slug>/orders/", MerchantOrderListView.as_view(), name="merchant_order_list"),
+    path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/", MerchantOrderDetailView.as_view(), name="merchant_order_detail"),
+    path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/transition/", MerchantOrderStatusTransitionView.as_view(), name="merchant_order_transition"),
     path("merchant/stores/<slug:store_slug>/customers/", MerchantCustomerListView.as_view(), name="merchant_customer_list"),
     path("merchant/stores/<slug:store_slug>/subscriptions/", MerchantSubscriptionListView.as_view(), name="merchant_subscription_list"),
 ]

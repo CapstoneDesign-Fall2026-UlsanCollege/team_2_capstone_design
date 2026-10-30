@@ -622,6 +622,9 @@ export interface OrderDetail {
   created_at: string;
   items: OrderItemDetail[];
   events: OrderEventDetail[];
+  customer_name?: string;
+  customer_email?: string;
+  customer_phone?: string;
 }
 
 export async function fetchCheckoutQuote(
@@ -667,5 +670,55 @@ export async function verifyKhaltiPayment(
 export async function fetchPublicOrder(storeSlug: string, orderId: number | string) {
   return apiFetch<OrderDetail>(
     `/api/stores/${encodeURIComponent(storeSlug)}/public-orders/${orderId}/`
+  );
+}
+
+export interface OrderQueueCounts {
+  all: number;
+  new: number;
+  packed: number;
+  shipped: number;
+  delivered: number;
+}
+
+export interface MerchantOrdersResponse {
+  orders: OrderDetail[];
+  counts: OrderQueueCounts;
+}
+
+export async function fetchMerchantOrders(
+  storeSlug: string,
+  params?: { status?: string; search?: string }
+) {
+  const query = new URLSearchParams();
+  if (params?.status && params.status !== "all") query.set("status", params.status);
+  if (params?.search) query.set("search", params.search);
+  const qStr = query.toString() ? `?${query.toString()}` : "";
+
+  return apiFetch<MerchantOrdersResponse>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/orders/${qStr}`
+  );
+}
+
+export async function fetchMerchantOrderDetail(
+  storeSlug: string,
+  orderId: number | string
+) {
+  return apiFetch<OrderDetail>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/orders/${orderId}/`
+  );
+}
+
+export async function transitionMerchantOrderStatus(
+  storeSlug: string,
+  orderId: number | string,
+  payload: { to_status: string; note?: string }
+) {
+  return apiFetch<OrderDetail>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/orders/${orderId}/transition/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
   );
 }
