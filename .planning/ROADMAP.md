@@ -48,7 +48,13 @@ Plans:
   2. Merchant can create, edit, and archive products with Cloudinary-uploaded photos, custom `attributes` chips, and integer-paisa variants, plus toggle one-time/subscription availability and selling plans.
   3. Merchant can update store logo, brand colors, contact info, and optional encrypted Khalti secret key (with clear "Sandbox Fallback Active" indicator when unset).
   4. Non-members or owners of another store attempting to access `/merchant/[storeSlug]` or its APIs are blocked with 403/404.
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] `02-01-PLAN.md` — Console Shell, Navigation, ⌘K Palette & Merchant Overview Dashboard (Wave 1)
+- [ ] `02-02-PLAN.md` — Store Branding, Delivery Rates & Encrypted Khalti Credentials (Wave 2)
+- [ ] `02-03-PLAN.md` — Product Catalog Management & Cloudinary Photo Uploads (Wave 3)
+- [ ] `02-04-PLAN.md` — Spreadsheet-Style Variant Editor, Integer Paisa & Selling Plans (Wave 4)
 
 ### Phase 3: Multi-Tenant Storefront, Checkout & Payments
 **Goal**: Deliver dynamic themed storefronts at `/s/[storeSlug]`, store-isolated cart and login-gated checkout, verified Khalti sandbox and Cash on Delivery orders, confirmation emails, shopper order tracking, and merchant order fulfillment.

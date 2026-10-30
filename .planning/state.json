@@ -11,7 +11,7 @@
     {
       "number": "2",
       "name": "Merchant Onboarding, Console & Catalog",
-      "status": "pending"
+      "status": "in_progress"
     },
     {
       "number": "3",
@@ -25,9 +25,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-discuss-phase 2",
-    "label": "Discuss Phase 2 scope or plan Phase 2",
-    "reason": "Phase 1 complete (100%) · ready for Phase 2: Merchant Onboarding, Console & Catalog"
+    "command": "/gsd-execute-phase 2 --plan 1",
+    "label": "Execute Phase 2 Plan 01",
+    "reason": "Phase 2 planned (4 plans) · executing Plan 02-01 (Console Shell & Overview Dashboard)"
   },
-  "updated_at": "2026-10-30T09:15:00.000Z"
+  "updated_at": "2026-10-30T10:25:00.000Z"
 }

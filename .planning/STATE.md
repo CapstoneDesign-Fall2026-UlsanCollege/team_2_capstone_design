@@ -1,19 +1,19 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 1
-current_phase_name: Foundation, Auth & Tenant Core
-status: completed
-stopped_at: Completed Phase 1 (Foundation, Auth & Tenant Core); all 5 plans complete & verified; ready for Phase 2 (Merchant Onboarding, Console & Catalog)
-last_updated: "2026-10-30T09:15:00.000Z"
+current_phase: 2
+current_phase_name: Merchant Onboarding, Console & Catalog
+status: executing
+stopped_at: Planned Phase 2 (4 plans, 4 waves); ready to execute Plan 02-01 (Console Shell, Navigation & Merchant Overview Dashboard)
+last_updated: "2026-10-30T10:25:00.000Z"
 last_activity: 2026-10-30
-last_activity_desc: Completed Phase 1 Plan 05 (Platform Auth & Saved Address Management)
-state_head: 9149f11
+last_activity_desc: Planned Phase 2 (Merchant Onboarding, Console & Catalog)
+state_head: 4f5fa38
 progress:
   total_phases: 4
   completed_phases: 1
-  total_plans: 5
+  total_plans: 9
   completed_plans: 5
-  percent: 100
+  percent: 55
 ---
 
 # Project State
@@ -23,16 +23,16 @@ progress:
 See: .planning/PROJECT.md (updated 2026-10-29)
 
 **Core value:** Strict multi-tenant isolation and end-to-end checkout integrity — any merchant can launch an isolated storefront and fulfill verified Khalti or COD orders without ever leaking data across stores or breaking the frozen BrewMellow baseline.
-**Current focus:** Phase 1 Complete — Moving to Phase 2 (Merchant Onboarding, Console & Catalog)
+**Current focus:** Phase 2 — Merchant Onboarding, Console & Catalog
 
 ## Current Position
 
-Phase: 1 (Foundation, Auth & Tenant Core) — COMPLETED
-Plan: 5 of 5
-Status: Phase 1 Complete (All 5 plans verified)
-Last activity: 2026-10-30 — Completed Phase 1 Plan 05 (Platform Auth & Saved Address Management)
+Phase: 2 (Merchant Onboarding, Console & Catalog) — EXECUTING
+Plan: 1 of 4 (Phase 2)
+Status: Executing Phase 2 (Plan 02-01 ready to execute)
+Last activity: 2026-10-30 — Planned Phase 2 (Merchant Onboarding, Console & Catalog)
 
-Progress: [██████████] 100% (Phase 1)
+Progress: [█████░░░░░] 55%
 
 ## Performance Metrics
 
@@ -46,6 +46,7 @@ Progress: [██████████] 100% (Phase 1)
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | Phase 1: Foundation, Auth & Tenant Core | 5 | 100 min | 20 min |
+| Phase 2: Merchant Console & Catalog | 0/4 | - | - |
 
 **Recent Trend:**
 - Last 5 plans: -
