@@ -1,11 +1,11 @@
 "use client";
 
-import React, { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import React, { useState } from "react";
 import { formatNpr, ProductItem, SellingPlanItem, StorePublicMetadata } from "@/lib/api";
 import { StorefrontHeader } from "./StorefrontHeader";
 import { ProductGrid } from "./ProductGrid";
 import { ProductDetailSheet, SelectedCartItem } from "./ProductDetailSheet";
+import { useCart } from "./CartContext";
 
 export interface StorefrontCatalogViewProps {
   store: StorePublicMetadata;
@@ -18,30 +18,9 @@ export function StorefrontCatalogView({
   products,
   sellingPlans,
 }: StorefrontCatalogViewProps) {
-  const router = useRouter();
+  const { itemCount, openCart, addItem } = useCart();
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
-  const [cartCount, setCartCount] = useState<number>(0);
-
-  // Sync cart count from tenant-scoped storage sc:{storeSlug}:cart
-  useEffect(() => {
-    try {
-      const storageKey = `sc:${store.slug}:cart`;
-      const raw = localStorage.getItem(storageKey);
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.items)) {
-          const totalQty = parsed.items.reduce(
-            (sum: number, it: { quantity?: number }) => sum + (it.quantity || 1),
-            0
-          );
-          Promise.resolve().then(() => setCartCount(totalQty));
-        }
-      }
-    } catch {
-      // Ignore parse failure on client
-    }
-  }, [store.slug]);
 
   const handleSelectProduct = (product: ProductItem) => {
     setSelectedProduct(product);
@@ -49,37 +28,18 @@ export function StorefrontCatalogView({
   };
 
   const handleAddToCart = (item: SelectedCartItem) => {
-    try {
-      const storageKey = `sc:${store.slug}:cart`;
-      const raw = localStorage.getItem(storageKey);
-      let items: SelectedCartItem[] = [];
-      if (raw) {
-        const parsed = JSON.parse(raw);
-        if (Array.isArray(parsed.items)) {
-          items = parsed.items;
-        }
-      }
-
-      // Check if existing item in cart matches
-      const existingIdx = items.findIndex(
-        (i) =>
-          i.variantId === item.variantId &&
-          i.purchaseType === item.purchaseType &&
-          i.sellingPlan?.id === item.sellingPlan?.id
-      );
-
-      if (existingIdx >= 0) {
-        items[existingIdx].quantity += item.quantity;
-      } else {
-        items.push(item);
-      }
-
-      localStorage.setItem(storageKey, JSON.stringify({ items, updatedAt: Date.now() }));
-      const newTotal = items.reduce((sum, it) => sum + (it.quantity || 1), 0);
-      setCartCount(newTotal);
-    } catch {
-      setCartCount((prev) => prev + item.quantity);
-    }
+    addItem({
+      productId: item.productId,
+      productSlug: item.productSlug,
+      productName: item.productName,
+      variantId: item.variantId,
+      variantLabel: item.variantLabel,
+      unitPriceMinor: item.unitPriceMinor,
+      quantity: item.quantity,
+      imageUrl: item.productImageUrl,
+      purchaseType: item.purchaseType,
+      sellingPlan: item.sellingPlan,
+    });
   };
 
   return (
@@ -89,14 +49,8 @@ export function StorefrontCatalogView({
         storeName={store.name}
         logoUrl={store.logo_url}
         contactPhone={store.contact_phone}
-        cartCount={cartCount}
-        onOpenCart={() => {
-          // In Wave 2 / Plan 03-02, this opens the CartDrawer
-          // If items exist, navigate to checkout
-          if (cartCount > 0) {
-            router.push(`/s/${encodeURIComponent(store.slug)}/checkout`);
-          }
-        }}
+        cartCount={itemCount}
+        onOpenCart={openCart}
       />
 
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-8">

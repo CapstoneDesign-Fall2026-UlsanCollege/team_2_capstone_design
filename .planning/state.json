@@ -25,9 +25,9 @@
     }
   ],
   "next": {
-    "command": "/gsd-execute-phase 3 --plan 2",
-    "label": "Execute Phase 3 Plan 02",
-    "reason": "Plan 03-01 complete · execute Plan 03-02 (Cart Drawer & Server Pricing)"
+    "command": "/gsd-execute-phase 3 --plan 3",
+    "label": "Execute Phase 3 Plan 03",
+    "reason": "Plan 03-02 complete · execute Plan 03-03 (Single-Screen Checkout, Khalti Sandbox & Cash on Delivery)"
   },
-  "updated_at": "2026-10-30T21:55:00.000Z"
+  "updated_at": "2026-10-30T22:00:00.000Z"
 }

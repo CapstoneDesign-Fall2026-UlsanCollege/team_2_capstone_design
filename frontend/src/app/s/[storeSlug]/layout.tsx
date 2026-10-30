@@ -9,6 +9,8 @@ import {
   Inter,
   JetBrains_Mono,
 } from "next/font/google";
+import { CartProvider } from "@/components/storefront/CartContext";
+import { CartDrawer } from "@/components/storefront/CartDrawer";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -61,6 +63,7 @@ interface StorePublicData {
   theme_preset: string;
   logo_url: string | null;
   contact_phone: string;
+  free_shipping_threshold_minor?: number | null;
 }
 
 async function fetchStore(storeSlug: string): Promise<StorePublicData | null> {
@@ -81,6 +84,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicData | null> {
         theme_preset: "editorial-warm",
         logo_url: null,
         contact_phone: "",
+        free_shipping_threshold_minor: null,
       };
     }
     return await res.json();
@@ -93,6 +97,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicData | null> {
       theme_preset: "editorial-warm",
       logo_url: null,
       contact_phone: "",
+      free_shipping_threshold_minor: null,
     };
   }
 }
@@ -145,7 +150,13 @@ export default async function StorefrontLayout({
       data-store-theme={themePreset}
       className={`${fontClasses} min-h-dvh bg-sf-canvas text-sf-ink font-sf-body flex flex-col`}
     >
-      {children}
+      <CartProvider
+        storeSlug={store.slug}
+        freeShippingThresholdMinor={store.free_shipping_threshold_minor}
+      >
+        {children}
+        <CartDrawer />
+      </CartProvider>
     </div>
   );
 }
