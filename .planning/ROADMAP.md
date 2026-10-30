@@ -13,7 +13,7 @@ ShopCraft pivots the single-tenant BrewMellow app into a production-structured m
 - [ ] **Phase 1: Foundation, Auth & Tenant Core** - Single Django/DRF backend, CI/staging pipeline, real session auth, core multi-tenant models, isolation guards, and `seed_brewmellow` (Oct 30 – Nov 5)
 - [ ] **Phase 2: Merchant Onboarding, Console & Catalog** - Self-serve "Create Store" wizard, `/merchant/[storeSlug]` console, products/variants/images, selling plans, branding, and Khalti key config (Nov 6 – Nov 12)
 - [x] **Phase 3: Multi-Tenant Storefront, Checkout & Payments** - Themed `/s/[storeSlug]` storefronts, cart, Nepali addresses, Khalti ePayment v2 sandbox + COD, emails, shopper account, and merchant order management (Nov 13 – Nov 19)
-- [ ] **Phase 4: Subscriptions, SaaS Landing & Production Launch** - Prepaid & pay-per-delivery subscriptions, cycle generator, pause/skip/cancel, ShopCraft `/` landing page, 2nd demo tenant, redirects, and cutover (Nov 20 – Nov 26; Freeze Nov 24)
+- [x] **Phase 4: Subscriptions, SaaS Landing & Production Launch** - Prepaid & pay-per-delivery subscriptions, cycle generator, pause/skip/cancel, ShopCraft `/` landing page, 2nd demo tenant, redirects, and cutover (Nov 20 – Nov 26; Freeze Nov 24)
 
 ## Phase Details
 
@@ -92,7 +92,7 @@ Plans:
 - [x] `04-01-PLAN.md` — Subscription Checkout & Idempotent Recurring Cycle Runner (Wave 1)
 - [x] `04-02-PLAN.md` — Merchant Subscriptions Workspace & Shopper Lifecycle Controls (Wave 2)
 - [x] `04-03-PLAN.md` — Second Demo Store (Himalayan Artisans) & Legacy Next.js Redirects (Wave 3)
-- [ ] `04-04-PLAN.md` — Public SaaS Platform Landing Page & Production Launch Readiness (Wave 4)
+- [x] `04-04-PLAN.md` — Public SaaS Platform Landing Page & Production Launch Readiness (Wave 4)
 
 ## Progress
 
@@ -104,4 +104,4 @@ Phases execute in numeric order: 1 → 2 → 3 → 4
 | 1. Foundation, Auth & Tenant Core | 5/5 | Completed | 2026-10-30 |
 | 2. Merchant Onboarding, Console & Catalog | 4/4 | Completed | 2026-10-30 |
 | 3. Multi-Tenant Storefront, Checkout & Payments | 4/4 | Completed | 2026-10-30 |
-| 4. Subscriptions, SaaS Landing & Production Launch | 3/4 | In Progress | - |
+| 4. Subscriptions, SaaS Landing & Production Launch | 4/4 | Completed | 2026-10-31 |
