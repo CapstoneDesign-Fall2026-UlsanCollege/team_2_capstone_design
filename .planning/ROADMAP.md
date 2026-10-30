@@ -86,7 +86,13 @@ Plans:
   2. Running `manage.py run_subscription_cycles` (or clicking "Run Cycle Now" in the merchant console) idempotently creates `$0` fulfillment orders for prepaid subscriptions and `PENDING_PAYMENT` renewal orders with working "Pay Now" links for pay-per-delivery subscriptions.
   3. Shopper and merchant can pause, resume, skip next cycle, or cancel a subscription from their respective consoles.
   4. `/` showcases ShopCraft with live links to at least two distinct demo stores (`BrewMellow` + Store #2) and "Launch Your Store" CTA, legacy BrewMellow URLs redirect cleanly to `/s/brewmellow/...`, and production cutover + rollback checklist are verified by Nov 24–26.
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] `04-01-PLAN.md` — Subscription Checkout & Idempotent Recurring Cycle Runner (Wave 1)
+- [ ] `04-02-PLAN.md` — Merchant Subscriptions Workspace & Shopper Lifecycle Controls (Wave 2)
+- [ ] `04-03-PLAN.md` — Second Demo Store (Himalayan Artisans) & Legacy Next.js Redirects (Wave 3)
+- [ ] `04-04-PLAN.md` — Public SaaS Platform Landing Page & Production Launch Readiness (Wave 4)
 
 ## Progress
 
