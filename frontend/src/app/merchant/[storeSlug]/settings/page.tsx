@@ -3,7 +3,7 @@
 import React, { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { fetchMerchantSettings, MerchantStoreSettings } from "@/lib/api";
+import { ApiError, fetchMerchantSettings, MerchantStoreSettings } from "@/lib/api";
 import { SettingsForm } from "@/components/merchant/SettingsForm";
 
 interface PageProps {
@@ -31,7 +31,14 @@ export default function MerchantSettingsPage({ params }: PageProps) {
       } catch (err: unknown) {
         if (!mounted) return;
         const msg = err instanceof Error ? err.message : "Failed to load store settings";
-        if (msg.includes("401") || msg.includes("403") || msg.includes("Unauthorized")) {
+        const isAuth =
+          (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
+          msg.includes("401") ||
+          msg.includes("403") ||
+          msg.toLowerCase().includes("unauthorized") ||
+          msg.toLowerCase().includes("credentials");
+
+        if (isAuth) {
           router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/settings`);
           return;
         }

@@ -125,12 +125,28 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
   }
 
-  const res = await fetch(path, {
-    ...init,
-    method,
-    headers,
-    credentials: "include",
-  });
+  let timeoutId: ReturnType<typeof setTimeout> | null = null;
+  let signal = init?.signal;
+  if (!signal && typeof AbortController !== "undefined") {
+    const controller = new AbortController();
+    timeoutId = setTimeout(() => controller.abort(new Error("Request timed out after 8 seconds")), 8000);
+    signal = controller.signal;
+  }
+
+  let res: Response;
+  try {
+    res = await fetch(path, {
+      ...init,
+      method,
+      headers,
+      credentials: "include",
+      signal,
+    });
+  } finally {
+    if (timeoutId) {
+      clearTimeout(timeoutId);
+    }
+  }
 
   const contentType = res.headers.get("content-type");
   const isJson = contentType && contentType.includes("application/json");

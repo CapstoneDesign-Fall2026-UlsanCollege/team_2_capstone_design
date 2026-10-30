@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useEffect, useState, useTransition } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import {
   Calendar,
   CheckCircle2,
@@ -15,6 +15,7 @@ import {
   Users,
 } from "lucide-react";
 import {
+  ApiError,
   fetchMerchantSubscriptions,
   formatNpr,
   MerchantSubscriptionsResponse,
@@ -29,6 +30,7 @@ type StatusTab = "ALL" | "ACTIVE" | "PAUSED" | "COMPLETED" | "CANCELLED";
 export default function MerchantSubscriptionsPage() {
   const params = useParams();
   const storeSlug = String(params?.storeSlug || "");
+  const router = useRouter();
 
   const [data, setData] = useState<MerchantSubscriptionsResponse | null>(null);
   const [loading, setLoading] = useState(true);
@@ -51,7 +53,19 @@ export default function MerchantSubscriptionsPage() {
       });
       setData(res);
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load subscriptions.");
+      const msg = err instanceof Error ? err.message : "Failed to load subscriptions.";
+      const isAuth =
+        (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
+        msg.includes("401") ||
+        msg.includes("403") ||
+        msg.toLowerCase().includes("unauthorized") ||
+        msg.toLowerCase().includes("credentials");
+
+      if (isAuth) {
+        router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/subscriptions`);
+        return;
+      }
+      setError(msg);
     } finally {
       setLoading(false);
     }
