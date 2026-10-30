@@ -24,6 +24,50 @@ const withPWA = withPWAInit({
 const nextConfig: NextConfig = {
   turbopack: {},
   skipTrailingSlashRedirect: true,
+  async redirects() {
+    return [
+      {
+        source: "/origins",
+        destination: "/s/brewmellow",
+        permanent: true,
+      },
+      {
+        source: "/origins/:path*",
+        destination: "/s/brewmellow",
+        permanent: true,
+      },
+      {
+        source: "/subscribe",
+        destination: "/s/brewmellow",
+        permanent: true,
+      },
+      {
+        source: "/checkout",
+        destination: "/s/brewmellow/checkout",
+        permanent: true,
+      },
+      {
+        source: "/dashboard",
+        destination: "/merchant/brewmellow",
+        permanent: true,
+      },
+      {
+        source: "/dashboard/:path*",
+        destination: "/merchant/brewmellow/:path*",
+        permanent: true,
+      },
+      {
+        source: "/admin",
+        destination: "/merchant/brewmellow",
+        permanent: true,
+      },
+      {
+        source: "/admin/:path*",
+        destination: "/merchant/brewmellow/:path*",
+        permanent: true,
+      },
+    ];
+  },
   async rewrites() {
     return {
       beforeFiles: [

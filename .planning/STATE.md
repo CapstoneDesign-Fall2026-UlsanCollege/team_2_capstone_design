@@ -3,17 +3,17 @@ gsd_state_version: "1.0"
 current_phase: 4
 current_phase_name: Subscriptions, SaaS Landing & Production Launch
 status: executing
-stopped_at: Completed Plan 04-02 (Merchant Subscriptions Workspace & Shopper Lifecycle Controls); ready for Plan 04-03 (Second Demo Store & Legacy Next.js Redirects)
-last_updated: "2026-10-31T00:17:00.000Z"
+stopped_at: Completed Plan 04-03 (Second Demo Store & Legacy Next.js Redirects); ready for Plan 04-04 (Public SaaS Platform Landing Page & Production Launch Readiness)
+last_updated: "2026-10-31T00:20:00.000Z"
 last_activity: 2026-10-31
-last_activity_desc: Completed Plan 04-02 (Merchant subscription console, action controller, navigation integration & tests)
-state_head: 7165dc1
+last_activity_desc: Completed Plan 04-03 (Himalayan Artisans seeder, catalog verification, legacy 308 Next.js redirects)
+state_head: 0bed2d7
 progress:
   total_phases: 4
   completed_phases: 3
   total_plans: 17
-  completed_plans: 15
-  percent: 88
+  completed_plans: 16
+  percent: 94
 ---
 
 # Project State
@@ -28,11 +28,11 @@ See: .planning/PROJECT.md (updated 2026-10-29)
 ## Current Position
 
 Phase: 4 (Subscriptions, SaaS Landing & Production Launch) — EXECUTING
-Plan: 2 of 4 (Phase 4)
-Status: Completed Plan 04-02 (Merchant Subscriptions Workspace & Shopper Lifecycle Controls); ready for Plan 04-03 (Second Demo Store & Legacy Next.js Redirects)
-Last activity: 2026-10-31 — Completed Plan 04-02 (Merchant subscription console, action controller & tests)
+Plan: 3 of 4 (Phase 4)
+Status: Completed Plan 04-03 (Second Demo Store & Legacy Next.js Redirects); ready for Plan 04-04 (Public SaaS Platform Landing Page & Production Readiness)
+Last activity: 2026-10-31 — Completed Plan 04-03 (Himalayan Artisans seeder & legacy 308 redirects)
 
-Progress: [█████████░] 88%
+Progress: [█████████░] 94%
 
 ## Performance Metrics
 
