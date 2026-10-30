@@ -236,3 +236,24 @@ export async function deleteDeliveryAddress(id: number) {
 export async function fetchStorePublic(storeSlug: string) {
   return apiFetch<StorePublicMetadata>(`/api/stores/${storeSlug}/`);
 }
+
+export async function checkStoreSlug(slug: string) {
+  return apiFetch<{ available: boolean; slug?: string; reason?: string }>(
+    `/api/stores/check-slug/?slug=${encodeURIComponent(slug)}`
+  );
+}
+
+export interface CreateStorePayload {
+  name: string;
+  slug: string;
+  theme_preset: string;
+  tagline?: string;
+  contact_phone?: string;
+}
+
+export async function createStore(payload: CreateStorePayload) {
+  return apiFetch<StorePublicMetadata>("/api/stores/create/", {
+    method: "POST",
+    body: JSON.stringify(payload),
+  });
+}

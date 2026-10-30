@@ -1,3 +1,4 @@
+from django.db import transaction
 from django.http import Http404
 from django.urls import path
 from rest_framework import permissions, serializers, status
@@ -6,7 +7,14 @@ from rest_framework.views import APIView
 
 from catalog.models import Product, SellingPlan, Variant
 from orders.models import Order, OrderItem
-from stores.models import Customer, Store, StoreMembership, provision_store_customer
+from stores.models import (
+    Customer,
+    Store,
+    StoreMembership,
+    RESERVED_STORE_SLUGS,
+    SLUG_REGEX,
+    provision_store_customer,
+)
 from subscriptions.models import Subscription
 
 
@@ -334,11 +342,88 @@ class ShopperSubscriptionListView(StorePublicMixin, APIView):
         return Response(SubscriptionSerializer(subs, many=True).data)
 
 
+class StoreSlugCheckView(APIView):
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        raw_slug = request.query_params.get("slug", "").strip().lower()
+        if not raw_slug:
+            return Response({"available": False, "reason": "Slug cannot be empty."})
+        if raw_slug in RESERVED_STORE_SLUGS or not SLUG_REGEX.match(raw_slug):
+            return Response({"available": False, "reason": "Invalid or reserved slug."})
+        exists = Store.objects.filter(slug=raw_slug).exists()
+        return Response({"available": not exists, "slug": raw_slug})
+
+
+class StoreCreateView(APIView):
+    permission_classes = [permissions.IsAuthenticated]
+
+    def post(self, request):
+        name = request.data.get("name", "").strip()
+        slug = request.data.get("slug", "").strip().lower()
+        theme_preset = request.data.get("theme_preset", "editorial-warm")
+        tagline = request.data.get("tagline", "").strip()
+        contact_phone = request.data.get("contact_phone", "").strip()
+
+        if not name:
+            return Response({"name": ["Store name is required."]}, status=status.HTTP_400_BAD_REQUEST)
+        if not slug:
+            return Response({"slug": ["Store slug is required."]}, status=status.HTTP_400_BAD_REQUEST)
+        if slug in RESERVED_STORE_SLUGS or not SLUG_REGEX.match(slug):
+            return Response({"slug": ["Invalid or reserved store slug."]}, status=status.HTTP_400_BAD_REQUEST)
+        if Store.objects.filter(slug=slug).exists():
+            return Response({"slug": ["This URL slug is already taken."]}, status=status.HTTP_400_BAD_REQUEST)
+
+        valid_presets = [c[0] for c in Store.THEME_PRESET_CHOICES]
+        if theme_preset not in valid_presets:
+            theme_preset = "editorial-warm"
+
+        with transaction.atomic():
+            store = Store.objects.create(
+                name=name,
+                slug=slug,
+                theme_preset=theme_preset,
+                tagline=tagline,
+                contact_phone=contact_phone,
+            )
+            StoreMembership.objects.create(
+                store=store,
+                user=request.user,
+                role="OWNER",
+            )
+            # Create a starter sample product so the new store immediately has items in its catalog!
+            starter_product = Product.objects.create(
+                store=store,
+                slug="starter-offering",
+                name=f"{name} Signature Offering",
+                description="Our introductory small-batch product, crafted and packaged in Nepal.",
+                allow_one_time=True,
+                allow_subscription=True,
+            )
+            Variant.objects.create(
+                store=store,
+                product=starter_product,
+                sku=f"{slug.upper()[:4]}-001",
+                label="Standard Edition",
+                price_minor=125000,
+                allow_one_time=True,
+                allow_subscription=True,
+                in_stock=True,
+                is_active=True,
+            )
+
+        return Response(StorePublicSerializer(store).data, status=status.HTTP_201_CREATED)
+
+
 # -----------------------------------------------------------------------------
 # URL Patterns
 # -----------------------------------------------------------------------------
 
 urlpatterns = [
+    # Store Creation & Slug Validation
+    path("stores/check-slug/", StoreSlugCheckView.as_view(), name="store_check_slug"),
+    path("stores/create/", StoreCreateView.as_view(), name="store_create"),
+
     # Public Storefront
     path("stores/<slug:store_slug>/", StoreDetailView.as_view(), name="store_public_detail"),
     path("stores/<slug:store_slug>/catalog/", StoreCatalogView.as_view(), name="store_public_catalog"),

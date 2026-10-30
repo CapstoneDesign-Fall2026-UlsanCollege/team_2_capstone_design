@@ -5,7 +5,7 @@ from django.db import models, transaction
 
 RESERVED_STORE_SLUGS = frozenset({
     "admin", "api", "merchant", "s", "login", "signup", "account",
-    "static", "media", "health", "new", "settings", "checkout"
+    "static", "media", "health", "new", "settings", "checkout", "create", "check-slug"
 })
 
 SLUG_REGEX = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
