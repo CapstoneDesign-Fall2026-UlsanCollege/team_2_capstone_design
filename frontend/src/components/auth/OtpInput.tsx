@@ -112,6 +112,8 @@ interface PasswordlessAuthCardProps {
   nextParam?: string | null;
   storeNameParam?: string | null;
   onSuccess?: () => void;
+  title?: string;
+  subtitle?: string;
 }
 
 export function PasswordlessAuthCard({
@@ -119,6 +121,8 @@ export function PasswordlessAuthCard({
   nextParam,
   storeNameParam,
   onSuccess,
+  title,
+  subtitle,
 }: PasswordlessAuthCardProps) {
   const [step, setStep] = useState<"email" | "otp">(initialEmail ? "otp" : "email");
   const [email, setEmail] = useState(initialEmail);
@@ -139,14 +143,14 @@ export function PasswordlessAuthCard({
     return () => clearInterval(timer);
   }, [resendCooldown]);
 
-  const handleAuthSuccess = () => {
+  const handleAuthSuccess = React.useCallback(() => {
     if (onSuccess) {
       onSuccess();
     } else {
       const destination = sanitizeRedirectTarget(nextParam, storeNameParam);
       window.location.href = destination;
     }
-  };
+  }, [onSuccess, nextParam, storeNameParam]);
 
   const handleRequestOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -238,16 +242,18 @@ export function PasswordlessAuthCard({
     };
 
     loadGoogleScript();
-  }, [step, googleClientId]);
+  }, [step, googleClientId, handleAuthSuccess]);
 
   return (
     <div className="w-full max-w-md p-6 sm:p-8 bg-[var(--sc-surface,#FFFFFF)] border border-[var(--sc-line,#E8E8E1)] rounded-xl text-[var(--sc-ink,#111318)]">
       {step === "email" ? (
         <form onSubmit={handleRequestOtp} className="space-y-4">
           <div className="space-y-1">
-            <h2 className="text-xl font-bold tracking-tight">Sign in to ShopCraft</h2>
+            <h2 className="text-xl font-bold tracking-tight">
+              {title || "Sign in to ShopCraft"}
+            </h2>
             <p className="text-sm text-[var(--sc-ink-2,#4B5060)]">
-              Enter your email to receive a 6-digit sign-in code.
+              {subtitle || "Enter your email to receive a 6-digit sign-in code."}
             </p>
           </div>
 
