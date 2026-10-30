@@ -1,4 +1,5 @@
 from django.db import transaction
+from django.db.models import Sum
 from django.http import Http404
 from django.urls import path
 from rest_framework import permissions, serializers, status
@@ -289,14 +290,28 @@ class ShopperOrderDetailView(StorePublicMixin, APIView):
 
 class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
-        products_count = Product.objects.for_store(self.store).count()
-        orders_count = Order.objects.for_store(self.store).count()
+        orders_qs = Order.objects.for_store(self.store)
+        orders_count = orders_qs.count()
+        revenue_agg = orders_qs.filter(payment_status__in=["PAID", "CONFIRMED"]).aggregate(
+            total_rev=Sum("total_minor")
+        )
+        revenue_minor = revenue_agg["total_rev"] or 0
+        products_count = Product.objects.for_store(self.store).filter(is_active=True).count()
         customers_count = Customer.objects.for_store(self.store).count()
+
+        checklist = {
+            "has_products": products_count > 0,
+            "has_shipping": bool(self.store.inside_valley_shipping_minor > 0),
+            "has_khalti": bool(self.store.khalti_secret_key_encrypted),
+        }
+
         return Response({
             "store": StorePublicSerializer(self.store).data,
             "products_count": products_count,
             "orders_count": orders_count,
+            "revenue_minor": revenue_minor,
             "customers_count": customers_count,
+            "checklist": checklist,
         })
 
 

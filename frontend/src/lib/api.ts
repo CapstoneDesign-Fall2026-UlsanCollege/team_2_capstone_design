@@ -257,3 +257,22 @@ export async function createStore(payload: CreateStorePayload) {
     body: JSON.stringify(payload),
   });
 }
+
+export interface MerchantStoreOverview {
+  store: StorePublicMetadata;
+  products_count: number;
+  orders_count: number;
+  revenue_minor: number;
+  customers_count: number;
+  checklist: {
+    has_products: boolean;
+    has_shipping: boolean;
+    has_khalti: boolean;
+  };
+}
+
+export async function fetchMerchantStoreOverview(storeSlug: string) {
+  return apiFetch<MerchantStoreOverview>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/overview/`
+  );
+}
