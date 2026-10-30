@@ -1,7 +1,7 @@
 from django.contrib import admin
 from django.db import connection
 from django.http import Http404, JsonResponse
-from django.urls import path
+from django.urls import path, include
 from stores.models import Store
 
 
@@ -46,5 +46,6 @@ def store_public_detail_view(request, store_slug: str):
 urlpatterns = [
     path("admin/", admin.site.urls),
     path("api/health/", health_view, name="health_check"),
+    path("api/auth/", include("accounts.api")),
     path("api/stores/<slug:store_slug>/", store_public_detail_view, name="store_public_detail"),
 ]
