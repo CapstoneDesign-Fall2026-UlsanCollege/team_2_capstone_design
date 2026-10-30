@@ -315,3 +315,94 @@ export async function updateMerchantSettings(
     }
   );
 }
+
+export interface ProductVariant {
+  id: number;
+  sku: string;
+  label: string;
+  weight_grams: number | null;
+  price_minor: number;
+  allow_one_time: boolean;
+  allow_subscription: boolean;
+  in_stock: boolean;
+  is_active: boolean;
+  sort_order: number;
+}
+
+export interface ProductItem {
+  id: number;
+  slug: string;
+  name: string;
+  description: string;
+  image_url: string;
+  attributes: Record<string, string>;
+  allow_one_time: boolean;
+  allow_subscription: boolean;
+  is_active: boolean;
+  sort_order: number;
+  variants: ProductVariant[];
+}
+
+export interface ProductPayload {
+  name: string;
+  slug?: string;
+  description?: string;
+  image_url?: string;
+  attributes?: Record<string, string>;
+  allow_one_time?: boolean;
+  allow_subscription?: boolean;
+  is_active?: boolean;
+  sort_order?: number;
+  initial_price_minor?: number;
+  initial_variant_label?: string;
+}
+
+export async function fetchMerchantProducts(storeSlug: string) {
+  return apiFetch<ProductItem[]>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/`
+  );
+}
+
+export async function fetchMerchantProduct(storeSlug: string, productId: number) {
+  return apiFetch<ProductItem>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/${productId}/`
+  );
+}
+
+export async function createMerchantProduct(storeSlug: string, payload: ProductPayload) {
+  return apiFetch<ProductItem>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/`,
+    {
+      method: "POST",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function updateMerchantProduct(
+  storeSlug: string,
+  productId: number,
+  payload: Partial<ProductPayload>
+) {
+  return apiFetch<ProductItem>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/${productId}/`,
+    {
+      method: "PATCH",
+      body: JSON.stringify(payload),
+    }
+  );
+}
+
+export async function deleteMerchantProduct(
+  storeSlug: string,
+  productId: number,
+  permanent: boolean = false
+) {
+  const query = permanent ? "?permanent=true" : "";
+  return apiFetch<{ detail: string; id?: number; is_active?: boolean }>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/${productId}/${query}`,
+    {
+      method: "DELETE",
+    }
+  );
+}

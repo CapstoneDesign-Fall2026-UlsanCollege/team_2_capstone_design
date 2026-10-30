@@ -233,3 +233,45 @@ class TenantIsolationTests(APITestCase):
             format="json",
         )
         self.assertEqual(cross_b.status_code, status.HTTP_404_NOT_FOUND)
+
+    def test_merchant_product_crud_and_cross_tenant_isolation(self):
+        # Owner A creates product on Store A
+        self.client.force_login(self.owner_a)
+        create_res = self.client.post(
+            "/api/merchant/stores/brewmellow/products/",
+            {
+                "name": "Winter Solstice Blend",
+                "description": "Seasonal dark roast with notes of molasses and spice.",
+                "initial_price_minor": 145000,
+            },
+            format="json",
+        )
+        self.assertEqual(create_res.status_code, status.HTTP_201_CREATED)
+        new_prod_id = create_res.data["id"]
+        self.assertEqual(create_res.data["slug"], "winter-solstice-blend")
+        self.assertEqual(len(create_res.data["variants"]), 1)
+        self.assertEqual(create_res.data["variants"][0]["price_minor"], 145000)
+
+        # Owner A patches product
+        patch_res = self.client.patch(
+            f"/api/merchant/stores/brewmellow/products/{new_prod_id}/",
+            {"name": "Winter Solstice Blend 2026"},
+            format="json",
+        )
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(patch_res.data["name"], "Winter Solstice Blend 2026")
+
+        # Owner A accessing Store B's product -> 404
+        cross_res = self.client.get(f"/api/merchant/stores/pahadi-honey/products/{new_prod_id}/")
+        self.assertEqual(cross_res.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Owner B accessing Store A's product -> 404
+        self.client.force_login(self.owner_b)
+        cross_b = self.client.delete(f"/api/merchant/stores/brewmellow/products/{new_prod_id}/")
+        self.assertEqual(cross_b.status_code, status.HTTP_404_NOT_FOUND)
+
+        # Owner A archiving product
+        self.client.force_login(self.owner_a)
+        del_res = self.client.delete(f"/api/merchant/stores/brewmellow/products/{new_prod_id}/")
+        self.assertEqual(del_res.status_code, status.HTTP_200_OK)
+        self.assertFalse(del_res.data["is_active"])

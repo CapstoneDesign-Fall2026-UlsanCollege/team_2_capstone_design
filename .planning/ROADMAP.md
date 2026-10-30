@@ -53,7 +53,7 @@ Plans:
 Plans:
 - [x] `02-01-PLAN.md` — Console Shell, Navigation, ⌘K Palette & Merchant Overview Dashboard (Wave 1)
 - [x] `02-02-PLAN.md` — Store Branding, Delivery Rates & Encrypted Khalti Credentials (Wave 2)
-- [ ] `02-03-PLAN.md` — Product Catalog Management & Cloudinary Photo Uploads (Wave 3)
+- [x] `02-03-PLAN.md` — Product Catalog Management & Cloudinary Photo Uploads (Wave 3)
 - [ ] `02-04-PLAN.md` — Spreadsheet-Style Variant Editor, Integer Paisa & Selling Plans (Wave 4)
 
 ### Phase 3: Multi-Tenant Storefront, Checkout & Payments

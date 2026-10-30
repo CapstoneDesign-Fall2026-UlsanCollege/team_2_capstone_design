@@ -400,10 +400,68 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
         return Response(ProductSerializer(products, many=True).data)
 
     def post(self, request, store_slug):
-        serializer = ProductSerializer(data=request.data)
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        if "slug" not in data or not data["slug"]:
+            from django.utils.text import slugify
+            name = data.get("name", "")
+            base_slug = slugify(name) or "item"
+            candidate = base_slug
+            idx = 1
+            while Product.objects.for_store(self.store).filter(slug=candidate).exists():
+                candidate = f"{base_slug}-{idx}"
+                idx += 1
+            data["slug"] = candidate
+
+        serializer = ProductSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         product = serializer.save(store=self.store)
+
+        if "initial_price_minor" in data:
+            try:
+                price_minor = int(data["initial_price_minor"])
+                Variant.objects.create(
+                    store=self.store,
+                    product=product,
+                    sku=f"{self.store.slug.upper()[:4]}-{product.id}-01",
+                    label=data.get("initial_variant_label", "Standard"),
+                    price_minor=price_minor,
+                    allow_one_time=product.allow_one_time,
+                    allow_subscription=product.allow_subscription,
+                    in_stock=True,
+                    is_active=True,
+                )
+            except (ValueError, TypeError):
+                pass
+
         return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
+
+
+class MerchantProductDetailView(StoreMerchantMixin, APIView):
+    def get_product(self, product_id):
+        product = Product.objects.for_store(self.store).filter(id=product_id).first()
+        if not product:
+            raise Http404("Product not found.")
+        return product
+
+    def get(self, request, store_slug, product_id):
+        product = self.get_product(product_id)
+        return Response(ProductSerializer(product).data)
+
+    def patch(self, request, store_slug, product_id):
+        product = self.get_product(product_id)
+        serializer = ProductSerializer(product, data=request.data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        serializer.save()
+        return Response(ProductSerializer(product).data)
+
+    def delete(self, request, store_slug, product_id):
+        product = self.get_product(product_id)
+        if request.query_params.get("permanent") == "true":
+            product.delete()
+            return Response(status=status.HTTP_204_NO_CONTENT)
+        product.is_active = False
+        product.save(update_fields=["is_active"])
+        return Response({"detail": "Product archived.", "id": product.id, "is_active": False})
 
 
 class MerchantOrderListView(StoreMerchantMixin, APIView):
@@ -530,6 +588,7 @@ urlpatterns = [
     path("merchant/stores/<slug:store_slug>/overview/", MerchantStoreOverviewView.as_view(), name="merchant_store_overview"),
     path("merchant/stores/<slug:store_slug>/settings/", MerchantStoreSettingsView.as_view(), name="merchant_store_settings"),
     path("merchant/stores/<slug:store_slug>/products/", MerchantProductListCreateView.as_view(), name="merchant_product_list_create"),
+    path("merchant/stores/<slug:store_slug>/products/<int:product_id>/", MerchantProductDetailView.as_view(), name="merchant_product_detail"),
     path("merchant/stores/<slug:store_slug>/orders/", MerchantOrderListView.as_view(), name="merchant_order_list"),
     path("merchant/stores/<slug:store_slug>/customers/", MerchantCustomerListView.as_view(), name="merchant_customer_list"),
     path("merchant/stores/<slug:store_slug>/subscriptions/", MerchantSubscriptionListView.as_view(), name="merchant_subscription_list"),
