@@ -1,31 +1,128 @@
 @import "tailwindcss";
 
-@theme {
-  --font-sans: var(--font-jakarta), system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-serif: var(--font-fraunces), Georgia, serif;
-  --font-mono: var(--font-mono), ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
-
-  --color-coffee-dark: #1A1512;
-  --color-coffee-body: #2C2420;
-  --color-coffee-medium: #5C5042;
-  --color-coffee-muted: #5C5042; /* WCAG AA 6.3:1 contrast against #F5F2EB */
-  --color-coffee-rust: #A3432A;
-  --color-coffee-rust-hover: #8A3722;
-  --color-cream-bg: #F5F2EB;
-  --color-cream-card: #FAF8F5;
-  --color-cream-border: #E6DEC8;
-  --color-cream-divider: #F0EAE1;
-  --color-accent-amber: #B76E00; /* WCAG AA compliant on light backgrounds */
-  --color-status-green: #2E6B34;
-  --color-status-green-bg: #E7F3E8;
-}
-
+/* --------------------------------------------------------------------------
+ * Surface 1: Platform Root Tokens (DESIGN.md §2)
+ * -------------------------------------------------------------------------- */
 :root {
-  --background: #F5F2EB;
-  --foreground: #2C2420;
+  --sc-paper: #FAFAF7;
+  --sc-surface: #FFFFFF;
+  --sc-ink: #111318;
+  --sc-ink-2: #4B5060;
+  --sc-ink-3: #8B90A0; /* ink-3 hints only */
+  --sc-line: #E8E8E1;
+  --sc-marigold: #F2A900;
+  --sc-marigold-soft: #FFF4D6;
+  --sc-success: #15803D;
+  --sc-danger: #B42318;
 }
 
-/* PWA Standalone & Mobile Viewport Ergonomics */
+/* --------------------------------------------------------------------------
+ * Surface 2: Console Tokens (.console neutral zinc, DESIGN.md §2)
+ * -------------------------------------------------------------------------- */
+.console {
+  --background: #FAFAFA;
+  --foreground: #18181B;
+  --card: #FFFFFF;
+  --card-foreground: #18181B;
+  --popover: #FFFFFF;
+  --popover-foreground: #18181B;
+  --primary: #18181B;
+  --primary-foreground: #FAFAFA;
+  --secondary: #F4F4F5;
+  --secondary-foreground: #27272A;
+  --muted: #F4F4F5;
+  --muted-foreground: #71717A;
+  --accent: #F4F4F5;
+  --accent-foreground: #18181B;
+  --border: #E4E4E7;
+  --input: #E4E4E7;
+  --ring: #2563EB;
+  --destructive: #DC2626;
+  --radius: 0.375rem;
+  --st-new: #2563EB;
+  --st-packed: #D97706;
+  --st-shipped: #7C3AED;
+  --st-delivered: #16A34A;
+  --st-cancelled: #71717A;
+}
+
+.console.dark {
+  --background: #09090B;
+  --foreground: #FAFAFA;
+  --card: #111113;
+  --primary: #FAFAFA;
+  --primary-foreground: #18181B;
+  --muted: #18181B;
+  --muted-foreground: #A1A1AA;
+  --border: #27272A;
+}
+
+/* --------------------------------------------------------------------------
+ * Surface 3: Storefront Tokens & Presets (DESIGN.md §2)
+ * -------------------------------------------------------------------------- */
+@theme inline {
+  --color-sf-canvas: var(--sf-canvas);
+  --color-sf-surface: var(--sf-surface);
+  --color-sf-ink: var(--sf-ink);
+  --color-sf-muted: var(--sf-muted);
+  --color-sf-line: var(--sf-line);
+  --color-sf-cta: var(--sf-cta);
+  --color-sf-cta-ink: var(--sf-cta-ink);
+  --color-sf-accent: var(--sf-accent);
+  --radius-sf: var(--sf-radius);
+  --font-sf-display: var(--sf-display);
+  --font-sf-body: var(--sf-body);
+  --font-sf-mono: var(--sf-mono);
+}
+
+[data-store-theme="editorial-warm"] { /* BrewMellow */
+  --sf-canvas: #F5F2EB;
+  --sf-surface: #FBF9F4;
+  --sf-ink: #1A1512;
+  --sf-muted: #6B6259;
+  --sf-line: #E3DCCF;
+  --sf-cta: #A3432A;
+  --sf-cta-ink: #FFFFFF;
+  --sf-accent: #C99A4B;
+  --sf-radius: 14px;
+  --sf-display: var(--font-fraunces), "Fraunces", "Noto Serif Devanagari", serif;
+  --sf-body: var(--font-plus-jakarta), "Plus Jakarta Sans", "Noto Sans Devanagari", sans-serif;
+  --sf-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+}
+
+[data-store-theme="pahadi-sage"] { /* herbal, skincare, honey */
+  --sf-canvas: #F3F7F4;
+  --sf-surface: #FFFFFF;
+  --sf-ink: #10241B;
+  --sf-muted: #5B6F64;
+  --sf-line: #D9E5DD;
+  --sf-cta: #1F6F4A;
+  --sf-cta-ink: #FFFFFF;
+  --sf-accent: #E9C46A;
+  --sf-radius: 22px;
+  --sf-display: var(--font-young-serif), "Young Serif", "Noto Serif Devanagari", serif;
+  --sf-body: var(--font-manrope), "Manrope", "Noto Sans Devanagari", sans-serif;
+  --sf-mono: var(--font-jetbrains-mono), "DM Mono", monospace;
+}
+
+[data-store-theme="ktm-bold"] { /* streetwear, accessories, electronics */
+  --sf-canvas: #F4F4F0;
+  --sf-surface: #FFFFFF;
+  --sf-ink: #0B0B0B;
+  --sf-muted: #5E5E5A;
+  --sf-line: #0B0B0B;
+  --sf-cta: #2B3BFF;
+  --sf-cta-ink: #FFFFFF;
+  --sf-accent: #D7FF3A;
+  --sf-radius: 4px;
+  --sf-display: var(--font-space-grotesk), "Space Grotesk", "Noto Sans Devanagari", sans-serif;
+  --sf-body: var(--font-inter), "Inter", "Noto Sans Devanagari", sans-serif;
+  --sf-mono: var(--font-jetbrains-mono), "Space Mono", monospace;
+}
+
+/* --------------------------------------------------------------------------
+ * Mobile Viewport & Ergonomics Utilities
+ * -------------------------------------------------------------------------- */
 html,
 body {
   overscroll-behavior-y: none;
@@ -33,23 +130,24 @@ body {
 }
 
 body {
-  background-color: var(--background);
-  color: var(--foreground);
-  font-family: var(--font-sans);
+  background-color: var(--sc-paper);
+  color: var(--sc-ink);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* iOS Safe Area Utilities for Standalone PWA */
+.tabular-nums {
+  font-variant-numeric: tabular-nums;
+}
+
+.min-h-dvh {
+  min-height: 100dvh;
+}
+
 .pb-safe {
   padding-bottom: env(safe-area-inset-bottom, 0px);
 }
+
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
-}
-.pl-safe {
-  padding-left: env(safe-area-inset-left, 0px);
-}
-.pr-safe {
-  padding-right: env(safe-area-inset-right, 0px);
 }

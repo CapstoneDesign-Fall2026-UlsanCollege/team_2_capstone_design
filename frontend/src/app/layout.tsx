@@ -1,46 +1,28 @@
 import type { Metadata, Viewport } from "next";
-import { Fraunces, Plus_Jakarta_Sans, JetBrains_Mono } from "next/font/google";
+import { Noto_Sans_Devanagari } from "next/font/google";
 import "./globals.css";
-import PwaInstallBanner from "@/components/PwaInstallBanner";
-import Navbar from "@/components/Navbar";
-import Footer from "@/components/Footer";
-import MobileNav from "@/components/MobileNav";
 
-// 1. Boutique Typography System (Editorial Serif + Contemporary Clean Sans + Technical Monospace)
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
+const notoSansDevanagari = Noto_Sans_Devanagari({
+  subsets: ["devanagari"],
+  variable: "--font-devanagari",
   display: "swap",
-  axes: ["SOFT", "WONK", "opsz"],
+  preload: false,
 });
 
-const plusJakartaSans = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-jakarta",
-  display: "swap",
-});
-
-const jetbrainsMono = JetBrains_Mono({
-  subsets: ["latin"],
-  variable: "--font-mono",
-  display: "swap",
-});
-
-// 2. Viewport & PWA Mobile Edge-to-Edge Configuration
 export const viewport: Viewport = {
-  themeColor: "#1A1512",
+  themeColor: "#111318",
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",
 };
 
 export const metadata: Metadata = {
-  title: "BrewMellow | Boutique Himalayan Coffee",
-  description: "Direct-trade, high-altitude micro-lots from Nepal roasted to order and delivered on recurring cycles.",
+  title: "ShopCraft | Multi-Tenant E-Commerce & Subscription SaaS for Nepal",
+  description: "Launch your independent Nepali online store with Khalti, Cash on Delivery, and subscription deliveries.",
   appleWebApp: {
     capable: true,
-    statusBarStyle: "black-translucent",
-    title: "BrewMellow",
+    statusBarStyle: "default",
+    title: "ShopCraft",
   },
 };
 
@@ -50,30 +32,12 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      className={`${fraunces.variable} ${plusJakartaSans.variable} ${jetbrainsMono.variable}`}
-    >
+    <html lang="en" className={notoSansDevanagari.variable}>
       <body
         suppressHydrationWarning
-        className="antialiased bg-[#F5F2EB] text-[#2C2420] min-h-screen flex flex-col font-sans"
+        className="min-h-dvh antialiased bg-[var(--sc-paper)] text-[var(--sc-ink)]"
       >
-        {/* GLOBAL NAVBAR */}
-        <Navbar />
-
-        {/* MAIN CONTENT AREA */}
-        <main className="flex-1 w-full">
-          {children}
-        </main>
-
-        {/* DYNAMIC CONTEXTUAL FOOTER */}
-        <Footer />
-
-        {/* Mobile Bottom Navigation Dock (PWA Native Feel with 48px Touch Targets & Safe-Area Clearance) */}
-        <MobileNav />
-
-        {/* PWA Smart Install Banner (Non-colliding top notification & native iOS modal) */}
-        <PwaInstallBanner />
+        {children}
       </body>
     </html>
   );
