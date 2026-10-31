@@ -10,6 +10,7 @@ import {
   Check,
   CreditCard,
   ExternalLink,
+  HelpCircle,
   MapPin,
   Package,
   Phone,
@@ -18,6 +19,7 @@ import {
   ShieldCheck,
   Smartphone,
   Sparkles,
+  Truck,
   X,
   Zap,
 } from "lucide-react";
@@ -70,40 +72,39 @@ export default function PlatformHomePage() {
   return (
     <div className="w-full bg-[var(--sc-paper,#FAFAF7)] text-[var(--sc-ink,#111318)] min-h-dvh">
       {/* --------------------------------------------------------------------- */}
-      {/* 1. HERO SECTION: Grounded, Comparison-Driven Headline                 */}
+      {/* 1. HERO SECTION: Bold, Warm, High-Converting Hero (Pasalify + ShopCraft) */}
       {/* --------------------------------------------------------------------- */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-12 sm:pt-20 pb-16 sm:pb-24">
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-12 lg:gap-8 items-center">
-          {/* Left Column (Hero Copy & Interactive Name Claim) */}
-          <div className="lg:col-span-7 space-y-6 sm:space-y-8">
+      <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-16 sm:pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
+          {/* Left Column (Hero Copy & Interactive Store Claim Form) */}
+          <div className="lg:col-span-6 space-y-6 sm:space-y-7">
+            {/* National Badge */}
             <div
               suppressHydrationWarning
-              className="inline-flex items-center gap-2 px-3.5 py-1 rounded-full border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-xs text-[var(--sc-ink-2,#4B5060)] shadow-2xs"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-900/10 bg-[#0F2D1F] text-xs text-white shadow-2xs"
             >
-              <span
-                className="w-2 h-2 rounded-full bg-[var(--sc-marigold,#F2A900)] inline-block animate-pulse"
-                aria-hidden="true"
-              />
-              <span suppressHydrationWarning className="font-medium">
-                NEPAL-FIRST COMMERCE OS · ZERO USD DOLLAR CARD REQUIRED
+              <span className="text-sm">🇳🇵</span>
+              <span suppressHydrationWarning className="font-semibold tracking-wide text-[11px] uppercase">
+                Built for Nepal&apos;s Merchants &amp; Creators
               </span>
             </div>
 
+            {/* Clean Bold Headline */}
             <div className="space-y-3">
-              <h1 className="text-3xl sm:text-5xl lg:text-[50px] font-extrabold tracking-tight leading-[1.12] text-[var(--sc-ink,#111318)]">
-                Why pay $39/mo for Shopify when it doesn&apos;t even know what a Ward is?
+              <h1 className="text-3xl sm:text-5xl lg:text-[52px] font-extrabold tracking-tight leading-[1.12] text-[var(--sc-ink,#111318)]">
+                Launch your online store in Nepal. <span className="text-[#C2410C]">For Free.</span>
               </h1>
               <p className="text-base sm:text-lg text-[var(--sc-ink-2,#4B5060)] max-w-xl leading-relaxed">
-                Launch your independent online store in 2 minutes. Native Khalti sandbox payments, Cash on Delivery with collection guards, Province-to-Ward cascading checkout, and recurring subscriptions built for Nepal&apos;s zero auto-debit banking.
+                The easiest multi-tenant e-commerce &amp; subscription platform. Pre-integrated with Khalti Sandbox, Cash on Delivery, and native Ward 1–35 delivery routing. No coding or USD Dollar Card required.
               </p>
             </div>
 
             {/* Interactive Hero Input: Claim Your Store Name */}
-            <form onSubmit={handleStartFree} className="space-y-4 max-w-lg">
+            <form onSubmit={handleStartFree} className="space-y-3.5 max-w-lg">
               <div className="space-y-1.5">
                 <label
                   htmlFor="hero-store-name"
-                  className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-medium"
+                  className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-semibold"
                 >
                   Enter your store name
                 </label>
@@ -114,23 +115,22 @@ export default function PlatformHomePage() {
                     required
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
-                    placeholder="e.g. Pahadi Honey, Pokhara Crafts..."
-                    className="flex-1 h-12 px-4 rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-sm font-medium text-[var(--sc-ink,#111318)] focus:outline-hidden focus:border-[var(--sc-marigold,#F2A900)] focus:ring-1 focus:ring-[var(--sc-marigold,#F2A900)] transition-colors"
+                    placeholder="e.g. Pahadi Goods, Mustang Honey..."
+                    className="flex-1 h-12 px-4 rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-white text-sm font-medium text-[var(--sc-ink,#111318)] focus:outline-hidden focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C] transition-colors shadow-2xs"
                   />
                   <button
                     type="submit"
-                    className="h-12 px-6 rounded-lg bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] font-semibold text-sm hover:opacity-90 active:scale-[0.99] transition-all cursor-pointer whitespace-nowrap shadow-xs flex items-center justify-center gap-1.5"
+                    className="h-12 px-6 rounded-xl bg-[#C2410C] hover:bg-[#EA580C] text-white font-semibold text-sm active:scale-[0.99] transition-all cursor-pointer whitespace-nowrap shadow-xs flex items-center justify-center gap-1.5"
                   >
-                    <span>Launch Free Store</span>
-                    <ArrowRight className="w-4 h-4" />
+                    <span>Start Free Store →</span>
                   </button>
                 </div>
               </div>
 
-              {/* Live URL Ghost */}
-              <div className="flex items-center gap-1.5 text-xs text-[var(--sc-ink-2,#4B5060)] font-mono pt-1">
-                <span className="text-[var(--sc-ink-3,#8B90A0)]">Live Storefront:</span>
-                <span className="text-[var(--sc-ink,#111318)] font-semibold relative">
+              {/* Live URL Ghost Indicator */}
+              <div className="flex items-center gap-1.5 text-xs text-[var(--sc-ink-2,#4B5060)] font-mono pt-0.5">
+                <span className="text-zinc-500">Live URL:</span>
+                <span className="text-zinc-900 font-semibold relative">
                   shopcraft.com.np/s/{slug}
                 </span>
                 {slugStatus === "checking" ? (
@@ -138,48 +138,134 @@ export default function PlatformHomePage() {
                     checking...
                   </span>
                 ) : slugStatus === "available" ? (
-                  <span className="text-[var(--sc-success,#15803D)] text-[11px] font-sans font-medium ml-2">
+                  <span className="text-emerald-700 text-[11px] font-sans font-bold ml-2">
                     ✓ available
                   </span>
                 ) : (
-                  <span className="text-red-600 text-[11px] font-sans font-medium ml-2">
+                  <span className="text-red-600 text-[11px] font-sans font-bold ml-2">
                     ✕ taken
                   </span>
                 )}
               </div>
             </form>
 
-            {/* Quick Proof Badges */}
-            <div className="pt-2 flex flex-wrap items-center gap-4 sm:gap-6 text-xs text-[var(--sc-ink-2,#4B5060)]">
-              <span className="flex items-center gap-1.5 font-medium">
-                <span className="text-red-500 font-bold">✕</span> No $39/mo USD card fees
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <Check className="w-4 h-4 text-[var(--sc-success,#15803D)] stroke-[3]" /> Day-one Khalti &amp; COD
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <Check className="w-4 h-4 text-[var(--sc-success,#15803D)] stroke-[3]" /> 7 Provinces &amp; Ward checkout
-              </span>
-              <span className="flex items-center gap-1.5 font-medium">
-                <Check className="w-4 h-4 text-[var(--sc-success,#15803D)] stroke-[3]" /> 0.8s mobile speed on 4G
-              </span>
-            </div>
+            {/* Trust Subtext */}
+            <p className="text-xs text-[var(--sc-ink-2,#4B5060)] pt-1">
+              No credit card required. Free .com.np setup. 2-minute instant launch.
+            </p>
           </div>
 
-          {/* Right Column: Interactive Phone Simulator */}
-          <div className="lg:col-span-5 flex justify-center">
+          {/* Right Column: Dual Device Mockup (Desktop Dashboard + Mobile Storefront) */}
+          <div className="lg:col-span-6 flex justify-center">
             <HeroStorePreview />
           </div>
         </div>
       </section>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 2. THE DIRECT SHOPIFY & INSTAGRAM COMPARISON MATRIX                   */}
+      {/* 2. LOCAL PAYMENTS & LOGISTICS TRUST BANNER (Pasalify-Style)          */}
       {/* --------------------------------------------------------------------- */}
-      <section className="border-t border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] py-16 sm:py-24">
+      <section className="border-y border-[var(--sc-line,#E8E8E1)] bg-white py-12 px-4 sm:px-6">
+        <div className="max-w-4xl mx-auto text-center space-y-6">
+          <p className="text-xs sm:text-sm font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-medium">
+            Supported by Nepal&apos;s most popular local payments and delivery options:
+          </p>
+
+          <div className="flex flex-wrap items-center justify-center gap-4 sm:gap-8">
+            {/* Khalti Badge */}
+            <div className="px-5 py-2.5 rounded-xl border border-purple-200 bg-purple-50/60 flex items-center gap-2.5 shadow-2xs">
+              <span className="w-6 h-6 rounded-md bg-[#5C2D91] text-white font-extrabold text-xs flex items-center justify-center">
+                K
+              </span>
+              <span className="font-extrabold text-sm text-[#5C2D91]">khalti</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-purple-200/60 text-purple-900 font-bold">
+                SANDBOX
+              </span>
+            </div>
+
+            {/* Cash on Delivery Badge */}
+            <div className="px-5 py-2.5 rounded-xl border border-emerald-200 bg-emerald-50/60 flex items-center gap-2.5 shadow-2xs">
+              <span className="w-6 h-6 rounded-md bg-emerald-700 text-white font-extrabold text-[11px] flex items-center justify-center">
+                COD
+              </span>
+              <span className="font-extrabold text-sm text-emerald-800">Cash on Delivery</span>
+              <span className="text-[10px] font-mono px-1.5 py-0.2 rounded bg-emerald-200/60 text-emerald-900 font-bold">
+                VERIFIED
+              </span>
+            </div>
+
+            {/* Nepali Geography Badge */}
+            <div className="px-5 py-2.5 rounded-xl border border-zinc-200 bg-zinc-50 flex items-center gap-2 shadow-2xs">
+              <span className="text-base">🛵</span>
+              <span className="font-bold text-xs text-zinc-800">Valley &amp; Nationwide Riders</span>
+            </div>
+          </div>
+
+          <div className="pt-2">
+            <Link
+              href="/merchant/new"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C2410C] hover:bg-[#EA580C] text-white font-semibold text-xs shadow-xs transition-colors"
+            >
+              <span>Create Your Store — Free Forever during Beta</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------------------- */}
+      {/* 3. THREE CORE PILLARS (Clean, Grounded)                               */}
+      {/* --------------------------------------------------------------------- */}
+      <section id="features" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Pillar 1: Payments */}
+          <div className="p-6 rounded-2xl border border-[var(--sc-line,#E8E8E1)] bg-white space-y-3 shadow-2xs hover:shadow-sm transition-shadow">
+            <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
+              <CreditCard className="w-5 h-5" />
+            </div>
+            <h3 className="font-extrabold text-base text-[var(--sc-ink,#111318)]">
+              Integrated Local Payments
+            </h3>
+            <p className="text-xs sm:text-sm text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
+              Instantly accept Khalti web wallet returns with verified pidx callbacks and tactile Cash on Delivery with ward-level dispatch receipts. Zero USD cards required.
+            </p>
+          </div>
+
+          {/* Pillar 2: Delivery & Wards */}
+          <div className="p-6 rounded-2xl border border-[var(--sc-line,#E8E8E1)] bg-white space-y-3 shadow-2xs hover:shadow-sm transition-shadow">
+            <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
+              <MapPin className="w-5 h-5" />
+            </div>
+            <h3 className="font-extrabold text-base text-[var(--sc-ink,#111318)]">
+              Local Delivery Routing
+            </h3>
+            <p className="text-xs sm:text-sm text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
+              Native cascading Province (1–7), 77 Districts, Municipalities, and Wards 1–35. Automated Kathmandu Valley vs Outside Valley rates without generic zip code errors.
+            </p>
+          </div>
+
+          {/* Pillar 3: Subscriptions */}
+          <div className="p-6 rounded-2xl border border-[var(--sc-line,#E8E8E1)] bg-white space-y-3 shadow-2xs hover:shadow-sm transition-shadow">
+            <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
+              <Repeat className="w-5 h-5" />
+            </div>
+            <h3 className="font-extrabold text-base text-[var(--sc-ink,#111318)]">
+              Himalayan Recurring Subscriptions
+            </h3>
+            <p className="text-xs sm:text-sm text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
+              Sell coffee, tea, honey, and skincare on prepaid 3, 6, or 12 delivery commitments. Automated engine generates $0 fulfillment orders with 1-tap WhatsApp renewal links.
+            </p>
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------------------- */}
+      {/* 4. THE DIRECT SHOPIFY & INSTAGRAM COMPARISON MATRIX                   */}
+      {/* --------------------------------------------------------------------- */}
+      <section id="comparison" className="border-t border-[var(--sc-line,#E8E8E1)] bg-white py-16 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-3">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--sc-marigold,#F2A900)]">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#C2410C]">
               THE HONEST BREAKDOWN
             </span>
             <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[var(--sc-ink,#111318)]">
@@ -195,7 +281,7 @@ export default function PlatformHomePage() {
       </section>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 3. THE TWO CHECKOUTS: VISUAL WALKTHROUGH                              */}
+      {/* 5. THE TWO CHECKOUTS: VISUAL SIDE-BY-SIDE WALKTHROUGH                 */}
       {/* --------------------------------------------------------------------- */}
       <section className="border-t border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-paper,#FAFAF7)] py-16 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
@@ -207,7 +293,7 @@ export default function PlatformHomePage() {
               The Two Checkouts: Why 50%+ of Nepali Shoppers Drop Off
             </h2>
             <p className="text-sm text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
-              Compare the customer checkout experience when someone taps your link from an Instagram ad.
+              Compare what happens when a customer taps your link from Instagram or TikTok.
             </p>
           </div>
 
@@ -336,82 +422,12 @@ export default function PlatformHomePage() {
       </section>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 4. CORE ARCHITECTURAL PILLARS                                         */}
+      {/* 6. MULTI-TENANT DEMO SHOWCASE                                        */}
       {/* --------------------------------------------------------------------- */}
-      <section className="border-t border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] py-16 sm:py-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
-          <div className="text-center max-w-2xl mx-auto space-y-3">
-            <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--sc-ink,#111318)]">
-              Engineered for how Nepal shops and ships.
-            </h2>
-            <p className="text-sm text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
-              Every detail is calibrated for local courier riders, mobile networks, and domestic banking realities.
-            </p>
-          </div>
-
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
-            {/* Pillar 1: Nepali Addresses */}
-            <div className="rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-paper,#FAFAF7)] p-5 space-y-3">
-              <div className="w-9 h-9 rounded-lg bg-emerald-100 text-emerald-700 flex items-center justify-center">
-                <MapPin className="w-4.5 h-4.5" />
-              </div>
-              <h3 className="font-bold text-sm text-[var(--sc-ink,#111318)]">
-                Nepali Address Engine
-              </h3>
-              <p className="text-xs text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
-                Cascading Province, District, Municipality, and Ward selectors. Validates 10-digit 98/97 mobile numbers so riders never get lost.
-              </p>
-            </div>
-
-            {/* Pillar 2: Dual Payments */}
-            <div className="rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-paper,#FAFAF7)] p-5 space-y-3">
-              <div className="w-9 h-9 rounded-lg bg-purple-100 text-purple-700 flex items-center justify-center">
-                <CreditCard className="w-4.5 h-4.5" />
-              </div>
-              <h3 className="font-bold text-sm text-[var(--sc-ink,#111318)]">
-                Khalti &amp; COD Built-In
-              </h3>
-              <p className="text-xs text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
-                Accept digital payments via Khalti Sandbox or tactile Cash on Delivery. Server verifies payments with instant pidx idempotency.
-              </p>
-            </div>
-
-            {/* Pillar 3: Subscriptions */}
-            <div className="rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-paper,#FAFAF7)] p-5 space-y-3">
-              <div className="w-9 h-9 rounded-lg bg-blue-100 text-blue-700 flex items-center justify-center">
-                <Repeat className="w-4.5 h-4.5" />
-              </div>
-              <h3 className="font-bold text-sm text-[var(--sc-ink,#111318)]">
-                Himalayan Subscriptions
-              </h3>
-              <p className="text-xs text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
-                Prepaid 3, 6, and 12-month commitments paid upfront. Automated engine generates $0 fulfillment orders on delivery cycles with zero re-charge friction.
-              </p>
-            </div>
-
-            {/* Pillar 4: Merchant Tower */}
-            <div className="rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-paper,#FAFAF7)] p-5 space-y-3">
-              <div className="w-9 h-9 rounded-lg bg-amber-100 text-amber-700 flex items-center justify-center">
-                <Package className="w-4.5 h-4.5" />
-              </div>
-              <h3 className="font-bold text-sm text-[var(--sc-ink,#111318)]">
-                Fulfillment Queue &amp; Undo
-              </h3>
-              <p className="text-xs text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
-                Pack, ship, and deliver orders with a 5-second non-blocking undo. One-tap WhatsApp chat and phone dialing for direct customer contact.
-              </p>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* --------------------------------------------------------------------- */}
-      {/* 5. MULTI-TENANT DEMO SHOWCASE                                        */}
-      {/* --------------------------------------------------------------------- */}
-      <section className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 space-y-8">
+      <section id="demos" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-24 space-y-8">
         <div className="flex flex-col sm:flex-row sm:items-end justify-between gap-4">
           <div>
-            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[var(--sc-marigold,#F2A900)]">
+            <span className="text-xs font-mono font-semibold uppercase tracking-wider text-[#C2410C]">
               Multi-Tenant Architecture
             </span>
             <h2 className="text-2xl sm:text-3xl font-extrabold tracking-tight text-[var(--sc-ink,#111318)] mt-1">
@@ -434,7 +450,136 @@ export default function PlatformHomePage() {
       </section>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 6. GROUNDED CALL TO ACTION BAND                                      */}
+      {/* 7. TRANSPARENT PRICING PLANS (Pasalify-Inspired)                     */}
+      {/* --------------------------------------------------------------------- */}
+      <section id="pricing" className="border-t border-[var(--sc-line,#E8E8E1)] bg-white py-16 sm:py-24">
+        <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-12">
+          <div className="text-center space-y-3">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#C2410C]">
+              SIMPLE, HONEST PRICING
+            </span>
+            <h2 className="text-2xl sm:text-4xl font-extrabold tracking-tight text-[var(--sc-ink,#111318)]">
+              Start Free. Pay Nothing Until You Scale.
+            </h2>
+            <p className="text-sm text-[var(--sc-ink-2,#4B5060)]">
+              No hidden currency conversion fees. No mandatory foreign credit cards.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Free Beta / Starter Plan */}
+            <div className="rounded-2xl border-2 border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-paper,#FAFAF7)] p-6 sm:p-8 space-y-6 flex flex-col justify-between">
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-zinc-200 text-zinc-800">
+                    Starter / Beta
+                  </span>
+                  <span className="text-xs font-mono text-emerald-700 font-bold">100% Free</span>
+                </div>
+
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl sm:text-4xl font-extrabold font-mono text-zinc-950">Rs. 0</span>
+                    <span className="text-xs text-zinc-500 font-mono">/ forever</span>
+                  </div>
+                  <p className="text-xs text-zinc-600 mt-1">
+                    Everything you need to launch and start selling across Nepal.
+                  </p>
+                </div>
+
+                <ul className="space-y-2.5 text-xs text-zinc-700 pt-2 border-t border-zinc-200">
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Unlimited products &amp; variants</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Native Khalti Sandbox + Cash on Delivery</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Cascading 7 Provinces &amp; Ward checkout</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Prepaid subscriptions &amp; 1-tap WhatsApp renewal</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Fulfillment queue with 5-second undo</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Link
+                href="/merchant/new"
+                className="w-full py-3 rounded-xl bg-zinc-950 hover:bg-zinc-800 text-white font-semibold text-xs text-center block shadow-xs transition-colors"
+              >
+                Launch Free Store
+              </Link>
+            </div>
+
+            {/* Growth Plan */}
+            <div className="rounded-2xl border-2 border-[#C2410C] bg-white p-6 sm:p-8 space-y-6 flex flex-col justify-between shadow-md relative">
+              <span className="absolute -top-3 right-6 text-[10px] font-mono font-bold uppercase tracking-wider px-3 py-1 rounded-full bg-[#C2410C] text-white shadow-xs">
+                POPULAR FOR SCALING BRANDS
+              </span>
+
+              <div className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <span className="text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-orange-100 text-[#C2410C]">
+                    Growth
+                  </span>
+                  <span className="text-xs font-mono text-zinc-500">Billed Annually</span>
+                </div>
+
+                <div>
+                  <div className="flex items-baseline gap-1">
+                    <span className="text-3xl sm:text-4xl font-extrabold font-mono text-zinc-950">Rs. 999</span>
+                    <span className="text-xs text-zinc-500 font-mono">/ month</span>
+                  </div>
+                  <p className="text-xs text-zinc-600 mt-1">
+                    For serious brands requiring automated SMS alerts &amp; custom domains.
+                  </p>
+                </div>
+
+                <ul className="space-y-2.5 text-xs text-zinc-700 pt-2 border-t border-zinc-200">
+                  <li className="flex items-center gap-2 font-medium text-zinc-950">
+                    <Check className="w-4 h-4 text-[#C2410C] shrink-0" />
+                    <span>Everything in Starter, plus:</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Custom domain (yourbrand.com.np)</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Automated customer WhatsApp dispatch notifications</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Multi-staff permissions &amp; role management</span>
+                  </li>
+                  <li className="flex items-center gap-2">
+                    <Check className="w-4 h-4 text-emerald-600 shrink-0" />
+                    <span>Live Khalti merchant keys &amp; settlement reporting</span>
+                  </li>
+                </ul>
+              </div>
+
+              <Link
+                href="/merchant/new"
+                className="w-full py-3 rounded-xl bg-[#C2410C] hover:bg-[#EA580C] text-white font-semibold text-xs text-center block shadow-xs transition-colors"
+              >
+                Start 14-Day Pro Trial →
+              </Link>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      {/* --------------------------------------------------------------------- */}
+      {/* 8. GROUNDED CALL TO ACTION BAND                                      */}
       {/* --------------------------------------------------------------------- */}
       <section className="border-t border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] py-16 sm:py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
@@ -450,7 +595,7 @@ export default function PlatformHomePage() {
           <div className="flex items-center gap-3">
             <Link
               href="/merchant/new"
-              className="h-12 px-6 rounded-lg bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] font-medium text-xs font-mono uppercase tracking-wider flex items-center justify-center hover:opacity-90 transition-opacity"
+              className="h-12 px-6 rounded-xl bg-[#C2410C] hover:bg-[#EA580C] text-white font-medium text-xs font-mono uppercase tracking-wider flex items-center justify-center transition-colors shadow-xs"
             >
               Launch Store Now →
             </Link>
@@ -459,14 +604,19 @@ export default function PlatformHomePage() {
       </section>
 
       {/* --------------------------------------------------------------------- */}
-      {/* 7. FOOTER & ATTRIBUTION                                              */}
+      {/* 9. FOOTER & ATTRIBUTION                                              */}
       {/* --------------------------------------------------------------------- */}
       <footer className="border-t border-[var(--sc-line,#E8E8E1)] py-12 bg-[var(--sc-paper,#FAFAF7)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-[var(--sc-ink-2,#4B5060)]">
           <div className="space-y-1 text-center sm:text-left">
-            <p className="font-extrabold text-sm tracking-tight text-[var(--sc-ink,#111318)]">
-              ShopCraft
-            </p>
+            <div className="flex items-center justify-center sm:justify-start gap-2">
+              <span className="w-5 h-5 rounded bg-[#0F2D1F] text-white text-[10px] flex items-center justify-center font-bold">
+                ⛰️
+              </span>
+              <p className="font-extrabold text-sm tracking-tight text-[var(--sc-ink,#111318)]">
+                ShopCraft
+              </p>
+            </div>
             <p className="text-[11px] font-mono text-[var(--sc-ink-3,#8B90A0)]">
               Multi-Tenant E-Commerce &amp; Subscription Operating System for Nepal.
             </p>
