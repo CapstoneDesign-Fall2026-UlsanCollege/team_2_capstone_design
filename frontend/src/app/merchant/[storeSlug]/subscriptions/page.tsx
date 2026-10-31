@@ -1,16 +1,12 @@
 "use client";
 
-import React, { useEffect, useState, useTransition } from "react";
+import React, { useEffect, useState } from "react";
 import { useParams, useRouter } from "next/navigation";
 import {
-  Calendar,
   CheckCircle2,
   Clock,
   Play,
-  RefreshCw,
-  Repeat,
   Search,
-  Sparkles,
   TrendingUp,
   Users,
 } from "lucide-react";
@@ -40,31 +36,27 @@ export default function MerchantSubscriptionsPage() {
   const [actionLoadingId, setActionLoadingId] = useState<number | null>(null);
   const [runningCycles, setRunningCycles] = useState(false);
   const [bannerMessage, setBannerMessage] = useState<string | null>(null);
-  const [, startTransition] = useTransition();
+
+  const [debouncedQuery, setDebouncedQuery] = useState(searchQuery);
+
+  useEffect(() => {
+    const timer = setTimeout(() => {
+      setDebouncedQuery(searchQuery);
+    }, 250);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
 
   const loadSubscriptions = async () => {
     if (!storeSlug) return;
     try {
-      setLoading(true);
-      setError(null);
       const res = await fetchMerchantSubscriptions(storeSlug, {
         status: activeTab,
-        q: searchQuery,
+        q: debouncedQuery,
       });
       setData(res);
+      setError(null);
     } catch (err) {
       const msg = err instanceof Error ? err.message : "Failed to load subscriptions.";
-      const isAuth =
-        (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
-        msg.includes("401") ||
-        msg.includes("403") ||
-        msg.toLowerCase().includes("unauthorized") ||
-        msg.toLowerCase().includes("credentials");
-
-      if (isAuth) {
-        setTimeout(() => router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/subscriptions`), 0);
-        return;
-      }
       setError(msg);
     } finally {
       setLoading(false);
@@ -72,16 +64,45 @@ export default function MerchantSubscriptionsPage() {
   };
 
   useEffect(() => {
-    loadSubscriptions();
-  }, [storeSlug, activeTab]);
+    let ignore = false;
+    if (!storeSlug) return;
 
-  // Debounced search
-  useEffect(() => {
-    const timer = setTimeout(() => {
-      loadSubscriptions();
-    }, 250);
-    return () => clearTimeout(timer);
-  }, [searchQuery]);
+    fetchMerchantSubscriptions(storeSlug, {
+      status: activeTab,
+      q: debouncedQuery,
+    })
+      .then((res) => {
+        if (!ignore) {
+          setData(res);
+          setError(null);
+        }
+      })
+      .catch((err) => {
+        if (ignore) return;
+        const msg = err instanceof Error ? err.message : "Failed to load subscriptions.";
+        const isAuth =
+          (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
+          msg.includes("401") ||
+          msg.includes("403") ||
+          msg.toLowerCase().includes("unauthorized") ||
+          msg.toLowerCase().includes("credentials");
+
+        if (isAuth) {
+          setTimeout(() => router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/subscriptions`), 0);
+          return;
+        }
+        setError(msg);
+      })
+      .finally(() => {
+        if (!ignore) {
+          setLoading(false);
+        }
+      });
+
+    return () => {
+      ignore = true;
+    };
+  }, [storeSlug, activeTab, debouncedQuery, router]);
 
   const handleAction = async (
     sub: SubscriptionItem,
@@ -225,7 +246,7 @@ export default function MerchantSubscriptionsPage() {
             <button
               key={tab.key}
               type="button"
-              onClick={() => setActiveTab(tab.key)}
+              onClick={() => { setActiveTab(tab.key); setLoading(true); }}
               className={`px-3 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 whitespace-nowrap ${
                 activeTab === tab.key
                   ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs font-semibold"

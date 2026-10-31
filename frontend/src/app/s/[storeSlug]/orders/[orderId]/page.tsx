@@ -3,12 +3,10 @@ import { notFound } from "next/navigation";
 import {
   ArrowLeft,
   CheckCircle2,
-  Clock,
   CreditCard,
   MapPin,
   Package,
   ShoppingBag,
-  Truck,
 } from "lucide-react";
 import { formatNpr, OrderDetail, StorePublicMetadata } from "@/lib/api";
 

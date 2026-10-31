@@ -4,12 +4,14 @@
  * Surface 1: Platform Root Tokens (DESIGN.md §2)
  * -------------------------------------------------------------------------- */
 :root {
-  --sc-paper: #FAFAF7;
+  --sc-paper: #FAF7F2;
   --sc-surface: #FFFFFF;
   --sc-ink: #111318;
   --sc-ink-2: #4B5060;
   --sc-ink-3: #8B90A0; /* ink-3 hints only */
-  --sc-line: #E8E8E1;
+  --sc-line: #EAE6DF;
+  --sc-terracotta: #C2410C;
+  --sc-forest: #0F2D1F;
   --sc-marigold: #F2A900;
   --sc-marigold-soft: #FFF4D6;
   --sc-success: #15803D;

@@ -4,24 +4,14 @@ import React, { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
-  AlertTriangle,
   ArrowRight,
-  Banknote,
   Check,
   CreditCard,
-  ExternalLink,
-  HelpCircle,
   MapPin,
-  Package,
-  Phone,
   Repeat,
   ShieldAlert,
   ShieldCheck,
-  Smartphone,
-  Sparkles,
-  Truck,
   X,
-  Zap,
 } from "lucide-react";
 import { HeroStorePreview } from "@/components/platform/HeroStorePreview";
 import { DemoTenantShowcase } from "@/components/platform/DemoTenantShowcase";
@@ -42,15 +32,26 @@ export default function PlatformHomePage() {
 
   const slug = slugify(storeName) || "your-shop";
 
+  const handleStoreNameChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const val = e.target.value;
+    setStoreName(val);
+    const nextSlug = slugify(val) || "your-shop";
+    if (!nextSlug || nextSlug === "your-shop") {
+      setSlugStatus("available");
+    } else {
+      setSlugStatus("checking");
+    }
+  };
+
   React.useEffect(() => {
     if (!slug || slug === "your-shop") {
-      setSlugStatus("available");
       return;
     }
-    setSlugStatus("checking");
+    let cancelled = false;
     const timer = setTimeout(async () => {
       try {
         const res = await fetch(`/api/stores/check-slug/?slug=${encodeURIComponent(slug)}`);
+        if (cancelled) return;
         if (res.ok) {
           const data = await res.json();
           setSlugStatus(data.available ? "available" : "unavailable");
@@ -58,10 +59,15 @@ export default function PlatformHomePage() {
           setSlugStatus("available");
         }
       } catch {
-        setSlugStatus("available");
+        if (!cancelled) {
+          setSlugStatus("available");
+        }
       }
     }, 250);
-    return () => clearTimeout(timer);
+    return () => {
+      cancelled = true;
+      clearTimeout(timer);
+    };
   }, [slug]);
 
   const handleStartFree = (e: React.FormEvent) => {
@@ -70,9 +76,9 @@ export default function PlatformHomePage() {
   };
 
   return (
-    <div className="w-full bg-[var(--sc-paper,#FAFAF7)] text-[var(--sc-ink,#111318)] min-h-dvh">
+    <div className="w-full bg-[var(--sc-paper,#FAF7F2)] text-[var(--sc-ink,#111318)] min-h-dvh">
       {/* --------------------------------------------------------------------- */}
-      {/* 1. HERO SECTION: Bold, Warm, High-Converting Hero (Pasalify + ShopCraft) */}
+      {/* 1. HERO SECTION: Warm, High-Converting Hero (Pasalify + ShopCraft)    */}
       {/* --------------------------------------------------------------------- */}
       <section className="max-w-6xl mx-auto px-4 sm:px-6 pt-10 sm:pt-16 pb-16 sm:pb-20">
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-10 lg:gap-8 items-center">
@@ -81,7 +87,7 @@ export default function PlatformHomePage() {
             {/* National Badge */}
             <div
               suppressHydrationWarning
-              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-900/10 bg-[#0F2D1F] text-xs text-white shadow-2xs"
+              className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full border border-emerald-950/10 bg-[#0F2D1F] text-xs text-white shadow-2xs"
             >
               <span className="text-sm">🇳🇵</span>
               <span suppressHydrationWarning className="font-semibold tracking-wide text-[11px] uppercase">
@@ -106,7 +112,7 @@ export default function PlatformHomePage() {
                   htmlFor="hero-store-name"
                   className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-semibold"
                 >
-                  Enter your store name
+                  Claim your free store name
                 </label>
                 <div className="flex flex-col sm:flex-row gap-2">
                   <input
@@ -114,9 +120,9 @@ export default function PlatformHomePage() {
                     type="text"
                     required
                     value={storeName}
-                    onChange={(e) => setStoreName(e.target.value)}
+                    onChange={handleStoreNameChange}
                     placeholder="e.g. Pahadi Goods, Mustang Honey..."
-                    className="flex-1 h-12 px-4 rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-white text-sm font-medium text-[var(--sc-ink,#111318)] focus:outline-hidden focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C] transition-colors shadow-2xs"
+                    className="flex-1 h-12 px-4 rounded-xl border border-[var(--sc-line,#EAE6DF)] bg-white text-sm font-medium text-[var(--sc-ink,#111318)] focus:outline-hidden focus:border-[#C2410C] focus:ring-1 focus:ring-[#C2410C] transition-colors shadow-2xs"
                   />
                   <button
                     type="submit"
@@ -165,7 +171,7 @@ export default function PlatformHomePage() {
       {/* --------------------------------------------------------------------- */}
       {/* 2. LOCAL PAYMENTS & LOGISTICS TRUST BANNER (Pasalify-Style)          */}
       {/* --------------------------------------------------------------------- */}
-      <section className="border-y border-[var(--sc-line,#E8E8E1)] bg-white py-12 px-4 sm:px-6">
+      <section className="border-y border-[var(--sc-line,#EAE6DF)] bg-white py-12 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto text-center space-y-6">
           <p className="text-xs sm:text-sm font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-medium">
             Supported by Nepal&apos;s most popular local payments and delivery options:
@@ -197,14 +203,14 @@ export default function PlatformHomePage() {
             {/* Nepali Geography Badge */}
             <div className="px-5 py-2.5 rounded-xl border border-zinc-200 bg-zinc-50 flex items-center gap-2 shadow-2xs">
               <span className="text-base">🛵</span>
-              <span className="font-bold text-xs text-zinc-800">Valley &amp; Nationwide Riders</span>
+              <span className="font-bold text-xs text-zinc-800">Valley &amp; Nationwide Riders (Ward 1–35)</span>
             </div>
           </div>
 
           <div className="pt-2">
             <Link
               href="/merchant/new"
-              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C2410C] hover:bg-[#EA580C] text-white font-semibold text-xs shadow-xs transition-colors"
+              className="inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-[#C2410C] hover:bg-[#EA580C] text-white font-semibold text-xs shadow-xs transition-colors cursor-pointer"
             >
               <span>Create Your Store — Free Forever during Beta</span>
               <ArrowRight className="w-3.5 h-3.5" />
@@ -219,7 +225,7 @@ export default function PlatformHomePage() {
       <section id="features" className="max-w-6xl mx-auto px-4 sm:px-6 py-16 sm:py-20">
         <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
           {/* Pillar 1: Payments */}
-          <div className="p-6 rounded-2xl border border-[var(--sc-line,#E8E8E1)] bg-white space-y-3 shadow-2xs hover:shadow-sm transition-shadow">
+          <div className="p-6 rounded-2xl border border-[var(--sc-line,#EAE6DF)] bg-white space-y-3 shadow-2xs hover:shadow-sm transition-shadow">
             <div className="w-10 h-10 rounded-xl bg-purple-100 text-purple-700 flex items-center justify-center font-bold">
               <CreditCard className="w-5 h-5" />
             </div>
@@ -232,7 +238,7 @@ export default function PlatformHomePage() {
           </div>
 
           {/* Pillar 2: Delivery & Wards */}
-          <div className="p-6 rounded-2xl border border-[var(--sc-line,#E8E8E1)] bg-white space-y-3 shadow-2xs hover:shadow-sm transition-shadow">
+          <div className="p-6 rounded-2xl border border-[var(--sc-line,#EAE6DF)] bg-white space-y-3 shadow-2xs hover:shadow-sm transition-shadow">
             <div className="w-10 h-10 rounded-xl bg-emerald-100 text-emerald-700 flex items-center justify-center font-bold">
               <MapPin className="w-5 h-5" />
             </div>
@@ -245,7 +251,7 @@ export default function PlatformHomePage() {
           </div>
 
           {/* Pillar 3: Subscriptions */}
-          <div className="p-6 rounded-2xl border border-[var(--sc-line,#E8E8E1)] bg-white space-y-3 shadow-2xs hover:shadow-sm transition-shadow">
+          <div className="p-6 rounded-2xl border border-[var(--sc-line,#EAE6DF)] bg-white space-y-3 shadow-2xs hover:shadow-sm transition-shadow">
             <div className="w-10 h-10 rounded-xl bg-blue-100 text-blue-700 flex items-center justify-center font-bold">
               <Repeat className="w-5 h-5" />
             </div>
@@ -262,7 +268,7 @@ export default function PlatformHomePage() {
       {/* --------------------------------------------------------------------- */}
       {/* 4. THE DIRECT SHOPIFY & INSTAGRAM COMPARISON MATRIX                   */}
       {/* --------------------------------------------------------------------- */}
-      <section id="comparison" className="border-t border-[var(--sc-line,#E8E8E1)] bg-white py-16 sm:py-24">
+      <section id="comparison" className="border-t border-[var(--sc-line,#EAE6DF)] bg-white py-16 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-12">
           <div className="text-center max-w-3xl mx-auto space-y-3">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#C2410C]">
@@ -283,7 +289,7 @@ export default function PlatformHomePage() {
       {/* --------------------------------------------------------------------- */}
       {/* 5. THE TWO CHECKOUTS: VISUAL SIDE-BY-SIDE WALKTHROUGH                 */}
       {/* --------------------------------------------------------------------- */}
-      <section className="border-t border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-paper,#FAFAF7)] py-16 sm:py-24">
+      <section className="border-t border-[var(--sc-line,#EAE6DF)] bg-[var(--sc-paper,#FAF7F2)] py-16 sm:py-24">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 space-y-10">
           <div className="text-center max-w-2xl mx-auto space-y-3">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-red-600">
@@ -452,7 +458,7 @@ export default function PlatformHomePage() {
       {/* --------------------------------------------------------------------- */}
       {/* 7. TRANSPARENT PRICING PLANS (Pasalify-Inspired)                     */}
       {/* --------------------------------------------------------------------- */}
-      <section id="pricing" className="border-t border-[var(--sc-line,#E8E8E1)] bg-white py-16 sm:py-24">
+      <section id="pricing" className="border-t border-[var(--sc-line,#EAE6DF)] bg-white py-16 sm:py-24">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 space-y-12">
           <div className="text-center space-y-3">
             <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#C2410C]">
@@ -468,7 +474,7 @@ export default function PlatformHomePage() {
 
           <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
             {/* Free Beta / Starter Plan */}
-            <div className="rounded-2xl border-2 border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-paper,#FAFAF7)] p-6 sm:p-8 space-y-6 flex flex-col justify-between">
+            <div className="rounded-2xl border-2 border-[var(--sc-line,#EAE6DF)] bg-[var(--sc-paper,#FAF7F2)] p-6 sm:p-8 space-y-6 flex flex-col justify-between">
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-mono font-bold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-zinc-200 text-zinc-800">
@@ -581,7 +587,7 @@ export default function PlatformHomePage() {
       {/* --------------------------------------------------------------------- */}
       {/* 8. GROUNDED CALL TO ACTION BAND                                      */}
       {/* --------------------------------------------------------------------- */}
-      <section className="border-t border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] py-16 sm:py-20 px-4 sm:px-6">
+      <section className="border-t border-[var(--sc-line,#EAE6DF)] bg-[var(--sc-surface,#FFFFFF)] py-16 sm:py-20 px-4 sm:px-6">
         <div className="max-w-4xl mx-auto flex flex-col sm:flex-row sm:items-center sm:justify-between gap-6">
           <div className="space-y-1">
             <h2 className="text-2xl font-bold tracking-tight text-[var(--sc-ink,#111318)]">
@@ -606,7 +612,7 @@ export default function PlatformHomePage() {
       {/* --------------------------------------------------------------------- */}
       {/* 9. FOOTER & ATTRIBUTION                                              */}
       {/* --------------------------------------------------------------------- */}
-      <footer className="border-t border-[var(--sc-line,#E8E8E1)] py-12 bg-[var(--sc-paper,#FAFAF7)]">
+      <footer className="border-t border-[var(--sc-line,#EAE6DF)] py-12 bg-[var(--sc-paper,#FAF7F2)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 flex flex-col sm:flex-row items-center justify-between gap-6 text-xs text-[var(--sc-ink-2,#4B5060)]">
           <div className="space-y-1 text-center sm:text-left">
             <div className="flex items-center justify-center sm:justify-start gap-2">

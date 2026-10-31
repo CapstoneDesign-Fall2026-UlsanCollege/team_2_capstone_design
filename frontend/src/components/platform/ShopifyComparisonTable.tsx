@@ -1,378 +1,493 @@
 "use client";
 
 import React, { useState } from "react";
-import { Check, X, AlertCircle, ArrowRight, ShieldCheck, DollarSign, Smartphone, MapPin, Zap } from "lucide-react";
+import {
+  Check,
+  X,
+  AlertTriangle,
+  ArrowRight,
+  ShieldCheck,
+  ShieldAlert,
+  HelpCircle,
+  Sparkles,
+  Smartphone,
+  MapPin,
+  CreditCard,
+  Repeat,
+  DollarSign,
+  TrendingUp,
+} from "lucide-react";
+
+type CategoryFilter = "all" | "payments" | "logistics" | "subscriptions" | "cost";
 
 interface ComparisonRow {
   feature: string;
-  category: "payments" | "checkout" | "cost" | "performance";
+  category: "payments" | "logistics" | "subscriptions" | "cost";
   shopcraft: {
-    status: "yes" | "warning" | "no";
     title: string;
     description: string;
+    status: "yes" | "warning" | "no";
   };
   shopify: {
-    status: "yes" | "warning" | "no";
     title: string;
     description: string;
+    status: "yes" | "warning" | "no";
   };
   instagram: {
-    status: "yes" | "warning" | "no";
     title: string;
     description: string;
+    status: "yes" | "warning" | "no";
   };
 }
 
-const COMPARISON_DATA: ComparisonRow[] = [
+const COMPARISON_ROWS: ComparisonRow[] = [
   {
     feature: "Monthly Platform Cost",
     category: "cost",
     shopcraft: {
-      status: "yes",
       title: "Rs. 0 / month",
-      description: "Free hosting. No international USD credit card or Nepal Rastra Bank Dollar Card required.",
+      description: "Free forever during Beta. No international USD credit card or Nepal Rastra Bank Dollar Card required.",
+      status: "yes",
     },
     shopify: {
-      status: "no",
       title: "$39 / month (~Rs. 5,200/mo)",
-      description: "Charged in USD. Requires a $500 annual limit prepaid Dollar Card with bank KYC & issuance fees.",
+      description: "Charged in foreign USD. Depletes your $500 annual prepaid Dollar Card limit just to keep your store online.",
+      status: "no",
     },
     instagram: {
+      title: "Rs. 0 (Hidden time loss)",
+      description: "Zero upfront software fee, but costs 20+ hours per week in manual chat messaging and verifying slips.",
       status: "warning",
-      title: "Free (Hidden labor cost)",
-      description: "Zero software fee, but hours spent manually messaging, verifying bank slips, and lost customers.",
     },
   },
   {
     feature: "Khalti & Local Wallets",
     category: "payments",
     shopcraft: {
-      status: "yes",
       title: "Native Day-One Integration",
-      description: "Direct Khalti ePayment v2 sandbox with instant server-side pidx verification and callbacks.",
+      description: "Direct Khalti ePayment v2 sandbox with instant web redirect and verified server-side pidx callbacks.",
+      status: "yes",
     },
     shopify: {
-      status: "no",
       title: "Not Supported Natively",
-      description: "Requires expensive third-party custom apps or manual bank wire transfer with manual proof verification.",
+      description: "Requires expensive custom Shopify Plus apps or manual bank wire transfer with manual proof checking.",
+      status: "no",
     },
     instagram: {
-      status: "no",
       title: "Manual Screenshot Verification",
-      description: "Customers take screenshots of Fonepay/Khalti transfers. High fraud risk and manual matching.",
+      description: "Customers text screenshots of Fonepay/Khalti transfers. High risk of forged photos and zero auto-verification.",
+      status: "no",
     },
   },
   {
     feature: "Cash on Delivery (COD)",
     category: "payments",
     shopcraft: {
-      status: "yes",
       title: "Built-In with Collection Guard",
-      description: "Single-tap COD checkout with ward-level dispatch receipts and cash collected verification guard.",
+      description: "Single-tap COD checkout with automated ward dispatch receipts and rider cash collected verification.",
+      status: "yes",
     },
     shopify: {
-      status: "warning",
       title: "Generic Manual Method",
-      description: "Offers basic manual COD checkbox, but lacks Nepali courier delivery coordination tools.",
+      description: "Offers a basic manual checkbox, but lacks Nepali courier delivery coordination and collection status tracking.",
+      status: "warning",
     },
     instagram: {
-      status: "warning",
       title: "Informal Arrangement",
-      description: "Negotiated manually per customer in chat. High rate of fake orders and courier returns.",
+      description: "Negotiated manually per customer in chat. Extremely high rate of fake orders and courier return fees.",
+      status: "warning",
     },
   },
   {
     feature: "Address & Geographic Hierarchy",
-    category: "checkout",
+    category: "logistics",
     shopcraft: {
-      status: "yes",
       title: "7 Provinces, 77 Districts, Wards 1–35",
-      description: "Cascading Nepali selector tailored for local courier networks. Validates 10-digit 98/97 mobile numbers.",
+      description: "Native cascading Nepali selector tailored for local courier networks. Validates 10-digit 98/97 mobile numbers.",
+      status: "yes",
     },
     shopify: {
-      status: "no",
       title: "Forces US/EU 'Zip Code' & State",
-      description: "Nepali shoppers get stuck on mandatory 'Postal Code' fields, resulting in 40–60% checkout abandonment.",
+      description: "Nepali shoppers get stuck on mandatory 'Postal Code' fields, resulting in 40–55% checkout abandonment.",
+      status: "no",
     },
     instagram: {
-      status: "no",
       title: "Unstructured Chat Text",
       description: "Shoppers send vague landmark descriptions. Couriers repeatedly call lost trying to locate the customer.",
+      status: "no",
     },
   },
   {
     feature: "Delivery Fees Calculation",
-    category: "checkout",
+    category: "logistics",
     shopcraft: {
-      status: "yes",
       title: "Kathmandu Valley vs Outside Valley",
       description: "Automatically computes Inside Valley (Rs. 100) vs Outside Valley (Rs. 200) with free threshold meter.",
+      status: "yes",
     },
     shopify: {
+      title: "Complex Distance Zones",
+      description: "Requires manual shipping zone setups that do not understand Valley vs Terai courier pricing boundaries.",
       status: "warning",
-      title: "Weight/Distance Setup Needed",
-      description: "Requires complex manual shipping zone setups that do not understand Valley vs Terai courier boundaries.",
     },
     instagram: {
-      status: "no",
       title: "Manual Courier Inquiry",
-      description: "Merchant manually calculates delivery per parcel by calling Pathao or Nepal Post.",
+      description: "Merchant manually calculates delivery per parcel by calling Pathao or Nepal Post after the chat.",
+      status: "no",
     },
   },
   {
-    feature: "Recurring Subscriptions",
-    category: "payments",
+    feature: "Recurring Himalayan Subscriptions",
+    category: "subscriptions",
     shopcraft: {
-      status: "yes",
       title: "Prepaid Cycles & 1-Tap WhatsApp Links",
-      description: "Engineered for Nepal's zero auto-debit banking laws. Prepaid 3M/6M/12M commitments with auto-fulfillment.",
+      description: "Built for Nepal's zero auto-debit banking rules. Prepaid 3M/6M commitments with automated zero-dollar fulfillment.",
+      status: "yes",
     },
     shopify: {
-      status: "no",
       title: "Requires Stripe Auto-Debits",
-      description: "Shopify Subscriptions rely on automated recurring card charges, which Nepali debit cards block completely.",
+      description: "Shopify Subscriptions rely on automated recurring card debits, which Nepali domestic debit cards block completely.",
+      status: "no",
     },
     instagram: {
-      status: "no",
       title: "Purely Manual Follow-ups",
-      description: "Merchant must remember to text customers each month to request a re-order.",
+      description: "Merchant must remember to text customers every month to request a manual re-order.",
+      status: "no",
     },
   },
   {
     feature: "Mobile Speed (3G / 4G Networks)",
-    category: "performance",
+    category: "logistics",
     shopcraft: {
-      status: "yes",
       title: "0.8s Ultra-Fast PWA",
-      description: "Loads instantly in Instagram & TikTok in-app browsers without heavy theme bundles or bloated apps.",
+      description: "Loads instantly in Instagram & TikTok in-app browsers without heavy theme bundles or bloated scripts.",
+      status: "yes",
     },
     shopify: {
-      status: "warning",
-      title: "3.5s – 7.0s Heavy Bundles",
+      title: "3.5s – 6.0s Heavy Bundles",
       description: "Liquid themes and third-party app scripts cause noticeable lag on mobile data outside Kathmandu.",
+      status: "warning",
     },
     instagram: {
-      status: "yes",
       title: "Instant (inside Instagram)",
-      description: "Loads inside the Instagram chat, but lacks a catalog, cart, or search capability.",
+      description: "Opens inside the Instagram chat, but lacks a searchable catalog, cart, or variant selector.",
+      status: "yes",
     },
   },
   {
-    feature: "Customer Communication",
-    category: "checkout",
+    feature: "Store Customization & Branding",
+    category: "cost",
     shopcraft: {
+      title: "Curated Nepali Presets",
+      description: "Editorial Warm (coffee/bakeries), Pahadi Sage (herbal/tea), Modern Minimalist. Zero CSS coding required.",
       status: "yes",
-      title: "1-Tap WhatsApp & Phone Dialing",
-      description: "Order queue gives merchant direct WhatsApp link with prefilled order receipt + direct phone calling.",
     },
     shopify: {
+      title: "Paid Themes ($150–$350)",
+      description: "Free themes look generic. Premium themes require USD payment and Liquid developer tweaking.",
       status: "warning",
-      title: "Email-Centric Notifications",
-      description: "Sends automated emails that most Nepali shoppers never open or have filtered into spam folders.",
     },
     instagram: {
-      status: "yes",
-      title: "Direct DM",
-      description: "Good for conversation, but messages get buried when managing more than 10 orders per day.",
+      title: "Grid Only (No Website)",
+      description: "No brand identity, no custom domain, no search, no automated inventory ledger.",
+      status: "no",
     },
   },
 ];
 
 export function ShopifyComparisonTable() {
-  const [activeCategory, setActiveCategory] = useState<string>("all");
+  const [activeFilter, setActiveFilter] = useState<CategoryFilter>("all");
 
   const filteredRows =
-    activeCategory === "all"
-      ? COMPARISON_DATA
-      : COMPARISON_DATA.filter((r) => r.category === activeCategory);
+    activeFilter === "all"
+      ? COMPARISON_ROWS
+      : COMPARISON_ROWS.filter((r) => r.category === activeFilter);
 
   return (
-    <div className="space-y-8">
-      {/* Category Filter Pills */}
-      <div className="flex flex-wrap items-center justify-center gap-2">
-        <button
-          type="button"
-          onClick={() => setActiveCategory("all")}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer ${
-            activeCategory === "all"
-              ? "bg-[#C2410C] text-white font-semibold shadow-xs"
-              : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-950"
-          }`}
-        >
-          All Capabilities ({COMPARISON_DATA.length})
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveCategory("cost")}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer ${
-            activeCategory === "cost"
-              ? "bg-[#C2410C] text-white font-semibold shadow-xs"
-              : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-950"
-          }`}
-        >
-          Pricing &amp; Cost
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveCategory("payments")}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer ${
-            activeCategory === "payments"
-              ? "bg-[#C2410C] text-white font-semibold shadow-xs"
-              : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-950"
-          }`}
-        >
-          Khalti, COD &amp; Subscriptions
-        </button>
-        <button
-          type="button"
-          onClick={() => setActiveCategory("checkout")}
-          className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer ${
-            activeCategory === "checkout"
-              ? "bg-[#C2410C] text-white font-semibold shadow-xs"
-              : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-950"
-          }`}
-        >
-          Nepali Addresses &amp; Wards
-        </button>
+    <div className="space-y-12">
+      {/* ------------------------------------------------------------------- */}
+      {/* 1. AT-A-GLANCE VERDICT CARDS (3-COLUMN HIGHLIGHT)                   */}
+      {/* ------------------------------------------------------------------- */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+        {/* ShopCraft Verdict Card (Winner) */}
+        <div className="rounded-2xl border-2 border-[#C2410C] bg-white p-6 space-y-4 shadow-md relative flex flex-col justify-between">
+          <div className="absolute -top-3 left-6 px-3 py-0.5 rounded-full bg-[#C2410C] text-white text-[10px] font-mono font-bold uppercase tracking-wider shadow-xs">
+            BUILT FOR NEPAL
+          </div>
+
+          <div className="space-y-3 pt-1">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-[#0F2D1F] text-white text-xs flex items-center justify-center font-bold">
+                  ⛰️
+                </span>
+                <span className="font-extrabold text-base text-zinc-950">ShopCraft</span>
+              </div>
+              <span className="text-xs font-mono font-bold text-emerald-700 bg-emerald-50 px-2.5 py-0.5 rounded-full border border-emerald-200">
+                88%+ Conversion
+              </span>
+            </div>
+
+            <div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-extrabold font-mono text-zinc-950">Rs. 0</span>
+                <span className="text-xs text-zinc-500 font-mono">/ month</span>
+              </div>
+              <p className="text-xs text-zinc-600 mt-1">
+                Free hosting during Beta. Zero USD dollar card required.
+              </p>
+            </div>
+
+            <ul className="space-y-2 text-xs text-zinc-700 pt-2 border-t border-zinc-100">
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>Native Khalti Sandbox + Cash on Delivery</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>Cascading Province → District → Ward 1–35</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <Check className="w-4 h-4 text-emerald-600 shrink-0 mt-0.5" />
+                <span>Prepaid subscriptions without blocked auto-debit</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="pt-3 border-t border-zinc-100 text-[11px] font-mono text-emerald-800 font-semibold bg-emerald-50/60 p-2.5 rounded-xl text-center">
+            ✓ Recommended for Nepali Brands &amp; Creators
+          </div>
+        </div>
+
+        {/* Shopify Verdict Card (Fails in Nepal) */}
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-6 space-y-4 shadow-xs flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-[#95BF47] text-white text-xs flex items-center justify-center font-bold">
+                  S
+                </span>
+                <span className="font-extrabold text-base text-zinc-950">Shopify</span>
+              </div>
+              <span className="text-xs font-mono font-bold text-red-700 bg-red-50 px-2.5 py-0.5 rounded-full border border-red-200">
+                55%+ Abandonment
+              </span>
+            </div>
+
+            <div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-extrabold font-mono text-zinc-950">$39</span>
+                <span className="text-xs text-zinc-500 font-mono">/ mo (~Rs. 5,200)</span>
+              </div>
+              <p className="text-xs text-zinc-600 mt-1">
+                Depletes your $500 annual prepaid Dollar Card limit.
+              </p>
+            </div>
+
+            <ul className="space-y-2 text-xs text-zinc-600 pt-2 border-t border-zinc-200/60">
+              <li className="flex items-start gap-2">
+                <X className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <span>No native Khalti/eSewa; domestic cards decline</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <X className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <span>Forces 5-digit US Zip Code, confusing shoppers</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <X className="w-4 h-4 text-red-600 shrink-0 mt-0.5" />
+                <span>Subscriptions fail (NRB blocks card auto-debit)</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="pt-3 border-t border-zinc-200/60 text-[11px] font-mono text-red-700 bg-red-50/50 p-2.5 rounded-xl text-center">
+            ✕ Built for US/EU Cards &amp; Zip Codes
+          </div>
+        </div>
+
+        {/* Instagram DMs Verdict Card (Manual Chaos) */}
+        <div className="rounded-2xl border border-zinc-200 bg-zinc-50/70 p-6 space-y-4 shadow-xs flex flex-col justify-between">
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-2">
+                <span className="w-7 h-7 rounded-lg bg-linear-to-tr from-[#FD5949] to-[#D6249F] text-white text-xs flex items-center justify-center font-bold">
+                  IG
+                </span>
+                <span className="font-extrabold text-base text-zinc-950">Instagram DMs</span>
+              </div>
+              <span className="text-xs font-mono font-bold text-amber-800 bg-amber-50 px-2.5 py-0.5 rounded-full border border-amber-200">
+                High Labor Cost
+              </span>
+            </div>
+
+            <div>
+              <div className="flex items-baseline gap-1">
+                <span className="text-3xl font-extrabold font-mono text-zinc-950">Rs. 0</span>
+                <span className="text-xs text-zinc-500 font-mono">+ 20 hrs/wk lost</span>
+              </div>
+              <p className="text-xs text-zinc-600 mt-1">
+                Free to text, but loses sales to manual back-and-forth.
+              </p>
+            </div>
+
+            <ul className="space-y-2 text-xs text-zinc-600 pt-2 border-t border-zinc-200/60">
+              <li className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>Forged Fonepay screenshots &amp; fake COD orders</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>Vague landmark addresses confuse courier riders</span>
+              </li>
+              <li className="flex items-start gap-2">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0 mt-0.5" />
+                <span>Zero real-time inventory or automatic re-orders</span>
+              </li>
+            </ul>
+          </div>
+
+          <div className="pt-3 border-t border-zinc-200/60 text-[11px] font-mono text-amber-800 bg-amber-50/50 p-2.5 rounded-xl text-center">
+            ⚠️ Does not scale past 5 orders/day
+          </div>
+        </div>
       </div>
 
-      {/* Comparison Grid */}
-      <div className="overflow-x-auto rounded-2xl border border-zinc-200/90 bg-white shadow-sm">
-        <table className="w-full text-left border-collapse min-w-[700px]">
-          <thead>
-            <tr className="border-b border-zinc-200 bg-zinc-50/80">
-              <th className="p-4 sm:p-5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 w-1/4">
-                Capability
-              </th>
-              <th className="p-4 sm:p-5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-950 bg-orange-50/50 border-x border-orange-200/60 w-5/12">
-                <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[#C2410C] inline-block" />
-                  <span className="text-sm font-extrabold text-zinc-950">ShopCraft</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#C2410C] text-white font-bold ml-1">
-                    BUILT FOR NEPAL
-                  </span>
-                </div>
-              </th>
-              <th className="p-4 sm:p-5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-600 w-1/3">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold text-zinc-800">Shopify</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-700">US / Global</span>
-                </div>
-              </th>
-              <th className="p-4 sm:p-5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-600 w-1/4 hidden lg:table-cell">
-                <div className="flex items-center gap-1.5">
-                  <span className="text-sm font-bold text-zinc-800">Instagram DMs</span>
-                  <span className="text-[10px] px-1.5 py-0.5 rounded bg-zinc-200 text-zinc-700">Manual</span>
-                </div>
-              </th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-zinc-200/80">
-            {filteredRows.map((row, idx) => (
-              <tr key={idx} className="hover:bg-zinc-50/50 transition-colors">
-                {/* Feature Label */}
-                <td className="p-4 sm:p-5 align-top">
-                  <span className="font-bold text-xs sm:text-sm text-zinc-900 block">
-                    {row.feature}
-                  </span>
-                </td>
-
-                {/* ShopCraft Column (Highlighted) */}
-                <td className="p-4 sm:p-5 align-top bg-orange-50/30 border-x border-orange-200/60 space-y-1.5">
-                  <div className="flex items-start gap-2">
-                    <span className="mt-0.5 p-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
-                      <Check className="w-3.5 h-3.5 stroke-[3]" />
-                    </span>
-                    <div>
-                      <p className="font-bold text-xs sm:text-sm text-zinc-950">
-                        {row.shopcraft.title}
-                      </p>
-                      <p className="text-xs text-zinc-600 leading-relaxed mt-0.5">
-                        {row.shopcraft.description}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Shopify Column */}
-                <td className="p-4 sm:p-5 align-top space-y-1.5">
-                  <div className="flex items-start gap-2">
-                    {row.shopify.status === "no" ? (
-                      <span className="mt-0.5 p-0.5 rounded-full bg-red-100 text-red-700 shrink-0">
-                        <X className="w-3.5 h-3.5 stroke-[3]" />
-                      </span>
-                    ) : (
-                      <span className="mt-0.5 p-0.5 rounded-full bg-amber-100 text-amber-800 shrink-0">
-                        <AlertCircle className="w-3.5 h-3.5 stroke-[2]" />
-                      </span>
-                    )}
-                    <div>
-                      <p className="font-semibold text-xs sm:text-sm text-zinc-900">
-                        {row.shopify.title}
-                      </p>
-                      <p className="text-xs text-zinc-600 leading-relaxed mt-0.5">
-                        {row.shopify.description}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-
-                {/* Instagram Column */}
-                <td className="p-4 sm:p-5 align-top space-y-1.5 hidden lg:table-cell">
-                  <div className="flex items-start gap-2">
-                    {row.instagram.status === "no" ? (
-                      <span className="mt-0.5 p-0.5 rounded-full bg-red-100 text-red-700 shrink-0">
-                        <X className="w-3.5 h-3.5 stroke-[3]" />
-                      </span>
-                    ) : (
-                      <span className="mt-0.5 p-0.5 rounded-full bg-amber-100 text-amber-800 shrink-0">
-                        <AlertCircle className="w-3.5 h-3.5 stroke-[2]" />
-                      </span>
-                    )}
-                    <div>
-                      <p className="font-semibold text-xs sm:text-sm text-zinc-800">
-                        {row.instagram.title}
-                      </p>
-                      <p className="text-xs text-zinc-600 leading-relaxed mt-0.5">
-                        {row.instagram.description}
-                      </p>
-                    </div>
-                  </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-
-      {/* Annual Cost Savings Callout */}
-      <div className="p-6 sm:p-8 rounded-2xl border border-zinc-200/90 bg-gradient-to-br from-white to-zinc-50 shadow-xs">
-        <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
-          <div className="space-y-2 max-w-xl">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#C2410C]">
-              The True Cost of Selling Online in Nepal
+      {/* ------------------------------------------------------------------- */}
+      {/* 2. THE ANNUAL COST COMPARISON CALLOUT                                */}
+      {/* ------------------------------------------------------------------- */}
+      <div className="rounded-2xl border border-emerald-900/15 bg-[#0F2D1F] text-white p-6 sm:p-8 shadow-md">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-6 items-center">
+          <div className="lg:col-span-8 space-y-2">
+            <span className="text-[10px] font-mono uppercase tracking-wider text-emerald-400 font-bold">
+              THE HARD NUMBERS
             </span>
-            <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-950">
-              Save over Rs. 64,000 every year vs Shopify.
+            <h3 className="text-xl sm:text-2xl font-bold tracking-tight">
+              Selling on Shopify in Nepal costs Rs. 97,900+ every year.
             </h3>
-            <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
-              Shopify costs $39/mo (~Rs. 62,400/yr), plus bank Dollar Card issuance and exchange fees, plus 30–50% lost orders from confused shoppers trying to enter a &quot;Zip Code&quot;. On ShopCraft, your store is free to host, accepts Khalti and Cash on Delivery out of the box, and speaks native Nepali geography.
+            <p className="text-xs sm:text-sm text-zinc-300 leading-relaxed max-w-2xl">
+              Shopify basic plan ($39/mo = Rs. 62,400) + essential third-party apps ($20/mo = Rs. 32,000) + bank prepaid Dollar Card issuance and forex markup (3.5% = Rs. 3,500). ShopCraft is Rs. 0 during Beta.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 sm:gap-6 shrink-0 bg-white p-4 sm:p-6 rounded-xl border border-zinc-200 shadow-2xs">
-            <div className="text-center px-3 border-r border-zinc-200">
-              <span className="block text-[11px] font-mono text-zinc-500 uppercase">Shopify Cost</span>
-              <span className="text-xl sm:text-2xl font-extrabold font-mono text-red-600">
-                Rs. 64,400+<span className="text-xs text-zinc-500 font-normal">/yr</span>
-              </span>
+          <div className="lg:col-span-4 bg-white/10 backdrop-blur-sm rounded-xl p-4 border border-white/15 text-center space-y-1">
+            <span className="text-[11px] font-mono text-emerald-300 uppercase tracking-wider block">
+              You Save with ShopCraft
+            </span>
+            <span className="text-3xl sm:text-4xl font-extrabold font-mono text-white block">
+              Rs. 97,900
+            </span>
+            <span className="text-[10px] font-mono text-zinc-300 block">
+              Per year kept in your own pocket
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* ------------------------------------------------------------------- */}
+      {/* 3. INTERACTIVE CATEGORY TABS & COMPARISON MATRIX                    */}
+      {/* ------------------------------------------------------------------- */}
+      <div className="space-y-4">
+        {/* Category Filter Pills */}
+        <div className="flex flex-wrap items-center gap-2 pb-2">
+          <span className="text-xs font-mono text-zinc-500 mr-1 hidden sm:inline">Filter by:</span>
+          {[
+            { id: "all", label: "All Features (8)" },
+            { id: "payments", label: "💳 Payments & Wallets" },
+            { id: "logistics", label: "🛵 Address & Delivery" },
+            { id: "subscriptions", label: "↻ Subscriptions" },
+            { id: "cost", label: "💰 Fees & Currency" },
+          ].map((tab) => (
+            <button
+              key={tab.id}
+              type="button"
+              onClick={() => setActiveFilter(tab.id as CategoryFilter)}
+              className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer ${
+                activeFilter === tab.id
+                  ? "bg-[#C2410C] text-white font-semibold shadow-2xs"
+                  : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-950 hover:bg-zinc-50"
+              }`}
+            >
+              {tab.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Detailed Comparison Table */}
+        <div className="rounded-2xl border border-zinc-200 bg-white overflow-hidden shadow-xs">
+          {/* Table Header */}
+          <div className="grid grid-cols-12 bg-zinc-100/80 border-b border-zinc-200 px-4 sm:px-6 py-3.5 text-xs font-mono font-bold text-zinc-800">
+            <div className="col-span-5 sm:col-span-4">Capability / Feature</div>
+            <div className="col-span-7 sm:col-span-8 grid grid-cols-3 gap-2 sm:gap-4 text-center">
+              <div className="text-[#C2410C]">ShopCraft 🇳🇵</div>
+              <div className="text-zinc-600">Shopify</div>
+              <div className="text-zinc-600">Instagram DMs</div>
             </div>
-            <div className="text-center px-3">
-              <span className="block text-[11px] font-mono text-emerald-600 font-semibold uppercase">ShopCraft Cost</span>
-              <span className="text-xl sm:text-2xl font-extrabold font-mono text-emerald-600">
-                Rs. 0<span className="text-xs text-zinc-500 font-normal">/mo</span>
-              </span>
-            </div>
+          </div>
+
+          {/* Table Body */}
+          <div className="divide-y divide-zinc-200">
+            {filteredRows.map((row, idx) => (
+              <div
+                key={row.feature}
+                className={`grid grid-cols-12 px-4 sm:px-6 py-4 items-start gap-2 text-xs transition-colors ${
+                  idx % 2 === 0 ? "bg-white" : "bg-zinc-50/50"
+                }`}
+              >
+                {/* Feature Column */}
+                <div className="col-span-5 sm:col-span-4 pr-2">
+                  <p className="font-extrabold text-zinc-950">{row.feature}</p>
+                  <span className="inline-block text-[9px] font-mono uppercase text-zinc-400 mt-0.5">
+                    {row.category}
+                  </span>
+                </div>
+
+                {/* 3 Competitor Columns */}
+                <div className="col-span-7 sm:col-span-8 grid grid-cols-3 gap-2 sm:gap-4">
+                  {/* ShopCraft */}
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-emerald-50/70 border border-emerald-200 space-y-1">
+                    <div className="flex items-center gap-1 text-emerald-800 font-bold text-[11px]">
+                      <Check className="w-3.5 h-3.5 stroke-[3] text-emerald-700 shrink-0" />
+                      <span>{row.shopcraft.title}</span>
+                    </div>
+                    <p className="text-[10px] text-zinc-600 leading-normal hidden sm:block">
+                      {row.shopcraft.description}
+                    </p>
+                  </div>
+
+                  {/* Shopify */}
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1">
+                    <div className="flex items-center gap-1 text-zinc-800 font-semibold text-[11px]">
+                      {row.shopify.status === "no" ? (
+                        <X className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                      ) : (
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      )}
+                      <span>{row.shopify.title}</span>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 leading-normal hidden sm:block">
+                      {row.shopify.description}
+                    </p>
+                  </div>
+
+                  {/* Instagram DMs */}
+                  <div className="p-2 sm:p-2.5 rounded-xl bg-zinc-50 border border-zinc-200/80 space-y-1">
+                    <div className="flex items-center gap-1 text-zinc-800 font-semibold text-[11px]">
+                      {row.instagram.status === "no" ? (
+                        <X className="w-3.5 h-3.5 text-red-600 shrink-0" />
+                      ) : row.instagram.status === "warning" ? (
+                        <AlertTriangle className="w-3.5 h-3.5 text-amber-600 shrink-0" />
+                      ) : (
+                        <Check className="w-3.5 h-3.5 text-zinc-600 shrink-0" />
+                      )}
+                      <span>{row.instagram.title}</span>
+                    </div>
+                    <p className="text-[10px] text-zinc-500 leading-normal hidden sm:block">
+                      {row.instagram.description}
+                    </p>
+                  </div>
+                </div>
+              </div>
+            ))}
           </div>
         </div>
       </div>

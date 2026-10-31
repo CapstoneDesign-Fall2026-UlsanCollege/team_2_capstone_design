@@ -362,7 +362,7 @@ export interface ProductItem {
   name: string;
   description: string;
   image_url: string;
-  attributes: Record<string, any>;
+  attributes: Record<string, string>;
   allow_one_time: boolean;
   allow_subscription: boolean;
   is_active: boolean;

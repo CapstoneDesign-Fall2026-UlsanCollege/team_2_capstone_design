@@ -5,7 +5,6 @@ import { useParams } from "next/navigation";
 import {
   RotateCcw,
   Search,
-  SlidersHorizontal,
 } from "lucide-react";
 import {
   fetchMerchantOrders,
@@ -69,9 +68,28 @@ export default function MerchantOrdersPage() {
   };
 
   useEffect(() => {
-    loadOrders(activeTab, searchQuery);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [storeSlug, activeTab]);
+    if (!storeSlug) return;
+    let ignore = false;
+    fetchMerchantOrders(storeSlug, {
+      status: activeTab,
+      search: searchQuery.trim() || undefined,
+    })
+      .then((res) => {
+        if (!ignore) {
+          setOrders(res.orders);
+          setCounts(res.counts);
+        }
+      })
+      .catch(() => {})
+      .finally(() => {
+        if (!ignore) {
+          setIsLoading(false);
+        }
+      });
+    return () => {
+      ignore = true;
+    };
+  }, [storeSlug, activeTab, searchQuery]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -205,7 +223,7 @@ export default function MerchantOrdersPage() {
             <button
               key={tab.id}
               type="button"
-              onClick={() => setActiveTab(tab.id)}
+              onClick={() => { setActiveTab(tab.id); setIsLoading(true); }}
               className={`px-3 py-2 text-xs font-mono font-medium rounded-t-md transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer border-b-2 -mb-px ${
                 isActive
                   ? "border-[var(--primary)] text-[var(--foreground)] font-bold bg-[var(--muted)]/40"
