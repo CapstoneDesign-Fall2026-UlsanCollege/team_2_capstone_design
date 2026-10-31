@@ -195,19 +195,19 @@ export function ShopifyComparisonTable() {
           onClick={() => setActiveCategory("all")}
           className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer ${
             activeCategory === "all"
-              ? "bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] font-semibold shadow-xs"
-              : "bg-[var(--sc-surface,#FFFFFF)] border border-[var(--sc-line,#E8E8E1)] text-[var(--sc-ink-2,#4B5060)] hover:text-[var(--sc-ink,#111318)]"
+              ? "bg-[#C2410C] text-white font-semibold shadow-xs"
+              : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-950"
           }`}
         >
-          All Features ({COMPARISON_DATA.length})
+          All Capabilities ({COMPARISON_DATA.length})
         </button>
         <button
           type="button"
           onClick={() => setActiveCategory("cost")}
           className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer ${
             activeCategory === "cost"
-              ? "bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] font-semibold shadow-xs"
-              : "bg-[var(--sc-surface,#FFFFFF)] border border-[var(--sc-line,#E8E8E1)] text-[var(--sc-ink-2,#4B5060)] hover:text-[var(--sc-ink,#111318)]"
+              ? "bg-[#C2410C] text-white font-semibold shadow-xs"
+              : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-950"
           }`}
         >
           Pricing &amp; Cost
@@ -217,8 +217,8 @@ export function ShopifyComparisonTable() {
           onClick={() => setActiveCategory("payments")}
           className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer ${
             activeCategory === "payments"
-              ? "bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] font-semibold shadow-xs"
-              : "bg-[var(--sc-surface,#FFFFFF)] border border-[var(--sc-line,#E8E8E1)] text-[var(--sc-ink-2,#4B5060)] hover:text-[var(--sc-ink,#111318)]"
+              ? "bg-[#C2410C] text-white font-semibold shadow-xs"
+              : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-950"
           }`}
         >
           Khalti, COD &amp; Subscriptions
@@ -228,8 +228,8 @@ export function ShopifyComparisonTable() {
           onClick={() => setActiveCategory("checkout")}
           className={`px-3.5 py-1.5 rounded-full text-xs font-mono transition-all cursor-pointer ${
             activeCategory === "checkout"
-              ? "bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] font-semibold shadow-xs"
-              : "bg-[var(--sc-surface,#FFFFFF)] border border-[var(--sc-line,#E8E8E1)] text-[var(--sc-ink-2,#4B5060)] hover:text-[var(--sc-ink,#111318)]"
+              ? "bg-[#C2410C] text-white font-semibold shadow-xs"
+              : "bg-white border border-zinc-200 text-zinc-600 hover:text-zinc-950"
           }`}
         >
           Nepali Addresses &amp; Wards
@@ -237,18 +237,18 @@ export function ShopifyComparisonTable() {
       </div>
 
       {/* Comparison Grid */}
-      <div className="overflow-x-auto rounded-2xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] shadow-xs">
+      <div className="overflow-x-auto rounded-2xl border border-zinc-200/90 bg-white shadow-sm">
         <table className="w-full text-left border-collapse min-w-[700px]">
           <thead>
-            <tr className="border-b border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-paper,#FAFAF7)]">
-              <th className="p-4 sm:p-5 text-xs font-mono font-bold uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] w-1/4">
+            <tr className="border-b border-zinc-200 bg-zinc-50/80">
+              <th className="p-4 sm:p-5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-500 w-1/4">
                 Capability
               </th>
-              <th className="p-4 sm:p-5 text-xs font-mono font-bold uppercase tracking-wider text-[var(--sc-ink,#111318)] bg-amber-50/60 dark:bg-amber-950/20 border-x border-[var(--sc-marigold,#F2A900)]/30 w-5/12">
+              <th className="p-4 sm:p-5 text-xs font-mono font-bold uppercase tracking-wider text-zinc-950 bg-orange-50/50 border-x border-orange-200/60 w-5/12">
                 <div className="flex items-center gap-1.5">
-                  <span className="w-2.5 h-2.5 rounded-full bg-[var(--sc-marigold,#F2A900)] inline-block" />
-                  <span className="text-sm font-extrabold">ShopCraft</span>
-                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[var(--sc-marigold,#F2A900)] text-zinc-950 font-bold ml-1">
+                  <span className="w-2.5 h-2.5 rounded-full bg-[#C2410C] inline-block" />
+                  <span className="text-sm font-extrabold text-zinc-950">ShopCraft</span>
+                  <span className="text-[10px] px-2 py-0.5 rounded-full bg-[#C2410C] text-white font-bold ml-1">
                     BUILT FOR NEPAL
                   </span>
                 </div>
@@ -267,27 +267,27 @@ export function ShopifyComparisonTable() {
               </th>
             </tr>
           </thead>
-          <tbody className="divide-y divide-[var(--sc-line,#E8E8E1)]">
+          <tbody className="divide-y divide-zinc-200/80">
             {filteredRows.map((row, idx) => (
               <tr key={idx} className="hover:bg-zinc-50/50 transition-colors">
                 {/* Feature Label */}
                 <td className="p-4 sm:p-5 align-top">
-                  <span className="font-bold text-xs sm:text-sm text-[var(--sc-ink,#111318)] block">
+                  <span className="font-bold text-xs sm:text-sm text-zinc-900 block">
                     {row.feature}
                   </span>
                 </td>
 
                 {/* ShopCraft Column (Highlighted) */}
-                <td className="p-4 sm:p-5 align-top bg-amber-50/30 dark:bg-amber-950/10 border-x border-[var(--sc-marigold,#F2A900)]/30 space-y-1.5">
+                <td className="p-4 sm:p-5 align-top bg-orange-50/30 border-x border-orange-200/60 space-y-1.5">
                   <div className="flex items-start gap-2">
                     <span className="mt-0.5 p-0.5 rounded-full bg-emerald-100 text-emerald-800 shrink-0">
                       <Check className="w-3.5 h-3.5 stroke-[3]" />
                     </span>
                     <div>
-                      <p className="font-bold text-xs sm:text-sm text-[var(--sc-ink,#111318)]">
+                      <p className="font-bold text-xs sm:text-sm text-zinc-950">
                         {row.shopcraft.title}
                       </p>
-                      <p className="text-xs text-[var(--sc-ink-2,#4B5060)] leading-relaxed mt-0.5">
+                      <p className="text-xs text-zinc-600 leading-relaxed mt-0.5">
                         {row.shopcraft.description}
                       </p>
                     </div>
@@ -346,21 +346,21 @@ export function ShopifyComparisonTable() {
       </div>
 
       {/* Annual Cost Savings Callout */}
-      <div className="p-6 sm:p-8 rounded-2xl border border-[var(--sc-line,#E8E8E1)] bg-gradient-to-br from-[var(--sc-surface,#FFFFFF)] to-[var(--sc-paper,#FAFAF7)] shadow-xs">
+      <div className="p-6 sm:p-8 rounded-2xl border border-zinc-200/90 bg-gradient-to-br from-white to-zinc-50 shadow-xs">
         <div className="flex flex-col lg:flex-row lg:items-center justify-between gap-6">
           <div className="space-y-2 max-w-xl">
-            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[var(--sc-marigold,#F2A900)]">
+            <span className="text-xs font-mono font-bold uppercase tracking-wider text-[#C2410C]">
               The True Cost of Selling Online in Nepal
             </span>
-            <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-[var(--sc-ink,#111318)]">
+            <h3 className="text-xl sm:text-2xl font-extrabold tracking-tight text-zinc-950">
               Save over Rs. 64,000 every year vs Shopify.
             </h3>
-            <p className="text-xs sm:text-sm text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
+            <p className="text-xs sm:text-sm text-zinc-600 leading-relaxed">
               Shopify costs $39/mo (~Rs. 62,400/yr), plus bank Dollar Card issuance and exchange fees, plus 30–50% lost orders from confused shoppers trying to enter a &quot;Zip Code&quot;. On ShopCraft, your store is free to host, accepts Khalti and Cash on Delivery out of the box, and speaks native Nepali geography.
             </p>
           </div>
 
-          <div className="flex items-center gap-4 sm:gap-6 shrink-0 bg-white p-4 sm:p-6 rounded-xl border border-[var(--sc-line,#E8E8E1)] shadow-2xs">
+          <div className="flex items-center gap-4 sm:gap-6 shrink-0 bg-white p-4 sm:p-6 rounded-xl border border-zinc-200 shadow-2xs">
             <div className="text-center px-3 border-r border-zinc-200">
               <span className="block text-[11px] font-mono text-zinc-500 uppercase">Shopify Cost</span>
               <span className="text-xl sm:text-2xl font-extrabold font-mono text-red-600">
