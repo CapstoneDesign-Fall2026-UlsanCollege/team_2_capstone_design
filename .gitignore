@@ -11,3 +11,5 @@ audit/
 .agents/.gsd-staging/
 
 scratch/
+
+frontend/public/uploads/
