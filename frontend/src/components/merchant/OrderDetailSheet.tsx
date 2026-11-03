@@ -13,10 +13,12 @@ import {
   MessageCircle,
   Package,
   Phone,
+  Printer,
   Truck,
   User,
   X,
 } from "lucide-react";
+import { PackingSlipModal } from "./PackingSlipModal";
 import { formatNpr, OrderDetail } from "@/lib/api";
 
 export interface OrderDetailSheetProps {
@@ -24,6 +26,8 @@ export interface OrderDetailSheetProps {
   open: boolean;
   onOpenChange: (open: boolean) => void;
   onAdvanceStatus: (order: OrderDetail, toStatus: string, note?: string) => void;
+  storeSlug?: string;
+  storeName?: string;
 }
 
 export function OrderDetailSheet({
@@ -31,7 +35,10 @@ export function OrderDetailSheet({
   open,
   onOpenChange,
   onAdvanceStatus,
+  storeSlug,
+  storeName,
 }: OrderDetailSheetProps) {
+  const [slipOpen, setSlipOpen] = useState<boolean>(false);
   const [copiedPhone, setCopiedPhone] = useState<boolean>(false);
   const [trackingNote, setTrackingNote] = useState<string>("");
 
@@ -94,14 +101,26 @@ export function OrderDetailSheet({
               </span>
             </div>
 
-            <button
-              type="button"
-              onClick={() => onOpenChange(false)}
-              aria-label="Close details"
-              className="p-1.5 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
-            >
-              <X className="w-4 h-4" aria-hidden="true" />
-            </button>
+            <div className="flex items-center gap-2">
+              <button
+                type="button"
+                onClick={() => setSlipOpen(true)}
+                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--secondary)] hover:bg-[var(--muted)] text-xs font-mono font-medium text-[var(--foreground)] transition-colors cursor-pointer"
+                title="Print Courier Packing Slip"
+              >
+                <Printer className="w-3.5 h-3.5 text-[var(--foreground)]" />
+                <span className="hidden sm:inline">Print Slip</span>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => onOpenChange(false)}
+                aria-label="Close details"
+                className="p-1.5 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
+              >
+                <X className="w-4 h-4" aria-hidden="true" />
+              </button>
+            </div>
           </div>
 
           <Dialog.Description className="sr-only">
@@ -352,6 +371,15 @@ export function OrderDetailSheet({
           </div>
         </Dialog.Content>
       </Dialog.Portal>
+
+      {/* 1-Click Nepali Courier Packing Slip (Shopify Shipping) */}
+      <PackingSlipModal
+        storeName={storeName || "ShopCraft Store"}
+        storeSlug={storeSlug || "store"}
+        order={order}
+        open={slipOpen}
+        onOpenChange={setSlipOpen}
+      />
     </Dialog.Root>
   );
 }

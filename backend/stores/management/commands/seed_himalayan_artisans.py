@@ -41,6 +41,10 @@ class Command(BaseCommand):
                     "outside_valley_shipping_minor": 18000,
                     "free_shipping_threshold_minor": 200000,
                     "is_active": True,
+                    "story_headline": "Pure Botanicals & Single-Estate Mountain Teas",
+                    "about_text": "Himalayan Artisans celebrates the rich botanicals and organic harvest of eastern Nepal. We partner with women's farming cooperatives in Ilam and Dhankuta to harvest hand-rolled black teas, wild chamomile blossoms, and high-altitude cardamom.\n\nEvery batch is packaged in biodegradable tin canisters right at the estate, ensuring peak freshness while supporting sustainable livelihoods in rural farming communities.",
+                    "address": "Kanyam Tea Estate Road, Ilam & Jhamsikhel Studio, Lalitpur, Nepal",
+                    "contact_email": "ananya.rai@himalayanartisans.com.np",
                 }
             )
 

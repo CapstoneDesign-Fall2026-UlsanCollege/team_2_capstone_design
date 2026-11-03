@@ -3,6 +3,15 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import {
+  BarChart3,
+  Home,
+  ShoppingBag,
+  Package,
+  Repeat,
+  Settings,
+  Plus,
+} from "lucide-react";
 
 interface MerchantBottomNavProps {
   storeSlug: string;
@@ -16,31 +25,37 @@ export function MerchantBottomNav({ storeSlug }: MerchantBottomNavProps) {
       label: "Home",
       href: `/merchant/${encodeURIComponent(storeSlug)}`,
       exact: true,
-      icon: "❖",
-    },
-    {
-      label: "Products",
-      href: `/merchant/${encodeURIComponent(storeSlug)}/products`,
-      exact: false,
-      icon: "▤",
+      icon: Home,
     },
     {
       label: "Orders",
       href: `/merchant/${encodeURIComponent(storeSlug)}/orders`,
       exact: false,
-      icon: "◎",
+      icon: ShoppingBag,
+    },
+    {
+      label: "Catalog",
+      href: `/merchant/${encodeURIComponent(storeSlug)}/products`,
+      exact: false,
+      icon: Package,
     },
     {
       label: "Subs",
       href: `/merchant/${encodeURIComponent(storeSlug)}/subscriptions`,
       exact: false,
-      icon: "↻",
+      icon: Repeat,
+    },
+    {
+      label: "Analytics",
+      href: `/merchant/${encodeURIComponent(storeSlug)}/analytics`,
+      exact: false,
+      icon: BarChart3,
     },
     {
       label: "Settings",
       href: `/merchant/${encodeURIComponent(storeSlug)}/settings`,
       exact: false,
-      icon: "⚙",
+      icon: Settings,
     },
   ];
 
@@ -50,10 +65,10 @@ export function MerchantBottomNav({ storeSlug }: MerchantBottomNavProps) {
       <div className="lg:hidden fixed bottom-18 right-4 z-40">
         <Link
           href={`/merchant/${encodeURIComponent(storeSlug)}/products?action=new`}
-          className="w-12 h-12 rounded-full shadow-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center text-xl font-bold active:scale-95 transition-transform"
+          className="w-12 h-12 rounded-full shadow-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center font-bold active:scale-95 transition-transform"
           aria-label="Add new product"
         >
-          +
+          <Plus className="w-5 h-5 stroke-[2.5]" />
         </Link>
       </div>
 
@@ -63,6 +78,7 @@ export function MerchantBottomNav({ storeSlug }: MerchantBottomNavProps) {
           const isActive = tab.exact
             ? pathname === tab.href
             : pathname.startsWith(tab.href);
+          const IconComponent = tab.icon;
 
           return (
             <Link
@@ -70,11 +86,11 @@ export function MerchantBottomNav({ storeSlug }: MerchantBottomNavProps) {
               href={tab.href}
               className={`flex-1 flex flex-col items-center justify-center h-full text-center py-1 transition-colors ${
                 isActive
-                  ? "text-[var(--foreground)] font-semibold"
+                  ? "text-emerald-500 font-semibold"
                   : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] font-normal"
               }`}
             >
-              <span className="text-sm font-mono leading-none mb-1">{tab.icon}</span>
+              <IconComponent className="w-4 h-4 mb-0.5" />
               <span className="text-[10px] tracking-tight">{tab.label}</span>
             </Link>
           );

@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import { ConsoleShell } from "@/components/merchant/ConsoleShell";
+import { PlatformThemeProvider } from "@/context/PlatformThemeContext";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -29,10 +30,12 @@ export default async function MerchantLayout({
   const { storeSlug } = await params;
 
   return (
-    <div
-      className={`${geist.variable} ${geistMono.variable} font-sans console min-h-dvh bg-[var(--background)] text-[var(--foreground)] text-[13px] antialiased`}
-    >
-      <ConsoleShell storeSlug={storeSlug}>{children}</ConsoleShell>
-    </div>
+    <PlatformThemeProvider>
+      <div
+        className={`${geist.variable} ${geistMono.variable} font-sans console min-h-dvh bg-[var(--background)] text-[var(--foreground)] text-[13px] antialiased transition-colors duration-200`}
+      >
+        <ConsoleShell storeSlug={storeSlug}>{children}</ConsoleShell>
+      </div>
+    </PlatformThemeProvider>
   );
 }

@@ -264,6 +264,7 @@ export default function MerchantOrdersPage() {
         open={isDetailOpen}
         onOpenChange={setIsDetailOpen}
         onAdvanceStatus={handleAdvanceStatus}
+        storeSlug={storeSlug}
       />
 
       {/* 5-Second Non-Blocking Undo Bar (DESIGN.md §4c) */}

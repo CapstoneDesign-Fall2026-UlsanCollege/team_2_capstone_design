@@ -5,6 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from catalog.models import Product, SellingPlan, Variant
+from core.tenant_context import BypassRLSContext
 from orders.models import Order, OrderEvent, OrderItem
 from stores.models import Customer, Store, StoreMembership
 from subscriptions.models import Subscription
@@ -18,7 +19,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("Seeding BrewMellow Store #1...")
 
-        with transaction.atomic():
+        with BypassRLSContext(), transaction.atomic():
             # 1. Merchant Owner
             owner, _ = User.objects.get_or_create(
                 email="aarav.shrestha@brewmellow.com.np",
@@ -41,6 +42,10 @@ class Command(BaseCommand):
                     "outside_valley_shipping_minor": 20000,
                     "free_shipping_threshold_minor": 250000,
                     "is_active": True,
+                    "story_headline": "Boutique Micro-Lot Coffee Roastery in Patan",
+                    "about_text": "Founded in 2021 in the historic alleys of Patan, BrewMellow works directly with smallholder farmers across Gulmi, Nuwakot, and Kaski.\n\nWe source exclusively organic, shade-grown Arabica and hand-roast in micro-batches every Tuesday morning. By cutting out brokers, our farmers earn 45% above Fair Trade rates, and our customers receive fresh specialty coffee within 48 hours of roasting.",
+                    "address": "Patan Dhoka, Lalitpur, Bagmati Province, Nepal",
+                    "contact_email": "hello@brewmellow.com.np",
                 }
             )
 
@@ -357,7 +362,7 @@ class Command(BaseCommand):
                     "order": order1,
                     "status": "ACTIVE",
                     "unit_price_minor": 61750,
-                    "next_delivery_date": now + timedelta(days=14),
+                    "next_delivery_date": now + timedelta(days=5),
                     "cycles_total": 3,
                     "cycles_remaining": 2,
                     "shipping_address_snapshot": sita_addr,

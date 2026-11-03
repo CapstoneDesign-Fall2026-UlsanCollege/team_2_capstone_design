@@ -1,32 +1,33 @@
 "use client";
 
 import React from "react";
-import { Package, RefreshCw } from "lucide-react";
+import Link from "next/link";
+import { Check, Eye, Package, Plus, Sparkles } from "lucide-react";
 import { formatNpr, ProductItem } from "@/lib/api";
 
 export interface ProductGridProps {
+  storeSlug?: string;
   products: ProductItem[];
   onSelectProduct: (product: ProductItem) => void;
 }
 
-export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
+export function ProductGrid({ storeSlug, products, onSelectProduct }: ProductGridProps) {
   if (products.length === 0) {
     return (
-      <div className="rounded-sf border border-dashed border-sf-line bg-sf-surface p-12 text-center">
-        <Package className="w-10 h-10 text-sf-muted mx-auto mb-3" aria-hidden="true" />
-        <h3 className="font-sf-display text-base font-semibold text-sf-ink mb-1">
-          No Products Available
+      <div className="rounded-sf border border-dashed border-sf-line bg-sf-surface p-12 text-center my-6">
+        <Package className="w-10 h-10 text-sf-muted mx-auto mb-3 opacity-60" aria-hidden="true" />
+        <h3 className="font-sf-display text-base font-bold text-sf-ink mb-1">
+          No Products Found
         </h3>
         <p className="text-xs text-sf-muted max-w-sm mx-auto leading-relaxed">
-          This store is currently preparing its catalog. Check back soon for freshly roasted and
-          curated goods.
+          No items match your filter selection. Try selecting &quot;All Items&quot; or clearing your search.
         </p>
       </div>
     );
   }
 
   return (
-    <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5 sm:gap-6">
+    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
       {products.map((product) => {
         const variants = product.variants || [];
         const inStockVariants = variants.filter((v) => v.in_stock && v.is_active);
@@ -38,14 +39,139 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
         const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
         const hasMultiplePrices = minPrice !== maxPrice;
 
-        // Extract tasting notes or first attribute for flavor highlight
-        const rawNotes = product.attributes?.tasting_notes as unknown;
-        const tastingNotes = Array.isArray(rawNotes)
-          ? rawNotes.slice(0, 2).join(" · ")
-          : typeof rawNotes === "string"
-          ? rawNotes
-          : (product.attributes?.district as string | undefined) ||
-            (product.attributes?.process as string | undefined);
+        // Subscription discount calculation (10% standard)
+        const subscriptionPriceMinor = Math.round(minPrice * 0.9);
+
+        // Tags & attributes
+        const categoryLabel = product.category || (product.attributes?.category as string) || "";
+        const originDistrict =
+          (product.attributes?.district as string) ||
+          (product.attributes?.origin as string) ||
+          "";
+
+        // Secondary image for hover reveal if provided
+        const primaryImg = product.image_url || "";
+        const secondaryImg = (product.attributes?.secondary_image as string) || "";
+
+        const productSlugOrId = product.slug || String(product.id);
+        const productHref = storeSlug
+          ? `/s/${encodeURIComponent(storeSlug)}/products/${encodeURIComponent(productSlugOrId)}`
+          : null;
+
+        const CardContent = (
+          <>
+            {/* 1. Image Container with aspect-[4/5] & Secondary Image Reveal */}
+            <div className="relative aspect-[4/5] w-full bg-sf-canvas rounded-sf overflow-hidden border border-sf-line/60 flex items-center justify-center">
+              
+              {/* Primary Image */}
+              {primaryImg ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={primaryImg}
+                  alt={product.name}
+                  loading="lazy"
+                  className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
+                />
+              ) : (
+                <div className="flex flex-col items-center justify-center p-4 text-center text-sf-muted">
+                  <Package className="w-8 h-8 mb-1.5 opacity-50" />
+                  <span className="text-[10px] font-sf-mono uppercase tracking-wider">
+                    {categoryLabel || "Authentic Item"}
+                  </span>
+                </div>
+              )}
+
+              {/* Secondary Image Revealed on Hover */}
+              {secondaryImg && (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={secondaryImg}
+                  alt={`${product.name} alternate view`}
+                  loading="lazy"
+                  className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"
+                />
+              )}
+
+              {/* Badges Overlay (Top Left) */}
+              <div className="absolute top-2 left-2 flex flex-col items-start gap-1 pointer-events-none z-10">
+                {product.allow_subscription && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sf-mono font-bold uppercase tracking-wider bg-emerald-800 text-white shadow-xs">
+                    Sub 10%
+                  </span>
+                )}
+                {originDistrict && (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sf-mono font-medium uppercase tracking-wider bg-sf-surface/95 text-sf-ink border border-sf-line shadow-xs">
+                    {originDistrict}
+                  </span>
+                )}
+              </div>
+
+              {/* Out of Stock Overlay */}
+              {!hasStock && variants.length > 0 && (
+                <div className="absolute inset-0 bg-sf-surface/85 backdrop-blur-xs flex items-center justify-center z-10">
+                  <span className="px-2.5 py-1 rounded text-xs font-sf-mono font-bold uppercase tracking-wider bg-sf-ink text-white">
+                    Sold Out
+                  </span>
+                </div>
+              )}
+
+              {/* Quick-View Action Pill */}
+              <div className="absolute inset-x-2 bottom-2 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 hidden sm:block z-20">
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                    onSelectProduct(product);
+                  }}
+                  className="w-full h-8 rounded-sf bg-sf-surface/95 hover:bg-sf-surface text-sf-ink text-[11px] font-sf-body font-semibold tracking-wide border border-sf-line shadow-md flex items-center justify-center gap-1 transition-all cursor-pointer"
+                >
+                  <Eye className="w-3 h-3 text-sf-muted" />
+                  <span>Quick View</span>
+                </button>
+              </div>
+            </div>
+
+            {/* 2. Product Metadata */}
+            <div className="pt-2.5 flex flex-col gap-0.5">
+              
+              {/* Category Hint */}
+              <div className="flex items-center gap-1.5 text-[10px] font-sf-mono text-sf-muted uppercase tracking-wider">
+                <span>{categoryLabel || "Direct from Maker"}</span>
+              </div>
+
+              {/* Product Title */}
+              <h3 className="font-sf-display text-xs sm:text-sm font-bold text-sf-ink group-hover:underline underline-offset-2 line-clamp-1 leading-snug">
+                {product.name}
+              </h3>
+
+              {/* Integer NPR Dual Price */}
+              <div className="pt-1 flex items-baseline gap-1.5">
+                <span className="text-xs sm:text-sm font-bold text-sf-ink tabular-nums font-sf-mono">
+                  {hasMultiplePrices ? `From ${formatNpr(minPrice)}` : formatNpr(minPrice)}
+                </span>
+
+                {product.allow_subscription && (
+                  <span className="text-[10px] font-sf-mono text-emerald-800 font-semibold tabular-nums">
+                    or {formatNpr(subscriptionPriceMinor)}/sub
+                  </span>
+                )}
+              </div>
+            </div>
+          </>
+        );
+
+        if (productHref) {
+          return (
+            <Link
+              key={product.id}
+              href={productHref}
+              className="group flex flex-col text-left cursor-pointer focus:outline-none bg-sf-surface p-3 rounded-sf border border-sf-line shadow-2xs hover:shadow-sm transition-shadow block"
+            >
+              {CardContent}
+            </Link>
+          );
+        }
 
         return (
           <article
@@ -59,79 +185,9 @@ export function ProductGrid({ products, onSelectProduct }: ProductGridProps) {
                 onSelectProduct(product);
               }
             }}
-            className="group relative flex flex-col rounded-sf border border-sf-line bg-sf-surface overflow-hidden hover:border-sf-ink/40 transition-all cursor-pointer text-left focus:outline-none focus:ring-2 focus:ring-sf-ink/20"
+            className="group flex flex-col text-left cursor-pointer focus:outline-none bg-sf-surface p-3 rounded-sf border border-sf-line shadow-2xs hover:shadow-sm transition-shadow"
           >
-            {/* Image Container */}
-            <div className="aspect-square bg-sf-canvas overflow-hidden relative flex items-center justify-center">
-              {product.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  loading="lazy"
-                  className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-300"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center p-4 text-center">
-                  <Package className="w-8 h-8 text-sf-muted mb-1" aria-hidden="true" />
-                  <span className="text-[11px] font-sf-mono text-sf-muted">ShopCraft</span>
-                </div>
-              )}
-
-              {/* Subscription Pill */}
-              {product.allow_subscription && (
-                <div className="absolute top-2 left-2 inline-flex items-center gap-1 px-2 py-0.5 rounded-sf border border-sf-line bg-sf-surface/90 backdrop-blur-xs text-[10px] sm:text-xs font-sf-mono text-sf-ink shadow-xs">
-                  <RefreshCw className="w-2.5 h-2.5 text-sf-accent" aria-hidden="true" />
-                  <span>Subscribe &amp; Save</span>
-                </div>
-              )}
-
-              {/* Out of Stock Overlay */}
-              {!hasStock && variants.length > 0 && (
-                <div className="absolute inset-0 bg-sf-canvas/80 backdrop-blur-xs flex items-center justify-center">
-                  <span className="px-2.5 py-1 rounded-sf border border-sf-line bg-sf-surface text-xs font-sf-mono text-sf-muted">
-                    Out of Stock
-                  </span>
-                </div>
-              )}
-            </div>
-
-            {/* Content Container */}
-            <div className="p-3 sm:p-4 flex-1 flex flex-col justify-between gap-3">
-              <div className="space-y-1">
-                <h3 className="font-sf-display text-sm sm:text-base font-semibold text-sf-ink line-clamp-1 group-hover:opacity-90 transition-opacity">
-                  {product.name}
-                </h3>
-
-                {tastingNotes ? (
-                  <p className="text-[11px] sm:text-xs text-sf-muted line-clamp-1">
-                    {tastingNotes}
-                  </p>
-                ) : (
-                  <p className="text-[11px] sm:text-xs text-sf-muted line-clamp-1">
-                    {product.description || "Artisanal Nepali specialty item"}
-                  </p>
-                )}
-              </div>
-
-              {/* Price & Action Row */}
-              <div className="flex items-center justify-between gap-2 pt-1 border-t border-sf-line/60">
-                <div className="flex flex-col">
-                  {hasMultiplePrices && (
-                    <span className="text-[10px] font-sf-mono text-sf-muted uppercase tracking-wider">
-                      From
-                    </span>
-                  )}
-                  <span className="font-sf-mono text-xs sm:text-sm font-bold text-sf-ink tabular-nums">
-                    {formatNpr(minPrice)}
-                  </span>
-                </div>
-
-                <span className="inline-flex items-center justify-center px-2.5 py-1.5 sm:px-3 sm:py-1.5 rounded-sf bg-sf-cta text-sf-cta-ink font-sf-mono text-[11px] sm:text-xs font-semibold group-hover:opacity-90 transition-opacity whitespace-nowrap">
-                  Select
-                </span>
-              </div>
-            </div>
+            {CardContent}
           </article>
         );
       })}

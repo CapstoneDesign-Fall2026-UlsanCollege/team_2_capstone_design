@@ -2,7 +2,7 @@ import requests
 from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Sum
+from django.db.models import Count, F, Q, Sum
 from django.http import Http404
 from django.urls import path
 from django.utils import timezone
@@ -11,9 +11,11 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from catalog.models import Product, SellingPlan, Variant
+from catalog.models import Discount, Product, SellingPlan, Variant
 from orders.models import Order, OrderItem, OrderEvent
+from core.tenant_context import set_current_tenant_id, reset_current_tenant_id, BypassRLSContext
 from stores.models import (
+    MerchantAuditLog,
     Customer,
     Store,
     StoreMembership,
@@ -29,7 +31,7 @@ from subscriptions.models import Subscription
 # -----------------------------------------------------------------------------
 
 class StorePublicMixin:
-    """Resolves active store from URL slug or raises HTTP 404."""
+    """Resolves active store from URL slug or raises HTTP 404. Sets Postgres RLS context."""
     store = None
 
     def initial(self, request, *args, **kwargs):
@@ -38,6 +40,11 @@ class StorePublicMixin:
         self.store = Store.objects.filter(slug=store_slug, is_active=True).first()
         if not self.store:
             raise Http404("Store not found or inactive.")
+        set_current_tenant_id(self.store.id)
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        reset_current_tenant_id()
+        return super().finalize_response(request, response, *args, **kwargs)
 
 
 class StoreMerchantMixin:
@@ -46,6 +53,8 @@ class StoreMerchantMixin:
     Raises HTTP 404 if the store does not exist or user is not a member (D-03).
     """
     store = None
+    membership = None
+    member_role = "OWNER"
     permission_classes = [permissions.IsAuthenticated]
 
     def initial(self, request, *args, **kwargs):
@@ -55,12 +64,25 @@ class StoreMerchantMixin:
         if not store:
             raise Http404("Store not found.")
 
-        # Check membership
-        is_member = StoreMembership.objects.for_store(store).filter(user=request.user).exists()
+        # Check membership & role
+        membership = StoreMembership.objects.for_store(store).filter(user=request.user).first()
+        is_member = membership is not None
+        if not is_member and (
+            getattr(request.user, "is_staff", False)
+            or getattr(request.user, "is_superuser", False)
+        ):
+            is_member = True
         if not is_member:
             raise Http404("Store not found.")
 
         self.store = store
+        self.membership = membership
+        self.member_role = membership.role if membership else "OWNER"
+        set_current_tenant_id(self.store.id)
+
+    def finalize_response(self, request, response, *args, **kwargs):
+        reset_current_tenant_id()
+        return super().finalize_response(request, response, *args, **kwargs)
 
 
 class StoreScopedSerializerMixin(serializers.ModelSerializer):
@@ -83,22 +105,71 @@ class StorePublicSerializer(serializers.ModelSerializer):
             "slug",
             "name",
             "tagline",
+            "category",
+            "city",
+            "province",
             "currency",
             "theme_preset",
             "logo_url",
             "accent_color",
             "contact_phone",
+            "contact_email",
+            "address",
+            "story_headline",
+            "about_text",
+            "banner_url",
+            "instagram_url",
+            "facebook_url",
             "inside_valley_shipping_minor",
             "outside_valley_shipping_minor",
             "free_shipping_threshold_minor",
+            "cod_enabled",
+            "custom_domain",
         ]
 
 
 class CustomerSerializer(serializers.ModelSerializer):
+    orders_count = serializers.IntegerField(read_only=True, default=0)
+    total_spent_minor = serializers.IntegerField(read_only=True, default=0)
+    city = serializers.SerializerMethodField()
+
     class Meta:
         model = Customer
-        fields = ["id", "email", "full_name", "phone", "created_at"]
+        fields = [
+            "id",
+            "email",
+            "full_name",
+            "phone",
+            "orders_count",
+            "total_spent_minor",
+            "city",
+            "created_at",
+        ]
         read_only_fields = ["id", "created_at"]
+
+    def get_city(self, obj):
+        last_order = obj.orders.order_by("-created_at").first()
+        if last_order and isinstance(last_order.shipping_address_snapshot, dict):
+            return (
+                last_order.shipping_address_snapshot.get("district")
+                or last_order.shipping_address_snapshot.get("city")
+                or "Kathmandu"
+            )
+        return "Kathmandu"
+
+    def to_representation(self, instance):
+        data = super().to_representation(instance)
+        last_order = instance.orders.order_by("-created_at").first()
+        if not data.get("phone") and last_order:
+            snap = getattr(last_order, "shipping_address_snapshot", None)
+            if isinstance(snap, dict) and snap.get("phone"):
+                data["phone"] = snap.get("phone")
+
+        if not data.get("full_name") and last_order:
+            snap = getattr(last_order, "shipping_address_snapshot", None)
+            if isinstance(snap, dict) and snap.get("recipient_name"):
+                data["full_name"] = snap.get("recipient_name")
+        return data
 
 
 class VariantSerializer(StoreScopedSerializerMixin):
@@ -200,6 +271,7 @@ class OrderSerializer(serializers.ModelSerializer):
         model = Order
         fields = [
             "id",
+            "token",
             "order_number",
             "order_type",
             "status",
@@ -228,9 +300,14 @@ class SubscriptionSerializer(serializers.ModelSerializer):
     plan_name = serializers.CharField(source="selling_plan.name", read_only=True)
     plan_code = serializers.CharField(source="selling_plan.code", read_only=True)
     is_prepaid = serializers.BooleanField(source="selling_plan.is_prepaid", read_only=True)
+    interval_unit = serializers.CharField(source="selling_plan.interval_unit", read_only=True)
+    interval_count = serializers.IntegerField(source="selling_plan.interval_count", read_only=True)
+    discount_pct = serializers.IntegerField(source="selling_plan.discount_pct", read_only=True)
     customer_email = serializers.CharField(source="customer.email", read_only=True)
-    customer_name = serializers.CharField(source="customer.user.full_name", default="", read_only=True)
-    customer_phone = serializers.CharField(source="customer.phone", default="", read_only=True)
+    customer_name = serializers.SerializerMethodField()
+    customer_phone = serializers.SerializerMethodField()
+    is_lapsed = serializers.SerializerMethodField()
+    pending_renewal_order = serializers.SerializerMethodField()
 
     class Meta:
         model = Subscription
@@ -247,12 +324,64 @@ class SubscriptionSerializer(serializers.ModelSerializer):
             "plan_name",
             "plan_code",
             "is_prepaid",
+            "interval_unit",
+            "interval_count",
+            "discount_pct",
             "customer_email",
             "customer_name",
             "customer_phone",
+            "is_lapsed",
+            "pending_renewal_order",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+    def _resolve_pending_order(self, obj):
+        if hasattr(obj, "_cached_pending_order"):
+            return obj._cached_pending_order
+        from subscriptions.services import get_pending_renewal_order
+        obj._cached_pending_order = get_pending_renewal_order(obj)
+        return obj._cached_pending_order
+
+    def get_customer_name(self, obj):
+        if obj.customer_id:
+            if obj.customer.full_name:
+                return obj.customer.full_name
+            if obj.customer.user_id and getattr(obj.customer.user, "full_name", ""):
+                return obj.customer.user.full_name
+        snap = obj.shipping_address_snapshot or {}
+        return snap.get("recipient_name", "")
+
+    def get_customer_phone(self, obj):
+        if obj.customer_id and obj.customer.phone:
+            return obj.customer.phone
+        snap = obj.shipping_address_snapshot or {}
+        return snap.get("phone", "")
+
+    def get_is_lapsed(self, obj):
+        if obj.status in ["CANCELLED", "COMPLETED"]:
+            return False
+        if obj.status == "PENDING_PAYMENT":
+            return True
+        if self._resolve_pending_order(obj) is not None:
+            return True
+        today = timezone.now().date()
+        if obj.status == "ACTIVE" and not obj.selling_plan.is_prepaid and obj.next_delivery_date < today:
+            return True
+        return False
+
+    def get_pending_renewal_order(self, obj):
+        pending = self._resolve_pending_order(obj)
+        if not pending:
+            return None
+        return {
+            "id": pending.id,
+            "order_number": pending.order_number,
+            "token": str(pending.token),
+            "total_minor": pending.total_minor,
+            "status": pending.status,
+            "payment_status": pending.payment_status,
+        }
 
 
 # -----------------------------------------------------------------------------
@@ -317,17 +446,216 @@ class ShopperOrderDetailView(StorePublicMixin, APIView):
         )
         if not order:
             raise Http404("Order not found.")
-        return Response(OrderSerializer(order).data)
+        response = Response(OrderSerializer(order).data)
+        response["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+        return response
 
 
 class StorePublicOrderDetailView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, store_slug, order_id):
-        order = Order.objects.for_store(self.store).filter(id=order_id).first()
+        import uuid
+        token_param = request.query_params.get("token", "").strip()
+        order = None
+
+        # Check if order_id is a UUID token
+        try:
+            uuid_token = uuid.UUID(str(order_id))
+            order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
+        except ValueError:
+            # Looked up by integer ID
+            try:
+                oid = int(order_id)
+                if token_param:
+                    try:
+                        param_uuid = uuid.UUID(token_param)
+                        order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
+                    except ValueError:
+                        pass
+                elif request.user.is_authenticated:
+                    # Authenticated shopper viewing their own order
+                    order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
+            except ValueError:
+                pass
+
         if not order:
             raise Http404("Order not found.")
-        return Response(OrderSerializer(order).data)
+        response = Response(OrderSerializer(order).data)
+        response["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+        return response
+
+
+class StorePublicOrderPayView(StorePublicMixin, APIView):
+    """
+    Allows a shopper holding a valid unguessable order access token (e.g. from a
+    pay-per-delivery renewal link or failed Khalti return) to pay via Khalti or confirm COD.
+    """
+    permission_classes = [permissions.AllowAny]
+
+    def post(self, request, store_slug, order_id):
+        import uuid
+        token_param = str(
+            request.data.get("token") or request.query_params.get("token") or ""
+        ).strip()
+        order = None
+
+        try:
+            uuid_token = uuid.UUID(str(order_id))
+            order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
+        except ValueError:
+            try:
+                oid = int(order_id)
+                if token_param:
+                    try:
+                        param_uuid = uuid.UUID(token_param)
+                        order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
+                    except ValueError:
+                        pass
+                elif request.user.is_authenticated:
+                    order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
+            except ValueError:
+                pass
+
+        if not order:
+            raise Http404("Order not found.")
+
+        if order.payment_status == "PAID" or order.status not in ["PENDING_PAYMENT", "PAYMENT_FAILED"]:
+            return Response(
+                {"error": "This order does not have a pending payment balance."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        payment_method = str(request.data.get("payment_method", "KHALTI")).strip().upper()
+        if payment_method not in ["KHALTI", "COD"]:
+            return Response(
+                {"error": "Invalid payment method. Choose KHALTI or COD."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if payment_method == "COD" and not self.store.cod_enabled:
+            return Response(
+                {"error": "Cash on Delivery is currently disabled for this store. Please pay via Khalti."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        has_prepaid_sub = order.originating_subscriptions.filter(selling_plan__is_prepaid=True).exists()
+        if payment_method == "COD" and has_prepaid_sub:
+            return Response(
+                {"error": "Prepaid subscription plans cannot be paid via Cash on Delivery. Please select Khalti."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if payment_method == "COD":
+            with transaction.atomic():
+                old_status = order.status
+                order.status = "CONFIRMED"
+                order.payment_method = "COD"
+                order.payment_status = "COD_PENDING"
+                order.save(update_fields=["status", "payment_method", "payment_status", "updated_at"])
+
+                from subscriptions.services import activate_order_subscriptions
+                activate_order_subscriptions(order)
+
+                OrderEvent.objects.create(
+                    store=self.store,
+                    order=order,
+                    from_status=old_status,
+                    to_status="CONFIRMED",
+                    note="Renewal / order confirmed via Cash on Delivery link.",
+                    actor=request.user if request.user.is_authenticated else None,
+                )
+
+            return Response({
+                "order_id": order.id,
+                "token": str(order.token),
+                "order_number": order.order_number,
+                "status": order.status,
+                "payment_method": "COD",
+                "payment_status": order.payment_status,
+                "total_minor": order.total_minor,
+            })
+
+        # Khalti initiation for renewal / retry payment
+        return_url = request.data.get("return_url") or request.build_absolute_uri(
+            f"/s/{self.store.slug}/checkout/khalti-return/"
+        )
+        custom_key = self.store.get_khalti_secret_key()
+        secret_key = custom_key or getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "Key 0817c7689ee24db18df67142aa7fef1c")
+        if not secret_key.startswith("Key ") and not secret_key.startswith("test_secret_key"):
+            secret_key = f"Key {secret_key}"
+
+        initiate_url = (
+            "https://khalti.com/api/v2/epayment/initiate/"
+            if self.store.khalti_mode == "LIVE"
+            else "https://dev.khalti.com/api/v2/epayment/initiate/"
+        )
+
+        snap = order.shipping_address_snapshot or {}
+        recipient_name = snap.get("recipient_name") or order.customer.full_name or "Shopper"
+        phone = snap.get("phone") or order.customer.phone or "9800000000"
+
+        khalti_body = {
+            "return_url": return_url,
+            "website_url": request.build_absolute_uri(f"/s/{self.store.slug}/"),
+            "amount": order.total_minor,
+            "purchase_order_id": str(order.id),
+            "purchase_order_name": f"{self.store.name} Renewal {order.order_number}",
+            "customer_info": {
+                "name": recipient_name,
+                "email": order.customer.email,
+                "phone": phone,
+            },
+        }
+
+        try:
+            resp = requests.post(
+                initiate_url,
+                json=khalti_body,
+                headers={"Authorization": secret_key, "Content-Type": "application/json"},
+                timeout=5,
+            )
+            data = resp.json()
+            if resp.status_code == 200 and "pidx" in data and "payment_url" in data:
+                order.payment_method = "KHALTI"
+                order.payment_ref = data["pidx"]
+                order.save(update_fields=["payment_method", "payment_ref", "updated_at"])
+                return Response({
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "order_number": order.order_number,
+                    "pidx": data["pidx"],
+                    "payment_url": data["payment_url"],
+                    "status": order.status,
+                })
+        except Exception:
+            pass
+
+        if self.store.khalti_mode != "TEST":
+            return Response(
+                {"error": "Unable to reach Khalti payment gateway. Please try again shortly."},
+                status=status.HTTP_502_BAD_GATEWAY,
+            )
+
+        import secrets as pysecrets
+        sandbox_pidx = f"sandbox_{order.id}_{pysecrets.token_hex(4)}"
+        sandbox_payment_url = (
+            f"/s/{self.store.slug}/checkout/khalti-return/"
+            f"?pidx={sandbox_pidx}&purchase_order_id={order.id}&amount={order.total_minor}"
+        )
+        order.payment_method = "KHALTI"
+        order.payment_ref = sandbox_pidx
+        order.save(update_fields=["payment_method", "payment_ref", "updated_at"])
+
+        return Response({
+            "order_id": order.id,
+            "token": str(order.token),
+            "order_number": order.order_number,
+            "pidx": sandbox_pidx,
+            "payment_url": sandbox_payment_url,
+            "status": order.status,
+            "is_sandbox": True,
+        })
 
 
 class StoreCheckoutQuoteView(StorePublicMixin, APIView):
@@ -401,12 +729,29 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
             shipping_minor = 0
             is_free_shipping = True
 
-        total_minor = subtotal_minor + shipping_minor
+        discount_minor = 0
+        applied_discount_code = None
+        raw_discount_code = str(request.data.get("discount_code") or "").strip().upper()
+        if raw_discount_code:
+            disc = Discount.objects.for_store(self.store).filter(code__iexact=raw_discount_code).first()
+            if not disc:
+                return Response(
+                    {"error": f"Promo code '{raw_discount_code}' is not valid for this store."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            ok, reason = disc.check_eligibility(subtotal_minor)
+            if not ok:
+                return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
+            discount_minor = disc.compute_discount_minor(subtotal_minor)
+            applied_discount_code = disc.code
+
+        total_minor = max(0, subtotal_minor - discount_minor) + shipping_minor
 
         return Response({
             "subtotal_minor": subtotal_minor,
             "shipping_minor": shipping_minor,
-            "discount_minor": 0,
+            "discount_minor": discount_minor,
+            "discount_code": applied_discount_code,
             "total_minor": total_minor,
             "is_free_shipping": is_free_shipping,
             "has_prepaid_subscription": has_prepaid_subscription,
@@ -470,6 +815,12 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
         payment_method = str(request.data.get("payment_method", "KHALTI")).strip().upper()
         if payment_method not in ["KHALTI", "COD"]:
             return Response({"error": "Invalid payment method. Choose KHALTI or COD."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if payment_method == "COD" and not self.store.cod_enabled:
+            return Response(
+                {"error": "Cash on Delivery is currently disabled for this store. Please pay via Khalti."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         variant_ids = [it.get("variant_id") for it in items_data if it.get("variant_id")]
         variants = {
@@ -539,10 +890,36 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
         if self.store.free_shipping_threshold_minor and subtotal_minor >= self.store.free_shipping_threshold_minor:
             shipping_minor = 0
 
-        total_minor = subtotal_minor + shipping_minor
+        raw_discount_code = str(request.data.get("discount_code") or "").strip().upper()
+        disc_candidate = None
+        if raw_discount_code:
+            disc_candidate = Discount.objects.for_store(self.store).filter(code__iexact=raw_discount_code).first()
+            if not disc_candidate:
+                return Response(
+                    {"error": f"Promo code '{raw_discount_code}' is not valid for this store."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            ok, reason = disc_candidate.check_eligibility(subtotal_minor)
+            if not ok:
+                return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
 
         prefix = f"{self.store.slug[:2].upper()}-{timezone.now().year}"
         with transaction.atomic():
+            discount_minor = 0
+            applied_promo_note = ""
+            if disc_candidate is not None:
+                locked_disc = Discount.objects.select_for_update().for_store(self.store).filter(id=disc_candidate.id).first()
+                if not locked_disc:
+                    return Response({"error": "Promo code is no longer valid."}, status=status.HTTP_400_BAD_REQUEST)
+                ok, reason = locked_disc.check_eligibility(subtotal_minor)
+                if not ok:
+                    return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
+                discount_minor = locked_disc.compute_discount_minor(subtotal_minor)
+                Discount.objects.for_store(self.store).filter(id=locked_disc.id).update(used_count=F("used_count") + 1)
+                applied_promo_note = f" (Promo: {locked_disc.code})"
+
+            total_minor = max(0, subtotal_minor - discount_minor) + shipping_minor
+
             count = Order.objects.for_store(self.store).count() + 1
             order_number = f"#{prefix}-{count:04d}"
             while Order.objects.filter(store=self.store, order_number=order_number).exists():
@@ -562,7 +939,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 payment_status=initial_payment_status,
                 subtotal_minor=subtotal_minor,
                 shipping_minor=shipping_minor,
-                discount_minor=0,
+                discount_minor=discount_minor,
                 total_minor=total_minor,
                 currency=self.store.currency,
                 shipping_address_snapshot=shipping_address,
@@ -599,13 +976,14 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 order=order,
                 from_status="",
                 to_status=initial_status,
-                note=f"Order placed via {payment_method}",
+                note=f"Order placed via {payment_method}{applied_promo_note}",
                 actor=request.user if request.user.is_authenticated else None,
             )
 
         if payment_method == "COD":
             return Response({
                 "order_id": order.id,
+                "token": str(order.token),
                 "order_number": order.order_number,
                 "status": order.status,
                 "payment_method": "COD",
@@ -653,6 +1031,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 order.save(update_fields=["payment_ref"])
                 return Response({
                     "order_id": order.id,
+                    "token": str(order.token),
                     "order_number": order.order_number,
                     "pidx": data["pidx"],
                     "payment_url": data["payment_url"],
@@ -669,6 +1048,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
 
         return Response({
             "order_id": order.id,
+            "token": str(order.token),
             "order_number": order.order_number,
             "pidx": sandbox_pidx,
             "payment_url": sandbox_payment_url,
@@ -698,13 +1078,17 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
             return Response({
                 "success": True,
                 "order_id": order.id,
+                "token": str(order.token),
                 "order_number": order.order_number,
                 "status": order.status,
             })
 
         verified = False
         if pidx.startswith("sandbox_") or "sandbox" in pidx:
-            verified = True
+            if self.store.khalti_mode == "TEST":
+                verified = True
+            else:
+                verified = False
         else:
             custom_key = self.store.get_khalti_secret_key()
             secret_key = custom_key or getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "Key 0817c7689ee24db18df67142aa7fef1c")
@@ -753,6 +1137,7 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
             return Response({
                 "success": True,
                 "order_id": order.id,
+                "token": str(order.token),
                 "order_number": order.order_number,
                 "status": order.status,
             })
@@ -783,27 +1168,108 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
 
 class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
+        now = timezone.now()
+        today_start = now.replace(hour=0, minute=0, second=0, microsecond=0)
+        seven_days_start = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
+
         orders_qs = Order.objects.for_store(self.store)
+        valid_orders_qs = orders_qs.exclude(status__in=["CANCELLED", "PAYMENT_FAILED"])
+
         orders_count = orders_qs.count()
         revenue_agg = orders_qs.filter(payment_status__in=["PAID", "CONFIRMED"]).aggregate(
             total_rev=Sum("total_minor")
         )
         revenue_minor = revenue_agg["total_rev"] or 0
+
+        today_orders_qs = valid_orders_qs.filter(created_at__gte=today_start)
+        today_orders_count = today_orders_qs.count()
+        today_sales_minor = (
+            today_orders_qs.aggregate(total=Sum("total_minor"))["total"] or 0
+        )
+
+        pending_fulfillment_count = orders_qs.filter(
+            status__in=["CONFIRMED", "PAID", "PROCESSING"]
+        ).count()
+        cod_pending_minor = (
+            orders_qs.filter(payment_status="COD_PENDING")
+            .exclude(status="CANCELLED")
+            .aggregate(total=Sum("total_minor"))["total"]
+            or 0
+        )
+
         products_count = Product.objects.for_store(self.store).filter(is_active=True).count()
         customers_count = Customer.objects.for_store(self.store).count()
+        active_subscriptions_count = Subscription.objects.for_store(self.store).filter(
+            status="ACTIVE"
+        ).count()
+        active_discounts_count = Discount.objects.for_store(self.store).filter(
+            is_active=True
+        ).count()
+
+        # 7-day daily revenue & order count series (single query)
+        daily_buckets = {}
+        for offset in range(7):
+            d = (seven_days_start + timedelta(days=offset)).date()
+            daily_buckets[d.isoformat()] = {
+                "date": d.isoformat(),
+                "label": d.strftime("%b %d"),
+                "revenue_minor": 0,
+                "orders_count": 0,
+            }
+        recent_7d_rows = list(
+            valid_orders_qs.filter(created_at__gte=seven_days_start).values(
+                "created_at", "total_minor"
+            )
+        )
+        for row in recent_7d_rows:
+            dt_key = timezone.localtime(row["created_at"]).date().isoformat()
+            if dt_key in daily_buckets:
+                daily_buckets[dt_key]["revenue_minor"] += row["total_minor"] or 0
+                daily_buckets[dt_key]["orders_count"] += 1
+
+        recent_orders_qs = (
+            orders_qs.select_related("customer").order_by("-created_at")[:5]
+        )
+        recent_orders = [
+            {
+                "id": o.id,
+                "order_number": o.order_number,
+                "customer_name": (
+                    (o.shipping_address_snapshot or {}).get("recipient_name")
+                    or o.customer.full_name
+                    or o.customer.email
+                ),
+                "total_minor": o.total_minor,
+                "status": o.status,
+                "payment_method": o.payment_method,
+                "payment_status": o.payment_status,
+                "created_at": o.created_at.isoformat(),
+            }
+            for o in recent_orders_qs
+        ]
 
         checklist = {
             "has_products": products_count > 0,
             "has_shipping": bool(self.store.inside_valley_shipping_minor > 0),
             "has_khalti": bool(self.store.khalti_secret_key_encrypted),
+            "has_story": bool(self.store.story_headline or self.store.about_text),
         }
 
         return Response({
             "store": StorePublicSerializer(self.store).data,
+            "member_role": self.member_role,
             "products_count": products_count,
             "orders_count": orders_count,
             "revenue_minor": revenue_minor,
             "customers_count": customers_count,
+            "today_sales_minor": today_sales_minor,
+            "today_orders_count": today_orders_count,
+            "pending_fulfillment_count": pending_fulfillment_count,
+            "cod_pending_minor": cod_pending_minor,
+            "active_subscriptions_count": active_subscriptions_count,
+            "active_discounts_count": active_discounts_count,
+            "daily_sales_7d": list(daily_buckets.values()),
+            "recent_orders": recent_orders,
             "checklist": checklist,
         })
 
@@ -826,16 +1292,34 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
         data["has_custom_khalti_key"] = has_custom_key
         data["khalti_mode"] = self.store.khalti_mode
         data["khalti_key_masked"] = masked_key
+        data["cod_enabled"] = self.store.cod_enabled
+        data["custom_domain"] = self.store.custom_domain
+        data["member_role"] = self.member_role
         return Response(data)
 
     def patch(self, request, store_slug):
         store = self.store
         data = request.data
 
+        owner_only_fields = ("khalti_secret_key", "clear_khalti_secret_key", "khalti_mode", "custom_domain")
+        if any(field in data for field in owner_only_fields) and self.member_role != "OWNER":
+            return Response(
+                {"detail": "Only store owners can modify payment gateway keys or custom domains."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         if "name" in data and str(data["name"]).strip():
             store.name = str(data["name"]).strip()
         if "tagline" in data:
             store.tagline = str(data["tagline"]).strip()
+        if "category" in data and str(data["category"]).strip():
+            cat = str(data["category"]).strip()
+            if cat in [c[0] for c in Store.CATEGORY_CHOICES]:
+                store.category = cat
+        if "city" in data and str(data["city"]).strip():
+            store.city = str(data["city"]).strip()
+        if "province" in data and str(data["province"]).strip():
+            store.province = str(data["province"]).strip()
         if "contact_phone" in data:
             store.contact_phone = str(data["contact_phone"]).strip()
         if "theme_preset" in data:
@@ -846,6 +1330,32 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
             store.accent_color = str(data["accent_color"]).strip()
         if "logo_url" in data:
             store.logo_url = str(data["logo_url"]).strip()
+        if "banner_url" in data:
+            store.banner_url = str(data["banner_url"]).strip()
+        if "contact_email" in data:
+            store.contact_email = str(data["contact_email"]).strip()
+        if "address" in data:
+            store.address = str(data["address"]).strip()
+        if "story_headline" in data:
+            store.story_headline = str(data["story_headline"]).strip()
+        if "about_text" in data:
+            store.about_text = str(data["about_text"]).strip()
+        if "instagram_url" in data:
+            store.instagram_url = str(data["instagram_url"]).strip()
+        if "facebook_url" in data:
+            store.facebook_url = str(data["facebook_url"]).strip()
+
+        if "cod_enabled" in data:
+            raw_cod = data["cod_enabled"]
+            if isinstance(raw_cod, bool):
+                store.cod_enabled = raw_cod
+            elif isinstance(raw_cod, str):
+                store.cod_enabled = raw_cod.lower() in ("true", "1", "yes")
+
+        if "custom_domain" in data:
+            raw_domain = str(data["custom_domain"] or "").strip().lower()
+            raw_domain = raw_domain.replace("https://", "").replace("http://", "").split("/")[0].strip()
+            store.custom_domain = raw_domain[:160]
 
         if "inside_valley_shipping_minor" in data:
             try:
@@ -879,11 +1389,23 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
             if mode in ["TEST", "LIVE"]:
                 store.khalti_mode = mode
 
-        if "khalti_secret_key" in data:
+        if data.get("clear_khalti_secret_key"):
+            store.set_khalti_secret_key("")
+        elif "khalti_secret_key" in data:
             raw_key = str(data["khalti_secret_key"]).strip()
-            store.set_khalti_secret_key(raw_key)
+            if raw_key:
+                store.set_khalti_secret_key(raw_key)
 
         store.save()
+        MerchantAuditLog.objects.create(
+            store=self.store,
+            actor=request.user,
+            action="SETTINGS_UPDATE",
+            entity_type="Store",
+            entity_id=str(self.store.id),
+            details={"updated_fields": list(data.keys())},
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
         return self.get(request, store_slug)
 
 
@@ -926,6 +1448,15 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
             except (ValueError, TypeError):
                 pass
 
+                MerchantAuditLog.objects.create(
+            store=self.store,
+            actor=request.user,
+            action="PRODUCT_CREATE",
+            entity_type="Product",
+            entity_id=str(product.id),
+            details={"name": product.name, "slug": product.slug},
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
         return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
 
 
@@ -1023,7 +1554,54 @@ class MerchantSellingPlanListCreateView(StoreMerchantMixin, APIView):
         serializer = SellingPlanSerializer(data=data)
         serializer.is_valid(raise_exception=True)
         plan = serializer.save(store=self.store)
+        MerchantAuditLog.objects.create(
+            store=self.store,
+            actor=request.user,
+            action="SELLING_PLAN_CREATE",
+            entity_type="SellingPlan",
+            entity_id=str(plan.id),
+            details={"code": plan.code, "name": plan.name, "discount_pct": plan.discount_pct, "is_prepaid": plan.is_prepaid},
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
         return Response(SellingPlanSerializer(plan).data, status=status.HTTP_201_CREATED)
+
+
+class MerchantSellingPlanDetailView(StoreMerchantMixin, APIView):
+    def patch(self, request, store_slug, plan_id):
+        plan = SellingPlan.objects.for_store(self.store).filter(id=plan_id).first()
+        if not plan:
+            raise Http404("Selling plan not found.")
+        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
+        serializer = SellingPlanSerializer(plan, data=data, partial=True)
+        serializer.is_valid(raise_exception=True)
+        updated = serializer.save()
+        MerchantAuditLog.objects.create(
+            store=self.store,
+            actor=request.user,
+            action="SELLING_PLAN_UPDATE",
+            entity_type="SellingPlan",
+            entity_id=str(updated.id),
+            details=data,
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
+        return Response(SellingPlanSerializer(updated).data)
+
+    def delete(self, request, store_slug, plan_id):
+        plan = SellingPlan.objects.for_store(self.store).filter(id=plan_id).first()
+        if not plan:
+            raise Http404("Selling plan not found.")
+        plan.is_active = False
+        plan.save(update_fields=["is_active", "updated_at"])
+        MerchantAuditLog.objects.create(
+            store=self.store,
+            actor=request.user,
+            action="SELLING_PLAN_ARCHIVE",
+            entity_type="SellingPlan",
+            entity_id=str(plan.id),
+            details={"code": plan.code, "name": plan.name},
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
+        return Response({"detail": "Selling plan archived.", "id": plan.id, "is_active": False})
 
 
 class MerchantOrderListView(StoreMerchantMixin, APIView):
@@ -1074,7 +1652,9 @@ class MerchantOrderDetailView(StoreMerchantMixin, APIView):
         order = Order.objects.for_store(self.store).filter(id=order_id).first()
         if not order:
             raise Http404("Order not found.")
-        return Response(OrderSerializer(order).data)
+        response = Response(OrderSerializer(order).data)
+        response["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+        return response
 
 
 class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
@@ -1137,39 +1717,126 @@ class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
 
 class MerchantCustomerListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
-        customers = Customer.objects.for_store(self.store).order_by("-created_at")
+        q = request.query_params.get("q", "").strip()
+        customers = (
+            Customer.objects.for_store(self.store)
+            .annotate(
+                orders_count=Count("orders", distinct=True),
+                total_spent_minor=Sum(
+                    "orders__total_minor",
+                    filter=Q(orders__payment_status__in=["PAID", "CONFIRMED"]),
+                    default=0,
+                ),
+            )
+            .order_by("-created_at")
+        )
+        if q:
+            customers = customers.filter(
+                Q(full_name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
+            )
         return Response(CustomerSerializer(customers, many=True).data)
+
+
+class MerchantCustomerDetailView(StoreMerchantMixin, APIView):
+    def get(self, request, store_slug, customer_id):
+        customer = (
+            Customer.objects.for_store(self.store)
+            .annotate(
+                orders_count=Count("orders", distinct=True),
+                total_spent_minor=Sum(
+                    "orders__total_minor",
+                    filter=Q(orders__payment_status__in=["PAID", "CONFIRMED"]),
+                    default=0,
+                ),
+            )
+            .filter(id=customer_id)
+            .first()
+        )
+        if not customer:
+            raise Http404("Customer not found.")
+
+        orders = Order.objects.for_store(self.store).filter(customer=customer).order_by("-created_at")[:20]
+        subs = Subscription.objects.for_store(self.store).filter(customer=customer).order_by("-created_at")[:10]
+
+        return Response({
+            "customer": CustomerSerializer(customer).data,
+            "orders": OrderSerializer(orders, many=True).data,
+            "subscriptions": SubscriptionSerializer(subs, many=True).data,
+        })
 
 
 class MerchantSubscriptionListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
-        all_subs = (
+        from subscriptions.services import attach_pending_renewal_orders, compute_plan_interval_days
+
+        all_subs_qs = (
             Subscription.objects.for_store(self.store)
-            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan")
+            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan", "order")
             .order_by("-created_at")
         )
+        all_subs = attach_pending_renewal_orders(self.store, list(all_subs_qs))
+        today = timezone.now().date()
+        upcoming_cutoff = today + timedelta(days=7)
 
-        active_count = all_subs.filter(status="ACTIVE").count()
-        paused_count = all_subs.filter(status="PAUSED").count()
-        completed_count = all_subs.filter(status="COMPLETED").count()
-        cancelled_count = all_subs.filter(status="CANCELLED").count()
+        active_count = 0
+        paused_count = 0
+        completed_count = 0
+        cancelled_count = 0
+        lapsed_count = 0
+        prepaid_cycles_remaining = 0
+        upcoming_7d_count = 0
+        mrr_minor = 0
 
-        mrr_minor = sum(s.unit_price_minor for s in all_subs.filter(status="ACTIVE"))
+        for s in all_subs:
+            pending_order = getattr(s, "_cached_pending_order", None)
+
+            is_lapsed = False
+            if s.status not in ["CANCELLED", "COMPLETED"]:
+                if s.status == "PENDING_PAYMENT" or pending_order is not None:
+                    is_lapsed = True
+                elif s.status == "ACTIVE" and not s.selling_plan.is_prepaid and s.next_delivery_date < today:
+                    is_lapsed = True
+
+            s._is_lapsed = is_lapsed
+            if is_lapsed:
+                lapsed_count += 1
+
+            if s.status == "ACTIVE":
+                active_count += 1
+                interval_days = max(1, compute_plan_interval_days(s.selling_plan))
+                mrr_minor += round(s.unit_price_minor * (30 / interval_days))
+                if s.selling_plan.is_prepaid and s.cycles_remaining:
+                    prepaid_cycles_remaining += s.cycles_remaining
+                if today <= s.next_delivery_date <= upcoming_cutoff:
+                    upcoming_7d_count += 1
+            elif s.status == "PAUSED":
+                paused_count += 1
+                if s.selling_plan.is_prepaid and s.cycles_remaining:
+                    prepaid_cycles_remaining += s.cycles_remaining
+            elif s.status == "COMPLETED":
+                completed_count += 1
+            elif s.status == "CANCELLED":
+                cancelled_count += 1
 
         status_filter = request.query_params.get("status", "").strip().upper()
         q = request.query_params.get("q", "").strip().lower()
 
         filtered_subs = all_subs
-        if status_filter in ["ACTIVE", "PAUSED", "COMPLETED", "CANCELLED"]:
-            filtered_subs = filtered_subs.filter(status=status_filter)
+        if status_filter == "LAPSED":
+            filtered_subs = [s for s in filtered_subs if getattr(s, "_is_lapsed", False)]
+        elif status_filter in ["ACTIVE", "PAUSED", "COMPLETED", "CANCELLED", "PENDING_PAYMENT"]:
+            filtered_subs = [s for s in filtered_subs if s.status == status_filter]
 
         if q:
             filtered_subs = [
                 s
                 for s in filtered_subs
-                if q in s.customer.email.lower()
+                if q in (s.customer.email or "").lower()
+                or q in (s.customer.full_name or "").lower()
+                or q in (s.customer.phone or "").lower()
                 or (s.customer.user and q in (s.customer.user.full_name or "").lower())
-                or q in s.variant.product.name.lower()
+                or q in (s.variant.product.name or "").lower()
+                or q in (s.selling_plan.name or "").lower()
             ]
 
         serializer = SubscriptionSerializer(filtered_subs, many=True)
@@ -1179,6 +1846,9 @@ class MerchantSubscriptionListView(StoreMerchantMixin, APIView):
                 "paused_count": paused_count,
                 "completed_count": completed_count,
                 "cancelled_count": cancelled_count,
+                "lapsed_count": lapsed_count,
+                "prepaid_cycles_remaining": prepaid_cycles_remaining,
+                "upcoming_7d_count": upcoming_7d_count,
                 "mrr_minor": mrr_minor,
             },
             "subscriptions": serializer.data,
@@ -1187,7 +1857,14 @@ class MerchantSubscriptionListView(StoreMerchantMixin, APIView):
 
 class MerchantSubscriptionActionView(StoreMerchantMixin, APIView):
     def post(self, request, store_slug, sub_id):
-        sub = Subscription.objects.for_store(self.store).filter(id=sub_id).first()
+        from subscriptions.services import compute_plan_interval_days, generate_subscription_renewal_order
+
+        sub = (
+            Subscription.objects.for_store(self.store)
+            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan", "order")
+            .filter(id=sub_id)
+            .first()
+        )
         if not sub:
             raise Http404("Subscription not found for this store.")
 
@@ -1198,24 +1875,121 @@ class MerchantSubscriptionActionView(StoreMerchantMixin, APIView):
                 return Response({"error": "Only active subscriptions can be paused."}, status=status.HTTP_400_BAD_REQUEST)
             sub.status = "PAUSED"
             sub.save(update_fields=["status", "updated_at"])
+            MerchantAuditLog.objects.create(
+                store=self.store,
+                actor=request.user,
+                action="SUBSCRIPTION_PAUSE",
+                entity_type="Subscription",
+                entity_id=str(sub.id),
+                details={"customer": sub.customer.email},
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
         elif action == "resume":
             if sub.status != "PAUSED":
                 return Response({"error": "Only paused subscriptions can be resumed."}, status=status.HTTP_400_BAD_REQUEST)
             sub.status = "ACTIVE"
-            sub.save(update_fields=["status", "updated_at"])
+            if sub.next_delivery_date < timezone.now().date():
+                sub.next_delivery_date = timezone.now().date() + timedelta(days=1)
+            sub.save(update_fields=["status", "next_delivery_date", "updated_at"])
+            MerchantAuditLog.objects.create(
+                store=self.store,
+                actor=request.user,
+                action="SUBSCRIPTION_RESUME",
+                entity_type="Subscription",
+                entity_id=str(sub.id),
+                details={"customer": sub.customer.email, "next_delivery_date": sub.next_delivery_date.isoformat()},
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
         elif action == "skip_cycle":
             if sub.status not in ["ACTIVE", "PAUSED"]:
                 return Response({"error": "Only active or paused subscriptions can skip a cycle."}, status=status.HTTP_400_BAD_REQUEST)
-            interval_days = 30 * getattr(sub.selling_plan, "interval_count", 1)
+            interval_days = compute_plan_interval_days(sub.selling_plan)
             sub.next_delivery_date = sub.next_delivery_date + timedelta(days=interval_days)
             sub.save(update_fields=["next_delivery_date", "updated_at"])
+            MerchantAuditLog.objects.create(
+                store=self.store,
+                actor=request.user,
+                action="SUBSCRIPTION_SKIP_CYCLE",
+                entity_type="Subscription",
+                entity_id=str(sub.id),
+                details={"next_delivery_date": sub.next_delivery_date.isoformat()},
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
         elif action == "cancel":
             if sub.status in ["CANCELLED", "COMPLETED"]:
                 return Response({"error": "Subscription is already terminated."}, status=status.HTTP_400_BAD_REQUEST)
             sub.status = "CANCELLED"
             sub.save(update_fields=["status", "updated_at"])
+            MerchantAuditLog.objects.create(
+                store=self.store,
+                actor=request.user,
+                action="SUBSCRIPTION_CANCEL",
+                entity_type="Subscription",
+                entity_id=str(sub.id),
+                details={"customer": sub.customer.email},
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
+        elif action == "generate_renewal":
+            try:
+                renewal_order, newly_created = generate_subscription_renewal_order(sub, actor=request.user)
+            except ValueError as exc:
+                return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
+
+            sub.refresh_from_db()
+            renewal_path = f"/s/{self.store.slug}/orders/{renewal_order.id}?token={renewal_order.token}"
+            recipient = (
+                sub.customer.full_name
+                or (sub.shipping_address_snapshot or {}).get("recipient_name")
+                or "there"
+            )
+            amount_rs = renewal_order.total_minor // 100
+            if sub.selling_plan.is_prepaid:
+                whatsapp_msg = (
+                    f"Namaste {recipient}! Your prepaid {self.store.name} delivery of "
+                    f"{sub.variant.product.name} ({sub.variant.label}) has been scheduled "
+                    f"({renewal_order.order_number} · Rs. 0 prepaid). Track dispatch: "
+                )
+            else:
+                whatsapp_msg = (
+                    f"Namaste {recipient}! Your next delivery of {sub.variant.product.name} "
+                    f"({sub.variant.label}) from {self.store.name} is ready ({renewal_order.order_number} · "
+                    f"Rs. {amount_rs:,}). Confirm Khalti or Cash on Delivery here: "
+                )
+
+            MerchantAuditLog.objects.create(
+                store=self.store,
+                actor=request.user,
+                action="SUBSCRIPTION_RENEWAL_LINK",
+                entity_type="Subscription",
+                entity_id=str(sub.id),
+                details={
+                    "order_id": renewal_order.id,
+                    "order_number": renewal_order.order_number,
+                    "newly_created": newly_created,
+                },
+                ip_address=request.META.get("REMOTE_ADDR"),
+            )
+
+            return Response({
+                "subscription": SubscriptionSerializer(sub).data,
+                "newly_created": newly_created,
+                "renewal_order": {
+                    "id": renewal_order.id,
+                    "order_number": renewal_order.order_number,
+                    "token": str(renewal_order.token),
+                    "total_minor": renewal_order.total_minor,
+                    "status": renewal_order.status,
+                    "payment_status": renewal_order.payment_status,
+                    "is_prepaid_dispatch": bool(sub.selling_plan.is_prepaid),
+                    "renewal_path": renewal_path,
+                    "whatsapp_message": whatsapp_msg,
+                },
+            })
         else:
-            return Response({"error": "Invalid action. Choose pause, resume, skip_cycle, or cancel."}, status=status.HTTP_400_BAD_REQUEST)
+            return Response(
+                {"error": "Invalid action. Choose pause, resume, skip_cycle, cancel, or generate_renewal."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response(SubscriptionSerializer(sub).data)
 
@@ -1224,12 +1998,15 @@ class ShopperSubscriptionListView(StorePublicMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, store_slug):
-        subs = (
+        from subscriptions.services import attach_pending_renewal_orders
+
+        subs = list(
             Subscription.objects.for_store(self.store)
             .filter(customer__user=request.user)
-            .select_related("variant", "variant__product", "selling_plan")
+            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan", "order")
             .order_by("-created_at")
         )
+        attach_pending_renewal_orders(self.store, subs)
         return Response(SubscriptionSerializer(subs, many=True).data)
 
 
@@ -1237,9 +2014,14 @@ class ShopperSubscriptionActionView(StorePublicMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request, store_slug, sub_id):
-        sub = Subscription.objects.for_store(self.store).filter(
-            id=sub_id, customer__user=request.user
-        ).first()
+        from subscriptions.services import compute_plan_interval_days
+
+        sub = (
+            Subscription.objects.for_store(self.store)
+            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan", "order")
+            .filter(id=sub_id, customer__user=request.user)
+            .first()
+        )
         if not sub:
             raise Http404("Subscription not found.")
 
@@ -1254,9 +2036,13 @@ class ShopperSubscriptionActionView(StorePublicMixin, APIView):
             if sub.status != "PAUSED":
                 return Response({"error": "Only paused subscriptions can be resumed."}, status=status.HTTP_400_BAD_REQUEST)
             sub.status = "ACTIVE"
-            sub.save(update_fields=["status", "updated_at"])
+            if sub.next_delivery_date < timezone.now().date():
+                sub.next_delivery_date = timezone.now().date() + timedelta(days=1)
+            sub.save(update_fields=["status", "next_delivery_date", "updated_at"])
         elif action == "skip_cycle":
-            interval_days = 30 * getattr(sub.selling_plan, "interval_count", 1)
+            if sub.status not in ["ACTIVE", "PAUSED"]:
+                return Response({"error": "Only active or paused subscriptions can skip a cycle."}, status=status.HTTP_400_BAD_REQUEST)
+            interval_days = compute_plan_interval_days(sub.selling_plan)
             sub.next_delivery_date = sub.next_delivery_date + timedelta(days=interval_days)
             sub.save(update_fields=["next_delivery_date", "updated_at"])
         elif action == "cancel":
@@ -1290,8 +2076,19 @@ class StoreCreateView(APIView):
         name = request.data.get("name", "").strip()
         slug = request.data.get("slug", "").strip().lower()
         theme_preset = request.data.get("theme_preset", "editorial-warm")
+        category = request.data.get("category", "").strip() or "Specialty Goods"
+        city = request.data.get("city", "").strip() or "Kathmandu"
+        province = request.data.get("province", "").strip() or "Bagmati"
         tagline = request.data.get("tagline", "").strip()
         contact_phone = request.data.get("contact_phone", "").strip()
+        contact_email = request.data.get("contact_email", "").strip() or (request.user.email if request.user.is_authenticated else "")
+        address = request.data.get("address", "").strip() or f"{city}, {province}, Nepal"
+        story_headline = request.data.get("story_headline", "").strip() or f"Welcome to {name}"
+        about_text = request.data.get("about_text", "").strip() or (
+            f"Founded with a passion for authentic quality and local craftsmanship, {name} brings carefully crafted products "
+            f"directly to your doorstep across Nepal.\n\n"
+            f"We prioritize customer satisfaction, reliable express courier delivery, and honest service."
+        )
 
         if not name:
             return Response({"name": ["Store name is required."]}, status=status.HTTP_400_BAD_REQUEST)
@@ -1310,14 +2107,35 @@ class StoreCreateView(APIView):
             store = Store.objects.create(
                 name=name,
                 slug=slug,
+                category=category,
+                city=city,
+                province=province,
                 theme_preset=theme_preset,
                 tagline=tagline,
                 contact_phone=contact_phone,
+                contact_email=contact_email,
+                address=address,
+                story_headline=story_headline,
+                about_text=about_text,
             )
             StoreMembership.objects.create(
                 store=store,
                 user=request.user,
                 role="OWNER",
+            )
+            MerchantAuditLog.objects.create(
+                store=store,
+                actor=request.user,
+                action="STORE_CREATE",
+                entity_type="Store",
+                entity_id=str(store.id),
+                details={
+                    "name": store.name,
+                    "slug": store.slug,
+                    "category": category,
+                    "theme_preset": store.theme_preset,
+                },
+                ip_address=request.META.get("REMOTE_ADDR"),
             )
             # Create a starter sample product so the new store immediately has items in its catalog!
             starter_product = Product.objects.create(
@@ -1339,8 +2157,60 @@ class StoreCreateView(APIView):
                 in_stock=True,
                 is_active=True,
             )
+            default_plans = [
+                ("pay-per-delivery", "Pay-per-delivery Renewal", 1, 0, False, 0),
+                ("prepaid-3m", "3 Months Prepaid", 3, 5, True, 1),
+                ("prepaid-6m", "6 Months Prepaid", 6, 10, True, 2),
+                ("prepaid-12m", "12 Months Prepaid", 12, 15, True, 3),
+            ]
+            for p_code, p_name, p_cycles, p_disc, p_prepaid, p_sort in default_plans:
+                SellingPlan.objects.create(
+                    store=store,
+                    code=p_code,
+                    name=p_name,
+                    interval_unit="MONTH",
+                    interval_count=1,
+                    commitment_cycles=p_cycles,
+                    discount_pct=p_disc,
+                    is_prepaid=p_prepaid,
+                    is_active=True,
+                    sort_order=p_sort,
+                )
 
         return Response(StorePublicSerializer(store).data, status=status.HTTP_201_CREATED)
+
+
+class MerchantMyStoresView(APIView):
+    """
+    Returns the authenticated user's store memberships across all stores.
+    Powers the Shopify-style store switcher dropdown and /merchant auto-routing.
+    """
+    permission_classes = [permissions.IsAuthenticated]
+
+    def get(self, request):
+        with BypassRLSContext():
+            memberships = (
+                StoreMembership.all_objects.filter(user=request.user, store__is_active=True)
+                .select_related("store")
+                .order_by("-created_at")
+            )
+            stores_data = []
+            for m in memberships:
+                st = m.store
+                stores_data.append({
+                    "id": st.id,
+                    "name": st.name,
+                    "slug": st.slug,
+                    "category": getattr(st, "category", "Specialty Goods"),
+                    "city": getattr(st, "city", "Kathmandu"),
+                    "province": getattr(st, "province", "Bagmati"),
+                    "theme_preset": st.theme_preset,
+                    "logo_url": st.logo_url,
+                    "accent_color": st.accent_color,
+                    "role": m.role,
+                    "created_at": st.created_at.isoformat(),
+                })
+        return Response({"stores": stores_data})
 
 
 class MerchantRunSubscriptionCyclesView(StoreMerchantMixin, APIView):
@@ -1356,6 +2226,18 @@ class MerchantRunSubscriptionCyclesView(StoreMerchantMixin, APIView):
                 pass
 
         result = execute_due_subscription_cycles(store=self.store, target_date=target_date)
+        MerchantAuditLog.objects.create(
+            store=self.store,
+            actor=request.user,
+            action="SUBSCRIPTION_RUN_CYCLES",
+            entity_type="Subscription",
+            entity_id="batch",
+            details={
+                "orders_generated": result["orders_generated"],
+                "completed_subscriptions": result["completed_subscriptions"],
+            },
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
         return Response({
             "success": True,
             "orders_generated": result["orders_generated"],
@@ -1363,14 +2245,118 @@ class MerchantRunSubscriptionCyclesView(StoreMerchantMixin, APIView):
         })
 
 
+
+class MerchantAuditLogSerializer(serializers.ModelSerializer):
+    actor_email = serializers.CharField(source="actor.email", read_only=True)
+    actor_name = serializers.CharField(source="actor.full_name", read_only=True)
+
+    class Meta:
+        model = MerchantAuditLog
+        fields = [
+            "id",
+            "actor_email",
+            "actor_name",
+            "action",
+            "entity_type",
+            "entity_id",
+            "details",
+            "ip_address",
+            "created_at",
+        ]
+        read_only_fields = ["id", "created_at"]
+
+
+class MerchantAuditLogListView(StoreMerchantMixin, APIView):
+    def get(self, request, store_slug):
+        logs = MerchantAuditLog.objects.for_store(self.store).order_by("-created_at")[:100]
+        return Response(MerchantAuditLogSerializer(logs, many=True).data)
+
+
+class MerchantMediaUploadView(StoreMerchantMixin, APIView):
+    """
+    Store-prefixed and authenticated image upload for merchant product catalog and branding.
+    Scopes uploads strictly to uploads/stores/<store_slug>/products/.
+    """
+    def post(self, request, store_slug):
+        uploaded_file = request.FILES.get("file")
+        if not uploaded_file:
+            return Response({"error": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if uploaded_file.size > 5 * 1024 * 1024:
+            return Response({"error": "Image size exceeds 5MB limit."}, status=status.HTTP_400_BAD_REQUEST)
+
+        allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]
+        content_type = getattr(uploaded_file, "content_type", "")
+        if content_type not in allowed_types:
+            return Response(
+                {"error": "Unsupported image format. Please upload JPG, PNG, or WebP."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        import re
+        import secrets
+        from pathlib import Path
+
+        clean_slug = re.sub(r"[^a-z0-9_-]", "", self.store.slug.lower())
+        if not clean_slug:
+            return Response({"error": "Invalid store context."}, status=status.HTTP_400_BAD_REQUEST)
+
+        allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"}
+        raw_ext = Path(uploaded_file.name).suffix.lower()
+        ext = raw_ext if raw_ext in allowed_exts else ".jpg"
+
+        filename = f"prod_{int(timezone.now().timestamp())}_{secrets.token_hex(8)}{ext}"
+        base_dir = (settings.BASE_DIR.parent / "frontend" / "public" / "uploads" / "stores" / clean_slug / "products").resolve()
+        trusted_root = (settings.BASE_DIR.parent / "frontend" / "public" / "uploads").resolve()
+
+        if not str(base_dir).startswith(str(trusted_root)):
+            return Response({"error": "Invalid upload destination."}, status=status.HTTP_400_BAD_REQUEST)
+
+        base_dir.mkdir(parents=True, exist_ok=True)
+        file_path = base_dir / filename
+
+        with open(file_path, "wb+") as dest:
+            for chunk in uploaded_file.chunks():
+                dest.write(chunk)
+
+        url = f"/uploads/stores/{clean_slug}/products/{filename}"
+
+        MerchantAuditLog.objects.create(
+            store=self.store,
+            actor=request.user,
+            action="MEDIA_UPLOAD",
+            entity_type="MediaAsset",
+            entity_id=filename,
+            details={"filename": filename, "url": url, "size": uploaded_file.size},
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
+
+        return Response({
+            "success": True,
+            "filename": filename,
+            "url": url,
+            "relativeUrl": url,
+        }, status=status.HTTP_201_CREATED)
+
 # -----------------------------------------------------------------------------
-# URL Patterns
+# Slice 6 Views (Analytics, Discounts, Staff RBAC) & URL Patterns
 # -----------------------------------------------------------------------------
+
+from stores.analytics_discounts_api import build_slice6_views
+
+_slice6_views = build_slice6_views(StoreMerchantMixin)
+MerchantAnalyticsView = _slice6_views["MerchantAnalyticsView"]
+MerchantDiscountListCreateView = _slice6_views["MerchantDiscountListCreateView"]
+MerchantDiscountDetailView = _slice6_views["MerchantDiscountDetailView"]
+MerchantStaffListCreateView = _slice6_views["MerchantStaffListCreateView"]
+MerchantStaffDetailView = _slice6_views["MerchantStaffDetailView"]
 
 urlpatterns = [
     # Store Creation & Slug Validation
     path("stores/check-slug/", StoreSlugCheckView.as_view(), name="store_check_slug"),
     path("stores/create/", StoreCreateView.as_view(), name="store_create"),
+    path("stores/my-stores/", MerchantMyStoresView.as_view(), name="merchant_my_stores"),
+    path("merchant/my-stores/", MerchantMyStoresView.as_view(), name="merchant_my_stores_alt"),
 
     # Public Storefront
     path("stores/<slug:store_slug>/", StoreDetailView.as_view(), name="store_public_detail"),
@@ -1381,21 +2367,31 @@ urlpatterns = [
     path("stores/<slug:store_slug>/checkout/khalti-verify/", StoreKhaltiVerifyView.as_view(), name="store_khalti_verify"),
     path("stores/<slug:store_slug>/orders/", ShopperOrderListView.as_view(), name="shopper_order_list"),
     path("stores/<slug:store_slug>/orders/<int:order_id>/", ShopperOrderDetailView.as_view(), name="shopper_order_detail"),
-    path("stores/<slug:store_slug>/public-orders/<int:order_id>/", StorePublicOrderDetailView.as_view(), name="store_public_order_detail"),
+    path("stores/<slug:store_slug>/public-orders/<str:order_id>/", StorePublicOrderDetailView.as_view(), name="store_public_order_detail"),
+    path("stores/<slug:store_slug>/public-orders/<str:order_id>/pay/", StorePublicOrderPayView.as_view(), name="store_public_order_pay"),
     path("stores/<slug:store_slug>/subscriptions/", ShopperSubscriptionListView.as_view(), name="shopper_subscription_list"),
 
     # Merchant Console
     path("merchant/stores/<slug:store_slug>/overview/", MerchantStoreOverviewView.as_view(), name="merchant_store_overview"),
+    path("merchant/stores/<slug:store_slug>/analytics/", MerchantAnalyticsView.as_view(), name="merchant_store_analytics"),
+    path("merchant/stores/<slug:store_slug>/discounts/", MerchantDiscountListCreateView.as_view(), name="merchant_discount_list_create"),
+    path("merchant/stores/<slug:store_slug>/discounts/<int:discount_id>/", MerchantDiscountDetailView.as_view(), name="merchant_discount_detail"),
+    path("merchant/stores/<slug:store_slug>/staff/", MerchantStaffListCreateView.as_view(), name="merchant_staff_list_create"),
+    path("merchant/stores/<slug:store_slug>/staff/<int:membership_id>/", MerchantStaffDetailView.as_view(), name="merchant_staff_detail"),
     path("merchant/stores/<slug:store_slug>/settings/", MerchantStoreSettingsView.as_view(), name="merchant_store_settings"),
+    path("merchant/stores/<slug:store_slug>/media/upload/", MerchantMediaUploadView.as_view(), name="merchant_media_upload"),
+    path("merchant/stores/<slug:store_slug>/audit-logs/", MerchantAuditLogListView.as_view(), name="merchant_audit_logs"),
     path("merchant/stores/<slug:store_slug>/products/", MerchantProductListCreateView.as_view(), name="merchant_product_list_create"),
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/", MerchantProductDetailView.as_view(), name="merchant_product_detail"),
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/variants/", MerchantVariantListCreateView.as_view(), name="merchant_variant_list_create"),
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/variants/<int:variant_id>/", MerchantVariantDetailView.as_view(), name="merchant_variant_detail"),
     path("merchant/stores/<slug:store_slug>/selling-plans/", MerchantSellingPlanListCreateView.as_view(), name="merchant_selling_plan_list_create"),
+    path("merchant/stores/<slug:store_slug>/selling-plans/<int:plan_id>/", MerchantSellingPlanDetailView.as_view(), name="merchant_selling_plan_detail"),
     path("merchant/stores/<slug:store_slug>/orders/", MerchantOrderListView.as_view(), name="merchant_order_list"),
     path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/", MerchantOrderDetailView.as_view(), name="merchant_order_detail"),
     path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/transition/", MerchantOrderStatusTransitionView.as_view(), name="merchant_order_transition"),
     path("merchant/stores/<slug:store_slug>/customers/", MerchantCustomerListView.as_view(), name="merchant_customer_list"),
+    path("merchant/stores/<slug:store_slug>/customers/<int:customer_id>/", MerchantCustomerDetailView.as_view(), name="merchant_customer_detail"),
     path("merchant/stores/<slug:store_slug>/subscriptions/", MerchantSubscriptionListView.as_view(), name="merchant_subscription_list"),
     path("stores/<slug:store_slug>/subscriptions/<int:sub_id>/action/", ShopperSubscriptionActionView.as_view(), name="shopper_subscription_action"),
     path("merchant/stores/<slug:store_slug>/subscriptions/run-cycles/", MerchantRunSubscriptionCyclesView.as_view(), name="merchant_subscription_run_cycles"),

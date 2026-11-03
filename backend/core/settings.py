@@ -97,9 +97,9 @@ else:
     shopcraft_db = os.getenv("SHOPCRAFT_DATABASE_URL", "").strip()
     allow_db_url = os.getenv("SHOPCRAFT_ALLOW_DATABASE_URL", "").strip() == "1"
     if shopcraft_db:
-        DATABASES = {"default": dj_database_url.parse(shopcraft_db, conn_max_age=600)}
+        DATABASES = {"default": dj_database_url.parse(shopcraft_db, conn_max_age=600, conn_health_checks=True)}
     elif allow_db_url and os.getenv("DATABASE_URL"):
-        DATABASES = {"default": dj_database_url.parse(os.environ["DATABASE_URL"], conn_max_age=600)}
+        DATABASES = {"default": dj_database_url.parse(os.environ["DATABASE_URL"], conn_max_age=600, conn_health_checks=True)}
     else:
         sqlite_path = "sqlite:///" + str(BASE_DIR / "shopcraft_dev.sqlite3")
         DATABASES = {

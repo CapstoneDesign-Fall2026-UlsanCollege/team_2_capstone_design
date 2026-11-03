@@ -11,6 +11,8 @@ import {
 } from "next/font/google";
 import { CartProvider } from "@/components/storefront/CartContext";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
+import { StorefrontFloatingWhatsApp } from "@/components/storefront/StorefrontFloatingWhatsApp";
+import { ThemePreviewWatcher } from "@/components/storefront/ThemePreviewWatcher";
 
 const fraunces = Fraunces({
   subsets: ["latin"],
@@ -83,7 +85,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicData | null> {
         currency: "NPR",
         theme_preset: "editorial-warm",
         logo_url: null,
-        contact_phone: "",
+        contact_phone: "9801234567",
         free_shipping_threshold_minor: null,
       };
     }
@@ -96,7 +98,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicData | null> {
       currency: "NPR",
       theme_preset: "editorial-warm",
       logo_url: null,
-      contact_phone: "",
+      contact_phone: "9801234567",
       free_shipping_threshold_minor: null,
     };
   }
@@ -121,6 +123,7 @@ function getPresetFontClasses(preset: string): string {
     case "pahadi-sage":
       return `${youngSerif.variable} ${manrope.variable} ${jetbrainsMono.variable}`;
     case "ktm-bold":
+    case "midnight-obsidian":
       return `${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`;
     case "editorial-warm":
     default:
@@ -150,12 +153,17 @@ export default async function StorefrontLayout({
       data-store-theme={themePreset}
       className={`${fontClasses} min-h-dvh bg-sf-canvas text-sf-ink font-sf-body flex flex-col`}
     >
+      <ThemePreviewWatcher initialPreset={themePreset} />
       <CartProvider
         storeSlug={store.slug}
         freeShippingThresholdMinor={store.free_shipping_threshold_minor}
       >
         {children}
         <CartDrawer />
+        <StorefrontFloatingWhatsApp
+          storeName={store.name}
+          contactPhone={store.contact_phone}
+        />
       </CartProvider>
     </div>
   );

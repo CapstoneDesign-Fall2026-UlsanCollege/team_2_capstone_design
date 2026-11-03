@@ -4,6 +4,7 @@ from stores.models import StoreScopedManager
 
 class Subscription(models.Model):
     STATUS_CHOICES = [
+        ("PENDING_PAYMENT", "Pending Payment"),
         ("ACTIVE", "Active"),
         ("PAUSED", "Paused"),
         ("CANCELLED", "Cancelled"),
@@ -37,7 +38,7 @@ class Subscription(models.Model):
         blank=True,
         related_name="originating_subscriptions"
     )
-    status = models.CharField(max_length=16, choices=STATUS_CHOICES, default="ACTIVE")
+    status = models.CharField(max_length=24, choices=STATUS_CHOICES, default="ACTIVE")
     unit_price_minor = models.PositiveIntegerField()
     next_delivery_date = models.DateField()
     cycles_total = models.PositiveSmallIntegerField(null=True, blank=True)

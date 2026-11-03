@@ -1,3 +1,4 @@
+import uuid
 from django.conf import settings
 from django.db import models
 from stores.models import StoreScopedManager
@@ -42,7 +43,15 @@ class Order(models.Model):
         on_delete=models.PROTECT,
         related_name="orders"
     )
+    subscription = models.ForeignKey(
+        "subscriptions.Subscription",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="cycle_orders",
+    )
     order_number = models.CharField(max_length=32)
+    token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)
     order_type = models.CharField(max_length=24, choices=ORDER_TYPE_CHOICES, default="ONE_TIME")
     status = models.CharField(max_length=24, choices=STATUS_CHOICES, default="PENDING_PAYMENT")
     payment_method = models.CharField(max_length=16, choices=PAYMENT_METHOD_CHOICES, default="COD")
@@ -63,6 +72,11 @@ class Order(models.Model):
     class Meta:
         unique_together = [("store", "order_number")]
         ordering = ["-created_at"]
+
+    def save(self, *args, **kwargs):
+        if not self.token:
+            self.token = uuid.uuid4()
+        super().save(*args, **kwargs)
 
     def __str__(self):
         return f"{self.order_number} ({self.store.slug})"

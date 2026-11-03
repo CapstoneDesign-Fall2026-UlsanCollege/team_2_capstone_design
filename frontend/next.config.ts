@@ -28,43 +28,28 @@ const nextConfig: NextConfig = {
     return [
       {
         source: "/origins",
-        destination: "/s/brewmellow",
+        destination: "/",
         permanent: true,
       },
       {
         source: "/origins/:path*",
-        destination: "/s/brewmellow",
+        destination: "/",
         permanent: true,
       },
       {
         source: "/subscribe",
-        destination: "/s/brewmellow",
-        permanent: true,
-      },
-      {
-        source: "/checkout",
-        destination: "/s/brewmellow/checkout",
+        destination: "/#collection-section",
         permanent: true,
       },
       {
         source: "/dashboard",
-        destination: "/merchant/brewmellow",
-        permanent: true,
-      },
-      {
-        source: "/dashboard/:path*",
-        destination: "/merchant/brewmellow/:path*",
-        permanent: true,
+        destination: "/login",
+        permanent: false,
       },
       {
         source: "/admin",
-        destination: "/merchant/brewmellow",
-        permanent: true,
-      },
-      {
-        source: "/admin/:path*",
-        destination: "/merchant/brewmellow/:path*",
-        permanent: true,
+        destination: "/login",
+        permanent: false,
       },
     ];
   },

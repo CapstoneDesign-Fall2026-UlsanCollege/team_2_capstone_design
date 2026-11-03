@@ -26,7 +26,18 @@ class StoreScopedQuerySet(models.QuerySet):
         return self.filter(store=store)
 
 
-StoreScopedManager = models.Manager.from_queryset(StoreScopedQuerySet)
+class _StoreScopedManagerBase(models.Manager):
+    def get_queryset(self):
+        qs = super().get_queryset()
+        from core.tenant_context import get_current_tenant_id
+
+        tid = get_current_tenant_id()
+        if tid is not None and tid != "ALL" and tid != "":
+            return qs.filter(store_id=tid)
+        return qs
+
+
+StoreScopedManager = _StoreScopedManagerBase.from_queryset(StoreScopedQuerySet)
 
 
 class Store(models.Model):
@@ -34,6 +45,7 @@ class Store(models.Model):
         ("editorial-warm", "Editorial Warm"),
         ("pahadi-sage", "Pahadi Sage"),
         ("ktm-bold", "KTM Bold"),
+        ("midnight-obsidian", "Midnight Obsidian"),
     ]
     KHALTI_MODE_CHOICES = [
         ("TEST", "Test"),
@@ -43,16 +55,28 @@ class Store(models.Model):
     name = models.CharField(max_length=120)
     slug = models.SlugField(max_length=64, unique=True, validators=[validate_store_slug])
     tagline = models.CharField(max_length=200, blank=True, default="")
+    category = models.CharField(max_length=64, blank=True, default="General")
+    city = models.CharField(max_length=64, blank=True, default="Kathmandu")
+    province = models.CharField(max_length=64, blank=True, default="Bagmati")
     currency = models.CharField(max_length=3, default="NPR")
     theme_preset = models.CharField(max_length=32, choices=THEME_PRESET_CHOICES, default="editorial-warm")
     logo_url = models.URLField(blank=True, default="")
     accent_color = models.CharField(max_length=7, blank=True, default="")
     contact_phone = models.CharField(max_length=16, blank=True, default="")
+    contact_email = models.EmailField(blank=True, default="")
+    address = models.CharField(max_length=255, blank=True, default="")
+    story_headline = models.CharField(max_length=240, blank=True, default="")
+    about_text = models.TextField(blank=True, default="")
+    banner_url = models.URLField(blank=True, default="")
+    instagram_url = models.URLField(blank=True, default="")
+    facebook_url = models.URLField(blank=True, default="")
     inside_valley_shipping_minor = models.PositiveIntegerField(default=10000)
     outside_valley_shipping_minor = models.PositiveIntegerField(default=20000)
     free_shipping_threshold_minor = models.PositiveIntegerField(null=True, blank=True)
     khalti_mode = models.CharField(max_length=8, choices=KHALTI_MODE_CHOICES, default="TEST")
     khalti_secret_key_encrypted = models.TextField(blank=True, default="")
+    cod_enabled = models.BooleanField(default=True)
+    custom_domain = models.CharField(max_length=160, blank=True, default="")
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
@@ -88,6 +112,7 @@ class StoreMembership(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
 
     objects = StoreScopedManager()
+    all_objects = models.Manager()
 
     class Meta:
         unique_together = [("store", "user")]
@@ -112,6 +137,7 @@ class Customer(models.Model):
     updated_at = models.DateTimeField(auto_now=True)
 
     objects = StoreScopedManager()
+    all_objects = models.Manager()
 
     class Meta:
         unique_together = [("store", "email")]
@@ -136,3 +162,29 @@ def provision_store_customer(store: Store, user) -> Customer:
             customer.user = user
             customer.save(update_fields=["user"])
         return customer
+
+
+class MerchantAuditLog(models.Model):
+    store = models.ForeignKey(Store, on_delete=models.CASCADE, related_name="audit_logs")
+    actor = models.ForeignKey(
+        settings.AUTH_USER_MODEL,
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="merchant_audit_entries",
+    )
+    action = models.CharField(max_length=64)  # e.g. "SETTINGS_UPDATE", "PRODUCT_CREATE", "PRODUCT_ARCHIVE", "MEDIA_UPLOAD"
+    entity_type = models.CharField(max_length=64)  # e.g. "Store", "Product", "Variant", "Order"
+    entity_id = models.CharField(max_length=64, blank=True, default="")
+    details = models.JSONField(default=dict, blank=True)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
+    created_at = models.DateTimeField(auto_now_add=True)
+
+    objects = StoreScopedManager()
+    all_objects = models.Manager()
+
+    class Meta:
+        ordering = ["-created_at"]
+
+    def __str__(self):
+        return f"[{self.store.slug}] {self.action} on {self.entity_type} ({self.created_at})"

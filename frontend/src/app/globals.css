@@ -1,5 +1,8 @@
 @import "tailwindcss";
 
+/* Manual class-based dark mode for Tailwind CSS v4 */
+@custom-variant dark (&:where([data-platform-theme="dark"], [data-platform-theme="dark"] *, .dark, .dark *));
+
 /* --------------------------------------------------------------------------
  * Surface 1: Platform Root Tokens (DESIGN.md §2)
  * -------------------------------------------------------------------------- */
@@ -16,6 +19,20 @@
   --sc-marigold-soft: #FFF4D6;
   --sc-success: #15803D;
   --sc-danger: #B42318;
+}
+
+[data-platform-theme="dark"],
+.dark {
+  --sc-paper: #090A0D;
+  --sc-surface: #111318;
+  --sc-ink: #F9FAFB;
+  --sc-ink-2: #9CA3AF;
+  --sc-ink-3: #6B7280;
+  --sc-line: #1F242E;
+  --sc-terracotta: #EA580C;
+  --sc-forest: #10B981;
+  --sc-marigold: #F59E0B;
+  --sc-marigold-soft: #2E230B;
 }
 
 /* --------------------------------------------------------------------------
@@ -48,15 +65,28 @@
   --st-cancelled: #71717A;
 }
 
-.console.dark {
-  --background: #09090B;
-  --foreground: #FAFAFA;
-  --card: #111113;
-  --primary: #FAFAFA;
-  --primary-foreground: #18181B;
-  --muted: #18181B;
-  --muted-foreground: #A1A1AA;
-  --border: #27272A;
+.console.dark,
+[data-platform-theme="dark"] .console,
+.dark .console,
+.console[data-theme="dark"] {
+  --background: #0d0d0e;
+  --foreground: #fafafa;
+  --card: #141416;
+  --card-foreground: #fafafa;
+  --popover: #141416;
+  --popover-foreground: #fafafa;
+  --primary: #ffffff;
+  --primary-foreground: #09090b;
+  --secondary: #1a1a1d;
+  --secondary-foreground: #fafafa;
+  --muted: #18181b;
+  --muted-foreground: #9ca3af;
+  --accent: #27272a;
+  --accent-foreground: #ffffff;
+  --border: rgba(255, 255, 255, 0.1);
+  --input: rgba(255, 255, 255, 0.1);
+  --ring: #3b82f6;
+  --destructive: #ef4444;
 }
 
 /* --------------------------------------------------------------------------
@@ -77,34 +107,34 @@
   --font-sf-mono: var(--sf-mono);
 }
 
-[data-store-theme="editorial-warm"] { /* BrewMellow */
+[data-store-theme="editorial-warm"] { /* Tenant #1: BrewMellow Himalayan Specialty Coffee */
   --sf-canvas: #F5F2EB;
-  --sf-surface: #FBF9F4;
+  --sf-surface: #FFFFFF;
   --sf-ink: #1A1512;
-  --sf-muted: #6B6259;
-  --sf-line: #E3DCCF;
+  --sf-muted: #5C5042;
+  --sf-line: #E5E0D8;
   --sf-cta: #A3432A;
   --sf-cta-ink: #FFFFFF;
-  --sf-accent: #C99A4B;
-  --sf-radius: 14px;
-  --sf-display: var(--font-fraunces), "Fraunces", "Noto Serif Devanagari", serif;
-  --sf-body: var(--font-plus-jakarta), "Plus Jakarta Sans", "Noto Sans Devanagari", sans-serif;
+  --sf-accent: #2E6B34;
+  --sf-radius: 8px;
+  --sf-display: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --sf-body: var(--font-plus-jakarta), "Plus Jakarta Sans", sans-serif;
   --sf-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
 }
 
-[data-store-theme="pahadi-sage"] { /* herbal, skincare, honey */
+[data-store-theme="pahadi-sage"] { /* Tenant #2: Organic Mountain Teas & Herbs */
   --sf-canvas: #F3F7F4;
   --sf-surface: #FFFFFF;
-  --sf-ink: #10241B;
-  --sf-muted: #5B6F64;
-  --sf-line: #D9E5DD;
+  --sf-ink: #14281D;
+  --sf-muted: #4E6558;
+  --sf-line: #DCE7E1;
   --sf-cta: #1F6F4A;
   --sf-cta-ink: #FFFFFF;
-  --sf-accent: #E9C46A;
-  --sf-radius: 22px;
-  --sf-display: var(--font-young-serif), "Young Serif", "Noto Serif Devanagari", serif;
-  --sf-body: var(--font-manrope), "Manrope", "Noto Sans Devanagari", sans-serif;
-  --sf-mono: var(--font-jetbrains-mono), "DM Mono", monospace;
+  --sf-accent: #C2410C;
+  --sf-radius: 8px;
+  --sf-display: var(--font-young-serif), "Young Serif", Georgia, serif;
+  --sf-body: var(--font-manrope), "Manrope", sans-serif;
+  --sf-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
 }
 
 [data-store-theme="ktm-bold"] { /* streetwear, accessories, electronics */
@@ -120,6 +150,21 @@
   --sf-display: var(--font-space-grotesk), "Space Grotesk", "Noto Sans Devanagari", sans-serif;
   --sf-body: var(--font-inter), "Inter", "Noto Sans Devanagari", sans-serif;
   --sf-mono: var(--font-jetbrains-mono), "Space Mono", monospace;
+}
+
+[data-store-theme="midnight-obsidian"] { /* Sleek Luxury Dark Theme: Specialty Night Roasteries, Leather & Tech */
+  --sf-canvas: #0B0D11;
+  --sf-surface: #141720;
+  --sf-ink: #F9FAFB;
+  --sf-muted: #94A3B8;
+  --sf-line: #222733;
+  --sf-cta: #F2A900; /* Warm Himalayan Amber Gold */
+  --sf-cta-ink: #0B0D11;
+  --sf-accent: #10B981;
+  --sf-radius: 8px;
+  --sf-display: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --sf-body: var(--font-plus-jakarta), "Plus Jakarta Sans", sans-serif;
+  --sf-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
 }
 
 /* --------------------------------------------------------------------------
@@ -152,4 +197,30 @@ body {
 
 .pt-safe {
   padding-top: env(safe-area-inset-top, 0px);
+}
+
+/* --------------------------------------------------------------------------
+ * Marquee & Editorial Dark Utilities
+ * -------------------------------------------------------------------------- */
+@keyframes marquee {
+  0% {
+    transform: translateX(0%);
+  }
+  100% {
+    transform: translateX(-50%);
+  }
+}
+
+.animate-marquee {
+  display: flex;
+  width: max-content;
+  animation: marquee 35s linear infinite;
+}
+
+.animate-marquee:hover {
+  animation-play-state: paused;
+}
+
+.bg-noise {
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 200 200' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noiseFilter'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noiseFilter)' opacity='0.035'/%3E%3C/svg%3E");
 }

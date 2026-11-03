@@ -1,13 +1,65 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
+import {
+  Upload,
+  Image as ImageIcon,
+  Link as LinkIcon,
+  Sparkles,
+  Trash2,
+  Loader2,
+  Check,
+} from "lucide-react";
 import {
   createMerchantProduct,
   ProductItem,
   ProductPayload,
   updateMerchantProduct,
 } from "@/lib/api";
+
+const PRESET_IMAGES = [
+  {
+    category: "Coffee & Roastery",
+    label: "Himalayan Typica Roast",
+    url: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    category: "Coffee & Roastery",
+    label: "Pour-Over Barista Beans",
+    url: "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    category: "Teas & Botanicals",
+    label: "Ilam Valley Orthodox Tea",
+    url: "https://images.unsplash.com/photo-1576092768241-dec231879fc3?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    category: "Teas & Botanicals",
+    label: "Himalayan Herbal Wellness",
+    url: "https://images.unsplash.com/photo-1597481499750-3e6b22637e12?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    category: "Streetwear & Apparel",
+    label: "KTM Heavyweight Boxy Tee",
+    url: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    category: "Streetwear & Apparel",
+    label: "Cyberpunk Graphic Hoodie",
+    url: "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    category: "Pottery & Crafts",
+    label: "Hand-Thrown Terracotta Vase",
+    url: "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?w=800&auto=format&fit=crop&q=80",
+  },
+  {
+    category: "Honey & Organics",
+    label: "Raw Himalayan Cliff Honey",
+    url: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?w=800&auto=format&fit=crop&q=80",
+  },
+];
 
 interface ProductSheetProps {
   storeSlug: string;
@@ -24,7 +76,6 @@ export function ProductSheet({
   product,
   onSaved,
 }: ProductSheetProps) {
-  // Use unique key in content to reset state on product change
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
@@ -66,6 +117,13 @@ function ProductForm({
   );
   const [isActive, setIsActive] = useState(product ? product.is_active : true);
 
+  // Image upload state
+  const [imageTab, setImageTab] = useState<"upload" | "presets" | "url">("upload");
+  const [uploading, setUploading] = useState(false);
+  const [uploadError, setUploadError] = useState<string | null>(null);
+  const [dragActive, setDragActive] = useState(false);
+  const fileInputRef = useRef<HTMLInputElement>(null);
+
   // Attributes: key-value pairs
   const [attributes, setAttributes] = useState<Array<{ key: string; value: string }>>(() => {
     if (product && product.attributes) {
@@ -91,6 +149,63 @@ function ProductForm({
 
   const handleRemoveAttribute = (index: number) => {
     setAttributes((prev) => prev.filter((_, i) => i !== index));
+  };
+
+  const handleUploadFile = async (file: File) => {
+    setUploading(true);
+    setUploadError(null);
+
+    const formData = new FormData();
+    formData.append("file", file);
+
+    try {
+      const res = await fetch(`/api/merchant/stores/${encodeURIComponent(storeSlug)}/media/upload/`, {
+        credentials: "include",
+        method: "POST",
+        body: formData,
+      });
+
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.error || "Failed to upload image");
+      }
+
+      setImageUrl(data.url);
+    } catch (err: unknown) {
+      const msg = err instanceof Error ? err.message : "Upload failed";
+      setUploadError(msg);
+    } finally {
+      setUploading(false);
+      if (fileInputRef.current) {
+        fileInputRef.current.value = "";
+      }
+    }
+  };
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (file) {
+      handleUploadFile(file);
+    }
+  };
+
+  const handleDrag = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (e.type === "dragenter" || e.type === "dragover") {
+      setDragActive(true);
+    } else if (e.type === "dragleave") {
+      setDragActive(false);
+    }
+  };
+
+  const handleDrop = (e: React.DragEvent) => {
+    e.preventDefault();
+    e.stopPropagation();
+    setDragActive(false);
+    if (e.dataTransfer.files && e.dataTransfer.files[0]) {
+      handleUploadFile(e.dataTransfer.files[0]);
+    }
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -183,7 +298,7 @@ function ProductForm({
             id="prod-name"
             type="text"
             required
-            placeholder="e.g. Ilam Valley First Flush"
+            placeholder="e.g. Ilam Valley First Flush or Boxy Tee"
             value={name}
             onChange={(e) => setName(e.target.value)}
             className="w-full h-9 px-3 rounded border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)]"
@@ -198,7 +313,7 @@ function ProductForm({
           <textarea
             id="prod-desc"
             rows={3}
-            placeholder="Origin, tasting notes, harvest season, or craft details..."
+            placeholder="Origin, craft details, sizing specs, or tasting notes..."
             value={description}
             onChange={(e) => setDescription(e.target.value)}
             className="w-full p-2.5 rounded border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)] resize-none"
@@ -227,45 +342,237 @@ function ProductForm({
               />
             </div>
             <p className="text-[10px] text-[var(--muted-foreground)]">
-              You can add more package sizes (250g, 500g, 1kg) in the variant editor.
+              You can configure options (sizes, grinds, variants) after creating.
             </p>
           </div>
         )}
 
-        {/* Photo URL / Cloudinary Preview */}
-        <div className="space-y-1.5">
-          <label htmlFor="prod-image" className="text-xs font-medium text-[var(--foreground)]">
-            Photo URL (Cloudinary or Direct Image)
-          </label>
-          <input
-            id="prod-image"
-            type="url"
-            placeholder="https://res.cloudinary.com/... or https://..."
-            value={imageUrl}
-            onChange={(e) => setImageUrl(e.target.value)}
-            className="w-full h-9 px-3 rounded border border-[var(--border)] bg-[var(--background)] text-xs font-mono text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)]"
-          />
+        {/* Product Image Section with 3 Options: Upload / Presets / URL */}
+        <div className="space-y-2.5">
+          <div className="flex items-center justify-between">
+            <label className="text-xs font-medium text-[var(--foreground)]">
+              Product Photo
+            </label>
+            {imageUrl && (
+              <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-800 dark:text-emerald-400">
+                <Check className="w-3 h-3" />
+                <span>Photo Selected</span>
+              </span>
+            )}
+          </div>
 
-          {imageUrl && (
-            <div className="mt-2 flex items-center gap-3 p-2 rounded border border-[var(--border)] bg-[var(--secondary)]/40">
-              <div className="w-12 h-12 rounded border border-[var(--border)] overflow-hidden shrink-0 bg-[var(--background)] flex items-center justify-center">
-                {/* eslint-disable-next-line @next/next/no-img-element */}
-                <img
-                  src={imageUrl}
-                  alt="Preview"
-                  className="w-full h-full object-cover"
-                  onError={(e) => {
-                    (e.currentTarget as HTMLElement).style.display = "none";
-                  }}
-                />
+          {/* Active Image Preview Card */}
+          {imageUrl ? (
+            <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/40 space-y-3">
+              <div className="flex items-center gap-3">
+                <div className="w-16 h-16 rounded-md border border-[var(--border)] overflow-hidden shrink-0 bg-[var(--background)] relative">
+                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                  <img
+                    src={imageUrl}
+                    alt="Product preview"
+                    className="w-full h-full object-cover"
+                    onError={(e) => {
+                      (e.currentTarget as HTMLElement).style.display = "none";
+                    }}
+                  />
+                </div>
+                <div className="flex-1 min-w-0 space-y-1 text-left">
+                  <p className="text-xs font-semibold text-[var(--foreground)]">
+                    Current Image
+                  </p>
+                  <p className="text-[10px] font-mono text-[var(--muted-foreground)] truncate max-w-[220px]">
+                    {imageUrl}
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={() => setImageUrl("")}
+                  className="p-1.5 rounded text-[var(--muted-foreground)] hover:text-[var(--destructive)] hover:bg-[var(--destructive)]/10 transition-colors cursor-pointer"
+                  title="Remove image"
+                >
+                  <Trash2 className="w-4 h-4" />
+                </button>
               </div>
-              <div className="text-[11px] text-[var(--muted-foreground)] truncate">
-                <span className="font-medium text-[var(--foreground)]">Image Preview Loaded</span>
-                <p className="truncate text-[10px] font-mono">{imageUrl}</p>
+
+              <div className="flex items-center gap-2 pt-1 border-t border-[var(--border)]/60 text-[11px]">
+                <button
+                  type="button"
+                  onClick={() => fileInputRef.current?.click()}
+                  className="text-xs font-medium text-[var(--primary)] hover:underline cursor-pointer"
+                >
+                  Replace with new file
+                </button>
+                <span className="text-[var(--muted-foreground)]">·</span>
+                <button
+                  type="button"
+                  onClick={() => setImageTab("presets")}
+                  className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-pointer"
+                >
+                  Pick from Presets
+                </button>
               </div>
+            </div>
+          ) : (
+            <div className="space-y-2">
+              {/* Option Mode Tabs */}
+              <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-xs font-medium">
+                <button
+                  type="button"
+                  onClick={() => setImageTab("upload")}
+                  className={`py-1.5 px-2 rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    imageTab === "upload"
+                      ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs font-semibold"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  <Upload className="w-3.5 h-3.5" />
+                  <span>Upload File</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setImageTab("presets")}
+                  className={`py-1.5 px-2 rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    imageTab === "presets"
+                      ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs font-semibold"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  <Sparkles className="w-3.5 h-3.5" />
+                  <span>Presets</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setImageTab("url")}
+                  className={`py-1.5 px-2 rounded flex items-center justify-center gap-1.5 transition-all cursor-pointer ${
+                    imageTab === "url"
+                      ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs font-semibold"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  <LinkIcon className="w-3.5 h-3.5" />
+                  <span>Web Link</span>
+                </button>
+              </div>
+
+              {/* Tab 1: Upload File from Device */}
+              {imageTab === "upload" && (
+                <div
+                  onDragEnter={handleDrag}
+                  onDragLeave={handleDrag}
+                  onDragOver={handleDrag}
+                  onDrop={handleDrop}
+                  onClick={() => fileInputRef.current?.click()}
+                  className={`p-5 rounded-lg border-2 border-dashed text-center transition-all cursor-pointer flex flex-col items-center justify-center gap-2 ${
+                    dragActive
+                      ? "border-[var(--primary)] bg-[var(--primary)]/5"
+                      : "border-[var(--border)] hover:border-[var(--muted-foreground)] bg-[var(--background)]"
+                  }`}
+                >
+                  <input
+                    ref={fileInputRef}
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp,image/avif"
+                    onChange={handleFileChange}
+                    className="hidden"
+                  />
+
+                  {uploading ? (
+                    <div className="py-2 flex flex-col items-center gap-2">
+                      <Loader2 className="w-6 h-6 animate-spin text-[var(--primary)]" />
+                      <span className="text-xs font-mono text-[var(--muted-foreground)]">
+                        Uploading image...
+                      </span>
+                    </div>
+                  ) : (
+                    <>
+                      <div className="w-9 h-9 rounded-full bg-[var(--secondary)] flex items-center justify-center text-[var(--foreground)]">
+                        <Upload className="w-4 h-4" />
+                      </div>
+                      <div className="space-y-0.5">
+                        <p className="text-xs font-medium text-[var(--foreground)]">
+                          Click to browse or drag &amp; drop
+                        </p>
+                        <p className="text-[10px] text-[var(--muted-foreground)] font-mono">
+                          JPG, PNG, WebP up to 5MB (stored on local server)
+                        </p>
+                      </div>
+                    </>
+                  )}
+
+                  {uploadError && (
+                    <p className="text-[11px] text-[var(--destructive)] pt-1">
+                      {uploadError}
+                    </p>
+                  )}
+                </div>
+              )}
+
+              {/* Tab 2: Nepali Presets Library */}
+              {imageTab === "presets" && (
+                <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--background)] space-y-2">
+                  <p className="text-[11px] text-[var(--muted-foreground)]">
+                    Pick a production-ready Nepali product image:
+                  </p>
+                  <div className="grid grid-cols-2 gap-2 max-h-48 overflow-y-auto pr-1">
+                    {PRESET_IMAGES.map((preset, idx) => (
+                      <button
+                        key={idx}
+                        type="button"
+                        onClick={() => setImageUrl(preset.url)}
+                        className="group flex items-center gap-2 p-1.5 rounded border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] text-left cursor-pointer transition-all"
+                      >
+                        <div className="w-9 h-9 rounded overflow-hidden shrink-0 bg-[var(--secondary)]">
+                          {/* eslint-disable-next-line @next/next/no-img-element */}
+                          <img
+                            src={preset.url}
+                            alt={preset.label}
+                            className="w-full h-full object-cover group-hover:scale-105 transition-transform"
+                          />
+                        </div>
+                        <div className="min-w-0 flex-1">
+                          <p className="text-[11px] font-medium text-[var(--foreground)] truncate">
+                            {preset.label}
+                          </p>
+                          <p className="text-[9px] text-[var(--muted-foreground)] uppercase font-mono truncate">
+                            {preset.category}
+                          </p>
+                        </div>
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
+              {/* Tab 3: Paste Direct URL */}
+              {imageTab === "url" && (
+                <div className="space-y-2">
+                  <input
+                    id="prod-image-url"
+                    type="url"
+                    placeholder="https://images.unsplash.com/... or Cloudinary URL"
+                    value={imageUrl}
+                    onChange={(e) => setImageUrl(e.target.value)}
+                    className="w-full h-9 px-3 rounded border border-[var(--border)] bg-[var(--background)] text-xs font-mono text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)]"
+                  />
+                  <p className="text-[10px] text-[var(--muted-foreground)]">
+                    Paste any public image link from Cloudinary, Imgur, PostImages, or your website.
+                  </p>
+                </div>
+              )}
             </div>
           )}
         </div>
+
+        {/* Hidden fallback file input so user can replace anytime */}
+        <input
+          ref={fileInputRef}
+          type="file"
+          accept="image/jpeg,image/png,image/webp,image/avif"
+          onChange={handleFileChange}
+          className="hidden"
+        />
 
         {/* Custom Attributes Chips */}
         <div className="space-y-2">
@@ -303,14 +610,14 @@ function ProductForm({
           <div className="flex items-center gap-2 pt-1">
             <input
               type="text"
-              placeholder="Key (e.g. Roast)"
+              placeholder="Key (e.g. Sizing or Origin)"
               value={newAttrKey}
               onChange={(e) => setNewAttrKey(e.target.value)}
               className="w-1/3 h-8 px-2.5 rounded border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)]"
             />
             <input
               type="text"
-              placeholder="Value (e.g. Medium-Dark)"
+              placeholder="Value (e.g. M, L or Gulmi)"
               value={newAttrVal}
               onChange={(e) => setNewAttrVal(e.target.value)}
               className="flex-1 h-8 px-2.5 rounded border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)]"

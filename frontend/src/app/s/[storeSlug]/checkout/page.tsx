@@ -1,7 +1,8 @@
+import React, { Suspense } from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
-import { CheckoutForm } from "@/components/storefront/CheckoutForm";
+import { CheckoutForm, CheckoutSkeleton } from "@/components/storefront/CheckoutForm";
 import { StorePublicMetadata } from "@/lib/api";
 
 async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null> {
@@ -57,13 +58,13 @@ export default async function StorefrontCheckoutPage({
   }
 
   return (
-    <div className="min-h-dvh bg-sf-canvas text-sf-ink flex flex-col">
+    <div className="min-h-dvh bg-sf-canvas text-sf-ink flex flex-col font-sf-body">
       {/* Distraction-Free Header (DESIGN.md §5) */}
       <header className="sticky top-0 z-30 w-full border-b border-sf-line bg-sf-surface/90 backdrop-blur-xs">
         <div className="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link
             href={`/s/${encodeURIComponent(store.slug)}`}
-            className="inline-flex items-center gap-1.5 text-xs font-sf-mono text-sf-muted hover:text-sf-ink transition-colors"
+            className="inline-flex items-center gap-1.5 text-xs font-sf-mono text-sf-muted hover:text-sf-ink transition-colors min-h-[44px]"
           >
             <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Back to Store</span>
@@ -82,16 +83,18 @@ export default async function StorefrontCheckoutPage({
 
       {/* Main Checkout Container */}
       <main className="flex-1 w-full max-w-xl mx-auto px-4 py-6 sm:py-8">
-        <div className="mb-6 space-y-1">
+        <div className="mb-6 space-y-1 text-left">
           <h1 className="font-sf-display text-xl sm:text-2xl font-bold tracking-tight text-sf-ink">
-            Checkout
+            Single-Screen Checkout
           </h1>
           <p className="text-xs text-sf-muted font-sf-mono">
-            Fast, secure checkout powered by ShopCraft Nepal
+            Fast, secure direct-to-consumer checkout powered by ShopCraft Nepal
           </p>
         </div>
 
-        <CheckoutForm store={store} />
+        <Suspense fallback={<CheckoutSkeleton />}>
+          <CheckoutForm store={store} />
+        </Suspense>
       </main>
     </div>
   );

@@ -1,88 +1,48 @@
 ---
 gsd_state_version: "1.0"
-current_phase: 4
-current_phase_name: Subscriptions, SaaS Landing & Production Launch
-status: complete
-stopped_at: All 4 phases and 17 plans completed; ShopCraft SaaS platform launch ready
-last_updated: "2026-10-31T00:24:00.000Z"
-last_activity: 2026-10-31
-last_activity_desc: Completed Plan 04-04 (Public SaaS platform homepage, interactive phone preview, demo tenant showcase & verification)
-state_head: a6aada2
+current_phase: "Shopify Parity & Production Hardening — COMPLETE"
+current_slice: "Slice 6: Dashboard Home, Analytics, Discounts, Settings & Final Polish"
+status: "All 6 Slices Complete — 100% Verified"
+last_updated: "2026-11-03T19:32:00.000Z"
+last_activity: 2026-11-03
+last_activity_desc: Completed Slice 6 (Polaris Dashboard Home with 7-day pulse & recent orders, Nepal 7-province Analytics & Khalti/COD rail mix, Discount promo codes with Postgres RLS & live checkout redemption, Settings hub with COD toggle, custom .com.np domain routing, Staff RBAC & tamper-evident Audit Log, 51/51 automated & isolation tests passing, SURFACE_ISOLATION_OK)
+state_head: slice-6-complete
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 17
-  completed_plans: 17
+  audit_phase: complete
+  total_slices: 6
+  completed_slices: 6
   percent: 100
 ---
 
-# Project State
+# Project State: ShopCraft
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-10-29)
+See: `.planning/PROJECT.md` and `.planning/SHOPIFY_PARITY_ROADMAP.md`
 
-**Core value:** Strict multi-tenant isolation and end-to-end checkout integrity — any merchant can launch an isolated storefront and fulfill verified Khalti or COD orders without ever leaking data across stores or breaking the frozen BrewMellow baseline.
-**Current focus:** Phase 4 — Subscriptions, SaaS Landing & Production Launch
+**Core value:** Strict multi-tenant isolation and end-to-end checkout integrity — any merchant can launch an isolated storefront and fulfill verified Khalti or COD orders without ever leaking data across stores or breaking the frozen BrewMellow baseline.  
+**Current milestone:** Shopify-Equivalent Parity for Nepal (6 Vertical Slices) — **100% COMPLETE**
 
 ## Current Position
 
-Phase: 4 (Subscriptions, SaaS Landing & Production Launch) — COMPLETED
-Plan: 4 of 4 (Phase 4)
-Status: All 4 phases completed (100%). ShopCraft SaaS multi-tenant platform is fully verified and launch ready.
-Last activity: 2026-10-31 — Completed Plan 04-04 (Public SaaS landing page, simulator & demo showcase)
+Phase: Slice 6 (Dashboard Home, Analytics, Discounts, Settings, Staff RBAC & Final Polish) — COMPLETED  
+All 6 Vertical Slices Delivered & Verified  
+Roadmap File: `.planning/SHOPIFY_PARITY_ROADMAP.md`  
 
-Progress: [██████████] 100%
-
-## Performance Metrics
-
-**Velocity:**
-- Total plans completed: 5
-- Average duration: ~20 min
-- Total execution time: 1.6 hours
-
-**By Phase:**
-
-| Phase | Plans | Total | Avg/Plan |
-|-------|-------|-------|----------|
-| Phase 1: Foundation, Auth & Tenant Core | 5 | 100 min | 20 min |
-| Phase 2: Merchant Console & Catalog | 0/4 | - | - |
-
-**Recent Trend:**
-- Last 5 plans: -
-- Trend: -
-
-*Updated after each plan completion*
+Progress: [==========] 100%
 
 ## Accumulated Context
 
-### Decisions
+### Active Decisions & Guidelines
+- **Dual-Layer Tenant Isolation:** Enforced at both PostgreSQL Row-Level Security (`TENANT_TABLES` = 11 tables under `shopcraft_app` role) AND Django ORM `StoreScopedManager` (`get_current_tenant_id()` auto-scoping + `.for_store(store)`).
+- **Security Hardening:** Removed `admin@` backdoor; store-prefixed authenticated media uploads; unguessable UUID `order.token` on public tracking & 1-click renewal payment links; Fernet AES-256 encrypted Khalti keys never sent to client; `OWNER` vs. `STAFF` RBAC with sole-owner protection and `MerchantAuditLog`.
+- **Three-Surface CSS Token Isolation:** Verified via `npm run check:surfaces` (`SURFACE_ISOLATION_OK`). Merchant console stays strictly neutral zinc (`#18181B`); storefronts render 100% via `--sf-*` CSS tokens.
+- **Nepal-Adapted Commerce Rails:** Integer `Rs.` NPR formatting with tabular numerals; 7-province ward delivery & province analytics; Khalti ePayment v2 + Cash on Delivery toggle; store-scoped Promo Codes (`DASHAIN15`, `WELCOME100`); non-recurring prepaid 3/6/12-cycle subscriptions + WhatsApp renewal links.
 
-Decisions are logged in PROJECT.md Key Decisions table.
-Recent decisions affecting current work:
-
-- [Init]: Platform named **ShopCraft**; final hard deadline **2026-11-26** (feature freeze **2026-11-24**).
-- [Init]: Midterm baseline frozen at tag `v1.0-midterm-brewmellow` and branch `legacy/brewmellow-v1`; active SaaS work lives on `saas/main` with a fresh Neon DB.
-- [Init]: Single backend of record = Django 5 + DRF on Heroku Basic (Student Pack credits) proxied via Next.js same-origin `/api/*` rewrites; legacy Next.js SQL routes to be removed in Phase 1.
-
-### Pending Todos
-
-None yet.
-
-### Blockers/Concerns
-
-- Claim GitHub Student Pack Heroku ($13/mo) + domain offers and create Khalti sandbox merchant key (`test-admin.khalti.com`) during Phase 1 setup so external credentials never block Phase 2/3.
-
-## Deferred Items
-
-Items acknowledged and deferred at milestone close, most recent first:
-
-| Category | Item | Status | Deferred At | Milestone |
-|----------|------|--------|-------------|-----------|
-| *(none)* | | | | |
-
-## Session Continuity
-
-Last session: 2026-10-29 23:55
-Stopped at: Completed ShopCraft `/gsd-new-project` initialization; ready for Phase 1 (`/gsd-discuss-phase 1` or `/gsd-plan-phase 1`)
-Resume file: None
+## The 6 Slices
+1. `Slice 1`: Fix data model + Postgres RLS + isolation tests (COMPLETED)
+2. `Slice 2`: Auth + onboarding ("What you sell", City, "Your store is ready") + store creation & switcher (COMPLETED)
+3. `Slice 3`: Merchant shell + Customers directory + Products + Orders (Polaris standard with shadcn/ui primitives) (COMPLETED)
+4. `Slice 4`: Theme system + Story page + storefront + cart drawer + checkout (COMPLETED)
+5. `Slice 5`: Subscriptions (prepaid cycles + renewal links + runner) (COMPLETED)
+6. `Slice 6`: Dashboard home, analytics, discounts, settings, staff RBAC & polish (COMPLETED)

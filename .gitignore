@@ -9,3 +9,5 @@ staticfiles/
 
 audit/
 .agents/.gsd-staging/
+
+scratch/

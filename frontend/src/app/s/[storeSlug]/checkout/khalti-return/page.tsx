@@ -35,7 +35,10 @@ export default function KhaltiReturnPage() {
         if (res.success) {
           setState("SUCCESS");
           setTimeout(() => {
-            router.push(`/s/${encodeURIComponent(storeSlug)}/orders/${orderId}`);
+            const dest = res.token
+              ? `/s/${encodeURIComponent(storeSlug)}/orders/${encodeURIComponent(orderId)}?token=${encodeURIComponent(res.token)}`
+              : `/s/${encodeURIComponent(storeSlug)}/orders/${encodeURIComponent(orderId)}`;
+            router.push(dest);
           }, 800);
         } else {
           setState("FAILED");
