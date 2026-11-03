@@ -1205,7 +1205,8 @@ export interface StaffMemberItem {
 }
 
 export interface MerchantStaffResponse {
-  current_role: "OWNER" | "STAFF";
+  current_role?: "OWNER" | "STAFF";
+  current_user_role?: "OWNER" | "STAFF";
   members: StaffMemberItem[];
 }
 

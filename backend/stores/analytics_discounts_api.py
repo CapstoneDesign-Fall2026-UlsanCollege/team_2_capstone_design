@@ -537,6 +537,7 @@ def build_slice6_views(StoreMerchantMixin):
                 for m in memberships
             ]
             return Response({
+                "current_role": self.member_role,
                 "current_user_role": self.member_role,
                 "members": members,
             })

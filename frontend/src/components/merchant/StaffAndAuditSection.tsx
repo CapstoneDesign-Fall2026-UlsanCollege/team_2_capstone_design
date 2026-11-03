@@ -61,7 +61,7 @@ export function StaffPermissionsPanel({ storeSlug }: StaffTabProps) {
     loadStaff();
   }, [loadStaff]);
 
-  const isOwner = data?.current_role === "OWNER";
+  const isOwner = (data?.current_role || data?.current_user_role) === "OWNER";
   const ownersCount = (data?.members || []).filter((m) => m.role === "OWNER").length;
 
   const handleInvite = async (e: React.FormEvent) => {
