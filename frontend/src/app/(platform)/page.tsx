@@ -15,7 +15,9 @@ export default function PlatformHomePage() {
 
   const handleStartFree = (e: React.FormEvent) => {
     e.preventDefault();
-    const target = storeSlugInput.trim() ? `/signup?name=${encodeURIComponent(storeSlugInput.trim())}` : "/signup";
+    const target = storeSlugInput.trim()
+      ? `/signup?name=${encodeURIComponent(storeSlugInput.trim())}&next=/merchant/new`
+      : "/signup?next=/merchant/new";
     window.location.href = target;
   };
 
@@ -78,7 +80,7 @@ export default function PlatformHomePage() {
         {/* Action Buttons */}
         <div className="mt-10 flex flex-col sm:flex-row items-center justify-center gap-4">
           <Link
-            href="/signup"
+            href="/signup?next=/merchant/new"
             className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-sm transition-all active:scale-95 shadow-xl shadow-zinc-900/10 dark:shadow-white/10 flex items-center justify-center gap-2 cursor-pointer"
           >
             <span>Start for Free</span>
@@ -86,7 +88,7 @@ export default function PlatformHomePage() {
           </Link>
 
           <Link
-            href="/login"
+            href="/login?next=/merchant"
             className="w-full sm:w-auto px-7 py-3.5 rounded-full bg-zinc-100 dark:bg-white/5 hover:bg-zinc-200 dark:hover:bg-white/10 text-zinc-900 dark:text-white border border-zinc-200 dark:border-white/10 font-semibold text-sm transition-all active:scale-95 flex items-center justify-center cursor-pointer"
           >
             <span>Login</span>
@@ -159,7 +161,7 @@ export default function PlatformHomePage() {
               </ul>
             </div>
             <Link
-              href="/signup?plan=growth"
+              href="/signup?plan=growth&next=/merchant/new"
               className="mt-8 w-full py-3 rounded-full border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white hover:bg-zinc-950 dark:hover:bg-white hover:text-white dark:hover:text-zinc-950 font-bold text-xs text-center font-mono transition-all shadow-sm"
             >
               Start for Free
@@ -192,7 +194,7 @@ export default function PlatformHomePage() {
               </ul>
             </div>
             <Link
-              href="/signup?plan=pro"
+              href="/signup?plan=pro&next=/merchant/new"
               className="mt-8 w-full py-3 rounded-full bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs text-center font-mono transition-all shadow-md active:scale-95"
             >
               Start 14-Day Free Trial →

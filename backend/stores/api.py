@@ -2069,6 +2069,232 @@ class StoreSlugCheckView(APIView):
         return Response({"available": not exists, "slug": raw_slug})
 
 
+def seed_starter_catalog(store):
+    """Creates 2-3 realistic starter products with authentic photography, descriptions and variants."""
+    norm_cat = f"{store.category} {store.theme_preset}".lower()
+    prefix = store.slug.upper().replace("-", "")[:4] or "SHOP"
+
+    if any(k in norm_cat for k in ["honey", "herb", "spice", "sage"]):
+        items = [
+            {
+                "name": "Raw Himalayan Wild Cliff Honey",
+                "slug": f"{store.slug}-wild-cliff-honey",
+                "desc": "Pure unpasteurized honey harvested from wild cliff bee colonies in the Annapurna foothills. Rich in natural pollens, floral aromas, and medicinal enzymes.",
+                "image": "https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Wild Cliff Honey", "district": "Lamjung, Nepal"},
+                "variants": [
+                    ("500g Glass Jar", f"{prefix}-HON-500", 145000),
+                    ("250g Jar", f"{prefix}-HON-250", 85000),
+                ],
+            },
+            {
+                "name": "High-Altitude White Forest Honey",
+                "slug": f"{store.slug}-white-forest-honey",
+                "desc": "Delicate and floral white honey sourced from sub-alpine wildflowers in Mustang and Manang valleys. Smooth crystalline texture with mild sweetness.",
+                "image": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Forest Honey", "district": "Mustang, Nepal"},
+                "variants": [
+                    ("350g Jar", f"{prefix}-HON-350", 95000),
+                ],
+            },
+            {
+                "name": "Himalayan Ginger & Tulsi Honey Infusion",
+                "slug": f"{store.slug}-ginger-tulsi-honey",
+                "desc": "Hand-infused raw wild honey steeped with fresh mountain ginger root and holy tulsi leaves. Ideal for soothing herbal teas and daily immunity.",
+                "image": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Herbal Infusions", "district": "Kathmandu Valley"},
+                "variants": [
+                    ("250g Jar", f"{prefix}-HON-GIN", 75000),
+                ],
+            },
+        ]
+    elif any(k in norm_cat for k in ["coffee", "tea", "roast"]):
+        items = [
+            {
+                "name": "Single-Origin Nuwakot Arabica Whole Bean",
+                "slug": f"{store.slug}-nuwakot-arabica",
+                "desc": "High-altitude organic arabica grown at 1,400m in Nuwakot. Notes of brown sugar, dried plum, and dark chocolate with a velvety crema.",
+                "image": "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Specialty Coffee", "district": "Nuwakot, Nepal"},
+                "variants": [
+                    ("250g Whole Bean", f"{prefix}-COF-250", 95000),
+                    ("500g Whole Bean", f"{prefix}-COF-500", 175000),
+                ],
+            },
+            {
+                "name": "Ilam First Flush Orthodox Black Tea",
+                "slug": f"{store.slug}-ilam-first-flush",
+                "desc": "Delicately plucked spring orthodox black tea from eastern Himalayan gardens. Bright amber liquor with a fragrant muscatel finish.",
+                "image": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Artisanal Tea", "district": "Ilam, Nepal"},
+                "variants": [
+                    ("100g Loose Leaf Tin", f"{prefix}-TEA-100", 65000),
+                ],
+            },
+            {
+                "name": "Everest Mountain Dark Roast Espresso",
+                "slug": f"{store.slug}-everest-espresso",
+                "desc": "Bold, low-acidity espresso blend engineered for moka pot, aeropress, and commercial machine extraction.",
+                "image": "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Espresso Blend", "district": "Kathmandu Valley"},
+                "variants": [
+                    ("250g Ground", f"{prefix}-COF-ESP", 85000),
+                ],
+            },
+        ]
+    elif any(k in norm_cat for k in ["streetwear", "fashion", "apparel", "obsidian"]):
+        items = [
+            {
+                "name": "Heavyweight Boxy Drop-Shoulder Tee",
+                "slug": f"{store.slug}-heavyweight-tee",
+                "desc": "280 GSM combed cotton tee with reinforced ribbed collar and relaxed boxy drape. Hand-dyed and cut in Kathmandu.",
+                "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Apparel", "district": "Kathmandu, Nepal"},
+                "variants": [
+                    ("Size M", f"{prefix}-TEE-M", 185000),
+                    ("Size L", f"{prefix}-TEE-L", 185000),
+                    ("Size XL", f"{prefix}-TEE-XL", 185000),
+                ],
+            },
+            {
+                "name": "Raw Himalayan Hemp Utility Tote",
+                "slug": f"{store.slug}-hemp-utility-tote",
+                "desc": "Heavy-duty unbleached Himalayan hemp canvas with double-stitched webbing straps and inner brass zippered compartment.",
+                "image": "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Bags & Gear", "district": "Pokhara, Nepal"},
+                "variants": [
+                    ("Standard Tote", f"{prefix}-BAG-01", 120000),
+                ],
+            },
+            {
+                "name": "Ribbed Mountain Wool Fisherman Beanie",
+                "slug": f"{store.slug}-fisherman-beanie",
+                "desc": "100% mountain wool knit with deep ribbed turn-up brim for warmth in high altitude winds.",
+                "image": "https://images.unsplash.com/photo-1576871337622-98d48d1cf531?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Headwear", "district": "Kathmandu, Nepal"},
+                "variants": [
+                    ("One Size", f"{prefix}-HAT-01", 85000),
+                ],
+            },
+        ]
+    elif any(k in norm_cat for k in ["craft", "handloom", "pashmina"]):
+        items = [
+            {
+                "name": "Hand-Hammered 7-Metal Tibetan Singing Bowl",
+                "slug": f"{store.slug}-tibetan-singing-bowl",
+                "desc": "Traditional hand-hammered bronze singing bowl tuned to healing vibrational frequencies. Comes with rosewood mallet and brocade cushion.",
+                "image": "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Sacred Metalwork", "district": "Patan, Nepal"},
+                "variants": [
+                    ("14cm Diameter", f"{prefix}-BWL-14", 320000),
+                ],
+            },
+            {
+                "name": "Pure Dhaka Handwoven Pashmina Stole",
+                "slug": f"{store.slug}-dhaka-pashmina-stole",
+                "desc": "Ultra-soft cashmere pashmina bordered with authentic Palpali Dhaka geometric handwoven patterns.",
+                "image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Textiles", "district": "Bhaktapur, Nepal"},
+                "variants": [
+                    ("Standard Stole (200x70cm)", f"{prefix}-STL-01", 240000),
+                ],
+            },
+            {
+                "name": "Artisanal Studio Ceramic Matcha Tumbler",
+                "slug": f"{store.slug}-ceramic-matcha-tumbler",
+                "desc": "Wheel-thrown stoneware pottery with organic wood-ash glaze. Comfortable ergonomic handfeel for warm tea.",
+                "image": "https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Ceramics", "district": "Thimi, Nepal"},
+                "variants": [
+                    ("280ml Tumbler", f"{prefix}-POT-01", 75000),
+                ],
+            },
+        ]
+    elif any(k in norm_cat for k in ["bakery", "sweet", "pastry"]):
+        items = [
+            {
+                "name": "Heritage Sourdough Country Loaf",
+                "slug": f"{store.slug}-sourdough-country-loaf",
+                "desc": "Naturally leavened with 36-hour slow cold fermentation. Crispy blistered crust and open airy crumb.",
+                "image": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Sourdough", "district": "Lalitpur, Nepal"},
+                "variants": [
+                    ("800g Loaf", f"{prefix}-BRD-01", 45000),
+                ],
+            },
+            {
+                "name": "French Butter Almond Croissant (Box of 4)",
+                "slug": f"{store.slug}-almond-croissants",
+                "desc": "Twice-baked flaky croissant filled with rich almond frangipane cream and topped with toasted almond flakes.",
+                "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Viennoiserie", "district": "Kathmandu, Nepal"},
+                "variants": [
+                    ("Box of 4", f"{prefix}-CRS-04", 80000),
+                ],
+            },
+            {
+                "name": "Artisan Dark Chocolate Sea-Salt Brownies",
+                "slug": f"{store.slug}-chocolate-sea-salt-brownies",
+                "desc": "Fudgy Belgian dark chocolate brownie bars sprinkled with flaky Himalayan mineral sea salt.",
+                "image": "https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Confectionery", "district": "Lalitpur, Nepal"},
+                "variants": [
+                    ("Box of 6", f"{prefix}-BRW-06", 65000),
+                ],
+            },
+        ]
+    else:
+        items = [
+            {
+                "name": f"{store.name} Signature Offering",
+                "slug": f"{store.slug}-signature-offering",
+                "desc": "Our introductory small-batch product, crafted with high standards and packaged in Nepal.",
+                "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Signature Edition", "district": f"{store.city}, Nepal"},
+                "variants": [
+                    ("Standard Edition", f"{prefix}-001", 125000),
+                    ("Reserve Edition", f"{prefix}-002", 185000),
+                ],
+            },
+            {
+                "name": f"{store.name} Artisanal Reserve",
+                "slug": f"{store.slug}-artisanal-reserve",
+                "desc": "Curated artisanal edition crafted for discerning clients across Nepal.",
+                "image": "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80",
+                "attrs": {"category": "Artisanal Reserve", "district": f"{store.city}, Nepal"},
+                "variants": [
+                    ("Standard Pack", f"{prefix}-003", 85000),
+                ],
+            },
+        ]
+
+    for order_idx, item_data in enumerate(items):
+        p = Product.objects.create(
+            store=store,
+            slug=item_data["slug"],
+            name=item_data["name"],
+            description=item_data["desc"],
+            image_url=item_data["image"],
+            attributes=item_data.get("attrs", {}),
+            allow_one_time=True,
+            allow_subscription=True,
+            is_active=True,
+            sort_order=order_idx,
+        )
+        for v_label, v_sku, v_price in item_data["variants"]:
+            Variant.objects.create(
+                store=store,
+                product=p,
+                sku=v_sku,
+                label=v_label,
+                price_minor=v_price,
+                allow_one_time=True,
+                allow_subscription=True,
+                in_stock=True,
+                is_active=True,
+            )
+
+
 class StoreCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
@@ -2103,6 +2329,22 @@ class StoreCreateView(APIView):
         if theme_preset not in valid_presets:
             theme_preset = "editorial-warm"
 
+        banner_url = request.data.get("banner_url", "").strip()
+        if not banner_url:
+            norm_cat = f"{category} {theme_preset}".lower()
+            if any(k in norm_cat for k in ["honey", "herb", "spice", "sage"]):
+                banner_url = "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=1200&q=80"
+            elif any(k in norm_cat for k in ["coffee", "tea", "roast"]):
+                banner_url = "https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80"
+            elif any(k in norm_cat for k in ["streetwear", "fashion", "apparel", "obsidian"]):
+                banner_url = "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80"
+            elif any(k in norm_cat for k in ["craft", "handloom", "pashmina"]):
+                banner_url = "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1200&q=80"
+            elif any(k in norm_cat for k in ["bakery", "sweet", "pastry"]):
+                banner_url = "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=80"
+            else:
+                banner_url = "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1200&q=80"
+
         with transaction.atomic():
             store = Store.objects.create(
                 name=name,
@@ -2112,6 +2354,7 @@ class StoreCreateView(APIView):
                 province=province,
                 theme_preset=theme_preset,
                 tagline=tagline,
+                banner_url=banner_url,
                 contact_phone=contact_phone,
                 contact_email=contact_email,
                 address=address,
@@ -2137,26 +2380,8 @@ class StoreCreateView(APIView):
                 },
                 ip_address=request.META.get("REMOTE_ADDR"),
             )
-            # Create a starter sample product so the new store immediately has items in its catalog!
-            starter_product = Product.objects.create(
-                store=store,
-                slug="starter-offering",
-                name=f"{name} Signature Offering",
-                description="Our introductory small-batch product, crafted and packaged in Nepal.",
-                allow_one_time=True,
-                allow_subscription=True,
-            )
-            Variant.objects.create(
-                store=store,
-                product=starter_product,
-                sku=f"{slug.upper()[:4]}-001",
-                label="Standard Edition",
-                price_minor=125000,
-                allow_one_time=True,
-                allow_subscription=True,
-                in_stock=True,
-                is_active=True,
-            )
+            # Create rich starter catalog with curated category photography & variants
+            seed_starter_catalog(store)
             default_plans = [
                 ("pay-per-delivery", "Pay-per-delivery Renewal", 1, 0, False, 0),
                 ("prepaid-3m", "3 Months Prepaid", 3, 5, True, 1),

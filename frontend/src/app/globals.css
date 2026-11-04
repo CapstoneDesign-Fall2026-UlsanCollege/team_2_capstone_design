@@ -107,7 +107,20 @@
   --font-sf-mono: var(--sf-mono);
 }
 
-[data-store-theme="editorial-warm"] { /* Tenant #1: BrewMellow Himalayan Specialty Coffee */
+/* Fallback solid tokens for root & unparented portals */
+:root {
+  --sf-canvas: #F5F2EB;
+  --sf-surface: #FFFFFF;
+  --sf-ink: #1A1512;
+  --sf-muted: #5C5042;
+  --sf-line: #E5E0D8;
+  --sf-cta: #A3432A;
+  --sf-cta-ink: #FFFFFF;
+  --sf-accent: #2E6B34;
+  --sf-radius: 8px;
+}
+
+[data-store-theme="editorial-warm"], :root[data-store-theme="editorial-warm"] { /* Tenant #1: BrewMellow Himalayan Specialty Coffee */
   --sf-canvas: #F5F2EB;
   --sf-surface: #FFFFFF;
   --sf-ink: #1A1512;
@@ -122,7 +135,7 @@
   --sf-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
 }
 
-[data-store-theme="pahadi-sage"] { /* Tenant #2: Organic Mountain Teas & Herbs */
+[data-store-theme="pahadi-sage"], :root[data-store-theme="pahadi-sage"] { /* Tenant #2: Organic Mountain Teas & Herbs */
   --sf-canvas: #F3F7F4;
   --sf-surface: #FFFFFF;
   --sf-ink: #14281D;
@@ -137,7 +150,7 @@
   --sf-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
 }
 
-[data-store-theme="ktm-bold"] { /* streetwear, accessories, electronics */
+[data-store-theme="ktm-bold"], :root[data-store-theme="ktm-bold"] { /* streetwear, accessories, electronics */
   --sf-canvas: #F4F4F0;
   --sf-surface: #FFFFFF;
   --sf-ink: #0B0B0B;
@@ -152,7 +165,7 @@
   --sf-mono: var(--font-jetbrains-mono), "Space Mono", monospace;
 }
 
-[data-store-theme="midnight-obsidian"] { /* Sleek Luxury Dark Theme: Specialty Night Roasteries, Leather & Tech */
+[data-store-theme="midnight-obsidian"], :root[data-store-theme="midnight-obsidian"] { /* Sleek Luxury Dark Theme: Specialty Night Roasteries, Leather & Tech */
   --sf-canvas: #0B0D11;
   --sf-surface: #141720;
   --sf-ink: #F9FAFB;

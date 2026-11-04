@@ -138,7 +138,7 @@ export default function ProductDetailPage({ params }: PageProps) {
                   key={k}
                   className="text-[10px] px-1.5 py-0.2 rounded border border-[var(--border)] bg-[var(--secondary)] text-[var(--muted-foreground)]"
                 >
-                  {k}: {v}
+                  {k}: {typeof v === "string" ? v : JSON.stringify(v)}
                 </span>
               ))}
             </div>

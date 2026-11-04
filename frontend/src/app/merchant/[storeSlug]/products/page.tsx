@@ -82,7 +82,7 @@ export default function MerchantProductsPage({ params }: PageProps) {
       const inSlug = p.slug.toLowerCase().includes(q);
       const inDesc = p.description.toLowerCase().includes(q);
       const inAttrs = Object.values(p.attributes || {}).some((v) =>
-        v.toLowerCase().includes(q)
+        String(v ?? "").toLowerCase().includes(q)
       );
 
       return inName || inSlug || inDesc || inAttrs;

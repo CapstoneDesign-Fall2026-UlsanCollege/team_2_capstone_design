@@ -62,8 +62,34 @@ export function StorefrontSubscriptionsClient({
   }, [storeSlug]);
 
   useEffect(() => {
-    loadSubs();
-  }, [loadSubs]);
+    let mounted = true;
+    async function initSubs() {
+      try {
+        const data = await fetchShopperSubscriptions(storeSlug);
+        if (!mounted) return;
+        setSubs(data);
+      } catch (err: unknown) {
+        if (!mounted) return;
+        const msg = err instanceof Error ? err.message : "Failed to load subscriptions";
+        if (
+          (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
+          msg.includes("401") ||
+          msg.includes("403") ||
+          msg.toLowerCase().includes("credentials")
+        ) {
+          setUnauthenticated(true);
+        } else {
+          setError(msg);
+        }
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    initSubs();
+    return () => {
+      mounted = false;
+    };
+  }, [storeSlug]);
 
   const handleAction = async (
     sub: SubscriptionItem,

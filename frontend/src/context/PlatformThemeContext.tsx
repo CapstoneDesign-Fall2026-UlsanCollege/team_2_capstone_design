@@ -17,25 +17,32 @@ const ThemeContext = createContext<ThemeContextType>({
 });
 
 export function PlatformThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>("light");
-  const [mounted, setMounted] = useState(false);
+  const [theme, setThemeState] = useState<ThemeMode>(() => {
+    if (typeof window !== "undefined") {
+      try {
+        const stored = localStorage.getItem("shopcraft-platform-theme");
+        if (stored === "dark") return "dark";
+      } catch {
+        // ignore
+      }
+    }
+    return "light";
+  });
 
   useEffect(() => {
     try {
       const stored = localStorage.getItem("shopcraft-platform-theme") as ThemeMode | null;
-      if (stored === "dark") {
-        setThemeState("dark");
+      const active = stored === "dark" ? "dark" : "light";
+      if (active === "dark") {
         document.documentElement.classList.add("dark");
         document.documentElement.setAttribute("data-platform-theme", "dark");
       } else {
-        setThemeState("light");
         document.documentElement.classList.remove("dark");
         document.documentElement.setAttribute("data-platform-theme", "light");
       }
     } catch {
       // Ignore SSR / localStorage errors
     }
-    setMounted(true);
   }, []);
 
   const toggleTheme = () => {

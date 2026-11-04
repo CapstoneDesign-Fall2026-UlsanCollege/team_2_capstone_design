@@ -102,8 +102,33 @@ export default function MerchantDiscountsPage({ params }: PageProps) {
   }, [storeSlug, router]);
 
   useEffect(() => {
-    loadDiscounts();
-  }, [loadDiscounts]);
+    let mounted = true;
+    async function initDiscounts() {
+      try {
+        const res = await fetchMerchantDiscounts(storeSlug);
+        if (!mounted) return;
+        setData(res);
+      } catch (err: unknown) {
+        if (!mounted) return;
+        const msg = err instanceof Error ? err.message : "Failed to load promo codes";
+        const isAuth =
+          (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
+          msg.includes("401") ||
+          msg.includes("403");
+        if (isAuth) {
+          router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/discounts`);
+          return;
+        }
+        setError(msg);
+      } finally {
+        if (mounted) setLoading(false);
+      }
+    }
+    initDiscounts();
+    return () => {
+      mounted = false;
+    };
+  }, [storeSlug, router]);
 
   const openPresetModal = (preset?: (typeof NEPAL_PROMO_PRESETS)[number]) => {
     setFormError(null);

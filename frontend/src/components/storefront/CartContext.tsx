@@ -19,6 +19,7 @@ import {
 
 export interface CartContextValue {
   storeSlug: string;
+  themePreset?: string;
   items: CartItem[];
   itemCount: number;
   subtotalMinor: number;
@@ -27,7 +28,7 @@ export interface CartContextValue {
   openCart: () => void;
   closeCart: () => void;
   toggleCart: () => void;
-  addItem: (item: CartItem) => void;
+  addItem: (item: CartItem, openDrawer?: boolean) => void;
   updateQty: (
     variantId: number,
     purchaseType: "one_time" | "subscription",
@@ -46,12 +47,14 @@ const CartContext = createContext<CartContextValue | null>(null);
 
 export interface CartProviderProps {
   storeSlug: string;
+  themePreset?: string;
   freeShippingThresholdMinor?: number | null;
   children: React.ReactNode;
 }
 
 export function CartProvider({
   storeSlug,
+  themePreset = "editorial-warm",
   freeShippingThresholdMinor = null,
   children,
 }: CartProviderProps) {
@@ -75,12 +78,14 @@ export function CartProvider({
   const toggleCart = useCallback(() => setIsCartOpen((prev) => !prev), []);
 
   const addItem = useCallback(
-    (newItem: CartItem) => {
+    (newItem: CartItem, openDrawer: boolean = true) => {
       const next = addToCart(storeSlug, newItem);
       setItems(next.items);
       setSubtotalMinor(next.subtotalMinor);
       setItemCount(next.itemCount);
-      setIsCartOpen(true);
+      if (openDrawer) {
+        setIsCartOpen(true);
+      }
     },
     [storeSlug]
   );
@@ -130,6 +135,7 @@ export function CartProvider({
   const value = useMemo<CartContextValue>(
     () => ({
       storeSlug,
+      themePreset,
       items,
       itemCount,
       subtotalMinor,
@@ -145,6 +151,7 @@ export function CartProvider({
     }),
     [
       storeSlug,
+      themePreset,
       items,
       itemCount,
       subtotalMinor,

@@ -40,24 +40,16 @@ function MerchantSettingsInner({ storeSlug }: { storeSlug: string }) {
   const router = useRouter();
   const searchParams = useSearchParams();
   const tabParam = searchParams.get("tab") as SettingsTabId | null;
-
-  const [activeTab, setActiveTab] = useState<SettingsTabId>(
+  const validTabParam: SettingsTabId | null =
     tabParam && ["general", "payments", "shipping", "staff", "audit"].includes(tabParam)
       ? tabParam
-      : "general"
-  );
+      : null;
+
+  const [fallbackTab, setFallbackTab] = useState<SettingsTabId>("general");
+  const activeTab: SettingsTabId = validTabParam ?? fallbackTab;
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [settings, setSettings] = useState<MerchantStoreSettings | null>(null);
-
-  useEffect(() => {
-    if (
-      tabParam &&
-      ["general", "payments", "shipping", "staff", "audit"].includes(tabParam)
-    ) {
-      setActiveTab(tabParam);
-    }
-  }, [tabParam]);
 
   useEffect(() => {
     let mounted = true;
@@ -103,7 +95,7 @@ function MerchantSettingsInner({ storeSlug }: { storeSlug: string }) {
   }, [storeSlug, router]);
 
   const handleSelectTab = (tabId: SettingsTabId) => {
-    setActiveTab(tabId);
+    setFallbackTab(tabId);
     router.replace(
       `/merchant/${encodeURIComponent(storeSlug)}/settings?tab=${tabId}`,
       { scroll: false }

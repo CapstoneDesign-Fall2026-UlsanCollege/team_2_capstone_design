@@ -7,8 +7,8 @@ import {
   ArrowRight,
   Check,
   ChevronDown,
-  HelpCircle,
-  Info,
+
+
   MapPin,
   MessageCircle,
   Package,
@@ -16,12 +16,13 @@ import {
   RefreshCw,
   Search,
   ShieldCheck,
-  Sparkles,
+
   Star,
   Truck,
   X,
 } from "lucide-react";
 import { formatNpr, ProductItem, SellingPlanItem, StorePublicMetadata } from "@/lib/api";
+import { getCategoryMedia } from "@/lib/storefront-media";
 import { StorefrontHeader } from "./StorefrontHeader";
 import { ProductGrid } from "./ProductGrid";
 import { ProductDetailSheet, SelectedCartItem } from "./ProductDetailSheet";
@@ -86,6 +87,10 @@ export function StorefrontCatalogView({
     }
   }, [store.theme_preset]);
 
+  const categoryMedia = useMemo(() => {
+    return getCategoryMedia(store.category, store.theme_preset);
+  }, [store.category, store.theme_preset]);
+
   // Pure catalog from backend (no hardcoded coffee fallback)
   const fullCatalog: ProductItem[] = useMemo(() => {
     return products || [];
@@ -95,7 +100,8 @@ export function StorefrontCatalogView({
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
     fullCatalog.forEach((p) => {
-      const cat = p.category || (p.attributes as any)?.category;
+      const rawCat = p.category || (p.attributes as Record<string, unknown> | undefined)?.category;
+      const cat = typeof rawCat === "string" ? rawCat : undefined;
       if (cat) set.add(cat);
     });
     return Array.from(set);
@@ -119,7 +125,7 @@ export function StorefrontCatalogView({
       result = result.filter(
         (p) =>
           p.category === selectedCategory ||
-          (p.attributes as any)?.category === selectedCategory
+          (p.attributes as Record<string, unknown> | undefined)?.category === selectedCategory
       );
     }
 
@@ -252,23 +258,28 @@ export function StorefrontCatalogView({
         </div>
       )}
 
-      {/* 2. Pure Dynamic Masthead (Asymmetric, Niche-Agnostic) */}
+      {/* 2. Pure Dynamic Masthead (Shopify Dawn/Craft Editorial Visual Hero) */}
       <section className="w-full border-b border-sf-line bg-sf-canvas pt-8 pb-10 sm:pt-14 sm:pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 items-center">
+        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-center">
           
-          {/* Left Column (7 cols): Editorial Typography */}
-          <div className="md:col-span-7 space-y-4 text-left">
-            <div className="inline-flex items-center gap-2 px-2.5 py-1 rounded-md bg-sf-surface border border-sf-line text-[11px] font-sf-mono text-sf-muted font-medium">
+          {/* Left Column (7 cols): Editorial Typography & Direct CTAs */}
+          <div className="md:col-span-7 space-y-5 text-left">
+            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sf-surface border border-sf-line text-[11px] font-sf-mono text-sf-muted font-medium shadow-2xs">
               <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-              <span>{store.tagline ? "Verified Nepali Merchant" : themeInfo.badge}</span>
+              <span>{store.category ? `${store.category} · Verified Maker` : themeInfo.badge}</span>
             </div>
 
-            <h1 className="font-sf-display text-3xl sm:text-5xl font-bold tracking-tight text-sf-ink leading-[1.12]">
-              {store.name}
-            </h1>
+            <div className="space-y-2">
+              <h1 className="font-sf-display text-4xl sm:text-6xl font-bold tracking-tight text-sf-ink leading-[1.06]">
+                {store.name}
+              </h1>
+              <p className="font-sf-display text-lg sm:text-xl text-sf-ink/80 font-medium tracking-tight">
+                {store.story_headline || categoryMedia.headline}
+              </p>
+            </div>
 
-            <p className="text-sm sm:text-base text-sf-muted leading-relaxed max-w-xl">
-              {store.tagline || themeInfo.defaultTagline}
+            <p className="text-sm sm:text-base text-sf-muted leading-relaxed max-w-xl font-sf-body">
+              {store.tagline || categoryMedia.tagline || themeInfo.defaultTagline}
             </p>
 
             {/* Asymmetric Action Row */}
@@ -276,9 +287,9 @@ export function StorefrontCatalogView({
               <button
                 type="button"
                 onClick={scrollToCollection}
-                className="h-12 px-6 rounded-sf bg-sf-cta hover:opacity-95 text-sf-cta-ink text-xs sm:text-sm font-semibold tracking-wide flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
+                className="h-12 px-7 rounded-sf bg-sf-cta hover:opacity-95 text-sf-cta-ink text-xs sm:text-sm font-semibold tracking-wide flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
               >
-                <span>Browse Products</span>
+                <span>Browse Collection</span>
                 <ArrowDown className="w-4 h-4" />
               </button>
 
@@ -287,7 +298,7 @@ export function StorefrontCatalogView({
                   href={`https://wa.me/977${store.contact_phone.replace(/\D/g, "")}?text=Hi%20${encodeURIComponent(store.name)}%2C%20I%20have%20an%20inquiry%20about%20your%20products.`}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="h-12 px-5 rounded-sf border border-sf-line bg-sf-surface hover:bg-sf-canvas text-sf-ink text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 cursor-pointer transition-colors"
+                  className="h-12 px-5 rounded-sf border border-sf-line bg-sf-surface hover:bg-sf-canvas text-sf-ink text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs"
                 >
                   <MessageCircle className="w-4 h-4 text-emerald-600" />
                   <span>Order on WhatsApp</span>
@@ -297,29 +308,60 @@ export function StorefrontCatalogView({
 
             {/* Micro-Trust Strip */}
             <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-sf-mono text-sf-muted">
-              <span>✓ Kathmandu Valley Delivery</span>
-              <span>✓ Nationwide 7-Province Courier</span>
-              <span>✓ Khalti &amp; COD Accepted</span>
+              <span className="flex items-center gap-1.5">
+                <Truck className="w-3.5 h-3.5 text-sf-cta" />
+                <span>Kathmandu Valley Express</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
+                <span>Nationwide Courier</span>
+              </span>
+              <span className="flex items-center gap-1.5">
+                <Check className="w-3.5 h-3.5 text-sf-ink" />
+                <span>Khalti &amp; COD</span>
+              </span>
             </div>
           </div>
 
-          {/* Right Column (5 cols): Visual Badge / Accent Frame */}
+          {/* Right Column (5 cols): Editorial Visual Showcase Frame */}
           <div className="md:col-span-5 flex justify-center md:justify-end">
-            <div className="w-full max-w-xs p-5 rounded-2xl border border-sf-line bg-sf-surface shadow-xs space-y-3">
-              <div className="flex items-center justify-between text-xs font-sf-mono text-sf-muted border-b border-sf-line/60 pb-2.5">
-                <span>Doorstep Dispatch</span>
-                <span className="text-emerald-700 font-bold">● Active</span>
+            <div className="relative w-full max-w-md aspect-[4/3] rounded-2xl sm:rounded-3xl overflow-hidden border border-sf-line bg-sf-surface shadow-md group">
+              {/* Featured High-Res Category/Banner Photography */}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={store.banner_url || categoryMedia.heroImage}
+                alt={`${store.name} hero collection`}
+                loading="eager"
+                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
+              />
+
+              {/* Editorial Gradient Overlay */}
+              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent pointer-events-none" />
+
+              {/* Floating Top Glass Origin Badge */}
+              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 pointer-events-none z-10">
+                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sf-surface/90 text-sf-ink border border-sf-line text-[11px] font-sf-mono shadow-xs backdrop-blur-md">
+                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
+                  <span>{store.city || "Kathmandu"}, Nepal · 100% Authentic</span>
+                </div>
               </div>
-              <div className="space-y-1.5 text-left">
-                <span className="text-xs text-sf-muted uppercase font-sf-mono">{themeInfo.cardTag}</span>
-                <h4 className="font-sf-display text-lg font-bold text-sf-ink">{store.name}</h4>
-                <p className="text-xs text-sf-muted">
+
+              {/* Floating Bottom Editorial Overlay */}
+              <div className="absolute inset-x-3 bottom-3 sm:inset-x-4 sm:bottom-4 text-left pointer-events-none z-10 space-y-1 text-white">
+                <div className="flex items-center gap-2 text-[11px] font-sf-mono text-white/90">
+                  <span className="flex items-center gap-1 text-amber-300">
+                    <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
+                    <span>4.9</span>
+                  </span>
+                  <span>·</span>
+                  <span>{store.category || categoryMedia.originDistrict}</span>
+                </div>
+                <h4 className="font-sf-display text-base sm:text-lg font-bold text-white drop-shadow-xs line-clamp-1">
+                  {store.story_headline || categoryMedia.headline}
+                </h4>
+                <p className="text-[11px] text-white/80 line-clamp-1 font-sf-body">
                   {themeInfo.cardNote}
                 </p>
-              </div>
-              <div className="pt-2 text-[11px] font-sf-mono text-sf-muted flex items-center gap-2">
-                <ShieldCheck className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Protected by ShopCraft Commerce</span>
               </div>
             </div>
           </div>
@@ -421,7 +463,7 @@ export function StorefrontCatalogView({
 
               <select
                 value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as any)}
+                onChange={(e) => setSortBy(e.target.value as "featured" | "price-asc" | "price-desc")}
                 className="bg-sf-surface border border-sf-line rounded px-2 py-1 text-sf-ink text-xs focus:outline-none"
               >
                 <option value="featured">Featured</option>
@@ -491,6 +533,8 @@ export function StorefrontCatalogView({
             storeSlug={store.slug}
             products={filteredProducts}
             onSelectProduct={handleOpenSheet}
+            themePreset={store.theme_preset}
+            defaultCategory={store.category}
           />
         )}
 

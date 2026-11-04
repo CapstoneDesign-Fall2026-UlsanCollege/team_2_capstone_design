@@ -9,9 +9,12 @@ function Watcher({ initialPreset }: { initialPreset: string }) {
 
   useEffect(() => {
     const theme = previewTheme || initialPreset;
-    const el = document.querySelector("[data-store-theme]");
-    if (el && theme) {
-      el.setAttribute("data-store-theme", theme);
+    if (theme && typeof document !== "undefined") {
+      document.documentElement.setAttribute("data-store-theme", theme);
+      const el = document.querySelector("[data-store-theme]");
+      if (el) {
+        el.setAttribute("data-store-theme", theme);
+      }
     }
   }, [previewTheme, initialPreset]);
 

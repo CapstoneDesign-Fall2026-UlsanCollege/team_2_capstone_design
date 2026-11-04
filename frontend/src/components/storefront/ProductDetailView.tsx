@@ -63,7 +63,7 @@ export function ProductDetailView({
   relatedProducts = [],
 }: ProductDetailViewProps) {
   const router = useRouter();
-  const { addItem, openCart } = useCart();
+  const { addItem, closeCart } = useCart();
 
   const variants = product.variants || [];
   const defaultVariant =
@@ -228,15 +228,39 @@ export function ProductDetailView({
     setJustAdded(true);
     setTimeout(() => {
       setJustAdded(false);
-      openCart();
-    }, 400);
+    }, 1200);
   };
 
   const handleInstantBuy = () => {
-    handleAddToCart();
-    setTimeout(() => {
-      router.push(`/s/${encodeURIComponent(store.slug)}/checkout`);
-    }, 450);
+    if (!selectedVariant || !isInStock) return;
+
+    addItem(
+      {
+        productId: product.id,
+        productSlug: product.slug,
+        productName: product.name,
+        variantId: selectedVariant.id,
+        variantLabel: finalVariantLabel,
+        unitPriceMinor,
+        quantity,
+        imageUrl: product.image_url,
+        purchaseType: isSubscription ? "subscription" : "one_time",
+        sellingPlan: isSubscription && selectedPlan
+          ? {
+              id: selectedPlan.id,
+              code: selectedPlan.code,
+              name: selectedPlan.name,
+              commitmentCycles: selectedPlan.commitment_cycles,
+              discountPct: selectedPlan.discount_pct,
+              isPrepaid: selectedPlan.is_prepaid,
+            }
+          : null,
+      },
+      false
+    );
+
+    closeCart();
+    router.push(`/s/${encodeURIComponent(store.slug)}/checkout`);
   };
 
   const handleShare = () => {

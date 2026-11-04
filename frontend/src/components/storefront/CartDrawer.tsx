@@ -1,7 +1,7 @@
 "use client";
 
-import React from "react";
-import { useRouter } from "next/navigation";
+import React, { useEffect } from "react";
+import { usePathname, useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowRight,
@@ -20,8 +20,10 @@ import { useCart } from "./CartContext";
 
 export function CartDrawer() {
   const router = useRouter();
+  const pathname = usePathname();
   const {
     storeSlug,
+    themePreset,
     items,
     itemCount,
     subtotalMinor,
@@ -41,16 +43,35 @@ export function CartDrawer() {
   // Roastery Club Perk: If cart has 2 or more items, qualify for a free drip bag sample
   const qualifiesForPerk = itemCount >= 2;
 
+  // Automatically close cart on navigation
+  useEffect(() => {
+    closeCart();
+  }, [pathname, closeCart]);
+
+  const isCheckoutOrOrder = Boolean(
+    pathname?.includes("/checkout") || pathname?.includes("/orders/")
+  );
+
   const handleProceedToCheckout = () => {
     closeCart();
     router.push(`/s/${encodeURIComponent(storeSlug)}/checkout`);
   };
 
+  if (isCheckoutOrOrder) {
+    return null;
+  }
+
   return (
-    <Dialog.Root open={isCartOpen} onOpenChange={(open) => !open && closeCart()}>
+    <Dialog.Root open={isCartOpen && !isCheckoutOrOrder} onOpenChange={(open) => !open && closeCart()}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-sf-ink/40 backdrop-blur-xs transition-opacity duration-200" />
-        <Dialog.Content className="fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-50 w-full sm:max-w-md border-t sm:border-t-0 sm:border-l border-sf-line bg-sf-surface text-sf-ink flex flex-col justify-between max-h-[92dvh] sm:max-h-dvh overflow-hidden outline-none shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-right duration-250 font-sf-body">
+        <Dialog.Overlay
+          data-store-theme={themePreset || "editorial-warm"}
+          className="fixed inset-0 z-50 bg-sf-ink/50 backdrop-blur-xs transition-opacity duration-200"
+        />
+        <Dialog.Content
+          data-store-theme={themePreset || "editorial-warm"}
+          className="fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-50 w-full sm:max-w-md border-t sm:border-t-0 sm:border-l border-sf-line bg-sf-surface text-sf-ink flex flex-col justify-between max-h-[92dvh] sm:max-h-dvh overflow-hidden outline-none shadow-2xl animate-in slide-in-from-bottom sm:slide-in-from-right duration-250 font-sf-body"
+        >
           
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-sf-line flex items-center justify-between bg-sf-surface">

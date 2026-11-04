@@ -114,6 +114,8 @@ interface PasswordlessAuthCardProps {
   onSuccess?: () => void;
   title?: string;
   subtitle?: string;
+  submitButtonText?: string;
+  footerContent?: React.ReactNode;
 }
 
 export function PasswordlessAuthCard({
@@ -123,6 +125,8 @@ export function PasswordlessAuthCard({
   onSuccess,
   title,
   subtitle,
+  submitButtonText = "Send 6-digit code",
+  footerContent,
 }: PasswordlessAuthCardProps) {
   const [step, setStep] = useState<"email" | "otp">(initialEmail ? "otp" : "email");
   const [email, setEmail] = useState(initialEmail);
@@ -285,7 +289,7 @@ export function PasswordlessAuthCard({
             disabled={loading}
             className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] hover:opacity-95 disabled:opacity-50 transition-opacity"
           >
-            {loading ? "Sending code..." : "Send 6-digit code"}
+            {loading ? "Sending code..." : submitButtonText}
           </button>
 
           <div className="pt-2">
@@ -370,6 +374,12 @@ export function PasswordlessAuthCard({
               {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : "Resend code"}
             </button>
           </div>
+        </div>
+      )}
+
+      {footerContent && (
+        <div className="pt-4 border-t border-[var(--sc-line,#E8E8E1)] text-center text-xs">
+          {footerContent}
         </div>
       )}
     </div>

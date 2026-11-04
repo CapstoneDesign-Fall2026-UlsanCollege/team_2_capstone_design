@@ -29,6 +29,19 @@ TENANT_TABLES = [
 ]
 
 
+_shopcraft_role_exists: bool | None = None
+
+
+def _check_shopcraft_role(cursor) -> bool:
+    global _shopcraft_role_exists
+    if _shopcraft_role_exists is None:
+        cursor.execute(
+            "SELECT 1 FROM pg_catalog.pg_roles WHERE rolname = 'shopcraft_app';"
+        )
+        _shopcraft_role_exists = bool(cursor.fetchone())
+    return _shopcraft_role_exists
+
+
 def set_current_tenant_id(store_id: int | str):
     """
     Enforces PostgreSQL Row-Level Security for the current session/request.
@@ -38,10 +51,8 @@ def set_current_tenant_id(store_id: int | str):
     _thread_locals.store_id = store_id
     if connection.vendor == "postgresql":
         with connection.cursor() as cursor:
-            try:
+            if _check_shopcraft_role(cursor):
                 cursor.execute("SET ROLE shopcraft_app;")
-            except Exception as e:
-                logger.debug(f"Unable to set role shopcraft_app: {e}")
             cursor.execute("SET app.bypass_rls = 'off';")
             cursor.execute("SET app.current_store_id = %s;", [str(store_id)])
 
@@ -117,22 +128,22 @@ def apply_postgres_rls_policies():
 
     applied_tables = []
     with connection.cursor() as cursor:
-        # Ensure role shopcraft_app exists
+        # Ensure role shopcraft_app exists dynamically across Neon, CI, or self-hosted Postgres
         cursor.execute("""
             DO $$
             BEGIN
                 IF NOT EXISTS (SELECT FROM pg_catalog.pg_roles WHERE rolname = 'shopcraft_app') THEN
                     CREATE ROLE shopcraft_app WITH LOGIN NOBYPASSRLS;
                 END IF;
+                EXECUTE format('GRANT CONNECT ON DATABASE %I TO shopcraft_app', current_database());
+                EXECUTE format('GRANT shopcraft_app TO %I', current_user);
             END
             $$;
-            GRANT CONNECT ON DATABASE neondb TO shopcraft_app;
             GRANT USAGE ON SCHEMA public TO shopcraft_app;
             GRANT ALL ON ALL TABLES IN SCHEMA public TO shopcraft_app;
             GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO shopcraft_app;
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON TABLES TO shopcraft_app;
             ALTER DEFAULT PRIVILEGES IN SCHEMA public GRANT ALL ON SEQUENCES TO shopcraft_app;
-            GRANT shopcraft_app TO neondb_owner;
         """)
 
         for tbl in TENANT_TABLES:

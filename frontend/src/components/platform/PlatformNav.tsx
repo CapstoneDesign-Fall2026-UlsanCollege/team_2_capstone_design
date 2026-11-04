@@ -2,9 +2,11 @@
 
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
+import { usePathname } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
-import { Menu, X, ArrowRight, ShoppingBag, Sun, Moon } from "lucide-react";
+import { Menu, X, ArrowRight, ShoppingBag, Sun, Moon, LayoutDashboard } from "lucide-react";
 import { usePlatformTheme } from "@/context/PlatformThemeContext";
+import { fetchMyStores, fetchSession } from "@/lib/api";
 
 interface NavItem {
   label: string;
@@ -12,17 +14,20 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Features", href: "#features" },
-  { label: "Workflow", href: "#workflow" },
-  { label: "Capabilities", href: "#capabilities" },
-  { label: "Templates", href: "#templates" },
-  { label: "Pricing", href: "#pricing" },
-  { label: "FAQ", href: "#faq" },
+  { label: "Features", href: "/#features" },
+  { label: "Workflow", href: "/#workflow" },
+  { label: "Capabilities", href: "/#capabilities" },
+  { label: "Templates", href: "/#templates" },
+  { label: "Pricing", href: "/#pricing" },
+  { label: "FAQ", href: "/#faq" },
 ];
 
 export function PlatformNav() {
+  const pathname = usePathname();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [scrolled, setScrolled] = useState(false);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [hasStores, setHasStores] = useState(false);
   const { theme, toggleTheme } = usePlatformTheme();
 
   useEffect(() => {
@@ -33,6 +38,39 @@ export function PlatformNav() {
     return () => window.removeEventListener("scroll", handleScroll);
   }, []);
 
+  useEffect(() => {
+    let mounted = true;
+    async function syncAuthNav() {
+      try {
+        const session = await fetchSession();
+        if (!mounted) return;
+        if (session.authenticated && session.user) {
+          setIsAuthenticated(true);
+          try {
+            const myStores = await fetchMyStores();
+            if (mounted) {
+              setHasStores(Boolean(myStores.stores && myStores.stores.length > 0));
+            }
+          } catch {
+            if (mounted) setHasStores(false);
+          }
+        } else {
+          setIsAuthenticated(false);
+          setHasStores(false);
+        }
+      } catch {
+        if (mounted) {
+          setIsAuthenticated(false);
+          setHasStores(false);
+        }
+      }
+    }
+    syncAuthNav();
+    return () => {
+      mounted = false;
+    };
+  }, [pathname]);
+
   return (
     <header
       className={`fixed top-0 left-0 right-0 z-50 transition-all duration-300 ${
@@ -42,7 +80,7 @@ export function PlatformNav() {
       }`}
     >
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-16 flex items-center justify-between">
-        {/* Left: Brand logo with minimalist shopping bag icon and modern lowercase text "ShopCraft" */}
+        {/* Left: Brand logo */}
         <Link
           href="/"
           className="flex items-center gap-2.5 group focus:outline-none"
@@ -75,7 +113,6 @@ export function PlatformNav() {
 
         {/* Right: Desktop Action Buttons + Theme Toggle */}
         <div className="hidden md:flex items-center gap-3">
-          {/* Dark / Light Mode Toggle Button */}
           <button
             type="button"
             onClick={toggleTheme}
@@ -90,20 +127,43 @@ export function PlatformNav() {
             )}
           </button>
 
-          <Link
-            href="/login"
-            className="text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors px-3 py-1.5"
-          >
-            Login
-          </Link>
+          {isAuthenticated ? (
+            <>
+              {hasStores && (
+                <Link
+                  href="/merchant"
+                  className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors px-3 py-1.5"
+                >
+                  <LayoutDashboard className="w-3.5 h-3.5" />
+                  <span>Merchant Console</span>
+                </Link>
+              )}
+              <Link
+                href="/merchant/new"
+                className="inline-flex items-center gap-1.5 bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs rounded-full px-4 py-2 transition-all active:scale-95 shadow-sm"
+              >
+                <span>{hasStores ? "New Store" : "Create Your Store"}</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </>
+          ) : (
+            <>
+              <Link
+                href="/login?next=/merchant"
+                className="text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors px-3 py-1.5"
+              >
+                Login
+              </Link>
 
-          <Link
-            href="/signup"
-            className="inline-flex items-center gap-1.5 bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs rounded-full px-4 py-2 transition-all active:scale-95 shadow-sm"
-          >
-            <span>Start for Free</span>
-            <ArrowRight className="w-3.5 h-3.5" />
-          </Link>
+              <Link
+                href="/signup?next=/merchant/new"
+                className="inline-flex items-center gap-1.5 bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs rounded-full px-4 py-2 transition-all active:scale-95 shadow-sm"
+              >
+                <span>Start for Free</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+            </>
+          )}
         </div>
 
         {/* Mobile: Theme Toggle + Hamburger Menu Button */}
@@ -156,20 +216,43 @@ export function PlatformNav() {
             </div>
 
             <div className="pt-4 border-t border-zinc-200 dark:border-white/10 flex flex-col gap-2.5">
-              <Link
-                href="/login"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 rounded-lg border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup"
-                onClick={() => setMobileMenuOpen(false)}
-                className="w-full text-center py-2.5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
-              >
-                Start for Free →
-              </Link>
+              {isAuthenticated ? (
+                <>
+                  {hasStores && (
+                    <Link
+                      href="/merchant"
+                      onClick={() => setMobileMenuOpen(false)}
+                      className="w-full text-center py-2.5 rounded-lg border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                    >
+                      Merchant Console
+                    </Link>
+                  )}
+                  <Link
+                    href="/merchant/new"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center py-2.5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
+                  >
+                    {hasStores ? "Create Another Store →" : "Create Your Store →"}
+                  </Link>
+                </>
+              ) : (
+                <>
+                  <Link
+                    href="/login?next=/merchant"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center py-2.5 rounded-lg border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                  >
+                    Login
+                  </Link>
+                  <Link
+                    href="/signup?next=/merchant/new"
+                    onClick={() => setMobileMenuOpen(false)}
+                    className="w-full text-center py-2.5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
+                  >
+                    Start for Free →
+                  </Link>
+                </>
+              )}
             </div>
           </motion.div>
         )}

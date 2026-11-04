@@ -2,16 +2,25 @@
 
 import React from "react";
 import Link from "next/link";
-import { Check, Eye, Package, Plus, Sparkles } from "lucide-react";
+import { Eye, Package } from "lucide-react";
 import { formatNpr, ProductItem } from "@/lib/api";
+import { getProductFallbackImage } from "@/lib/storefront-media";
 
 export interface ProductGridProps {
   storeSlug?: string;
   products: ProductItem[];
   onSelectProduct: (product: ProductItem) => void;
+  themePreset?: string;
+  defaultCategory?: string;
 }
 
-export function ProductGrid({ storeSlug, products, onSelectProduct }: ProductGridProps) {
+export function ProductGrid({
+  storeSlug,
+  products,
+  onSelectProduct,
+  themePreset,
+  defaultCategory,
+}: ProductGridProps) {
   if (products.length === 0) {
     return (
       <div className="rounded-sf border border-dashed border-sf-line bg-sf-surface p-12 text-center my-6">
@@ -28,7 +37,7 @@ export function ProductGrid({ storeSlug, products, onSelectProduct }: ProductGri
 
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-      {products.map((product) => {
+      {products.map((product, index) => {
         const variants = product.variants || [];
         const inStockVariants = variants.filter((v) => v.in_stock && v.is_active);
         const hasStock = inStockVariants.length > 0;
@@ -49,8 +58,13 @@ export function ProductGrid({ storeSlug, products, onSelectProduct }: ProductGri
           (product.attributes?.origin as string) ||
           "";
 
-        // Secondary image for hover reveal if provided
-        const primaryImg = product.image_url || "";
+        // Secondary image for hover reveal if provided, with intelligent high-res category fallback
+        const fallback = getProductFallbackImage(
+          product.category || categoryLabel || defaultCategory,
+          themePreset,
+          index
+        );
+        const primaryImg = product.image_url || fallback.image;
         const secondaryImg = (product.attributes?.secondary_image as string) || "";
 
         const productSlugOrId = product.slug || String(product.id);
@@ -64,22 +78,15 @@ export function ProductGrid({ storeSlug, products, onSelectProduct }: ProductGri
             <div className="relative aspect-[4/5] w-full bg-sf-canvas rounded-sf overflow-hidden border border-sf-line/60 flex items-center justify-center">
               
               {/* Primary Image */}
-              {primaryImg ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={primaryImg}
-                  alt={product.name}
-                  loading="lazy"
-                  className="w-full h-full object-cover transition-opacity duration-300 group-hover:opacity-0"
-                />
-              ) : (
-                <div className="flex flex-col items-center justify-center p-4 text-center text-sf-muted">
-                  <Package className="w-8 h-8 mb-1.5 opacity-50" />
-                  <span className="text-[10px] font-sf-mono uppercase tracking-wider">
-                    {categoryLabel || "Authentic Item"}
-                  </span>
-                </div>
-              )}
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={primaryImg}
+                alt={product.name}
+                loading="lazy"
+                className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
+                  secondaryImg ? "group-hover:opacity-0 transition-opacity duration-300" : ""
+                }`}
+              />
 
               {/* Secondary Image Revealed on Hover */}
               {secondaryImg && (
@@ -99,9 +106,13 @@ export function ProductGrid({ storeSlug, products, onSelectProduct }: ProductGri
                     Sub 10%
                   </span>
                 )}
-                {originDistrict && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sf-mono font-medium uppercase tracking-wider bg-sf-surface/95 text-sf-ink border border-sf-line shadow-xs">
+                {originDistrict ? (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sf-mono font-medium uppercase tracking-wider bg-sf-surface/95 text-sf-ink border border-sf-line shadow-xs backdrop-blur-xs">
                     {originDistrict}
+                  </span>
+                ) : (
+                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sf-mono font-medium uppercase tracking-wider bg-sf-surface/90 text-sf-ink border border-sf-line shadow-2xs backdrop-blur-xs">
+                    {categoryLabel || fallback.category}
                   </span>
                 )}
               </div>

@@ -127,7 +127,7 @@ function ProductForm({
   // Attributes: key-value pairs
   const [attributes, setAttributes] = useState<Array<{ key: string; value: string }>>(() => {
     if (product && product.attributes) {
-      return Object.entries(product.attributes).map(([key, value]) => ({ key, value }));
+      return Object.entries(product.attributes).map(([key, value]) => ({ key, value: typeof value === "string" ? value : JSON.stringify(value) }));
     }
     return [
       { key: "origin", value: "Nepal" },

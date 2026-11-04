@@ -90,13 +90,13 @@ export function sanitizeRedirectTarget(
     return `/merchant/new?name=${encodeURIComponent(storeNameParam.trim())}`;
   }
   if (!nextParam) {
-    return "/account/addresses";
+    return "/merchant";
   }
   const clean = nextParam.trim();
   if (clean.startsWith("/") && !clean.startsWith("//") && !clean.startsWith("/\\")) {
     return clean;
   }
-  return "/account/addresses";
+  return "/merchant";
 }
 
 function getCookie(name: string): string | null {
@@ -443,7 +443,7 @@ export interface ProductItem {
   description: string;
   category?: string;
   image_url: string;
-  attributes: Record<string, any>;
+  attributes: Record<string, unknown>;
   allow_one_time: boolean;
   allow_subscription: boolean;
   is_active: boolean;

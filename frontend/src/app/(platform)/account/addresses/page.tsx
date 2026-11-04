@@ -237,6 +237,40 @@ function AddressesContent() {
         <span className="text-zinc-900 dark:text-zinc-200 font-semibold">Saved Addresses</span>
       </nav>
 
+      {/* Merchant Workspace Shortcut Banner */}
+      {!nextUrl && (
+        <div className="rounded-xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-[#141416] p-4 flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
+          <div className="flex items-center gap-3">
+            <div className="w-9 h-9 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center shrink-0">
+              <ShoppingBag className="w-4 h-4" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-zinc-900 dark:text-white">
+                Looking to launch or manage a ShopCraft store?
+              </p>
+              <p className="text-xs text-zinc-500 dark:text-zinc-400">
+                Create a new online storefront in minutes or open your merchant dashboard.
+              </p>
+            </div>
+          </div>
+          <div className="flex items-center gap-2 shrink-0">
+            <Link
+              href="/merchant"
+              className="px-3.5 py-2 rounded-lg border border-zinc-200 dark:border-zinc-700 text-xs font-semibold text-zinc-800 dark:text-zinc-200 hover:bg-zinc-100 dark:hover:bg-zinc-800 transition-colors"
+            >
+              Merchant Console
+            </Link>
+            <Link
+              href="/merchant/new"
+              className="inline-flex items-center gap-1.5 px-3.5 py-2 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-semibold hover:opacity-90 transition-opacity"
+            >
+              <span>Create Store</span>
+              <ArrowRight className="w-3.5 h-3.5" />
+            </Link>
+          </div>
+        </div>
+      )}
+
       {/* 2. Header Bar with Direct CTA */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 border-b border-zinc-200 dark:border-zinc-800 pb-6">
         <div>

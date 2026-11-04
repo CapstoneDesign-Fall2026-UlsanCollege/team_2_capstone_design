@@ -376,7 +376,7 @@ export function ThemeTemplateStudio() {
               Open Store Creation Wizard →
             </Link>
             <Link
-              href="/signup"
+              href="/signup?next=/merchant/new"
               className="w-full sm:w-auto px-6 py-3 rounded-full border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-white/5 font-semibold text-xs font-mono transition-colors"
             >
               Create Merchant Account
