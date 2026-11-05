@@ -293,8 +293,14 @@ class StoreCatalogView(StorePublicMixin, APIView):
             .filter(is_active=True)
             .order_by("sort_order", "id")
         )
+        selling_plans = (
+            SellingPlan.objects.for_store(self.store)
+            .filter(is_active=True)
+            .order_by("sort_order", "id")
+        )
         return Response({
             "products": ProductSerializer(products, many=True).data,
+            "selling_plans": SellingPlanSerializer(selling_plans, many=True).data,
         })
 
 
@@ -339,31 +345,26 @@ class StorePublicOrderDetailView(StorePublicMixin, APIView):
 
     def get(self, request, store_slug, order_id):
         import uuid
-        from core.tenant_context import BypassRLSContext
         token_param = request.query_params.get("token", "").strip()
         order = None
-        clean_order_id = str(order_id).strip()
 
         # Check if order_id is a UUID token
         try:
-            uuid_token = uuid.UUID(clean_order_id)
-            with BypassRLSContext():
-                order = Order.objects.filter(store=self.store, token=uuid_token).first()
+            uuid_token = uuid.UUID(str(order_id))
+            order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
         except ValueError:
             # Looked up by integer ID
             try:
-                oid = int(clean_order_id)
+                oid = int(order_id)
                 if token_param:
                     try:
                         param_uuid = uuid.UUID(token_param)
-                        with BypassRLSContext():
-                            order = Order.objects.filter(store=self.store, id=oid, token=param_uuid).first()
+                        order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
                     except ValueError:
                         pass
                 elif request.user.is_authenticated:
                     # Authenticated shopper viewing their own order
-                    with BypassRLSContext():
-                        order = Order.objects.filter(store=self.store, id=oid, customer__user=request.user).first()
+                    order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
             except ValueError:
                 pass
 
@@ -383,30 +384,25 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
 
     def post(self, request, store_slug, order_id):
         import uuid
-        from core.tenant_context import BypassRLSContext
         token_param = str(
             request.data.get("token") or request.query_params.get("token") or ""
         ).strip()
         order = None
-        clean_order_id = str(order_id).strip()
 
         try:
-            uuid_token = uuid.UUID(clean_order_id)
-            with BypassRLSContext():
-                order = Order.objects.filter(store=self.store, token=uuid_token).first()
+            uuid_token = uuid.UUID(str(order_id))
+            order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
         except ValueError:
             try:
-                oid = int(clean_order_id)
+                oid = int(order_id)
                 if token_param:
                     try:
                         param_uuid = uuid.UUID(token_param)
-                        with BypassRLSContext():
-                            order = Order.objects.filter(store=self.store, id=oid, token=param_uuid).first()
+                        order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
                     except ValueError:
                         pass
                 elif request.user.is_authenticated:
-                    with BypassRLSContext():
-                        order = Order.objects.filter(store=self.store, id=oid, customer__user=request.user).first()
+                    order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
             except ValueError:
                 pass
 
@@ -432,6 +428,13 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        has_prepaid_sub = order.originating_subscriptions.filter(selling_plan__is_prepaid=True).exists()
+        if payment_method == "COD" and has_prepaid_sub:
+            return Response(
+                {"error": "Prepaid subscription plans cannot be paid via Cash on Delivery. Please select Khalti."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
         if payment_method == "COD":
             with transaction.atomic():
                 old_status = order.status
@@ -440,12 +443,15 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 order.payment_status = "COD_PENDING"
                 order.save(update_fields=["status", "payment_method", "payment_status", "updated_at"])
 
+                from subscriptions.services import activate_order_subscriptions
+                activate_order_subscriptions(order)
+
                 OrderEvent.objects.create(
                     store=self.store,
                     order=order,
                     from_status=old_status,
                     to_status="CONFIRMED",
-                    note="Order confirmed via Cash on Delivery.",
+                    note="Renewal / order confirmed via Cash on Delivery link.",
                     actor=request.user if request.user.is_authenticated else None,
                 )
 
@@ -554,8 +560,14 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
             v.id: v for v in Variant.objects.for_store(self.store).filter(id__in=variant_ids, is_active=True)
         }
 
+        plan_ids = [it.get("selling_plan_id") for it in items_data if it.get("selling_plan_id")]
+        plans = {
+            p.id: p for p in SellingPlan.objects.for_store(self.store).filter(id__in=plan_ids, is_active=True)
+        }
+
         subtotal_minor = 0
         computed_items = []
+        has_prepaid_subscription = False
 
         for it in items_data:
             v_id = it.get("variant_id")
@@ -567,8 +579,19 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
                 )
 
             quantity = max(1, int(it.get("quantity", 1)))
+            purchase_type = it.get("purchase_type", "one_time")
+            plan_id = it.get("selling_plan_id")
+            plan = plans.get(plan_id) if (purchase_type == "subscription" and plan_id) else None
+
             unit_price = v.price_minor
-            line_total = unit_price * quantity
+            if plan and plan.discount_pct > 0:
+                unit_price = round(unit_price * (1 - plan.discount_pct / 100))
+
+            if plan and plan.is_prepaid:
+                has_prepaid_subscription = True
+                line_total = unit_price * plan.commitment_cycles * quantity
+            else:
+                line_total = unit_price * quantity
 
             subtotal_minor += line_total
             computed_items.append({
@@ -578,6 +601,8 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
                 "unit_price_minor": unit_price,
                 "quantity": quantity,
                 "line_total_minor": line_total,
+                "purchase_type": purchase_type,
+                "selling_plan": plan.name if plan else None,
             })
 
         district = str(request.data.get("district", "")).strip().lower()
@@ -618,6 +643,7 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
             "discount_code": applied_discount_code,
             "total_minor": total_minor,
             "is_free_shipping": is_free_shipping,
+            "has_prepaid_subscription": has_prepaid_subscription,
             "currency": self.store.currency,
             "items": computed_items,
         })
@@ -689,9 +715,14 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
         variants = {
             v.id: v for v in Variant.objects.for_store(self.store).filter(id__in=variant_ids, is_active=True)
         }
+        plan_ids = [it.get("selling_plan_id") for it in items_data if it.get("selling_plan_id")]
+        plans = {
+            p.id: p for p in SellingPlan.objects.for_store(self.store).filter(id__in=plan_ids, is_active=True)
+        }
 
         subtotal_minor = 0
         order_items_to_create = []
+        has_prepaid_plan = False
 
         for it in items_data:
             v_id = it.get("variant_id")
@@ -703,19 +734,41 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 )
 
             quantity = max(1, int(it.get("quantity", 1)))
+            purchase_type = it.get("purchase_type", "one_time")
+            plan_id = it.get("selling_plan_id")
+            plan = plans.get(plan_id) if (purchase_type == "subscription" and plan_id) else None
+
             unit_price = v.price_minor
-            line_total = unit_price * quantity
-            variant_label = v.label
+            if plan and plan.discount_pct > 0:
+                unit_price = round(unit_price * (1 - plan.discount_pct / 100))
+
+            if plan and plan.is_prepaid:
+                has_prepaid_plan = True
+                line_total = unit_price * plan.commitment_cycles * quantity
+                variant_label = f"{v.label} ({plan.commitment_cycles} cycles prepaid)"
+            elif plan:
+                line_total = unit_price * quantity
+                variant_label = f"{v.label} (Pay-per-delivery)"
+            else:
+                line_total = unit_price * quantity
+                variant_label = v.label
 
             subtotal_minor += line_total
             order_items_to_create.append({
                 "variant": v,
+                "plan": plan,
                 "product_name_snapshot": v.product.name,
                 "variant_label_snapshot": variant_label,
                 "unit_price_minor": unit_price,
                 "quantity": quantity,
                 "line_total_minor": line_total,
             })
+
+        if payment_method == "COD" and has_prepaid_plan:
+            return Response(
+                {"error": "Prepaid subscription plans cannot be paid via Cash on Delivery. Please select Khalti."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         inside_valley_districts = {"kathmandu", "lalitpur", "bhaktapur"}
         if district.lower() in inside_valley_districts:
@@ -769,7 +822,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 store=self.store,
                 customer=customer,
                 order_number=order_number,
-                order_type="ONE_TIME",
+                order_type="SUBSCRIPTION_CYCLE" if has_prepaid_plan else "ONE_TIME",
                 status=initial_status,
                 payment_method=payment_method,
                 payment_status=initial_payment_status,
@@ -782,6 +835,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 is_test=True,
             )
 
+            from subscriptions.services import create_subscription_for_item
             for item_info in order_items_to_create:
                 OrderItem.objects.create(
                     store=self.store,
@@ -793,6 +847,18 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                     quantity=item_info["quantity"],
                     line_total_minor=item_info["line_total_minor"],
                 )
+                if item_info.get("plan"):
+                    sub_status = "ACTIVE" if payment_method == "COD" else "PENDING_PAYMENT"
+                    create_subscription_for_item(
+                        store=self.store,
+                        customer=customer,
+                        variant=item_info["variant"],
+                        selling_plan=item_info["plan"],
+                        order=order,
+                        shipping_address=shipping_address,
+                        unit_price_minor=item_info["unit_price_minor"],
+                        status=sub_status,
+                    )
 
             OrderEvent.objects.create(
                 store=self.store,
@@ -945,6 +1011,9 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
                 order.payment_ref = pidx
                 order.save(update_fields=["status", "payment_status", "payment_ref", "updated_at"])
 
+                from subscriptions.services import activate_order_subscriptions
+                activate_order_subscriptions(order)
+
                 OrderEvent.objects.create(
                     store=self.store,
                     order=order,
@@ -1019,6 +1088,9 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
 
         products_count = Product.objects.for_store(self.store).filter(is_active=True).count()
         customers_count = Customer.objects.for_store(self.store).count()
+        active_subscriptions_count = Subscription.objects.for_store(self.store).filter(
+            status="ACTIVE"
+        ).count()
         active_discounts_count = Discount.objects.for_store(self.store).filter(
             is_active=True
         ).count()
@@ -1083,6 +1155,7 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
             "today_orders_count": today_orders_count,
             "pending_fulfillment_count": pending_fulfillment_count,
             "cod_pending_minor": cod_pending_minor,
+            "active_subscriptions_count": active_subscriptions_count,
             "active_discounts_count": active_discounts_count,
             "daily_sales_7d": list(daily_buckets.values()),
             "recent_orders": recent_orders,
@@ -1360,66 +1433,6 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
         return Response({"detail": "Variant archived.", "id": variant.id, "is_active": False})
 
 
-class MerchantSellingPlanListCreateView(StoreMerchantMixin, APIView):
-    def get(self, request, store_slug):
-        plans = SellingPlan.objects.for_store(self.store).order_by("sort_order", "id")
-        return Response(SellingPlanSerializer(plans, many=True).data)
-
-    def post(self, request, store_slug):
-        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
-        serializer = SellingPlanSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        plan = serializer.save(store=self.store)
-        MerchantAuditLog.objects.create(
-            store=self.store,
-            actor=request.user,
-            action="SELLING_PLAN_CREATE",
-            entity_type="SellingPlan",
-            entity_id=str(plan.id),
-            details={"code": plan.code, "name": plan.name, "discount_pct": plan.discount_pct, "is_prepaid": plan.is_prepaid},
-            ip_address=request.META.get("REMOTE_ADDR"),
-        )
-        return Response(SellingPlanSerializer(plan).data, status=status.HTTP_201_CREATED)
-
-
-class MerchantSellingPlanDetailView(StoreMerchantMixin, APIView):
-    def patch(self, request, store_slug, plan_id):
-        plan = SellingPlan.objects.for_store(self.store).filter(id=plan_id).first()
-        if not plan:
-            raise Http404("Selling plan not found.")
-        data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
-        serializer = SellingPlanSerializer(plan, data=data, partial=True)
-        serializer.is_valid(raise_exception=True)
-        updated = serializer.save()
-        MerchantAuditLog.objects.create(
-            store=self.store,
-            actor=request.user,
-            action="SELLING_PLAN_UPDATE",
-            entity_type="SellingPlan",
-            entity_id=str(updated.id),
-            details=data,
-            ip_address=request.META.get("REMOTE_ADDR"),
-        )
-        return Response(SellingPlanSerializer(updated).data)
-
-    def delete(self, request, store_slug, plan_id):
-        plan = SellingPlan.objects.for_store(self.store).filter(id=plan_id).first()
-        if not plan:
-            raise Http404("Selling plan not found.")
-        plan.is_active = False
-        plan.save(update_fields=["is_active", "updated_at"])
-        MerchantAuditLog.objects.create(
-            store=self.store,
-            actor=request.user,
-            action="SELLING_PLAN_ARCHIVE",
-            entity_type="SellingPlan",
-            entity_id=str(plan.id),
-            details={"code": plan.code, "name": plan.name},
-            ip_address=request.META.get("REMOTE_ADDR"),
-        )
-        return Response({"detail": "Selling plan archived.", "id": plan.id, "is_active": False})
-
-
 class MerchantOrderListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
         qs = Order.objects.for_store(self.store).order_by("-created_at")
@@ -1572,304 +1585,11 @@ class MerchantCustomerDetailView(StoreMerchantMixin, APIView):
             raise Http404("Customer not found.")
 
         orders = Order.objects.for_store(self.store).filter(customer=customer).order_by("-created_at")[:20]
-        subs = Subscription.objects.for_store(self.store).filter(customer=customer).order_by("-created_at")[:10]
 
         return Response({
             "customer": CustomerSerializer(customer).data,
             "orders": OrderSerializer(orders, many=True).data,
-            "subscriptions": SubscriptionSerializer(subs, many=True).data,
         })
-
-
-class MerchantSubscriptionListView(StoreMerchantMixin, APIView):
-    def get(self, request, store_slug):
-        from subscriptions.services import attach_pending_renewal_orders, compute_plan_interval_days
-
-        all_subs_qs = (
-            Subscription.objects.for_store(self.store)
-            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan", "order")
-            .order_by("-created_at")
-        )
-        all_subs = attach_pending_renewal_orders(self.store, list(all_subs_qs))
-        today = timezone.now().date()
-        upcoming_cutoff = today + timedelta(days=7)
-
-        active_count = 0
-        paused_count = 0
-        completed_count = 0
-        cancelled_count = 0
-        lapsed_count = 0
-        prepaid_cycles_remaining = 0
-        upcoming_7d_count = 0
-        mrr_minor = 0
-
-        for s in all_subs:
-            pending_order = getattr(s, "_cached_pending_order", None)
-
-            is_lapsed = False
-            if s.status not in ["CANCELLED", "COMPLETED"]:
-                if s.status == "PENDING_PAYMENT" or pending_order is not None:
-                    is_lapsed = True
-                elif s.status == "ACTIVE" and not s.selling_plan.is_prepaid and s.next_delivery_date < today:
-                    is_lapsed = True
-
-            s._is_lapsed = is_lapsed
-            if is_lapsed:
-                lapsed_count += 1
-
-            if s.status == "ACTIVE":
-                active_count += 1
-                interval_days = max(1, compute_plan_interval_days(s.selling_plan))
-                mrr_minor += round(s.unit_price_minor * (30 / interval_days))
-                if s.selling_plan.is_prepaid and s.cycles_remaining:
-                    prepaid_cycles_remaining += s.cycles_remaining
-                if today <= s.next_delivery_date <= upcoming_cutoff:
-                    upcoming_7d_count += 1
-            elif s.status == "PAUSED":
-                paused_count += 1
-                if s.selling_plan.is_prepaid and s.cycles_remaining:
-                    prepaid_cycles_remaining += s.cycles_remaining
-            elif s.status == "COMPLETED":
-                completed_count += 1
-            elif s.status == "CANCELLED":
-                cancelled_count += 1
-
-        status_filter = request.query_params.get("status", "").strip().upper()
-        q = request.query_params.get("q", "").strip().lower()
-
-        filtered_subs = all_subs
-        if status_filter == "LAPSED":
-            filtered_subs = [s for s in filtered_subs if getattr(s, "_is_lapsed", False)]
-        elif status_filter in ["ACTIVE", "PAUSED", "COMPLETED", "CANCELLED", "PENDING_PAYMENT"]:
-            filtered_subs = [s for s in filtered_subs if s.status == status_filter]
-
-        if q:
-            filtered_subs = [
-                s
-                for s in filtered_subs
-                if q in (s.customer.email or "").lower()
-                or q in (s.customer.full_name or "").lower()
-                or q in (s.customer.phone or "").lower()
-                or (s.customer.user and q in (s.customer.user.full_name or "").lower())
-                or q in (s.variant.product.name or "").lower()
-                or q in (s.selling_plan.name or "").lower()
-            ]
-
-        serializer = SubscriptionSerializer(filtered_subs, many=True)
-        return Response({
-            "metrics": {
-                "active_count": active_count,
-                "paused_count": paused_count,
-                "completed_count": completed_count,
-                "cancelled_count": cancelled_count,
-                "lapsed_count": lapsed_count,
-                "prepaid_cycles_remaining": prepaid_cycles_remaining,
-                "upcoming_7d_count": upcoming_7d_count,
-                "mrr_minor": mrr_minor,
-            },
-            "subscriptions": serializer.data,
-        })
-
-
-class MerchantSubscriptionActionView(StoreMerchantMixin, APIView):
-    def post(self, request, store_slug, sub_id):
-        from subscriptions.services import compute_plan_interval_days, generate_subscription_renewal_order
-
-        sub = (
-            Subscription.objects.for_store(self.store)
-            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan", "order")
-            .filter(id=sub_id)
-            .first()
-        )
-        if not sub:
-            raise Http404("Subscription not found for this store.")
-
-        action = str(request.data.get("action", "")).strip().lower()
-
-        if action == "pause":
-            if sub.status != "ACTIVE":
-                return Response({"error": "Only active subscriptions can be paused."}, status=status.HTTP_400_BAD_REQUEST)
-            sub.status = "PAUSED"
-            sub.save(update_fields=["status", "updated_at"])
-            MerchantAuditLog.objects.create(
-                store=self.store,
-                actor=request.user,
-                action="SUBSCRIPTION_PAUSE",
-                entity_type="Subscription",
-                entity_id=str(sub.id),
-                details={"customer": sub.customer.email},
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
-        elif action == "resume":
-            if sub.status != "PAUSED":
-                return Response({"error": "Only paused subscriptions can be resumed."}, status=status.HTTP_400_BAD_REQUEST)
-            sub.status = "ACTIVE"
-            if sub.next_delivery_date < timezone.now().date():
-                sub.next_delivery_date = timezone.now().date() + timedelta(days=1)
-            sub.save(update_fields=["status", "next_delivery_date", "updated_at"])
-            MerchantAuditLog.objects.create(
-                store=self.store,
-                actor=request.user,
-                action="SUBSCRIPTION_RESUME",
-                entity_type="Subscription",
-                entity_id=str(sub.id),
-                details={"customer": sub.customer.email, "next_delivery_date": sub.next_delivery_date.isoformat()},
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
-        elif action == "skip_cycle":
-            if sub.status not in ["ACTIVE", "PAUSED"]:
-                return Response({"error": "Only active or paused subscriptions can skip a cycle."}, status=status.HTTP_400_BAD_REQUEST)
-            interval_days = compute_plan_interval_days(sub.selling_plan)
-            sub.next_delivery_date = sub.next_delivery_date + timedelta(days=interval_days)
-            sub.save(update_fields=["next_delivery_date", "updated_at"])
-            MerchantAuditLog.objects.create(
-                store=self.store,
-                actor=request.user,
-                action="SUBSCRIPTION_SKIP_CYCLE",
-                entity_type="Subscription",
-                entity_id=str(sub.id),
-                details={"next_delivery_date": sub.next_delivery_date.isoformat()},
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
-        elif action == "cancel":
-            if sub.status in ["CANCELLED", "COMPLETED"]:
-                return Response({"error": "Subscription is already terminated."}, status=status.HTTP_400_BAD_REQUEST)
-            sub.status = "CANCELLED"
-            sub.save(update_fields=["status", "updated_at"])
-            MerchantAuditLog.objects.create(
-                store=self.store,
-                actor=request.user,
-                action="SUBSCRIPTION_CANCEL",
-                entity_type="Subscription",
-                entity_id=str(sub.id),
-                details={"customer": sub.customer.email},
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
-        elif action == "generate_renewal":
-            try:
-                renewal_order, newly_created = generate_subscription_renewal_order(sub, actor=request.user)
-            except ValueError as exc:
-                return Response({"error": str(exc)}, status=status.HTTP_400_BAD_REQUEST)
-
-            sub.refresh_from_db()
-            renewal_path = f"/s/{self.store.slug}/orders/{renewal_order.id}?token={renewal_order.token}"
-            recipient = (
-                sub.customer.full_name
-                or (sub.shipping_address_snapshot or {}).get("recipient_name")
-                or "there"
-            )
-            amount_rs = renewal_order.total_minor // 100
-            if sub.selling_plan.is_prepaid:
-                whatsapp_msg = (
-                    f"Namaste {recipient}! Your prepaid {self.store.name} delivery of "
-                    f"{sub.variant.product.name} ({sub.variant.label}) has been scheduled "
-                    f"({renewal_order.order_number} · Rs. 0 prepaid). Track dispatch: "
-                )
-            else:
-                whatsapp_msg = (
-                    f"Namaste {recipient}! Your next delivery of {sub.variant.product.name} "
-                    f"({sub.variant.label}) from {self.store.name} is ready ({renewal_order.order_number} · "
-                    f"Rs. {amount_rs:,}). Confirm Khalti or Cash on Delivery here: "
-                )
-
-            MerchantAuditLog.objects.create(
-                store=self.store,
-                actor=request.user,
-                action="SUBSCRIPTION_RENEWAL_LINK",
-                entity_type="Subscription",
-                entity_id=str(sub.id),
-                details={
-                    "order_id": renewal_order.id,
-                    "order_number": renewal_order.order_number,
-                    "newly_created": newly_created,
-                },
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
-
-            return Response({
-                "subscription": SubscriptionSerializer(sub).data,
-                "newly_created": newly_created,
-                "renewal_order": {
-                    "id": renewal_order.id,
-                    "order_number": renewal_order.order_number,
-                    "token": str(renewal_order.token),
-                    "total_minor": renewal_order.total_minor,
-                    "status": renewal_order.status,
-                    "payment_status": renewal_order.payment_status,
-                    "is_prepaid_dispatch": bool(sub.selling_plan.is_prepaid),
-                    "renewal_path": renewal_path,
-                    "whatsapp_message": whatsapp_msg,
-                },
-            })
-        else:
-            return Response(
-                {"error": "Invalid action. Choose pause, resume, skip_cycle, cancel, or generate_renewal."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        return Response(SubscriptionSerializer(sub).data)
-
-
-class ShopperSubscriptionListView(StorePublicMixin, APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def get(self, request, store_slug):
-        from subscriptions.services import attach_pending_renewal_orders
-
-        subs = list(
-            Subscription.objects.for_store(self.store)
-            .filter(customer__user=request.user)
-            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan", "order")
-            .order_by("-created_at")
-        )
-        attach_pending_renewal_orders(self.store, subs)
-        return Response(SubscriptionSerializer(subs, many=True).data)
-
-
-class ShopperSubscriptionActionView(StorePublicMixin, APIView):
-    permission_classes = [permissions.IsAuthenticated]
-
-    def post(self, request, store_slug, sub_id):
-        from subscriptions.services import compute_plan_interval_days
-
-        sub = (
-            Subscription.objects.for_store(self.store)
-            .select_related("customer", "customer__user", "variant", "variant__product", "selling_plan", "order")
-            .filter(id=sub_id, customer__user=request.user)
-            .first()
-        )
-        if not sub:
-            raise Http404("Subscription not found.")
-
-        action = str(request.data.get("action", "")).strip().lower()
-
-        if action == "pause":
-            if sub.status != "ACTIVE":
-                return Response({"error": "Only active subscriptions can be paused."}, status=status.HTTP_400_BAD_REQUEST)
-            sub.status = "PAUSED"
-            sub.save(update_fields=["status", "updated_at"])
-        elif action == "resume":
-            if sub.status != "PAUSED":
-                return Response({"error": "Only paused subscriptions can be resumed."}, status=status.HTTP_400_BAD_REQUEST)
-            sub.status = "ACTIVE"
-            if sub.next_delivery_date < timezone.now().date():
-                sub.next_delivery_date = timezone.now().date() + timedelta(days=1)
-            sub.save(update_fields=["status", "next_delivery_date", "updated_at"])
-        elif action == "skip_cycle":
-            if sub.status not in ["ACTIVE", "PAUSED"]:
-                return Response({"error": "Only active or paused subscriptions can skip a cycle."}, status=status.HTTP_400_BAD_REQUEST)
-            interval_days = compute_plan_interval_days(sub.selling_plan)
-            sub.next_delivery_date = sub.next_delivery_date + timedelta(days=interval_days)
-            sub.save(update_fields=["next_delivery_date", "updated_at"])
-        elif action == "cancel":
-            if sub.status in ["CANCELLED", "COMPLETED"]:
-                return Response({"error": "Subscription is already terminated."}, status=status.HTTP_400_BAD_REQUEST)
-            sub.status = "CANCELLED"
-            sub.save(update_fields=["status", "updated_at"])
-        else:
-            return Response({"error": "Invalid action."}, status=status.HTTP_400_BAD_REQUEST)
-
-        return Response(SubscriptionSerializer(sub).data)
 
 
 class StoreSlugCheckView(APIView):
@@ -2198,25 +1918,6 @@ class StoreCreateView(APIView):
             )
             # Create rich starter catalog with curated category photography & variants
             seed_starter_catalog(store)
-            default_plans = [
-                ("pay-per-delivery", "Pay-per-delivery Renewal", 1, 0, False, 0),
-                ("prepaid-3m", "3 Months Prepaid", 3, 5, True, 1),
-                ("prepaid-6m", "6 Months Prepaid", 6, 10, True, 2),
-                ("prepaid-12m", "12 Months Prepaid", 12, 15, True, 3),
-            ]
-            for p_code, p_name, p_cycles, p_disc, p_prepaid, p_sort in default_plans:
-                SellingPlan.objects.create(
-                    store=store,
-                    code=p_code,
-                    name=p_name,
-                    interval_unit="MONTH",
-                    interval_count=1,
-                    commitment_cycles=p_cycles,
-                    discount_pct=p_disc,
-                    is_prepaid=p_prepaid,
-                    is_active=True,
-                    sort_order=p_sort,
-                )
 
         return Response(StorePublicSerializer(store).data, status=status.HTTP_201_CREATED)
 
@@ -2252,38 +1953,6 @@ class MerchantMyStoresView(APIView):
                     "created_at": st.created_at.isoformat(),
                 })
         return Response({"stores": stores_data})
-
-
-class MerchantRunSubscriptionCyclesView(StoreMerchantMixin, APIView):
-    def post(self, request, store_slug):
-        from subscriptions.services import execute_due_subscription_cycles
-        from datetime import datetime
-        target_date_str = request.data.get("target_date")
-        target_date = None
-        if target_date_str:
-            try:
-                target_date = datetime.strptime(str(target_date_str).strip(), "%Y-%m-%d").date()
-            except ValueError:
-                pass
-
-        result = execute_due_subscription_cycles(store=self.store, target_date=target_date)
-        MerchantAuditLog.objects.create(
-            store=self.store,
-            actor=request.user,
-            action="SUBSCRIPTION_RUN_CYCLES",
-            entity_type="Subscription",
-            entity_id="batch",
-            details={
-                "orders_generated": result["orders_generated"],
-                "completed_subscriptions": result["completed_subscriptions"],
-            },
-            ip_address=request.META.get("REMOTE_ADDR"),
-        )
-        return Response({
-            "success": True,
-            "orders_generated": result["orders_generated"],
-            "completed_subscriptions": result["completed_subscriptions"],
-        })
 
 
 
@@ -2410,7 +2079,6 @@ urlpatterns = [
     path("stores/<slug:store_slug>/orders/<int:order_id>/", ShopperOrderDetailView.as_view(), name="shopper_order_detail"),
     path("stores/<slug:store_slug>/public-orders/<str:order_id>/", StorePublicOrderDetailView.as_view(), name="store_public_order_detail"),
     path("stores/<slug:store_slug>/public-orders/<str:order_id>/pay/", StorePublicOrderPayView.as_view(), name="store_public_order_pay"),
-    path("stores/<slug:store_slug>/subscriptions/", ShopperSubscriptionListView.as_view(), name="shopper_subscription_list"),
 
     # Merchant Console
     path("merchant/stores/<slug:store_slug>/overview/", MerchantStoreOverviewView.as_view(), name="merchant_store_overview"),
@@ -2426,15 +2094,9 @@ urlpatterns = [
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/", MerchantProductDetailView.as_view(), name="merchant_product_detail"),
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/variants/", MerchantVariantListCreateView.as_view(), name="merchant_variant_list_create"),
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/variants/<int:variant_id>/", MerchantVariantDetailView.as_view(), name="merchant_variant_detail"),
-    path("merchant/stores/<slug:store_slug>/selling-plans/", MerchantSellingPlanListCreateView.as_view(), name="merchant_selling_plan_list_create"),
-    path("merchant/stores/<slug:store_slug>/selling-plans/<int:plan_id>/", MerchantSellingPlanDetailView.as_view(), name="merchant_selling_plan_detail"),
     path("merchant/stores/<slug:store_slug>/orders/", MerchantOrderListView.as_view(), name="merchant_order_list"),
     path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/", MerchantOrderDetailView.as_view(), name="merchant_order_detail"),
     path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/transition/", MerchantOrderStatusTransitionView.as_view(), name="merchant_order_transition"),
     path("merchant/stores/<slug:store_slug>/customers/", MerchantCustomerListView.as_view(), name="merchant_customer_list"),
     path("merchant/stores/<slug:store_slug>/customers/<int:customer_id>/", MerchantCustomerDetailView.as_view(), name="merchant_customer_detail"),
-    path("merchant/stores/<slug:store_slug>/subscriptions/", MerchantSubscriptionListView.as_view(), name="merchant_subscription_list"),
-    path("stores/<slug:store_slug>/subscriptions/<int:sub_id>/action/", ShopperSubscriptionActionView.as_view(), name="shopper_subscription_action"),
-    path("merchant/stores/<slug:store_slug>/subscriptions/run-cycles/", MerchantRunSubscriptionCyclesView.as_view(), name="merchant_subscription_run_cycles"),
-    path("merchant/stores/<slug:store_slug>/subscriptions/<int:sub_id>/action/", MerchantSubscriptionActionView.as_view(), name="merchant_subscription_action"),
 ]
