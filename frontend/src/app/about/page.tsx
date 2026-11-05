@@ -103,7 +103,7 @@ export default function AboutPage() {
                 The Lalitpur Roastery Standard
               </h2>
               <p className="text-[#C8BFAB] text-sm leading-relaxed mb-4 font-sans">
-                Coffee should never linger in storage warehouses. Every subscription batch is roasted on a cast-iron drum in Lalitpur and dispatched within 48 hours of roast, ensuring your parcel arrives precisely at the onset of peak degassing.
+                Coffee should never linger in storage warehouses. Every order is roasted on a cast-iron drum in Lalitpur and dispatched within 48 hours of roast, ensuring your parcel arrives precisely at the onset of peak degassing.
               </p>
               <p className="text-[#C8BFAB] text-sm leading-relaxed mb-6 font-sans">
                 Our roasters calibrate each micro-lot individually to develop light and medium roast curves that highlight delicate mountain florals and citrus acidity, avoiding over-roasted bitterness.
@@ -291,7 +291,7 @@ export default function AboutPage() {
           </div>
           <h3 className="text-2xl font-serif font-bold text-[#1A1512] mb-2">Experience the Mountain Harvest</h3>
           <p className="text-xs sm:text-sm text-[#5C5042] max-w-md mx-auto mb-6 font-sans">
-            Join the coffee club to receive recurring single-origin micro-lots roasted fresh in Lalitpur with free doorstep delivery.
+            Join the coffee club to receive fresh single-origin micro-lots roasted fresh in Lalitpur with free doorstep delivery.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link 

@@ -185,7 +185,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
       {!loading && data && (
         <>
           {/* 2. Steep Vertical-Accent Inline Metrics Strip */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-6">
             <div className="border-l-[2.5px] border-blue-500 pl-3.5 space-y-0.5">
               <p className="text-xs text-[var(--muted-foreground)]">Gross Sales</p>
               <p className="text-xl font-semibold tracking-tight text-[var(--foreground)] tabular-nums">
@@ -217,16 +217,6 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
                 {data.kpis.repeat_customers} of {data.kpis.total_customers} shoppers re-ordered
               </p>
             </div>
-
-            <div className="border-l-[2.5px] border-violet-500 pl-3.5 space-y-0.5">
-              <p className="text-xs text-[var(--muted-foreground)]">Subscription MRR</p>
-              <p className="text-xl font-semibold tracking-tight text-[var(--foreground)] tabular-nums">
-                {formatNpr(data.kpis.active_mrr_minor)}
-              </p>
-              <p className="text-[11px] text-[var(--muted-foreground)]">
-                Normalized 30-day run-rate
-              </p>
-            </div>
           </div>
 
           {/* 3. Steep Smooth Trajectory Chart */}
@@ -237,7 +227,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
                   Daily Sales Trajectory
                 </h2>
                 <p className="text-xs text-[var(--muted-foreground)]">
-                  Confirmed storefront and subscription orders over time (integer Rs.)
+                  Confirmed storefront orders over time (integer Rs.)
                 </p>
               </div>
               <span className="text-xs font-mono text-[var(--muted-foreground)] tabular-nums">

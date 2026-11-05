@@ -102,11 +102,11 @@ export function StorefrontHeader({
               />
             ) : (
               <div className="flex flex-col text-left">
-                <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-[var(--ink)] leading-none group-hover:opacity-85 transition-opacity">
+                <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-[var(--ink)] leading-tight group-hover:opacity-85 transition-opacity">
                   {storeName}
                 </span>
                 {cleanTagline && (
-                  <span className="text-xs text-[var(--ink-2)] truncate max-w-[220px] mt-1 font-normal">
+                  <span className="hidden lg:block text-xs text-[var(--ink-2)] max-w-sm truncate font-normal">
                     {cleanTagline}
                   </span>
                 )}

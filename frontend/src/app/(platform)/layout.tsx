@@ -10,9 +10,9 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ShopCraft | Multi-Tenant E-Commerce & Subscription SaaS for Nepal",
+  title: "ShopCraft | Multi-Tenant E-Commerce SaaS for Nepal",
   description:
-    "Launch your independent online store in Nepal. Purpose-built for specialty coffee roasters, artisan tea estates, and consumable brands. Native Khalti & COD with recurring subscriptions.",
+    "Launch your independent online store in Nepal. Purpose-built for specialty coffee roasters, artisan tea estates, and independent makers. Native Khalti & COD checkout.",
 };
 
 export default function PlatformLayout({

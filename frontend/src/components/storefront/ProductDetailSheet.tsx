@@ -2,15 +2,9 @@
 
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
-import {
-  ArrowUpRight,
-  Check,
-  Minus,
-  Package,
-  Plus,
-  X,
-} from "lucide-react";
+import { ArrowUpRight, Check, Minus, Package, Plus, X } from "lucide-react";
 import { formatNpr, ProductItem, ProductVariant } from "@/lib/api";
+import { Button } from "@/components/ui/button";
 
 export interface SelectedCartItem {
   productId: number;
@@ -21,8 +15,6 @@ export interface SelectedCartItem {
   variantLabel: string;
   unitPriceMinor: number;
   quantity: number;
-  purchaseType?: "one_time" | "subscription";
-  sellingPlan?: any;
 }
 
 export interface ProductDetailSheetProps {
@@ -30,7 +22,6 @@ export interface ProductDetailSheetProps {
   product: ProductItem | null;
   open: boolean;
   onOpenChange: (open: boolean) => void;
-  sellingPlans?: any;
   onAddToCart?: (item: SelectedCartItem) => void;
 }
 
@@ -48,12 +39,12 @@ export function ProductDetailSheet({
       role="dialog"
       aria-modal="true"
       aria-labelledby="sheet-title"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/60 backdrop-blur-xs animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 animate-in fade-in duration-200"
       onClick={() => onOpenChange(false)}
     >
       <div
         onClick={(e) => e.stopPropagation()}
-        className="w-full sm:max-w-lg bg-sf-surface rounded-t-2xl sm:rounded-2xl border border-sf-line shadow-2xl overflow-hidden max-h-[92dvh] sm:max-h-[88dvh] flex flex-col animate-in slide-in-from-bottom duration-300"
+        className="w-full sm:max-w-md bg-[var(--surface)] rounded-t-xl sm:rounded-xl border border-[var(--border)] overflow-hidden max-h-[90dvh] flex flex-col animate-in slide-in-from-bottom duration-250"
       >
         <ProductDetailSheetContent
           storeSlug={storeSlug}
@@ -85,7 +76,6 @@ function ProductDetailSheetContent({
     defaultVariant ? defaultVariant.id : null
   );
 
-  // Dynamic Options (if any in product.attributes)
   const dynamicOptions = useMemo(() => {
     const attrs = product.attributes || {};
     const res: Array<{ name: string; values: string[] }> = [];
@@ -108,14 +98,11 @@ function ProductDetailSheetContent({
   const [quantity, setQuantity] = useState<number>(1);
   const [justAdded, setJustAdded] = useState<boolean>(false);
 
-  // Active variant
   const selectedVariant: ProductVariant | null =
     variants.find((v) => v.id === selectedVariantId) || defaultVariant;
 
-  const basePriceMinor = selectedVariant ? selectedVariant.price_minor : 75000;
-  const unitPriceMinor = basePriceMinor;
-  const totalPriceMinor = basePriceMinor * quantity;
-
+  const unitPriceMinor = selectedVariant ? selectedVariant.price_minor : 0;
+  const totalPriceMinor = unitPriceMinor * quantity;
   const isInStock = selectedVariant ? selectedVariant.in_stock : true;
 
   const attributeLabels = Object.values(selectedAttributes).filter(Boolean);
@@ -146,41 +133,39 @@ function ProductDetailSheetContent({
     setTimeout(() => {
       setJustAdded(false);
       onClose();
-    }, 450);
+    }, 400);
   };
 
   const productUrl = `/s/${encodeURIComponent(storeSlug)}/products/${encodeURIComponent(product.slug || product.id)}`;
 
   return (
-    <div className="flex flex-col h-full overflow-hidden p-5 text-left font-sf-body">
+    <div className="flex flex-col h-full overflow-hidden p-5 text-left font-sans">
       {/* Header with Title and Close Button */}
-      <div className="flex items-start justify-between gap-3 border-b border-sf-line pb-3">
+      <div className="flex items-start justify-between gap-3 border-b border-[var(--border)] pb-3">
         <div className="space-y-0.5 min-w-0">
-          <div className="flex items-center gap-1.5 text-[10px] font-sf-mono text-sf-muted uppercase tracking-wider">
-            <span>{product.category || "Authentic Craft"}</span>
-            <span>·</span>
-            <span>Quick View</span>
-          </div>
-          <h2 id="sheet-title" className="font-sf-display text-base sm:text-lg font-bold text-sf-ink truncate">
+          <h2 id="sheet-title" className="font-serif text-base sm:text-lg font-bold text-[var(--ink)] truncate">
             {product.name}
           </h2>
+          <span className="text-xs text-[var(--ink-2)] block font-medium">
+            Select options &amp; quantity
+          </span>
         </div>
 
         <button
           type="button"
           onClick={onClose}
           aria-label="Close dialog"
-          className="w-8 h-8 rounded-full border border-sf-line bg-sf-canvas flex items-center justify-center text-sf-muted hover:text-sf-ink transition-colors cursor-pointer shrink-0"
+          className="w-10 h-10 rounded-lg border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer shrink-0"
         >
           <X className="w-4 h-4" />
         </button>
       </div>
 
       {/* Scrollable Body */}
-      <div className="flex-1 overflow-y-auto py-4 space-y-5 pr-1">
+      <div className="flex-1 overflow-y-auto py-4 space-y-4 pr-1">
         {/* Product Media & Price Header */}
-        <div className="flex items-center gap-3.5">
-          <div className="relative w-20 h-20 rounded-sf border border-sf-line bg-sf-canvas overflow-hidden shrink-0 flex items-center justify-center">
+        <div className="flex items-center gap-3">
+          <div className="relative w-16 h-16 rounded-xl border border-[var(--border)] bg-[var(--canvas)] overflow-hidden shrink-0 flex items-center justify-center">
             {product.image_url ? (
               // eslint-disable-next-line @next/next/no-img-element
               <img
@@ -189,29 +174,25 @@ function ProductDetailSheetContent({
                 className="w-full h-full object-cover"
               />
             ) : (
-              <Package className="w-8 h-8 text-sf-muted opacity-50" />
+              <Package className="w-6 h-6 text-[var(--ink-2)] opacity-50" />
             )}
           </div>
 
-          <div className="space-y-1 min-w-0 flex-1">
-            <div className="flex items-baseline gap-2">
-              <span className="font-sf-mono text-lg font-bold text-sf-ink tabular-nums">
-                {formatNpr(unitPriceMinor)}
-              </span>
-            </div>
-
+          <div className="space-y-0.5 min-w-0 flex-1">
+            <span className="text-base font-semibold text-[var(--ink)] tabular-nums">
+              {formatNpr(unitPriceMinor)}
+            </span>
             {product.description && (
-              <p className="text-xs text-sf-muted line-clamp-2 leading-relaxed">
+              <p className="text-xs text-[var(--ink-2)] line-clamp-1 leading-normal">
                 {product.description}
               </p>
             )}
-
             <Link
               href={productUrl}
               onClick={onClose}
-              className="inline-flex items-center gap-1 text-[11px] font-sf-mono text-sf-cta hover:underline pt-0.5"
+              className="inline-flex items-center gap-1 text-xs text-[var(--ink-2)] hover:text-[var(--ink)] hover:underline pt-0.5"
             >
-              <span>View Full Details &amp; Story</span>
+              <span>View full product details</span>
               <ArrowUpRight className="w-3 h-3" />
             </Link>
           </div>
@@ -222,7 +203,7 @@ function ProductDetailSheetContent({
           <div className="space-y-2">
             {dynamicOptions.map((opt) => (
               <div key={opt.name} className="space-y-1">
-                <label className="font-bold text-sf-ink uppercase tracking-wider text-[10px] font-sf-mono block">
+                <label className="font-semibold text-[var(--ink)] uppercase tracking-wider text-[11px] block">
                   Select {opt.name}
                 </label>
                 <div className="flex flex-wrap gap-1.5">
@@ -233,10 +214,10 @@ function ProductDetailSheetContent({
                         key={val}
                         type="button"
                         onClick={() => setSelectedAttributes((p) => ({ ...p, [opt.name]: val }))}
-                        className={`px-2.5 py-1 rounded text-xs font-sf-mono border transition-all cursor-pointer ${
+                        className={`h-9 px-3 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
                           isSelected
-                            ? "border-sf-ink bg-sf-ink text-white font-bold"
-                            : "border-sf-line bg-sf-surface text-sf-ink hover:border-sf-muted"
+                            ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--surface)] font-semibold"
+                            : "border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--ink-2)]"
                         }`}
                       >
                         {val}
@@ -252,10 +233,10 @@ function ProductDetailSheetContent({
         {/* 2. Variant Selector */}
         {variants.length > 1 && (
           <div className="space-y-1.5">
-            <label className="font-bold text-sf-ink uppercase tracking-wider text-[10px] font-sf-mono block">
-              Select Variant
+            <label className="font-semibold text-[var(--ink)] uppercase tracking-wider text-[11px] block">
+              Variant
             </label>
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            <div className="grid grid-cols-2 gap-2">
               {variants.map((v) => {
                 const isSelected = v.id === selectedVariantId;
                 const isAvailable = v.in_stock && v.is_active;
@@ -266,16 +247,16 @@ function ProductDetailSheetContent({
                     type="button"
                     onClick={() => setSelectedVariantId(v.id)}
                     disabled={!isAvailable}
-                    className={`p-2 rounded-sf text-left transition-all cursor-pointer border ${
+                    className={`min-h-[44px] p-2.5 rounded-lg text-left transition-all cursor-pointer border ${
                       isSelected
-                        ? "border-sf-ink bg-sf-surface ring-2 ring-sf-ink font-bold shadow-2xs"
+                        ? "border-[var(--ink)] bg-[var(--surface)] ring-1 ring-[var(--ink)] font-semibold"
                         : isAvailable
-                        ? "border-sf-line bg-sf-surface hover:border-sf-muted"
-                        : "border-sf-line bg-sf-canvas opacity-40 cursor-not-allowed line-through"
+                        ? "border-[var(--border)] bg-[var(--surface)] hover:border-[var(--ink-2)]"
+                        : "border-[var(--border)] bg-[var(--canvas)] opacity-40 cursor-not-allowed line-through"
                     }`}
                   >
-                    <div className="text-xs font-bold text-sf-ink">{v.label}</div>
-                    <div className="text-[10px] font-sf-mono text-sf-muted mt-0.5">
+                    <div className="text-xs font-semibold text-[var(--ink)]">{v.label}</div>
+                    <div className="text-xs text-[var(--ink-2)] tabular-nums mt-0.5">
                       {formatNpr(v.price_minor)}
                     </div>
                   </button>
@@ -286,27 +267,29 @@ function ProductDetailSheetContent({
         )}
 
         {/* 3. Quantity Stepper */}
-        <div className="flex items-center justify-between pt-1 border-t border-sf-line">
-          <label className="font-bold text-sf-ink uppercase tracking-wider text-[10px] font-sf-mono">
+        <div className="flex items-center justify-between pt-2 border-t border-[var(--border)]">
+          <label className="font-semibold text-[var(--ink)] uppercase tracking-wider text-[11px]">
             Quantity
           </label>
-          <div className="inline-flex items-center rounded-sf border border-sf-line bg-sf-canvas">
+          <div className="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface)]">
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.max(1, q - 1))}
               disabled={quantity <= 1 || !isInStock}
-              className="w-9 h-9 flex items-center justify-center text-sf-muted hover:text-sf-ink disabled:opacity-30 cursor-pointer"
+              aria-label="Decrease quantity"
+              className="w-11 h-11 flex items-center justify-center text-[var(--ink-2)] hover:text-[var(--ink)] disabled:opacity-30 cursor-pointer"
             >
               <Minus className="w-3.5 h-3.5" />
             </button>
-            <span className="w-8 text-center font-sf-mono text-xs font-bold text-sf-ink tabular-nums">
+            <span className="w-8 text-center text-xs font-semibold text-[var(--ink)] tabular-nums">
               {quantity}
             </span>
             <button
               type="button"
               onClick={() => setQuantity((q) => Math.min(10, q + 1))}
               disabled={quantity >= 10 || !isInStock}
-              className="w-9 h-9 flex items-center justify-center text-sf-muted hover:text-sf-ink disabled:opacity-30 cursor-pointer"
+              aria-label="Increase quantity"
+              className="w-11 h-11 flex items-center justify-center text-[var(--ink-2)] hover:text-[var(--ink)] disabled:opacity-30 cursor-pointer"
             >
               <Plus className="w-3.5 h-3.5" />
             </button>
@@ -315,37 +298,31 @@ function ProductDetailSheetContent({
       </div>
 
       {/* Sticky Bottom Thumb-Zone Action Bar */}
-      <div className="pt-3 border-t border-sf-line bg-sf-surface space-y-2">
-        <div className="flex items-center justify-between text-xs font-sf-mono">
-          <span className="text-sf-muted">Total:</span>
-          <span className="font-sf-mono text-base font-bold text-sf-ink tabular-nums">
+      <div className="pt-3 border-t border-[var(--border)] bg-[var(--surface)] space-y-2">
+        <div className="flex items-center justify-between text-xs">
+          <span className="text-[var(--ink-2)]">Subtotal:</span>
+          <span className="text-base font-semibold text-[var(--ink)] tabular-nums">
             {formatNpr(totalPriceMinor)}
           </span>
         </div>
 
-        <button
-          type="button"
+        <Button
+          variant="primary"
           onClick={handleAddToCart}
           disabled={!isInStock || justAdded}
-          className={`w-full min-h-[46px] h-11 rounded-sf font-sf-body text-xs font-bold tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99] ${
-            justAdded
-              ? "bg-emerald-700 text-white"
-              : isInStock
-              ? "bg-sf-cta text-sf-cta-ink hover:opacity-95"
-              : "bg-sf-line text-sf-muted cursor-not-allowed"
-          }`}
+          className="w-full h-11 text-sm font-semibold"
         >
           {justAdded ? (
             <>
-              <Check className="w-4 h-4 text-white" />
-              <span>Added to Bag ✓</span>
+              <Check className="w-4 h-4 text-[var(--surface)]" />
+              <span>Added to Bag</span>
             </>
           ) : !isInStock ? (
             <span>Sold Out</span>
           ) : (
-            <span>Add to Bag · {formatNpr(totalPriceMinor)}</span>
+            <span>Add to bag · {formatNpr(totalPriceMinor)}</span>
           )}
-        </button>
+        </Button>
       </div>
     </div>
   );

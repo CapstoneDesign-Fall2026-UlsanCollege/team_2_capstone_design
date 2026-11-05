@@ -35,10 +35,10 @@ export default function TermsPage() {
 
           <section>
             <h2 className="text-lg font-serif font-bold text-[#1A1512] mb-2 flex items-center gap-2">
-              <RotateCcw size={18} className="text-[#A3432A]" /> 2. Subscription Skip, Pause & Cancellation
+              <RotateCcw size={18} className="text-[#A3432A]" /> 2. Order Cancellation &amp; Changes
             </h2>
             <p>
-              Monthly Pay-As-You-Go coffee plans can be paused, skipped, or cancelled at any time directly through your dashboard with zero penalty prior to your monthly roast cutoff date. Multi-month prepaid plans are guaranteed for their duration with flexibility to adjust delivery dates or pause when away.
+              Orders can be modified or cancelled directly prior to courier dispatch by contacting store support. Once dispatched with our courier partner, standard returns and exchanges apply upon arrival.
             </p>
           </section>
 
@@ -62,7 +62,7 @@ export default function TermsPage() {
         </div>
 
         <div className="mt-8 text-center text-xs text-[#8A7966]">
-          Questions regarding your subscription? Contact concierge at <a href="mailto:concierge@brewmellow.com" className="text-[#A3432A] font-bold underline">concierge@brewmellow.com</a>.
+          Questions regarding your order? Contact concierge at <a href="mailto:concierge@brewmellow.com" className="text-[#A3432A] font-bold underline">concierge@brewmellow.com</a>.
         </div>
       </div>
     </div>

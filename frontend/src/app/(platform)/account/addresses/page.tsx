@@ -276,7 +276,7 @@ function AddressesContent() {
         <div>
           <h1 className="text-2xl sm:text-3xl font-bold tracking-tight">Saved Delivery Addresses</h1>
           <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400 mt-1">
-            Manage your delivery locations for 1-tap checkout and subscription deliveries across Nepal.
+            Manage your delivery locations for 1-tap checkout across Nepal.
           </p>
         </div>
 

@@ -5,7 +5,6 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchMerchantProduct, ProductItem } from "@/lib/api";
 import { VariantGridEditor } from "@/components/merchant/VariantGridEditor";
-import { SellingPlanConfig } from "@/components/merchant/SellingPlanConfig";
 
 interface PageProps {
   params: Promise<{ storeSlug: string; productId: string }>;
@@ -21,7 +20,6 @@ export default function ProductDetailPage({ params }: PageProps) {
   const [loading, setLoading] = useState(!isInvalidId);
   const [error, setError] = useState<string | null>(isInvalidId ? "Invalid product ID" : null);
   const [product, setProduct] = useState<ProductItem | null>(null);
-  const [allowSubMaster, setAllowSubMaster] = useState(false);
 
   useEffect(() => {
     if (isNaN(prodIdNum)) return;
@@ -31,7 +29,6 @@ export default function ProductDetailPage({ params }: PageProps) {
       .then((data) => {
         if (active) {
           setProduct(data);
-          setAllowSubMaster(data.allow_subscription);
           setLoading(false);
         }
       })
@@ -177,18 +174,8 @@ export default function ProductDetailPage({ params }: PageProps) {
           storeSlug={storeSlug}
           productId={product.id}
           initialVariants={product.variants}
-          allowSubscriptionMaster={allowSubMaster}
         />
       </section>
-
-      {/* Subscription Selling Plan Manager */}
-      <SellingPlanConfig
-        storeSlug={storeSlug}
-        productId={product.id}
-        initialAllowSubscription={product.allow_subscription}
-        samplePriceMinor={samplePrice}
-        onMasterToggle={(enabled) => setAllowSubMaster(enabled)}
-      />
     </div>
   );
 }

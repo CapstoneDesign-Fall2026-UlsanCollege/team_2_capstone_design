@@ -17,8 +17,8 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ShopCraft | Multi-Tenant E-Commerce & Subscription SaaS for Nepal",
-  description: "Launch your independent Nepali online store with Khalti, Cash on Delivery, and subscription deliveries.",
+  title: "ShopCraft | Multi-Tenant E-Commerce SaaS for Nepal",
+  description: "Launch your independent Nepali online store with Khalti and Cash on Delivery.",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

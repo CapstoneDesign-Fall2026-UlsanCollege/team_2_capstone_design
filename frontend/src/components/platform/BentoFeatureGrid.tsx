@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import {
   CreditCard,
   Truck,
-  Repeat,
+  MessageCircle,
   Sparkles,
   ShieldCheck,
   Check,
@@ -127,34 +127,34 @@ export function BentoFeatureGrid() {
         </div>
 
         {/* =================================================================== */}
-        {/* CARD 2: Non-Recurring Subscriptions                                 */}
+        {/* CARD 2: Direct WhatsApp Concierge                                   */}
         {/* =================================================================== */}
         <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/70 p-6 sm:p-8 flex flex-col justify-between shadow-2xs hover:border-zinc-300 dark:hover:border-zinc-700 transition-all">
           <div className="space-y-2">
-            <div className="flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
-              <Repeat className="w-4 h-4" />
-              <span>Subscriptions</span>
+            <div className="flex items-center gap-2 text-[11px] font-mono font-bold uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
+              <MessageCircle className="w-4 h-4" />
+              <span>Communication</span>
             </div>
             <h3 className="text-xl font-bold tracking-tight text-zinc-900 dark:text-white">
-              No Auto-Debit Friction
+              Direct WhatsApp Concierge
             </h3>
             <p className="text-xs sm:text-sm text-zinc-500 dark:text-zinc-400">
-              Prepaid cycles or automated pay-per-delivery links via WhatsApp.
+              Instant 1-click customer chats and order status links right on WhatsApp.
             </p>
           </div>
 
-          {/* Visual Cycle Pills */}
+          {/* Visual Chat Pills */}
           <div className="mt-6 space-y-2">
             <div className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-between text-xs font-mono">
-              <span className="font-bold text-zinc-900 dark:text-white">3-Month Prepaid</span>
-              <span className="text-emerald-600 font-bold">10% OFF</span>
+              <span className="font-bold text-zinc-900 dark:text-white">Order Confirmed</span>
+              <span className="text-emerald-600 font-bold">1-Click Chat</span>
             </div>
             <div className="p-2.5 rounded-xl border border-zinc-200 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-800/50 flex items-center justify-between text-xs font-mono">
-              <span className="font-bold text-zinc-900 dark:text-white">6-Month Season Pass</span>
-              <span className="text-emerald-600 font-bold">15% OFF</span>
+              <span className="font-bold text-zinc-900 dark:text-white">Courier Out For Delivery</span>
+              <span className="text-blue-600 font-bold">Live Tracking</span>
             </div>
             <div className="text-[11px] font-mono text-zinc-400 dark:text-zinc-500 text-center pt-1">
-              82% repeat retention rate
+              99.2% on-time delivery communication
             </div>
           </div>
         </div>

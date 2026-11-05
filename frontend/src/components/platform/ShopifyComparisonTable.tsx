@@ -3,11 +3,11 @@
 import React, { useState } from "react";
 import { Check, X, AlertTriangle } from "lucide-react";
 
-type CategoryFilter = "all" | "payments" | "logistics" | "subscriptions" | "cost";
+type CategoryFilter = "all" | "payments" | "logistics" | "cost";
 
 interface ComparisonRow {
   feature: string;
-  category: "payments" | "logistics" | "subscriptions" | "cost";
+  category: "payments" | "logistics" | "cost";
   shopcraft: {
     status: "yes" | "warning" | "no";
     label: string;
@@ -66,11 +66,11 @@ const COMPARISON_ROWS: ComparisonRow[] = [
     instagram: { status: "no", label: "Manual Copy-Paste" },
   },
   {
-    feature: "Consumable Subscriptions",
-    category: "subscriptions",
-    shopcraft: { status: "yes", label: "Prepaid 3/6/12 + WhatsApp" },
-    shopify: { status: "no", label: "Requires $99/mo App" },
-    instagram: { status: "no", label: "Manual Notes" },
+    feature: "Instant WhatsApp Receipt & Inquiries",
+    category: "logistics",
+    shopcraft: { status: "yes", label: "Direct 1-Click WhatsApp" },
+    shopify: { status: "no", label: "Requires $29/mo Plugin" },
+    instagram: { status: "warning", label: "Chaotic DMs" },
   },
   {
     feature: "Mobile In-App Browser Speed",
@@ -97,7 +97,6 @@ export function ShopifyComparisonTable() {
           { id: "all", label: "All Features" },
           { id: "payments", label: "Payments" },
           { id: "logistics", label: "Logistics" },
-          { id: "subscriptions", label: "Subscriptions" },
           { id: "cost", label: "Pricing & Currency" },
         ].map((tab) => (
           <button

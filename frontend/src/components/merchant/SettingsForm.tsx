@@ -537,8 +537,7 @@ export function SettingsForm({
                 </div>
                 <p className="text-xs text-[var(--muted-foreground)] max-w-xl leading-relaxed">
                   Allow shoppers across Nepal to pay integer Rs. cash to the courier rider on
-                  delivery. Prepaid 3/6/12-cycle subscriptions always require Khalti upfront even
-                  when COD is active.
+                  delivery.
                 </p>
               </div>
 

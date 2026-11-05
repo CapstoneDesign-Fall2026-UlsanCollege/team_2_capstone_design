@@ -74,7 +74,7 @@ export default function PlatformHomePage() {
 
         {/* Subheading */}
         <p className="mt-6 text-base sm:text-xl text-zinc-600 dark:text-zinc-400 font-sans max-w-2xl mx-auto leading-relaxed">
-          The mobile-first commerce and subscription engine for Nepal. Set up your catalog, manage grind and size variants, and publish a hosted storefront in minutes.
+          The mobile-first commerce engine for Nepal. Set up your catalog, manage size and packaging variants, and publish a hosted storefront in minutes.
         </p>
 
         {/* Action Buttons */}
@@ -188,7 +188,7 @@ export default function PlatformHomePage() {
               <ul className="space-y-2.5 pt-4 border-t border-zinc-200 dark:border-white/10 text-xs text-zinc-700 dark:text-zinc-300 font-medium">
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /><span>Unlimited products &amp; orders</span></li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /><span>Custom .com.np / .com domain with SSL</span></li>
-                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /><span>Non-recurring repeat subscriptions</span></li>
+                <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /><span>Advanced analytics &amp; province sales reports</span></li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /><span>Staff accounts with role-based permissions</span></li>
                 <li className="flex items-center gap-2"><Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" /><span>Automated SMS &amp; WhatsApp customer notices</span></li>
               </ul>

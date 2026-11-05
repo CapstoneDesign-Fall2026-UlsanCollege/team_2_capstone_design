@@ -19,14 +19,12 @@ interface VariantGridEditorProps {
   storeSlug: string;
   productId: number;
   initialVariants: ProductVariant[];
-  allowSubscriptionMaster: boolean;
 }
 
 export function VariantGridEditor({
   storeSlug,
   productId,
   initialVariants,
-  allowSubscriptionMaster,
 }: VariantGridEditorProps) {
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -71,7 +69,6 @@ export function VariantGridEditor({
         price_minor: priceMinor,
         in_stock: true,
         allow_one_time: true,
-        allow_subscription: allowSubscriptionMaster,
       });
       setVariants((prev) => [...prev, created]);
       setNewLabel("");
@@ -102,7 +99,6 @@ export function VariantGridEditor({
           price_minor: basePrice,
           in_stock: true,
           allow_one_time: true,
-          allow_subscription: allowSubscriptionMaster,
         });
         setVariants((prev) => [...prev, created]);
       }
@@ -159,10 +155,9 @@ export function VariantGridEditor({
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-[var(--border)] bg-[var(--secondary)]/50 text-[var(--muted-foreground)] font-medium">
-              <th className="py-2.5 px-3 font-normal w-1/4">Variant Label</th>
-              <th className="py-2.5 px-3 font-normal w-1/4">Price (NPR)</th>
+              <th className="py-2.5 px-3 font-normal w-1/3">Variant Label</th>
+              <th className="py-2.5 px-3 font-normal w-1/3">Price (NPR)</th>
               <th className="py-2.5 px-3 font-normal text-center">In Stock</th>
-              <th className="py-2.5 px-3 font-normal text-center">Subscription</th>
               <th className="py-2.5 px-3 font-normal text-right">Actions</th>
             </tr>
           </thead>
@@ -206,22 +201,6 @@ export function VariantGridEditor({
                     checked={v.in_stock}
                     onChange={(e) => handleUpdate(v, { in_stock: e.target.checked })}
                     className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
-                  />
-                </td>
-
-                {/* Allow Subscription */}
-                <td className="py-2 px-3 text-center">
-                  <input
-                    type="checkbox"
-                    disabled={!allowSubscriptionMaster}
-                    checked={allowSubscriptionMaster && v.allow_subscription}
-                    onChange={(e) => handleUpdate(v, { allow_subscription: e.target.checked })}
-                    className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer disabled:opacity-40"
-                    title={
-                      allowSubscriptionMaster
-                        ? "Available for recurring delivery"
-                        : "Enable subscription on product first"
-                    }
                   />
                 </td>
 
@@ -367,17 +346,6 @@ export function VariantGridEditor({
                   className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)]"
                 />
                 <span>In Stock</span>
-              </label>
-
-              <label className="flex items-center gap-2 cursor-pointer">
-                <input
-                  type="checkbox"
-                  disabled={!allowSubscriptionMaster}
-                  checked={allowSubscriptionMaster && v.allow_subscription}
-                  onChange={(e) => handleUpdate(v, { allow_subscription: e.target.checked })}
-                  className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] disabled:opacity-40"
-                />
-                <span>Subscribe</span>
               </label>
             </div>
           </div>

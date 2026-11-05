@@ -737,14 +737,14 @@ function OriginsContent() {
           </div>
           <h3 className="text-2xl font-serif font-bold text-[#1A1512] mb-2">Ready to Experience the Terroir?</h3>
           <p className="text-xs md:text-sm text-[#5C5042] max-w-lg mx-auto mb-6">
-            Get freshly roasted single-origin coffees delivered on recurring monthly cycles with free doorstep shipping.
+            Get freshly roasted single-origin coffees delivered to your doorstep with free shipping.
           </p>
           <div className="flex flex-wrap gap-4 justify-center">
             <Link 
               href="/subscribe?plan=PAYG"
               className="min-h-[44px] inline-flex items-center gap-2 px-6 py-2.5 bg-[#A3432A] text-white font-mono text-xs uppercase tracking-widest font-bold rounded-xl hover:bg-[#8A3722] transition-colors shadow-xs cursor-pointer"
             >
-              <span>Build Your Subscription</span>
+              <span>Order Fresh Coffee</span>
               <ArrowRight size={14} />
             </Link>
             <Link 

@@ -132,7 +132,7 @@ export function StaffPermissionsPanel({ storeSlug }: StaffTabProps) {
           </div>
           <p className="text-xs text-[var(--muted-foreground)] max-w-xl leading-relaxed">
             <strong>Owners</strong> control encrypted Khalti keys, custom domains, and team access.{" "}
-            <strong>Staff</strong> can fulfill orders, manage products, run subscriptions, and create
+            <strong>Staff</strong> can fulfill orders, manage products, and create
             promo codes strictly inside <span className="font-mono">{storeSlug}</span>.
           </p>
         </div>
@@ -409,7 +409,7 @@ export function StaffPermissionsPanel({ storeSlug }: StaffTabProps) {
                   className="w-full h-9 px-2.5 rounded-md border border-zinc-300 dark:border-zinc-700 bg-zinc-50 dark:bg-zinc-950 text-xs text-zinc-900 dark:text-zinc-100 focus:outline-none"
                 >
                   <option value="STAFF">
-                    STAFF — Orders, Catalog, Subscriptions &amp; Discounts
+                    STAFF — Orders, Catalog &amp; Discounts
                   </option>
                   <option value="OWNER">
                     OWNER — Full Access (including Khalti Keys &amp; Staff)

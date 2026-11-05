@@ -25,7 +25,7 @@ export default function OfflinePage() {
         </h1>
 
         <p className="text-xs text-[#5C5042] leading-relaxed mb-6">
-          Your internet connection was lost, but your BrewMellow PWA cached subscription data is safe. Reconnect to place new orders or adjust delivery schedules.
+          Your internet connection was lost. Reconnect to browse the catalog and place orders.
         </p>
 
         <div className="p-4 bg-[#FAF8F5] border border-[#E6DEC8] text-xs text-left mb-8 space-y-2">

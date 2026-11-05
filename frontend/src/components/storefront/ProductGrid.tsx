@@ -2,67 +2,79 @@
 
 import React from "react";
 import Link from "next/link";
-import { Eye, Package } from "lucide-react";
+import { Package } from "lucide-react";
 import { formatNpr, ProductItem } from "@/lib/api";
-import { getProductFallbackImage } from "@/lib/storefront-media";
+import { Button } from "@/components/ui/button";
 
 export interface ProductGridProps {
   storeSlug?: string;
   products: ProductItem[];
   onSelectProduct: (product: ProductItem) => void;
+  onQuickAdd?: (product: ProductItem) => void;
   themePreset?: string;
   defaultCategory?: string;
+}
+
+function isPlaceholderText(text?: string | null): boolean {
+  if (!text) return true;
+  const trimmed = text.trim().toLowerCase();
+  return (
+    trimmed === "" ||
+    trimmed === "general" ||
+    trimmed === "aaa" ||
+    trimmed === "placeholder" ||
+    trimmed === "online storefront · nepal"
+  );
 }
 
 export function ProductGrid({
   storeSlug,
   products,
   onSelectProduct,
-  themePreset,
-  defaultCategory,
+  onQuickAdd,
 }: ProductGridProps) {
   if (products.length === 0) {
     return (
-      <div className="rounded-sf border border-dashed border-sf-line bg-sf-surface p-12 text-center my-6">
-        <Package className="w-10 h-10 text-sf-muted mx-auto mb-3 opacity-60" aria-hidden="true" />
-        <h3 className="font-sf-display text-base font-bold text-sf-ink mb-1">
+      <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-12 text-center my-6">
+        <Package className="w-10 h-10 text-[var(--ink-2)] mx-auto mb-3 opacity-60" aria-hidden="true" />
+        <h3 className="font-serif text-base font-bold text-[var(--ink)] mb-1">
           No Products Found
         </h3>
-        <p className="text-xs text-sf-muted max-w-sm mx-auto leading-relaxed">
-          No items match your filter selection. Try selecting &quot;All Items&quot; or clearing your search.
+        <p className="text-xs text-[var(--ink-2)] max-w-sm mx-auto leading-relaxed">
+          No items match your filter criteria. Try choosing a different collection or clearing your search.
         </p>
       </div>
     );
   }
 
+  const handleAddClick = (e: React.MouseEvent, product: ProductItem) => {
+    e.preventDefault();
+    e.stopPropagation();
+    if (onQuickAdd) {
+      onQuickAdd(product);
+    } else {
+      onSelectProduct(product);
+    }
+  };
+
   return (
     <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
-      {products.map((product, index) => {
+      {products.map((product) => {
         const variants = product.variants || [];
         const inStockVariants = variants.filter((v) => v.in_stock && v.is_active);
-        const hasStock = inStockVariants.length > 0;
+        const hasStock = variants.length === 0 || inStockVariants.length > 0;
         const validVariants = inStockVariants.length > 0 ? inStockVariants : variants;
 
-        const prices = validVariants.map((v) => v.price_minor);
+        const prices = validVariants
+          .map((v) => v.price_minor)
+          .filter((p): p is number => typeof p === "number" && p > 0);
         const minPrice = prices.length > 0 ? Math.min(...prices) : 0;
         const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
-        const hasMultiplePrices = minPrice !== maxPrice;
+        const hasMultiplePrices = minPrice !== maxPrice && minPrice > 0;
 
-        // Tags & attributes
-        const categoryLabel = product.category || (product.attributes?.category as string) || "";
-        const originDistrict =
-          (product.attributes?.district as string) ||
-          (product.attributes?.origin as string) ||
-          "";
-
-        // Secondary image for hover reveal if provided, with intelligent high-res category fallback
-        const fallback = getProductFallbackImage(
-          product.category || categoryLabel || defaultCategory,
-          themePreset,
-          index
-        );
-        const primaryImg = product.image_url || fallback.image;
-        const secondaryImg = (product.attributes?.secondary_image as string) || "";
+        // Clean category or attribute tag
+        const rawCategory = product.category || (product.attributes?.category as string) || "";
+        const cleanCategory = !isPlaceholderText(rawCategory) ? rawCategory.trim() : "";
 
         const productSlugOrId = product.slug || String(product.id);
         const productHref = storeSlug
@@ -70,93 +82,71 @@ export function ProductGrid({
           : null;
 
         const CardContent = (
-          <>
-            {/* 1. Image Container with aspect-[4/5] & Secondary Image Reveal */}
-            <div className="relative aspect-[4/5] w-full bg-sf-canvas rounded-sf overflow-hidden border border-sf-line/60 flex items-center justify-center">
-              
-              {/* Primary Image */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={primaryImg}
-                alt={product.name}
-                loading="lazy"
-                className={`w-full h-full object-cover transition-all duration-500 group-hover:scale-105 ${
-                  secondaryImg ? "group-hover:opacity-0 transition-opacity duration-300" : ""
-                }`}
-              />
-
-              {/* Secondary Image Revealed on Hover */}
-              {secondaryImg && (
+          <div className="flex flex-col h-full bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden transition-colors hover:border-[var(--ink)]">
+            {/* 1. Product Image Frame (12px rounded container, 1px border, no overlay text) */}
+            <div className="relative aspect-square sm:aspect-[4/5] w-full bg-[var(--canvas)] border-b border-[var(--border)] overflow-hidden flex items-center justify-center">
+              {product.image_url ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
-                  src={secondaryImg}
-                  alt={`${product.name} alternate view`}
+                  src={product.image_url}
+                  alt={product.name}
                   loading="lazy"
-                  className="absolute inset-0 w-full h-full object-cover opacity-0 group-hover:opacity-100 transition-opacity duration-300 ease-out"
+                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
                 />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-4 text-[var(--ink-2)]">
+                  <Package className="w-8 h-8 stroke-[1.25] text-[var(--ink-2)] mb-1 opacity-50" />
+                  <span className="text-[11px] text-[var(--ink-2)]">No image</span>
+                </div>
               )}
 
-              {/* Badges Overlay (Top Left) */}
-              <div className="absolute top-2 left-2 flex flex-col items-start gap-1 pointer-events-none z-10">
-                {originDistrict ? (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sf-mono font-medium uppercase tracking-wider bg-sf-surface/95 text-sf-ink border border-sf-line shadow-xs backdrop-blur-xs">
-                    {originDistrict}
-                  </span>
-                ) : (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sf-mono font-medium uppercase tracking-wider bg-sf-surface/90 text-sf-ink border border-sf-line shadow-2xs backdrop-blur-xs">
-                    {categoryLabel || fallback.category}
-                  </span>
-                )}
-              </div>
-
-              {/* Out of Stock Overlay */}
+              {/* Clean out-of-stock overlay only when actually sold out */}
               {!hasStock && variants.length > 0 && (
-                <div className="absolute inset-0 bg-sf-surface/85 backdrop-blur-xs flex items-center justify-center z-10">
-                  <span className="px-2.5 py-1 rounded text-xs font-sf-mono font-bold uppercase tracking-wider bg-sf-ink text-white">
+                <div className="absolute inset-0 bg-[var(--surface)]/85 flex items-center justify-center z-10">
+                  <span className="px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[var(--ink)] text-[var(--surface)]">
                     Sold Out
                   </span>
                 </div>
               )}
+            </div>
 
-              {/* Quick-View Action Pill (Desktop Hover + Mobile Corner Tap) */}
-              <div className="absolute right-2 bottom-2 sm:inset-x-2 sm:bottom-2 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-1 sm:group-hover:translate-y-0 transition-all duration-200 z-20">
-                <button
-                  type="button"
-                  onClick={(e) => {
-                    e.preventDefault();
-                    e.stopPropagation();
-                    onSelectProduct(product);
-                  }}
-                  aria-label={`Quick view ${product.name}`}
-                  className="h-8 w-8 sm:w-full rounded-full sm:rounded-sf bg-sf-surface/95 hover:bg-sf-surface text-sf-ink text-[11px] font-sf-body font-semibold tracking-wide border border-sf-line shadow-md flex items-center justify-center gap-1 transition-all cursor-pointer backdrop-blur-xs"
+            {/* 2. Product Metadata & Direct Quick Add */}
+            <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-3 text-left">
+              <div className="space-y-1">
+                {cleanCategory && (
+                  <p className="text-[11px] text-[var(--ink-2)] font-medium uppercase tracking-wider">
+                    {cleanCategory}
+                  </p>
+                )}
+                <h3 className="text-xs sm:text-sm font-semibold text-[var(--ink)] leading-snug line-clamp-2">
+                  {product.name}
+                </h3>
+              </div>
+
+              <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]/60">
+                <div className="flex flex-col">
+                  <span className="text-xs sm:text-sm font-semibold text-[var(--ink)] tabular-nums">
+                    {minPrice > 0
+                      ? hasMultiplePrices
+                        ? `From ${formatNpr(minPrice)}`
+                        : formatNpr(minPrice)
+                      : "Rs. 0"}
+                  </span>
+                </div>
+
+                <Button
+                  size="sm"
+                  variant="secondary"
+                  onClick={(e) => handleAddClick(e, product)}
+                  disabled={!hasStock}
+                  className="h-8 px-3 text-xs font-semibold shrink-0"
+                  aria-label={`Add ${product.name} to bag`}
                 >
-                  <Eye className="w-3.5 h-3.5 text-sf-ink sm:text-sf-muted" />
-                  <span className="hidden sm:inline">Quick View</span>
-                </button>
+                  Add
+                </Button>
               </div>
             </div>
-
-            {/* 2. Product Metadata */}
-            <div className="pt-2.5 flex flex-col gap-0.5">
-              
-              {/* Category Hint */}
-              <div className="flex items-center gap-1.5 text-[10px] font-sf-mono text-sf-muted uppercase tracking-wider">
-                <span>{categoryLabel || "Direct from Maker"}</span>
-              </div>
-
-              {/* Product Title */}
-              <h3 className="font-sf-display text-xs sm:text-sm font-bold text-sf-ink group-hover:underline underline-offset-2 line-clamp-1 leading-snug">
-                {product.name}
-              </h3>
-
-              {/* Integer NPR Dual Price */}
-              <div className="pt-1 flex items-baseline gap-1.5">
-                <span className="text-xs sm:text-sm font-bold text-sf-ink tabular-nums font-sf-mono">
-                  {hasMultiplePrices ? `From ${formatNpr(minPrice)}` : formatNpr(minPrice)}
-                </span>
-              </div>
-            </div>
-          </>
+          </div>
         );
 
         if (productHref) {
@@ -164,7 +154,7 @@ export function ProductGrid({
             <Link
               key={product.id}
               href={productHref}
-              className="group flex flex-col text-left cursor-pointer focus:outline-none bg-sf-surface p-3 rounded-sf border border-sf-line shadow-2xs hover:shadow-sm transition-shadow block"
+              className="group flex flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] rounded-xl"
             >
               {CardContent}
             </Link>
@@ -172,7 +162,7 @@ export function ProductGrid({
         }
 
         return (
-          <article
+          <div
             key={product.id}
             role="button"
             tabIndex={0}
@@ -183,10 +173,10 @@ export function ProductGrid({
                 onSelectProduct(product);
               }
             }}
-            className="group flex flex-col text-left cursor-pointer focus:outline-none bg-sf-surface p-3 rounded-sf border border-sf-line shadow-2xs hover:shadow-sm transition-shadow"
+            className="group flex flex-col text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-[var(--ink)] rounded-xl cursor-pointer"
           >
             {CardContent}
-          </article>
+          </div>
         );
       })}
     </div>
