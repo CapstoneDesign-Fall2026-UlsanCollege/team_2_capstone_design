@@ -26,9 +26,13 @@ async function fetchOrderData(
 
     let orderRes = await fetch(orderUrl, { cache: "no-store" });
     if (orderRes.status === 404) {
-      // Retry once after 350ms to allow remote cloud DB transaction propagation immediately following checkout
-      await new Promise((r) => setTimeout(r, 350));
-      orderRes = await fetch(orderUrl, { cache: "no-store" });
+      // Retry with backoff to allow remote Neon DB transaction propagation immediately following checkout
+      const retryDelays = [400, 800, 1400];
+      for (const delay of retryDelays) {
+        await new Promise((r) => setTimeout(r, delay));
+        orderRes = await fetch(orderUrl, { cache: "no-store" });
+        if (orderRes.ok) break;
+      }
       if (orderRes.status === 404) {
         return { order: null, store: null };
       }

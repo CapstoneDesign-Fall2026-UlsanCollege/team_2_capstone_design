@@ -3,99 +3,72 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  BarChart3,
-  Home,
-  ShoppingBag,
-  Package,
-  Repeat,
-  Settings,
-  Plus,
-} from "lucide-react";
+import { Menu } from "lucide-react";
+import { buildMerchantNav, isNavActive } from "./merchant-nav";
 
 interface MerchantBottomNavProps {
   storeSlug: string;
+  ordersCount: number;
+  onOpenMore: () => void;
 }
 
-export function MerchantBottomNav({ storeSlug }: MerchantBottomNavProps) {
+/**
+ * Mobile tab bar: Home, Orders, Products, More. No floating action button:
+ * "Add product" lives only in the top bar. 44px+ tap targets.
+ */
+export function MerchantBottomNav({ storeSlug, ordersCount, onOpenMore }: MerchantBottomNavProps) {
   const pathname = usePathname();
+  const { main } = buildMerchantNav(`/merchant/${encodeURIComponent(storeSlug)}`);
+  const tabs = main.filter((i) => ["home", "orders", "products"].includes(i.key));
 
-  const tabs = [
-    {
-      label: "Home",
-      href: `/merchant/${encodeURIComponent(storeSlug)}`,
-      exact: true,
-      icon: Home,
-    },
-    {
-      label: "Orders",
-      href: `/merchant/${encodeURIComponent(storeSlug)}/orders`,
-      exact: false,
-      icon: ShoppingBag,
-    },
-    {
-      label: "Catalog",
-      href: `/merchant/${encodeURIComponent(storeSlug)}/products`,
-      exact: false,
-      icon: Package,
-    },
-    {
-      label: "Subs",
-      href: `/merchant/${encodeURIComponent(storeSlug)}/subscriptions`,
-      exact: false,
-      icon: Repeat,
-    },
-    {
-      label: "Analytics",
-      href: `/merchant/${encodeURIComponent(storeSlug)}/analytics`,
-      exact: false,
-      icon: BarChart3,
-    },
-    {
-      label: "Settings",
-      href: `/merchant/${encodeURIComponent(storeSlug)}/settings`,
-      exact: false,
-      icon: Settings,
-    },
-  ];
+  const base =
+    "relative flex min-h-14 flex-1 flex-col items-center justify-center gap-0.5 text-xs transition-colors";
 
   return (
-    <>
-      {/* Floating Action Button (+) */}
-      <div className="lg:hidden fixed bottom-18 right-4 z-40">
-        <Link
-          href={`/merchant/${encodeURIComponent(storeSlug)}/products?action=new`}
-          className="w-12 h-12 rounded-full shadow-lg bg-[var(--primary)] text-[var(--primary-foreground)] flex items-center justify-center font-bold active:scale-95 transition-transform"
-          aria-label="Add new product"
-        >
-          <Plus className="w-5 h-5 stroke-[2.5]" />
-        </Link>
-      </div>
-
-      {/* Mobile Bottom Tabs */}
-      <nav className="lg:hidden fixed bottom-0 inset-x-0 z-30 bg-[var(--card)] border-t border-[var(--border)] pb-safe flex items-center justify-around h-14">
-        {tabs.map((tab) => {
-          const isActive = tab.exact
-            ? pathname === tab.href
-            : pathname.startsWith(tab.href);
-          const IconComponent = tab.icon;
-
-          return (
-            <Link
-              key={tab.href}
-              href={tab.href}
-              className={`flex-1 flex flex-col items-center justify-center h-full text-center py-1 transition-colors ${
-                isActive
-                  ? "text-blue-600 dark:text-blue-400 font-semibold"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] font-normal"
-              }`}
-            >
-              <IconComponent className="w-4 h-4 mb-0.5" />
-              <span className="text-[10px] tracking-tight">{tab.label}</span>
-            </Link>
-          );
-        })}
-      </nav>
-    </>
+    <nav
+      aria-label="Primary"
+      className="pb-safe fixed inset-x-0 bottom-0 z-30 flex h-14 items-stretch border-t border-[var(--border)] bg-[var(--surface)] md:hidden"
+    >
+      {tabs.map((tab) => {
+        const active = isNavActive(pathname, tab);
+        const Icon = tab.icon;
+        return (
+          <Link
+            key={tab.key}
+            href={tab.href}
+            aria-current={active ? "page" : undefined}
+            className={`${base} ${active ? "font-semibold text-[var(--ink)]" : "text-[var(--ink-2)]"}`}
+          >
+            <span className="relative">
+              <Icon className="size-5" strokeWidth={active ? 2.25 : 1.75} aria-hidden="true" />
+              {tab.key === "orders" && ordersCount > 0 && (
+                <span
+                  aria-hidden="true"
+                  className="absolute -right-2 -top-1.5 min-w-4 rounded-full bg-[var(--ink)] px-1 text-center text-xs leading-4 text-[var(--primary-foreground)]"
+                >
+                  {ordersCount > 99 ? "99+" : ordersCount}
+                </span>
+              )}
+            </span>
+            <span>{tab.label}</span>
+            {tab.key === "orders" && ordersCount > 0 && (
+              <span className="sr-only">, {ordersCount} to dispatch</span>
+            )}
+            {active && (
+              <span aria-hidden="true" className="absolute inset-x-6 top-0 h-0.5 rounded-full bg-[var(--ink)]" />
+            )}
+          </Link>
+        );
+      })}
+      <button
+        type="button"
+        onClick={onOpenMore}
+        aria-haspopup="dialog"
+        className={`${base} cursor-pointer text-[var(--ink-2)]`}
+      >
+        <Menu className="size-5" strokeWidth={1.75} aria-hidden="true" />
+        <span>More</span>
+      </button>
+    </nav>
   );
 }

@@ -36,10 +36,11 @@
 }
 
 /* --------------------------------------------------------------------------
- * Surface 2: Console Tokens (Steep-inspired crisp neutral workspace)
+ * Surface 2: Console Tokens (calm, neutral, light-only merchant workspace)
+ * `:root` keeps the legacy shadcn values so platform pages are unaffected;
+ * `.console` is the redesigned token set and the single source of truth.
  * -------------------------------------------------------------------------- */
-:root,
-.console {
+:root {
   --background: #F8F9FB;
   --foreground: #111827;
   --card: #FFFFFF;
@@ -59,128 +60,236 @@
   --ring: #3B82F6;
   --destructive: #DC2626;
   --radius: 0.5rem;
-  --st-new: #3B82F6;
-  --st-packed: #D97706;
-  --st-shipped: #7C3AED;
-  --st-delivered: #16A34A;
-  --st-cancelled: #6B7280;
 }
 
-[data-platform-theme="dark"],
-.dark,
-.console.dark,
-[data-platform-theme="dark"] .console,
-.dark .console,
-.console[data-theme="dark"] {
-  --background: #0B0C0E;
-  --foreground: #F9FAFB;
-  --card: #111216;
-  --card-foreground: #F9FAFB;
-  --popover: #14151A;
-  --popover-foreground: #F9FAFB;
-  --primary: #FFFFFF;
-  --primary-foreground: #09090B;
-  --secondary: #191B20;
-  --secondary-foreground: #F3F4F6;
-  --muted: #16181D;
-  --muted-foreground: #9CA3AF;
-  --accent: #1F2229;
-  --accent-foreground: #FFFFFF;
-  --border: rgba(255, 255, 255, 0.08);
-  --input: rgba(255, 255, 255, 0.1);
-  --ring: #3B82F6;
-  --destructive: #EF4444;
+.console {
+  /* Core palette */
+  --canvas: #F4F3F1;
+  --surface: #FBFAF9;
+  --border: #E2DFDA;
+  --ink: #171716;
+  --ink-2: #5C5954; /* smallest text uses ink-2 or darker */
+  --primary: #171716;
+  --primary-hover: #2E2D2B;
+  --nav-active: #E9E7E3;
+
+  /* Status colors: ONLY for statuses. Always icon + text + tint. */
+  --success-fg: #2F6B4F;
+  --success-bg: #E8F1EC;
+  --success-bd: #C5DACE;
+  --warning-fg: #7A5A1E;
+  --warning-bg: #F6EEDB;
+  --warning-bd: #E6D5A8;
+  --error-fg: #A3342B;
+  --error-bg: #F9E9E7;
+  --error-bd: #EBC4BF;
+
+  /* Radii: 8px controls, 12px cards */
+  --radius-control: 8px;
+  --radius-card: 12px;
+
+  /* shadcn aliases so existing components inherit the palette */
+  --background: var(--canvas);
+  --foreground: var(--ink);
+  --card: var(--surface);
+  --card-foreground: var(--ink);
+  --popover: var(--surface);
+  --popover-foreground: var(--ink);
+  --primary-foreground: #FFFFFF;
+  --secondary: #ECEAE6;
+  --secondary-foreground: var(--ink);
+  --muted: #ECEAE6;
+  --muted-foreground: var(--ink-2);
+  --accent: var(--nav-active);
+  --accent-foreground: var(--ink);
+  --input: var(--border);
+  --ring: var(--ink);
+  --destructive: var(--error-fg);
+  --radius: 8px;
+
+  /* Legacy status aliases remapped to the three allowed status families */
+  --st-new: var(--warning-fg);
+  --st-packed: var(--warning-fg);
+  --st-shipped: var(--warning-fg);
+  --st-delivered: var(--success-fg);
+  --st-cancelled: var(--error-fg);
+
+  font-family: var(--font-inter-console), "Inter", system-ui, sans-serif;
+  font-variant-numeric: tabular-nums;
+}
+
+/* Console never uses monospace and never uses shadows/gradients */
+.console .font-mono {
+  font-family: inherit;
+}
+
+@layer base {
+  .console :focus-visible {
+    outline: 2px solid var(--ink);
+    outline-offset: 2px;
+  }
 }
 
 /* --------------------------------------------------------------------------
- * Surface 3: Storefront Tokens & Presets (DESIGN.md §2)
+ * Surface 3: Storefront Design Tokens & Presets (Tailwind v4 @theme inline)
  * -------------------------------------------------------------------------- */
-@theme inline {
-  --color-sf-canvas: var(--sf-canvas);
-  --color-sf-surface: var(--sf-surface);
-  --color-sf-ink: var(--sf-ink);
-  --color-sf-muted: var(--sf-muted);
-  --color-sf-line: var(--sf-line);
-  --color-sf-cta: var(--sf-cta);
-  --color-sf-cta-ink: var(--sf-cta-ink);
-  --color-sf-accent: var(--sf-accent);
-  --radius-sf: var(--sf-radius);
-  --font-sf-display: var(--sf-display);
-  --font-sf-body: var(--sf-body);
-  --font-sf-mono: var(--sf-mono);
-}
-
-/* Fallback solid tokens for root & unparented portals */
 :root {
-  --sf-canvas: #F5F2EB;
-  --sf-surface: #FFFFFF;
-  --sf-ink: #1A1512;
-  --sf-muted: #5C5042;
-  --sf-line: #E5E0D8;
-  --sf-cta: #A3432A;
+  /* Default Storefront Palette */
+  --canvas: #F4F3F1;
+  --surface: #FBFAF9;
+  --border: #E2DFDA;
+  --ink: #171716;
+  --ink-2: #5C5954; /* all small text uses ink-2 or darker */
+  --primary: #171716; /* primary button fill */
+  --primary-hover: #2E2D2B;
+
+  /* Status Tokens (Used STRICTLY for statuses, never decoration) */
+  --success-fg: #2F6B4F;
+  --success-bg: #E8F1EC;
+  --success-bd: #C5DACE;
+
+  --warning-fg: #7A5A1E;
+  --warning-bg: #F6EEDB;
+  --warning-bd: #E6D5A8;
+
+  --error-fg: #A3342B;
+  --error-bg: #F9E9E7;
+  --error-bd: #EBC4BF;
+
+  /* Radii: 8px controls, 12px cards */
+  --radius-control: 8px;
+  --radius-card: 12px;
+
+  /* Typography defaults */
+  --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+
+  /* Backward-compatible storefront aliases mapped to standard tokens */
+  --sf-canvas: var(--canvas);
+  --sf-surface: var(--surface);
+  --sf-ink: var(--ink);
+  --sf-muted: var(--ink-2);
+  --sf-line: var(--border);
+  --sf-cta: var(--primary);
   --sf-cta-ink: #FFFFFF;
-  --sf-accent: #2E6B34;
-  --sf-radius: 8px;
+  --sf-accent: var(--ink);
+  --sf-radius: var(--radius-control);
+  --sf-display: var(--font-serif);
+  --sf-body: var(--font-ui);
+  --sf-mono: var(--font-ui);
 }
 
-[data-store-theme="editorial-warm"], :root[data-store-theme="editorial-warm"] { /* Tenant #1: BrewMellow Himalayan Specialty Coffee */
-  --sf-canvas: #F5F2EB;
-  --sf-surface: #FFFFFF;
-  --sf-ink: #1A1512;
-  --sf-muted: #5C5042;
-  --sf-line: #E5E0D8;
-  --sf-cta: #A3432A;
-  --sf-cta-ink: #FFFFFF;
-  --sf-accent: #2E6B34;
-  --sf-radius: 8px;
-  --sf-display: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --sf-body: var(--font-plus-jakarta), "Plus Jakarta Sans", sans-serif;
-  --sf-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+@theme inline {
+  --color-canvas: var(--canvas);
+  --color-surface: var(--surface);
+  --color-border: var(--border);
+  --color-ink: var(--ink);
+  --color-ink-2: var(--ink-2);
+  --color-nav-active: var(--nav-active);
+  --color-primary: var(--primary);
+  --color-primary-hover: var(--primary-hover);
+
+  --color-success-fg: var(--success-fg);
+  --color-success-bg: var(--success-bg);
+  --color-success-bd: var(--success-bd);
+  --color-warning-fg: var(--warning-fg);
+  --color-warning-bg: var(--warning-bg);
+  --color-warning-bd: var(--warning-bd);
+  --color-error-fg: var(--error-fg);
+  --color-error-bg: var(--error-bg);
+  --color-error-bd: var(--error-bd);
+
+  --radius-control: var(--radius-control);
+  --radius-card: var(--radius-card);
+
+  --font-serif: var(--font-serif);
+  --font-ui: var(--font-ui);
+
+  --color-sf-canvas: var(--canvas);
+  --color-sf-surface: var(--surface);
+  --color-sf-ink: var(--ink);
+  --color-sf-muted: var(--ink-2);
+  --color-sf-line: var(--border);
+  --color-sf-cta: var(--primary);
+  --color-sf-cta-ink: #FFFFFF;
+  --color-sf-accent: var(--ink);
+  --radius-sf: var(--radius-control);
+  --font-sf-display: var(--font-serif);
+  --font-sf-body: var(--font-ui);
+  --font-sf-mono: var(--font-ui);
 }
 
-[data-store-theme="pahadi-sage"], :root[data-store-theme="pahadi-sage"] { /* Tenant #2: Organic Mountain Teas & Herbs */
-  --sf-canvas: #F3F7F4;
-  --sf-surface: #FFFFFF;
-  --sf-ink: #14281D;
-  --sf-muted: #4E6558;
-  --sf-line: #DCE7E1;
-  --sf-cta: #1F6F4A;
-  --sf-cta-ink: #FFFFFF;
-  --sf-accent: #C2410C;
-  --sf-radius: 8px;
-  --sf-display: var(--font-young-serif), "Young Serif", Georgia, serif;
-  --sf-body: var(--font-manrope), "Manrope", sans-serif;
-  --sf-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+/* Tenant Overrides (via CSS variables only; accents cannot be green, amber, or red) */
+[data-store-theme="editorial-warm"], :root[data-store-theme="editorial-warm"] {
+  --canvas: #F4F3F1;
+  --surface: #FBFAF9;
+  --border: #E2DFDA;
+  --ink: #171716;
+  --ink-2: #5C5954;
+  --primary: #171716;
+  --primary-hover: #2E2D2B;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-[data-store-theme="ktm-bold"], :root[data-store-theme="ktm-bold"] { /* streetwear, accessories, electronics */
-  --sf-canvas: #F4F4F0;
-  --sf-surface: #FFFFFF;
-  --sf-ink: #0B0B0B;
-  --sf-muted: #5E5E5A;
-  --sf-line: #0B0B0B;
-  --sf-cta: #2B3BFF;
-  --sf-cta-ink: #FFFFFF;
-  --sf-accent: #D7FF3A;
-  --sf-radius: 4px;
-  --sf-display: var(--font-space-grotesk), "Space Grotesk", "Noto Sans Devanagari", sans-serif;
-  --sf-body: var(--font-inter), "Inter", "Noto Sans Devanagari", sans-serif;
-  --sf-mono: var(--font-jetbrains-mono), "Space Mono", monospace;
+[data-store-theme="pahadi-sage"], :root[data-store-theme="pahadi-sage"] {
+  --canvas: #F3F7F4;
+  --surface: #FFFFFF;
+  --border: #DCE7E1;
+  --ink: #14281D;
+  --ink-2: #4E6558;
+  --primary: #14281D;
+  --primary-hover: #243D2F;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --font-serif: var(--font-young-serif), var(--font-fraunces), Georgia, serif;
+  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
-[data-store-theme="midnight-obsidian"], :root[data-store-theme="midnight-obsidian"] { /* Sleek Luxury Dark Theme: Specialty Night Roasteries, Leather & Tech */
-  --sf-canvas: #0B0D11;
-  --sf-surface: #141720;
-  --sf-ink: #F9FAFB;
-  --sf-muted: #94A3B8;
-  --sf-line: #222733;
-  --sf-cta: #F2A900; /* Warm Himalayan Amber Gold */
-  --sf-cta-ink: #0B0D11;
-  --sf-accent: #10B981;
-  --sf-radius: 8px;
-  --sf-display: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --sf-body: var(--font-plus-jakarta), "Plus Jakarta Sans", sans-serif;
-  --sf-mono: var(--font-jetbrains-mono), "JetBrains Mono", monospace;
+[data-store-theme="ktm-bold"], :root[data-store-theme="ktm-bold"] {
+  --canvas: #F4F4F0;
+  --surface: #FFFFFF;
+  --border: #171716;
+  --ink: #0B0B0B;
+  --ink-2: #5E5E5A;
+  --primary: #0B0B0B;
+  --primary-hover: #2B2B2B;
+  --radius-control: 4px;
+  --radius-card: 8px;
+  --font-serif: var(--font-space-grotesk), var(--font-fraunces), sans-serif;
+  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+[data-store-theme="midnight-obsidian"], :root[data-store-theme="midnight-obsidian"] {
+  --canvas: #0B0D11;
+  --surface: #141720;
+  --border: #222733;
+  --ink: #F9FAFB;
+  --ink-2: #94A3B8;
+  --primary: #FFFFFF;
+  --primary-hover: #E5E7EB;
+  --radius-control: 8px;
+  --radius-card: 12px;
+  --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Storefront Typography & Anti-Monospace Enforcement */
+.storefront,
+[data-store-theme] {
+  font-family: var(--font-ui), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-variant-numeric: tabular-nums;
+  background-color: var(--canvas);
+  color: var(--ink);
+}
+
+[data-store-theme] .font-mono,
+[data-store-theme] .font-sf-mono {
+  font-family: var(--font-ui), "Inter", -apple-system, BlinkMacSystemFont, sans-serif !important;
+  letter-spacing: normal !important;
+  text-transform: none;
 }
 
 /* --------------------------------------------------------------------------

@@ -1,17 +1,11 @@
 import type { Metadata } from "next";
-import { Geist, Geist_Mono } from "next/font/google";
+import { Inter } from "next/font/google";
 import { ConsoleShell } from "@/components/merchant/ConsoleShell";
 import { PlatformThemeProvider } from "@/context/PlatformThemeContext";
 
-const geist = Geist({
+const inter = Inter({
   subsets: ["latin"],
-  variable: "--font-geist",
-  display: "swap",
-});
-
-const geistMono = Geist_Mono({
-  subsets: ["latin"],
-  variable: "--font-geist-mono",
+  variable: "--font-inter-console",
   display: "swap",
 });
 
@@ -32,7 +26,7 @@ export default async function MerchantLayout({
   return (
     <PlatformThemeProvider>
       <div
-        className={`${geist.variable} ${geistMono.variable} font-sans console min-h-dvh bg-[var(--background)] text-[var(--foreground)] text-[13px] antialiased transition-colors duration-200`}
+        className={`${inter.variable} console min-h-dvh bg-[var(--background)] text-[var(--foreground)] text-[13px] antialiased`}
       >
         <ConsoleShell storeSlug={storeSlug}>{children}</ConsoleShell>
       </div>

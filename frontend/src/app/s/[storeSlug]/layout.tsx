@@ -2,47 +2,21 @@ import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import {
   Fraunces,
-  Plus_Jakarta_Sans,
-  Young_Serif,
-  Manrope,
-  Space_Grotesk,
   Inter,
-  JetBrains_Mono,
+  Young_Serif,
+  Space_Grotesk,
 } from "next/font/google";
 import { CartProvider } from "@/components/storefront/CartContext";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
-import { StorefrontFloatingWhatsApp } from "@/components/storefront/StorefrontFloatingWhatsApp";
 import { ThemePreviewWatcher } from "@/components/storefront/ThemePreviewWatcher";
+import { resolveSafeTenantTokens } from "@/lib/theme-contrast";
 
+// Default typography: Fraunces 600 (headlines) + Inter (UI)
 const fraunces = Fraunces({
   subsets: ["latin"],
   variable: "--font-fraunces",
   display: "swap",
-});
-
-const plusJakarta = Plus_Jakarta_Sans({
-  subsets: ["latin"],
-  variable: "--font-plus-jakarta",
-  display: "swap",
-});
-
-const youngSerif = Young_Serif({
-  weight: "400",
-  subsets: ["latin"],
-  variable: "--font-young-serif",
-  display: "swap",
-});
-
-const manrope = Manrope({
-  subsets: ["latin"],
-  variable: "--font-manrope",
-  display: "swap",
-});
-
-const spaceGrotesk = Space_Grotesk({
-  subsets: ["latin"],
-  variable: "--font-space-grotesk",
-  display: "swap",
+  weight: ["600", "700"],
 });
 
 const inter = Inter({
@@ -51,9 +25,17 @@ const inter = Inter({
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+// Tenant-specific optional fonts loaded only when active
+const youngSerif = Young_Serif({
+  weight: "400",
   subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
+  variable: "--font-young-serif",
+  display: "swap",
+});
+
+const spaceGrotesk = Space_Grotesk({
+  subsets: ["latin"],
+  variable: "--font-space-grotesk",
   display: "swap",
 });
 
@@ -65,6 +47,7 @@ interface StorePublicData {
   theme_preset: string;
   logo_url: string | null;
   contact_phone: string;
+  accent_color?: string | null;
   free_shipping_threshold_minor?: number | null;
 }
 
@@ -86,6 +69,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicData | null> {
         theme_preset: "editorial-warm",
         logo_url: null,
         contact_phone: "9801234567",
+        accent_color: null,
         free_shipping_threshold_minor: null,
       };
     }
@@ -99,6 +83,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicData | null> {
       theme_preset: "editorial-warm",
       logo_url: null,
       contact_phone: "9801234567",
+      accent_color: null,
       free_shipping_threshold_minor: null,
     };
   }
@@ -113,21 +98,24 @@ export async function generateMetadata({
   const store = await fetchStore(storeSlug);
 
   return {
-    title: store ? `${store.name} | ShopCraft` : "Store | ShopCraft",
+    title: store ? `${store.name} | Storefront` : "Store | ShopCraft",
     description: store?.tagline || "Online shop powered by ShopCraft.",
   };
 }
 
-function getPresetFontClasses(preset: string): string {
+/**
+ * Load ONLY the fonts required by the active tenant
+ */
+function getActiveTenantFontClasses(preset: string): string {
   switch (preset) {
     case "pahadi-sage":
-      return `${youngSerif.variable} ${manrope.variable} ${jetbrainsMono.variable}`;
+      return `${fraunces.variable} ${inter.variable} ${youngSerif.variable}`;
     case "ktm-bold":
+      return `${fraunces.variable} ${inter.variable} ${spaceGrotesk.variable}`;
     case "midnight-obsidian":
-      return `${spaceGrotesk.variable} ${inter.variable} ${jetbrainsMono.variable}`;
     case "editorial-warm":
     default:
-      return `${fraunces.variable} ${plusJakarta.variable} ${jetbrainsMono.variable}`;
+      return `${fraunces.variable} ${inter.variable}`;
   }
 }
 
@@ -146,12 +134,24 @@ export default async function StorefrontLayout({
   }
 
   const themePreset = store.theme_preset || "editorial-warm";
-  const fontClasses = getPresetFontClasses(themePreset);
+  const fontClasses = getActiveTenantFontClasses(themePreset);
+
+  // Validate tenant overrides against WCAG AA contrast and prohibited status hues
+  const safeTokens = resolveSafeTenantTokens({
+    accentColor: store.accent_color,
+  });
+
+  const customStyle: React.CSSProperties = {
+    ["--primary" as string]: safeTokens.tokens.primary,
+    ["--primary-hover" as string]: safeTokens.tokens.primaryHover,
+    ["--sf-cta" as string]: safeTokens.tokens.primary,
+  };
 
   return (
     <div
       data-store-theme={themePreset}
-      className={`${fontClasses} min-h-dvh bg-sf-canvas text-sf-ink font-sf-body flex flex-col`}
+      style={customStyle}
+      className={`${fontClasses} storefront min-h-dvh bg-sf-canvas text-sf-ink font-sf-body flex flex-col`}
     >
       <ThemePreviewWatcher initialPreset={themePreset} />
       <CartProvider
@@ -161,10 +161,6 @@ export default async function StorefrontLayout({
       >
         {children}
         <CartDrawer />
-        <StorefrontFloatingWhatsApp
-          storeName={store.name}
-          contactPhone={store.contact_phone}
-        />
       </CartProvider>
     </div>
   );

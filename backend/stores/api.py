@@ -11,7 +11,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
-from catalog.models import Discount, Product, SellingPlan, Variant
+from catalog.models import Discount, Product, Variant
 from orders.models import Order, OrderItem, OrderEvent
 from core.tenant_context import set_current_tenant_id, reset_current_tenant_id, BypassRLSContext
 from stores.models import (
@@ -23,7 +23,6 @@ from stores.models import (
     SLUG_REGEX,
     provision_store_customer,
 )
-from subscriptions.models import Subscription
 
 
 # -----------------------------------------------------------------------------
@@ -182,7 +181,6 @@ class VariantSerializer(StoreScopedSerializerMixin):
             "weight_grams",
             "price_minor",
             "allow_one_time",
-            "allow_subscription",
             "in_stock",
             "is_active",
             "sort_order",
@@ -203,7 +201,6 @@ class ProductSerializer(StoreScopedSerializerMixin):
             "image_url",
             "attributes",
             "allow_one_time",
-            "allow_subscription",
             "is_active",
             "sort_order",
             "variants",
@@ -213,24 +210,6 @@ class ProductSerializer(StoreScopedSerializerMixin):
     def get_variants(self, obj):
         active_variants = obj.variants.filter(is_active=True).order_by("sort_order", "price_minor")
         return VariantSerializer(active_variants, many=True).data
-
-
-class SellingPlanSerializer(StoreScopedSerializerMixin):
-    class Meta:
-        model = SellingPlan
-        fields = [
-            "id",
-            "code",
-            "name",
-            "interval_unit",
-            "interval_count",
-            "commitment_cycles",
-            "discount_pct",
-            "is_prepaid",
-            "is_active",
-            "sort_order",
-        ]
-        read_only_fields = ["id"]
 
 
 class OrderItemSerializer(serializers.ModelSerializer):
@@ -294,96 +273,6 @@ class OrderSerializer(serializers.ModelSerializer):
         read_only_fields = ["id", "created_at"]
 
 
-class SubscriptionSerializer(serializers.ModelSerializer):
-    variant_label = serializers.CharField(source="variant.label", read_only=True)
-    product_name = serializers.CharField(source="variant.product.name", read_only=True)
-    plan_name = serializers.CharField(source="selling_plan.name", read_only=True)
-    plan_code = serializers.CharField(source="selling_plan.code", read_only=True)
-    is_prepaid = serializers.BooleanField(source="selling_plan.is_prepaid", read_only=True)
-    interval_unit = serializers.CharField(source="selling_plan.interval_unit", read_only=True)
-    interval_count = serializers.IntegerField(source="selling_plan.interval_count", read_only=True)
-    discount_pct = serializers.IntegerField(source="selling_plan.discount_pct", read_only=True)
-    customer_email = serializers.CharField(source="customer.email", read_only=True)
-    customer_name = serializers.SerializerMethodField()
-    customer_phone = serializers.SerializerMethodField()
-    is_lapsed = serializers.SerializerMethodField()
-    pending_renewal_order = serializers.SerializerMethodField()
-
-    class Meta:
-        model = Subscription
-        fields = [
-            "id",
-            "status",
-            "unit_price_minor",
-            "next_delivery_date",
-            "cycles_total",
-            "cycles_remaining",
-            "shipping_address_snapshot",
-            "variant_label",
-            "product_name",
-            "plan_name",
-            "plan_code",
-            "is_prepaid",
-            "interval_unit",
-            "interval_count",
-            "discount_pct",
-            "customer_email",
-            "customer_name",
-            "customer_phone",
-            "is_lapsed",
-            "pending_renewal_order",
-            "created_at",
-        ]
-        read_only_fields = ["id", "created_at"]
-
-    def _resolve_pending_order(self, obj):
-        if hasattr(obj, "_cached_pending_order"):
-            return obj._cached_pending_order
-        from subscriptions.services import get_pending_renewal_order
-        obj._cached_pending_order = get_pending_renewal_order(obj)
-        return obj._cached_pending_order
-
-    def get_customer_name(self, obj):
-        if obj.customer_id:
-            if obj.customer.full_name:
-                return obj.customer.full_name
-            if obj.customer.user_id and getattr(obj.customer.user, "full_name", ""):
-                return obj.customer.user.full_name
-        snap = obj.shipping_address_snapshot or {}
-        return snap.get("recipient_name", "")
-
-    def get_customer_phone(self, obj):
-        if obj.customer_id and obj.customer.phone:
-            return obj.customer.phone
-        snap = obj.shipping_address_snapshot or {}
-        return snap.get("phone", "")
-
-    def get_is_lapsed(self, obj):
-        if obj.status in ["CANCELLED", "COMPLETED"]:
-            return False
-        if obj.status == "PENDING_PAYMENT":
-            return True
-        if self._resolve_pending_order(obj) is not None:
-            return True
-        today = timezone.now().date()
-        if obj.status == "ACTIVE" and not obj.selling_plan.is_prepaid and obj.next_delivery_date < today:
-            return True
-        return False
-
-    def get_pending_renewal_order(self, obj):
-        pending = self._resolve_pending_order(obj)
-        if not pending:
-            return None
-        return {
-            "id": pending.id,
-            "order_number": pending.order_number,
-            "token": str(pending.token),
-            "total_minor": pending.total_minor,
-            "status": pending.status,
-            "payment_status": pending.payment_status,
-        }
-
-
 # -----------------------------------------------------------------------------
 # Public Store Views
 # -----------------------------------------------------------------------------
@@ -404,14 +293,8 @@ class StoreCatalogView(StorePublicMixin, APIView):
             .filter(is_active=True)
             .order_by("sort_order", "id")
         )
-        selling_plans = (
-            SellingPlan.objects.for_store(self.store)
-            .filter(is_active=True)
-            .order_by("sort_order", "id")
-        )
         return Response({
             "products": ProductSerializer(products, many=True).data,
-            "selling_plans": SellingPlanSerializer(selling_plans, many=True).data,
         })
 
 
@@ -549,13 +432,6 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        has_prepaid_sub = order.originating_subscriptions.filter(selling_plan__is_prepaid=True).exists()
-        if payment_method == "COD" and has_prepaid_sub:
-            return Response(
-                {"error": "Prepaid subscription plans cannot be paid via Cash on Delivery. Please select Khalti."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
         if payment_method == "COD":
             with transaction.atomic():
                 old_status = order.status
@@ -564,15 +440,12 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 order.payment_status = "COD_PENDING"
                 order.save(update_fields=["status", "payment_method", "payment_status", "updated_at"])
 
-                from subscriptions.services import activate_order_subscriptions
-                activate_order_subscriptions(order)
-
                 OrderEvent.objects.create(
                     store=self.store,
                     order=order,
                     from_status=old_status,
                     to_status="CONFIRMED",
-                    note="Renewal / order confirmed via Cash on Delivery link.",
+                    note="Order confirmed via Cash on Delivery.",
                     actor=request.user if request.user.is_authenticated else None,
                 )
 
@@ -681,14 +554,8 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
             v.id: v for v in Variant.objects.for_store(self.store).filter(id__in=variant_ids, is_active=True)
         }
 
-        plan_ids = [it.get("selling_plan_id") for it in items_data if it.get("selling_plan_id")]
-        plans = {
-            p.id: p for p in SellingPlan.objects.for_store(self.store).filter(id__in=plan_ids, is_active=True)
-        }
-
         subtotal_minor = 0
         computed_items = []
-        has_prepaid_subscription = False
 
         for it in items_data:
             v_id = it.get("variant_id")
@@ -700,19 +567,8 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
                 )
 
             quantity = max(1, int(it.get("quantity", 1)))
-            purchase_type = it.get("purchase_type", "one_time")
-            plan_id = it.get("selling_plan_id")
-            plan = plans.get(plan_id) if (purchase_type == "subscription" and plan_id) else None
-
             unit_price = v.price_minor
-            if plan and plan.discount_pct > 0:
-                unit_price = round(unit_price * (1 - plan.discount_pct / 100))
-
-            if plan and plan.is_prepaid:
-                has_prepaid_subscription = True
-                line_total = unit_price * plan.commitment_cycles * quantity
-            else:
-                line_total = unit_price * quantity
+            line_total = unit_price * quantity
 
             subtotal_minor += line_total
             computed_items.append({
@@ -722,8 +578,6 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
                 "unit_price_minor": unit_price,
                 "quantity": quantity,
                 "line_total_minor": line_total,
-                "purchase_type": purchase_type,
-                "selling_plan": plan.name if plan else None,
             })
 
         district = str(request.data.get("district", "")).strip().lower()
@@ -764,7 +618,6 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
             "discount_code": applied_discount_code,
             "total_minor": total_minor,
             "is_free_shipping": is_free_shipping,
-            "has_prepaid_subscription": has_prepaid_subscription,
             "currency": self.store.currency,
             "items": computed_items,
         })
@@ -836,14 +689,9 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
         variants = {
             v.id: v for v in Variant.objects.for_store(self.store).filter(id__in=variant_ids, is_active=True)
         }
-        plan_ids = [it.get("selling_plan_id") for it in items_data if it.get("selling_plan_id")]
-        plans = {
-            p.id: p for p in SellingPlan.objects.for_store(self.store).filter(id__in=plan_ids, is_active=True)
-        }
 
         subtotal_minor = 0
         order_items_to_create = []
-        has_prepaid_plan = False
 
         for it in items_data:
             v_id = it.get("variant_id")
@@ -855,41 +703,19 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 )
 
             quantity = max(1, int(it.get("quantity", 1)))
-            purchase_type = it.get("purchase_type", "one_time")
-            plan_id = it.get("selling_plan_id")
-            plan = plans.get(plan_id) if (purchase_type == "subscription" and plan_id) else None
-
             unit_price = v.price_minor
-            if plan and plan.discount_pct > 0:
-                unit_price = round(unit_price * (1 - plan.discount_pct / 100))
-
-            if plan and plan.is_prepaid:
-                has_prepaid_plan = True
-                line_total = unit_price * plan.commitment_cycles * quantity
-                variant_label = f"{v.label} ({plan.commitment_cycles} cycles prepaid)"
-            elif plan:
-                line_total = unit_price * quantity
-                variant_label = f"{v.label} (Pay-per-delivery)"
-            else:
-                line_total = unit_price * quantity
-                variant_label = v.label
+            line_total = unit_price * quantity
+            variant_label = v.label
 
             subtotal_minor += line_total
             order_items_to_create.append({
                 "variant": v,
-                "plan": plan,
                 "product_name_snapshot": v.product.name,
                 "variant_label_snapshot": variant_label,
                 "unit_price_minor": unit_price,
                 "quantity": quantity,
                 "line_total_minor": line_total,
             })
-
-        if payment_method == "COD" and has_prepaid_plan:
-            return Response(
-                {"error": "Prepaid subscription plans cannot be paid via Cash on Delivery. Please select Khalti."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         inside_valley_districts = {"kathmandu", "lalitpur", "bhaktapur"}
         if district.lower() in inside_valley_districts:
@@ -943,7 +769,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 store=self.store,
                 customer=customer,
                 order_number=order_number,
-                order_type="SUBSCRIPTION_CYCLE" if has_prepaid_plan else "ONE_TIME",
+                order_type="ONE_TIME",
                 status=initial_status,
                 payment_method=payment_method,
                 payment_status=initial_payment_status,
@@ -956,7 +782,6 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 is_test=True,
             )
 
-            from subscriptions.services import create_subscription_for_item
             for item_info in order_items_to_create:
                 OrderItem.objects.create(
                     store=self.store,
@@ -968,18 +793,6 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                     quantity=item_info["quantity"],
                     line_total_minor=item_info["line_total_minor"],
                 )
-                if item_info.get("plan"):
-                    sub_status = "ACTIVE" if payment_method == "COD" else "PENDING_PAYMENT"
-                    create_subscription_for_item(
-                        store=self.store,
-                        customer=customer,
-                        variant=item_info["variant"],
-                        selling_plan=item_info["plan"],
-                        order=order,
-                        shipping_address=shipping_address,
-                        unit_price_minor=item_info["unit_price_minor"],
-                        status=sub_status,
-                    )
 
             OrderEvent.objects.create(
                 store=self.store,
@@ -1132,9 +945,6 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
                 order.payment_ref = pidx
                 order.save(update_fields=["status", "payment_status", "payment_ref", "updated_at"])
 
-                from subscriptions.services import activate_order_subscriptions
-                activate_order_subscriptions(order)
-
                 OrderEvent.objects.create(
                     store=self.store,
                     order=order,
@@ -1209,9 +1019,6 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
 
         products_count = Product.objects.for_store(self.store).filter(is_active=True).count()
         customers_count = Customer.objects.for_store(self.store).count()
-        active_subscriptions_count = Subscription.objects.for_store(self.store).filter(
-            status="ACTIVE"
-        ).count()
         active_discounts_count = Discount.objects.for_store(self.store).filter(
             is_active=True
         ).count()
@@ -1276,7 +1083,6 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
             "today_orders_count": today_orders_count,
             "pending_fulfillment_count": pending_fulfillment_count,
             "cod_pending_minor": cod_pending_minor,
-            "active_subscriptions_count": active_subscriptions_count,
             "active_discounts_count": active_discounts_count,
             "daily_sales_7d": list(daily_buckets.values()),
             "recent_orders": recent_orders,
