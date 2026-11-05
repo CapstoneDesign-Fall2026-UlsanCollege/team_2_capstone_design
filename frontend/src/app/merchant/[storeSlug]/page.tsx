@@ -171,10 +171,9 @@ export default function MerchantOverviewPage({ params }: PageProps) {
   }, [analytics, overview]);
 
   // Khalti problem orders
-  const khaltiProblemsCount = useMemo(() => {
-    if (!overview?.recent_orders) return 0;
-    return overview.recent_orders.filter(isKhaltiProblem).length;
-  }, [overview?.recent_orders]);
+  const khaltiProblemsCount = overview?.recent_orders
+    ? overview.recent_orders.filter(isKhaltiProblem).length
+    : 0;
 
   // Chart data
   const chartSeries: OverviewDailyPoint[] = useMemo(() => {
