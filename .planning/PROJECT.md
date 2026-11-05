@@ -2,7 +2,9 @@
 
 ## What This Is
 
-ShopCraft is a multi-tenant e-commerce and subscription SaaS platform ("Shopify for Nepal") where Nepali merchants sign up, launch a branded storefront at `/s/{storeSlug}`, sell products as one-time purchases or non-recurring subscriptions, and receive payments directly via Khalti (sandbox/live) or Cash on Delivery (COD). BrewMellow (Boutique Himalayan Coffee) is preserved and seeded as Tenant #1, the flagship demo store.
+ShopCraft is a multi-tenant e-commerce SaaS platform ("Shopify for Nepal") where Nepali merchants sign up, launch a branded storefront at `/s/{storeSlug}`, sell products as clean one-time purchases, and receive payments directly via Khalti (sandbox/live) or Cash on Delivery (COD). BrewMellow (Boutique Himalayan Coffee) is preserved and seeded as Tenant #1, the flagship demo store.
+
+Out of scope: subscriptions/recurring billing for shoppers.
 
 ## Core Value
 
@@ -12,7 +14,7 @@ Strict multi-tenant isolation and end-to-end checkout integrity — any merchant
 
 - **Customer**: Nepali D2C brands and specialty merchants (free during capstone; SaaS subscription post-capstone) and their online shoppers
 - **Revenue model**: Free for merchants in capstone v1; direct-to-merchant Khalti keys avoid holding merchant funds (avoiding NRB payment-aggregator licensing)
-- **Success metric**: Two visually distinct stores completing verified Khalti sandbox & COD orders + subscription renewals with 100% green cross-tenant isolation tests by Nov 26, 2026
+- **Success metric**: Two visually distinct stores completing verified Khalti sandbox & COD orders with 100% green cross-tenant isolation tests by Nov 26, 2026
 - **Strategy notes**: `docs/saas-pivot/BUILD-DECISIONS.md` and `docs/saas-pivot/ARCHITECTURE-BLUEPRINT.md`
 
 ## Requirements
@@ -27,13 +29,13 @@ Strict multi-tenant isolation and end-to-end checkout integrity — any merchant
 - [ ] Enforce shared-schema `store_id` isolation via `StoreScopedManager`, URL-slug DRF permission mixins, and automated cross-tenant 404 tests
 - [ ] Implement passwordless 6-digit Email OTP (Resend) + Google OAuth authentication (`accounts.User`), `HttpOnly` session cookies, and per-store `Customer` records
 - [ ] Enforce `DESIGN.md` across all 3 isolated surfaces: Platform (`--sc-*`), Neutral Console (`.console` zinc), and Token-Scoped Storefront (`[data-store-theme]` presets: `editorial-warm`, `pahadi-sage`, `ktm-bold`)
-- [ ] Build self-serve merchant onboarding ("Create Store" wizard) and scoped `/merchant/[storeSlug]` console (products, variants, Cloudinary images, selling plans, branding, Khalti keys, orders)
+- [ ] Build self-serve merchant onboarding ("Create Store" wizard) and scoped `/merchant/[storeSlug]` console (products, variants, Cloudinary images, branding, Khalti keys, orders)
 - [ ] Deliver themed `/s/[storeSlug]` storefronts, store-namespaced multi-item cart, structured Nepali address capture, Khalti ePayment v2 sandbox (`initiate` + `lookup`) + COD checkout, and confirmation emails
-- [ ] Deliver non-recurring subscriptions (prepaid 3/6/12-cycle commitments + pay-per-delivery renewal orders with "Pay Now" links, pause/skip/cancel) and public ShopCraft SaaS landing page (`/`)
+- [ ] Deliver public ShopCraft SaaS landing page (`/`), theme previews, and automated order fulfillment
 
 ### Out of Scope
 
-- Automated recurring card/wallet auto-debit — Nepal payment rails lack general-purpose tokenized auto-debit without commercial bank agreements; use prepaid cycles + pay-per-delivery "Pay Now" links instead
+- Subscriptions / recurring billing for shoppers — all storefront transactions are clean one-time purchases (Khalti Web Wallet and Cash on Delivery)
 - Custom domains or wildcard subdomains (`*.shopcraft.me`) — path-based `/s/[storeSlug]` delivers full tenant isolation without DNS/SSL ops risk in 4 weeks
 - Platform fee splitting / holding merchant funds — each store uses its own Khalti key (with platform sandbox fallback) to avoid NRB payment-aggregator licensing
 - Drag-and-drop theme builder, eSewa/Fonepay, stock/inventory ledger, coupon codes, multi-staff RBAC beyond OWNER, live courier APIs, multi-currency (NPR minor units / paisa only) — deferred to post-capstone v2 to protect the Nov 26 deadline

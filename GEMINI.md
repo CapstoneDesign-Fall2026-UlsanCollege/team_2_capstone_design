@@ -8,7 +8,9 @@ Before any UI work, read `DESIGN.md` fully. Its rules override your defaults. Ne
 
 **ShopCraft**
 
-ShopCraft is a multi-tenant e-commerce and subscription SaaS platform ("Shopify for Nepal") where Nepali merchants sign up, launch a branded storefront at `/s/{storeSlug}`, sell products as one-time purchases or non-recurring subscriptions, and receive payments directly via Khalti (sandbox/live) or Cash on Delivery (COD). BrewMellow (Boutique Himalayan Coffee) is preserved and seeded as Tenant #1, the flagship demo store.
+ShopCraft is a multi-tenant e-commerce SaaS platform ("Shopify for Nepal") where Nepali merchants sign up, launch a branded storefront at `/s/{storeSlug}`, sell products as clean one-time purchases, and receive payments directly via Khalti (sandbox/live) or Cash on Delivery (COD). BrewMellow (Boutique Himalayan Coffee) is preserved and seeded as Tenant #1, the flagship demo store.
+
+Out of scope: subscriptions/recurring billing for shoppers.
 
 **Core Value:** Strict multi-tenant isolation and end-to-end checkout integrity — any merchant can launch an isolated storefront and fulfill verified Khalti or COD orders without ever leaking data across stores or breaking the frozen BrewMellow baseline.
 

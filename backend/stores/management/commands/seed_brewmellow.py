@@ -13,7 +13,7 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = "Seed BrewMellow Store #1 with Himalayan micro-lots, selling plans, and demo orders."
+    help = "Seed BrewMellow Store #1 with Himalayan micro-lots and demo orders."
 
     def handle(self, *args, **options):
         self.stdout.write("Seeding BrewMellow Store #1...")

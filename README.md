@@ -21,7 +21,9 @@ In response, we executed a deliberate post-midterm architectural pivot:
 2. **Flagship Store #1 (BrewMellow):** Preserved all coffee research by hosting **BrewMellow** (`/s/brewmellow`) as our flagship pilot tenant, featuring single-origin Himalayan coffees from Gulmi, Ilam, and Nuwakot.
 3. **Store #2 (Pahadi Honey):** Seeded **Pahadi Honey** (`/s/pahadi-honey`) to rigorously verify multi-tenant isolation and cross-store data security.
 4. **Verified Localized Payments:** Implemented server-side **Khalti Sandbox ePayment v2** (`epayment/lookup/` with `pidx` verification) alongside an instant **Cash on Delivery (COD)** fallback.
-5. **Rigorous Data Isolation:** Enforced PostgreSQL Row-Level Security (RLS) and Django `TenantDatabaseContext`, backed by **51 automated backend tests** proving that Store Owner A receives HTTP 404 on Store B's endpoints.
+5. **Rigorous Data Isolation:** Enforced PostgreSQL Row-Level Security (RLS) and Django `TenantDatabaseContext`, backed by automated backend isolation tests proving that Store Owner A receives HTTP 404 on Store B's endpoints.
+
+> **Out of scope: subscriptions/recurring billing for shoppers.** All purchases are handled as direct one-time orders (Khalti + Cash on Delivery). Merchant SaaS tiers (Growth/Pro) manage merchant platform access.
 
 ---
 
@@ -142,7 +144,7 @@ Any evaluator or teammate can independently verify the core system by executing 
 ### Test 1: Full Backend Test Suite (51 Passing Tests)
 ```bash
 cd backend
-python manage.py test accounts catalog orders subscriptions stores
+python manage.py test accounts catalog orders stores
 # Output: Ran 51 tests in 12.525s — OK (failures=0, errors=0)
 ```
 

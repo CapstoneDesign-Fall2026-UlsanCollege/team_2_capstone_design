@@ -12,7 +12,7 @@ User = get_user_model()
 
 
 class Command(BaseCommand):
-    help = "Seed Store #2 Himalayan Artisans with organic teas, spices, selling plans, and demo orders."
+    help = "Seed Store #2 Himalayan Artisans with organic teas, spices, and demo orders."
 
     def handle(self, *args, **options):
         self.stdout.write("Seeding Himalayan Artisans Store #2...")
