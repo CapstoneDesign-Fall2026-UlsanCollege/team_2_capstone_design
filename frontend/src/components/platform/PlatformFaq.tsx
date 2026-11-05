@@ -18,8 +18,8 @@ const FAQS: FaqItem[] = [
     a: "Your hosted customer storefront natively supports instant Khalti Web Wallet ePayments (with secure redirect and verified return callback) and verified Cash on Delivery (COD) with mobile phone confirmation cues.",
   },
   {
-    q: "Can I offer repeat subscriptions without bank auto-debit?",
-    a: "Yes! Because auto-debit is not broadly supported across domestic cards in Nepal, ShopCraft uses non-recurring prepaid subscription cycles (3, 6, or 12 deliveries) or automated pay-per-delivery renewal links sent directly to the customer via SMS and WhatsApp.",
+    q: "How do customer order tracking and WhatsApp receipts work?",
+    a: "Every placed order generates a secure, shareable tracking link with direct 1-tap WhatsApp notifications. Customers receive instant dispatch updates, courier tracking numbers, and live delivery status without needing to create an account.",
   },
   {
     q: "Can I connect my own custom .com.np or .com domain?",

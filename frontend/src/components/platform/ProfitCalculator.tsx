@@ -9,11 +9,11 @@ export function ProfitCalculator() {
 
   // Global Shopify monthly cost calculations in NPR:
   const shopifyBaseNpr = 5265; // $39/mo
-  const shopifyRechargeNpr = 13365; // $99/mo
+  const shopifyAppsNpr = 6750; // $50/mo local apps (COD fraud check, SMS)
   const shopifyGateFee = Math.round(monthlyGmv * 0.025);
   const shopifyForexLoss = Math.round(monthlyGmv * 0.03);
   const totalShopifyCost =
-    shopifyBaseNpr + shopifyRechargeNpr + shopifyGateFee + shopifyForexLoss;
+    shopifyBaseNpr + shopifyAppsNpr + shopifyGateFee + shopifyForexLoss;
 
   // ShopCraft Nepal monthly cost in NPR:
   const isScale = monthlyGmv > 100000;
@@ -92,8 +92,8 @@ export function ProfitCalculator() {
               <span className="font-bold text-zinc-900 dark:text-white">Rs. {shopifyBaseNpr.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span>Recharge App ($99):</span>
-              <span className="font-bold text-zinc-900 dark:text-white">Rs. {shopifyRechargeNpr.toLocaleString()}</span>
+              <span>Third-party Apps ($50):</span>
+              <span className="font-bold text-zinc-900 dark:text-white">Rs. {shopifyAppsNpr.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
               <span>Card &amp; Forex (5.5%):</span>
@@ -124,7 +124,7 @@ export function ProfitCalculator() {
               <span className="font-bold">Rs. {shopcraftSaaS.toLocaleString()}</span>
             </div>
             <div className="flex justify-between">
-              <span>Subscriptions:</span>
+              <span>Local Apps &amp; SMS:</span>
               <span className="font-bold text-emerald-600">Rs. 0 (Included)</span>
             </div>
             <div className="flex justify-between">

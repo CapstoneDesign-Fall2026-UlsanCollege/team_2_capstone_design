@@ -56,7 +56,7 @@ export default function PrivacyPage() {
               <FileText size={18} className="text-[#A3432A]" /> 4. Your Rights & Account Controls
             </h2>
             <p>
-              You may review, update, or purge your account details at any time through your <Link href="/dashboard" className="text-[#A3432A] font-bold underline">Subscriber Portal</Link>, or contact our privacy lead at <a href="mailto:privacy@brewmellow.com" className="text-[#A3432A] font-bold underline">privacy@brewmellow.com</a>.
+              You may review, update, or purge your account details at any time through your <Link href="/account" className="text-[#A3432A] font-bold underline">Customer Account</Link>, or contact our privacy lead at <a href="mailto:privacy@brewmellow.com" className="text-[#A3432A] font-bold underline">privacy@brewmellow.com</a>.
             </p>
           </section>
         </div>

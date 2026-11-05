@@ -6,7 +6,7 @@ import { CheckCircle2, Clock, MapPin, Package, ShieldCheck, Sparkles, Truck, Zap
 interface DispatchEvent {
   id: string;
   timeAgo: string;
-  badge: "Khalti Paid" | "COD Verified" | "Pathao Slip" | "Roast Club";
+  badge: "Khalti Paid" | "COD Verified" | "Pathao Slip" | "Roast Club" | "Express Order";
   badgeColor: string;
   item: string;
   location: string;
@@ -32,9 +32,9 @@ const EVENTS: DispatchEvent[] = [
   {
     id: "e3",
     timeAgo: "22m ago",
-    badge: "Roast Club",
+    badge: "Express Order",
     badgeColor: "bg-amber-500/15 text-amber-700 dark:text-amber-400 border-amber-500/30",
-    item: "Monday Weekly Roast Subscription Renewed",
+    item: "Gulmi Reserve Whole Bean Coffee (500g Bag)",
     location: "Jhamsikhel, Lalitpur (Ward 02)",
   },
   {

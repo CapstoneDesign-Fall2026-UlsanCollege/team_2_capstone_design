@@ -40,7 +40,6 @@ interface ThemePreset {
     subtitle: string;
     origin: string;
     oneTimePrice: number;
-    subPrice: number;
     image: string;
     variants: string[];
     tastingNotes: string[];
@@ -67,7 +66,6 @@ const THEMES: ThemePreset[] = [
       subtitle: "Hand-picked high-altitude micro-lot · Washed process",
       origin: "Gulmi, Western Nepal · 1,450m",
       oneTimePrice: 750,
-      subPrice: 675,
       image:
         "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80",
       variants: ["250g Whole Bean", "500g Pour-Over", "1kg Roastery Bag"],
@@ -93,7 +91,6 @@ const THEMES: ThemePreset[] = [
       subtitle: "Artisanal hand-rolled orthodox black tea from Kanyam",
       origin: "Kanyam, Ilam · 2,000m",
       oneTimePrice: 950,
-      subPrice: 855,
       image:
         "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=800&q=80",
       variants: ["100g Pouch", "250g Tin", "500g Loose Leaf"],
@@ -119,7 +116,6 @@ const THEMES: ThemePreset[] = [
       subtitle: "100% Nepali combed cotton · Relaxed drop-shoulder cut",
       origin: "Crafted in Lalitpur, Nepal",
       oneTimePrice: 1850,
-      subPrice: 1665,
       image:
         "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80",
       variants: ["Size M (Oversized)", "Size L (Boxy)", "Size XL"],
@@ -145,7 +141,6 @@ const THEMES: ThemePreset[] = [
       subtitle: "Smoky dark cacao, toasted walnut & caramelized jaggery",
       origin: "Sindhupalchok Highlands · 1,550m",
       oneTimePrice: 880,
-      subPrice: 792,
       image:
         "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
       variants: ["250g Dark Roast", "500g Whole Bean", "1kg Roastery Bag"],
@@ -158,7 +153,6 @@ const THEMES: ThemePreset[] = [
 export function ThemeStudio() {
   const [selectedThemeId, setSelectedThemeId] = useState<ThemePreset["id"]>("editorial-warm");
   const [deviceMode, setDeviceMode] = useState<"mobile" | "desktop">("mobile");
-  const [purchaseMode, setPurchaseMode] = useState<"one_time" | "subscription">("subscription");
   const [selectedVariantIdx, setSelectedVariantIdx] = useState(0);
   const [addedNotice, setAddedNotice] = useState(false);
 
@@ -390,75 +384,25 @@ export function ThemeStudio() {
                   </div>
                 </div>
 
-                {/* Recharge-Style Buy Box Toggle Card */}
+                {/* Buy Box Price Card */}
                 <div
                   style={{ backgroundColor: activeTheme.surfaceColor }}
-                  className="rounded-xl border border-black/15 dark:border-white/15 p-2.5 space-y-2 shadow-xs"
+                  className="rounded-xl border border-black/15 dark:border-white/15 p-3 flex items-center justify-between shadow-xs"
                 >
-                  {/* Option 1: One-Time */}
-                  <div
-                    onClick={() => setPurchaseMode("one_time")}
-                    className={`p-2 rounded-lg border text-xs flex items-center justify-between cursor-pointer transition-colors ${
-                      purchaseMode === "one_time"
-                        ? "border-black dark:border-white font-bold"
-                        : "border-transparent opacity-75 hover:opacity-100"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                          purchaseMode === "one_time" ? "border-black dark:border-white" : "border-black/30 dark:border-white/30"
-                        }`}
-                      >
-                        {purchaseMode === "one_time" && (
-                          <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />
-                        )}
+                  <div>
+                    <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-1.5">
+                      <span>Direct Purchase</span>
+                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
+                        Khalti · COD
                       </span>
-                      <span>One-Time Purchase</span>
                     </div>
-                    <span className="font-mono font-bold">
-                      Rs. {activeTheme.sampleProduct.oneTimePrice}
-                    </span>
-                  </div>
-
-                  {/* Option 2: Subscribe & Save 10% */}
-                  <div
-                    onClick={() => setPurchaseMode("subscription")}
-                    className={`p-2 rounded-lg border text-xs flex items-center justify-between cursor-pointer transition-colors ${
-                      purchaseMode === "subscription"
-                        ? "border-black dark:border-white font-bold"
-                        : "border-transparent opacity-75 hover:opacity-100"
-                    }`}
-                  >
-                    <div className="flex items-center gap-2">
-                      <span
-                        className={`w-3.5 h-3.5 rounded-full border flex items-center justify-center ${
-                          purchaseMode === "subscription" ? "border-black dark:border-white" : "border-black/30 dark:border-white/30"
-                        }`}
-                      >
-                        {purchaseMode === "subscription" && (
-                          <span className="w-2 h-2 rounded-full bg-black dark:bg-white" />
-                        )}
-                      </span>
-                      <div>
-                        <span>Subscribe &amp; Save 10%</span>
-                        <div style={{ color: activeTheme.mutedColor }} className="text-[10px] font-normal">
-                          Prepaid or WhatsApp renewal link
-                        </div>
-                      </div>
-                    </div>
-                    <div className="text-right">
-                      <span
-                        style={{ color: activeTheme.primaryColor }}
-                        className="font-mono font-bold block"
-                      >
-                        Rs. {activeTheme.sampleProduct.subPrice}
-                      </span>
-                      <span className="text-[9px] line-through opacity-60">
-                        Rs. {activeTheme.sampleProduct.oneTimePrice}
-                      </span>
+                    <div style={{ color: activeTheme.mutedColor }} className="text-[10px] font-normal mt-0.5">
+                      All 7 provinces · Pathao courier
                     </div>
                   </div>
+                  <span className="font-mono font-bold text-sm">
+                    Rs. {activeTheme.sampleProduct.oneTimePrice}
+                  </span>
                 </div>
 
                 {/* Primary CTA Button */}
@@ -475,11 +419,7 @@ export function ThemeStudio() {
                   <span>
                     {addedNotice
                       ? "✓ Added to Bag!"
-                      : `Add to Bag • Rs. ${
-                          purchaseMode === "subscription"
-                            ? activeTheme.sampleProduct.subPrice
-                            : activeTheme.sampleProduct.oneTimePrice
-                        }`}
+                      : `Add to Bag • Rs. ${activeTheme.sampleProduct.oneTimePrice}`}
                   </span>
                 </button>
               </div>

@@ -34,7 +34,6 @@ interface TenantPreviewData {
     sub: string;
     origin: string;
     priceOneTime: number;
-    priceSub: number;
     imageUrl: string;
     notes: string;
   };
@@ -47,13 +46,12 @@ const PREVIEWS: TenantPreviewData[] = [
     tagline: "Single-origin specialty coffee from Gulmi & Ilam",
     themePreset: "Editorial Warm",
     accentColor: "#A3432A",
-    badge: "Coffee & Subscriptions",
+    badge: "Artisanal Coffee & Roastery",
     product: {
       title: "Gulmi Reserve Bourbon Arabica",
       sub: "Washed Process · Single Estate · Medium Roast",
       origin: "Gulmi (1,450m)",
       priceOneTime: 750,
-      priceSub: 675,
       imageUrl: "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80",
       notes: "Dark Chocolate · Candied Mandarin · Brown Sugar",
     },
@@ -70,7 +68,6 @@ const PREVIEWS: TenantPreviewData[] = [
       sub: "Raw & Unfiltered · High Himalayan Harvest",
       origin: "Lamjung (2,200m)",
       priceOneTime: 1850,
-      priceSub: 1665,
       imageUrl: "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=800&q=80",
       notes: "Wild Rhododendron · Smoky Pine · Herbal Amber",
     },
@@ -87,7 +84,6 @@ const PREVIEWS: TenantPreviewData[] = [
       sub: "320 GSM French Terry Cotton · Relaxed Drop Shoulder",
       origin: "Kathmandu Valley",
       priceOneTime: 2200,
-      priceSub: 1980,
       imageUrl: "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80",
       notes: "Pre-shrunk · High-density Screenprint · Unisex",
     },
@@ -96,7 +92,6 @@ const PREVIEWS: TenantPreviewData[] = [
 
 export function HeroInteractiveShowcase() {
   const [selectedIdx, setSelectedIdx] = useState(0);
-  const [purchaseType, setPurchaseType] = useState<"one_time" | "subscription">("subscription");
   const [cartCount, setCartCount] = useState(0);
   const [justAdded, setJustAdded] = useState(false);
 
@@ -118,7 +113,6 @@ export function HeroInteractiveShowcase() {
             type="button"
             onClick={() => {
               setSelectedIdx(idx);
-              setPurchaseType("subscription");
             }}
             className={`flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold transition-all cursor-pointer ${
               selectedIdx === idx
@@ -213,62 +207,21 @@ export function HeroInteractiveShowcase() {
 
             {/* Purchase Mode Radio Cards */}
             <div className="space-y-2.5">
-              <div
-                onClick={() => setPurchaseType("subscription")}
-                className={`p-3.5 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                  purchaseType === "subscription"
-                    ? "border-zinc-900 dark:border-white bg-zinc-50/80 dark:bg-zinc-800/80 ring-1 ring-zinc-900/20 dark:ring-white/20"
-                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                    purchaseType === "subscription" ? "border-zinc-900 dark:border-white bg-zinc-900 dark:bg-white text-white dark:text-zinc-950" : "border-zinc-400"
-                  }`}>
-                    {purchaseType === "subscription" && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-950" />}
-                  </div>
-                  <div>
-                    <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
-                      <span>Monthly Repeat Club</span>
-                      <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
-                        SAVE 10%
-                      </span>
-                    </div>
-                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
-                      Dispatched every Monday · Pause or skip anytime
-                    </div>
-                  </div>
+            {/* Pricing & Checkout Options */}
+            <div className="p-3.5 rounded-2xl border border-zinc-200 dark:border-zinc-800 bg-zinc-50/80 dark:bg-zinc-800/80 flex items-center justify-between">
+              <div>
+                <div className="text-xs font-bold text-zinc-900 dark:text-white flex items-center gap-2">
+                  <span>Direct Purchase</span>
+                  <span className="text-[10px] font-mono font-bold px-1.5 py-0.5 rounded bg-emerald-100 dark:bg-emerald-950 text-emerald-700 dark:text-emerald-400">
+                    Khalti · COD
+                  </span>
                 </div>
-                <div className="text-right">
-                  <div className="text-sm font-black font-mono text-zinc-900 dark:text-white">
-                    Rs. {activeTenant.product.priceSub.toLocaleString("en-IN")}
-                  </div>
-                  <div className="text-[10px] font-mono line-through text-zinc-400">
-                    Rs. {activeTenant.product.priceOneTime.toLocaleString("en-IN")}
-                  </div>
+                <div className="text-[11px] text-zinc-500 dark:text-zinc-400">
+                  Instant mobile checkout · Dispatched via Pathao
                 </div>
               </div>
-
-              <div
-                onClick={() => setPurchaseType("one_time")}
-                className={`p-3 rounded-2xl border transition-all cursor-pointer flex items-center justify-between ${
-                  purchaseType === "one_time"
-                    ? "border-zinc-900 dark:border-white bg-zinc-50/80 dark:bg-zinc-800/80 ring-1 ring-zinc-900/20 dark:ring-white/20"
-                    : "border-zinc-200 dark:border-zinc-800 hover:border-zinc-300 dark:hover:border-zinc-700"
-                }`}
-              >
-                <div className="flex items-center gap-3">
-                  <div className={`w-4 h-4 rounded-full border flex items-center justify-center ${
-                    purchaseType === "one_time" ? "border-zinc-900 dark:border-white bg-zinc-900 dark:bg-white" : "border-zinc-400"
-                  }`}>
-                    {purchaseType === "one_time" && <div className="w-1.5 h-1.5 rounded-full bg-white dark:bg-zinc-950" />}
-                  </div>
-                  <div>
-                    <div className="text-xs font-semibold text-zinc-900 dark:text-white">One-time Order</div>
-                    <div className="text-[11px] text-zinc-500 dark:text-zinc-400">Standard single box</div>
-                  </div>
-                </div>
-                <div className="text-sm font-bold font-mono text-zinc-900 dark:text-white">
+              <div className="text-right">
+                <div className="text-base font-black font-mono text-zinc-900 dark:text-white">
                   Rs. {activeTenant.product.priceOneTime.toLocaleString("en-IN")}
                 </div>
               </div>
@@ -289,7 +242,7 @@ export function HeroInteractiveShowcase() {
                 ) : (
                   <>
                     <ShoppingBag className="w-4 h-4" />
-                    <span>Add to Bag · Rs. {(purchaseType === "subscription" ? activeTenant.product.priceSub : activeTenant.product.priceOneTime).toLocaleString("en-IN")}</span>
+                    <span>Add to Bag · Rs. {activeTenant.product.priceOneTime.toLocaleString("en-IN")}</span>
                   </>
                 )}
               </button>
@@ -304,6 +257,7 @@ export function HeroInteractiveShowcase() {
           </div>
         </div>
 
+      </div>
       </div>
 
       {/* Floating Glassmorphic Badges (Lovable & Linear Signature Pattern) */}

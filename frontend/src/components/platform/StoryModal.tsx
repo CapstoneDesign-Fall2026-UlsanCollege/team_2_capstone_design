@@ -78,7 +78,7 @@ export function StoryModal({ isOpen, onClose }: StoryModalProps) {
                   Empowering Nepal&apos;s Specialty Roasters &amp; Tea Estates
                 </h3>
                 <p className="text-xs sm:text-sm text-zinc-200 leading-relaxed">
-                  How artisanal roasteries earn predictable recurring revenue with ShopCraft&apos;s subscription engine.
+                  How artisanal roasteries scale direct trade online with ShopCraft&apos;s Nepal-native commerce platform.
                 </p>
               </div>
             </div>
@@ -100,8 +100,8 @@ export function StoryModal({ isOpen, onClose }: StoryModalProps) {
 
                 <div className="p-3.5 rounded-xl bg-[#F6F6F7] border border-[#E5E5E5] space-y-1">
                   <div className="text-[11px] font-semibold text-[#707070] uppercase tracking-wider">The Advantage</div>
-                  <div className="text-sm font-semibold text-[#121212]">Repeat Subscriptions</div>
-                  <div className="text-xs text-[#555] leading-relaxed">Turn one-time bag buyers into recurring bi-weekly coffee subscribers.</div>
+                  <div className="text-sm font-semibold text-[#121212]">100% NPR Direct Trade</div>
+                  <div className="text-xs text-[#555] leading-relaxed">Keep 100% of profits in NPR with zero international credit card conversion penalties.</div>
                 </div>
               </div>
 

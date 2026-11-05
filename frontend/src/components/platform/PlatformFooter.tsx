@@ -21,7 +21,7 @@ export function PlatformFooter() {
           </div>
 
           <p className="text-zinc-600 dark:text-zinc-400 text-xs leading-relaxed max-w-sm">
-            ShopCraft Technologies Pvt. Ltd. — The mobile-first e-commerce and subscription platform engineered for Nepal&apos;s coffee roasters, tea estates, apparel labels, and artisan makers.
+            ShopCraft Technologies Pvt. Ltd. — The mobile-first e-commerce platform engineered for Nepal&apos;s coffee roasters, tea estates, apparel labels, and artisan makers.
           </p>
 
           <div className="space-y-2 pt-2 text-[11px] font-mono text-zinc-600 dark:text-zinc-400">

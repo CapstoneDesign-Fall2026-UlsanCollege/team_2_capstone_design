@@ -13,7 +13,7 @@ export default function TermsPage() {
         </Link>
         
         <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-[#E6DEC8] rounded-full text-[#A3432A] font-mono text-xs font-bold uppercase tracking-widest mb-3">
-          <FileText size={12} /> Subscriber Agreement
+          <FileText size={12} /> Customer Agreement
         </div>
         
         <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#1A1512] mb-3">
