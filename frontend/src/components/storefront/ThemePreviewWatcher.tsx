@@ -16,6 +16,11 @@ function Watcher({ initialPreset }: { initialPreset: string }) {
         el.setAttribute("data-store-theme", theme);
       }
     }
+    return () => {
+      if (typeof document !== "undefined") {
+        document.documentElement.removeAttribute("data-store-theme");
+      }
+    };
   }, [previewTheme, initialPreset]);
 
   return null;

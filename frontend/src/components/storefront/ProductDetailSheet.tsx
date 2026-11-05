@@ -283,7 +283,7 @@ function ProductDetailSheetContent({
                 {formatNpr(unitPriceMinor)}
               </span>
               {isSubscription && (
-                <span className="text-[10px] font-sf-mono text-emerald-800 font-bold bg-emerald-50 px-1.5 py-0.2 rounded border border-emerald-200">
+                <span className="text-[10px] font-sf-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/30">
                   Save 10%
                 </span>
               )}
@@ -412,7 +412,7 @@ function ProductDetailSheetContent({
               onClick={() => setPurchaseType("subscription")}
               className={`p-2.5 rounded-sf border transition-all cursor-pointer space-y-2 ${
                 purchaseType === "subscription"
-                  ? "border-emerald-700 bg-emerald-50/40 ring-2 ring-emerald-700 shadow-2xs"
+                  ? "border-emerald-600 bg-emerald-500/10 ring-1 ring-emerald-600 shadow-xs"
                   : "border-sf-line bg-sf-canvas hover:border-sf-muted"
               }`}
             >
@@ -423,19 +423,19 @@ function ProductDetailSheetContent({
                     name="sheet_purchase_option"
                     checked={purchaseType === "subscription"}
                     onChange={() => setPurchaseType("subscription")}
-                    className="accent-emerald-700 w-3.5 h-3.5 cursor-pointer"
+                    className="accent-emerald-600 w-3.5 h-3.5 cursor-pointer"
                   />
                   <div className="flex items-center gap-1.5">
                     <span className="font-bold text-sf-ink">Subscribe &amp; Save 10%</span>
                   </div>
                 </div>
-                <span className="font-sf-mono font-bold text-emerald-800 text-xs tabular-nums">
+                <span className="font-sf-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs tabular-nums">
                   {formatNpr(Math.round(basePriceMinor * 0.9))}
                 </span>
               </div>
 
               {purchaseType === "subscription" && (
-                <div className="pt-2 border-t border-emerald-200">
+                <div className="pt-2 border-t border-emerald-500/30">
                   <div className="grid grid-cols-3 gap-1.5">
                     {activePlans.map((plan) => {
                       const isPlanSelected = plan.id === selectedPlanId;
@@ -509,7 +509,7 @@ function ProductDetailSheetContent({
           disabled={!isInStock || justAdded}
           className={`w-full min-h-[46px] h-11 rounded-sf font-sf-body text-xs font-bold tracking-wide transition-all flex items-center justify-center gap-2 cursor-pointer shadow-xs active:scale-[0.99] ${
             justAdded
-              ? "bg-emerald-800 text-white"
+              ? "bg-emerald-700 text-white"
               : isInStock
               ? "bg-sf-cta text-sf-cta-ink hover:opacity-95"
               : "bg-sf-line text-sf-muted cursor-not-allowed"

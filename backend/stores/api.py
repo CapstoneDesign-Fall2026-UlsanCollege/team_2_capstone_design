@@ -456,26 +456,31 @@ class StorePublicOrderDetailView(StorePublicMixin, APIView):
 
     def get(self, request, store_slug, order_id):
         import uuid
+        from core.tenant_context import BypassRLSContext
         token_param = request.query_params.get("token", "").strip()
         order = None
+        clean_order_id = str(order_id).strip()
 
         # Check if order_id is a UUID token
         try:
-            uuid_token = uuid.UUID(str(order_id))
-            order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
+            uuid_token = uuid.UUID(clean_order_id)
+            with BypassRLSContext():
+                order = Order.objects.filter(store=self.store, token=uuid_token).first()
         except ValueError:
             # Looked up by integer ID
             try:
-                oid = int(order_id)
+                oid = int(clean_order_id)
                 if token_param:
                     try:
                         param_uuid = uuid.UUID(token_param)
-                        order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
+                        with BypassRLSContext():
+                            order = Order.objects.filter(store=self.store, id=oid, token=param_uuid).first()
                     except ValueError:
                         pass
                 elif request.user.is_authenticated:
                     # Authenticated shopper viewing their own order
-                    order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
+                    with BypassRLSContext():
+                        order = Order.objects.filter(store=self.store, id=oid, customer__user=request.user).first()
             except ValueError:
                 pass
 
@@ -495,25 +500,30 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
 
     def post(self, request, store_slug, order_id):
         import uuid
+        from core.tenant_context import BypassRLSContext
         token_param = str(
             request.data.get("token") or request.query_params.get("token") or ""
         ).strip()
         order = None
+        clean_order_id = str(order_id).strip()
 
         try:
-            uuid_token = uuid.UUID(str(order_id))
-            order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
+            uuid_token = uuid.UUID(clean_order_id)
+            with BypassRLSContext():
+                order = Order.objects.filter(store=self.store, token=uuid_token).first()
         except ValueError:
             try:
-                oid = int(order_id)
+                oid = int(clean_order_id)
                 if token_param:
                     try:
                         param_uuid = uuid.UUID(token_param)
-                        order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
+                        with BypassRLSContext():
+                            order = Order.objects.filter(store=self.store, id=oid, token=param_uuid).first()
                     except ValueError:
                         pass
                 elif request.user.is_authenticated:
-                    order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
+                    with BypassRLSContext():
+                        order = Order.objects.filter(store=self.store, id=oid, customer__user=request.user).first()
             except ValueError:
                 pass
 

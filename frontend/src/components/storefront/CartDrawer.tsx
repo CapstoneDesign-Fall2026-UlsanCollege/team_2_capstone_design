@@ -107,7 +107,7 @@ export function CartDrawer() {
                 <div className="flex items-center gap-1.5 text-sf-ink font-semibold">
                   <Truck className="w-3.5 h-3.5 text-sf-accent" aria-hidden="true" />
                   {isFreeDeliveryQualified ? (
-                    <span className="text-emerald-800 font-bold">
+                    <span className="text-emerald-600 dark:text-emerald-400 font-bold">
                       ✓ Free Kathmandu Valley Delivery Unlocked!
                     </span>
                   ) : (
@@ -135,8 +135,8 @@ export function CartDrawer() {
 
               {/* Bonus Perk Ribbon */}
               {qualifiesForPerk && (
-                <div className="flex items-center gap-1.5 text-[11px] font-sf-mono text-emerald-800 pt-0.5 font-medium">
-                  <Gift className="w-3.5 h-3.5 text-emerald-700 shrink-0" />
+                <div className="flex items-center gap-1.5 text-[11px] font-sf-mono text-emerald-600 dark:text-emerald-400 pt-0.5 font-medium">
+                  <Gift className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Complimentary artisan gift sample included!</span>
                 </div>
               )}
@@ -228,8 +228,8 @@ export function CartDrawer() {
                             {item.variantLabel}
                           </span>
                           {isSubscription && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-sf-mono px-1.5 py-0.5 rounded bg-emerald-50 border border-emerald-200 text-emerald-800 font-semibold">
-                              <RefreshCw className="w-2.5 h-2.5 text-emerald-700" aria-hidden="true" />
+                            <span className="inline-flex items-center gap-1 text-[10px] font-sf-mono px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold">
+                              <RefreshCw className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
                               <span>{item.sellingPlan?.name || "Repeat Club"}</span>
                             </span>
                           )}

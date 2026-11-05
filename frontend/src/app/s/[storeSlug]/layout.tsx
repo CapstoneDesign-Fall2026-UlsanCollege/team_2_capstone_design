@@ -153,11 +153,6 @@ export default async function StorefrontLayout({
       data-store-theme={themePreset}
       className={`${fontClasses} min-h-dvh bg-sf-canvas text-sf-ink font-sf-body flex flex-col`}
     >
-      <script
-        dangerouslySetInnerHTML={{
-          __html: `try{document.documentElement.setAttribute('data-store-theme',${JSON.stringify(themePreset)});}catch(e){}`,
-        }}
-      />
       <ThemePreviewWatcher initialPreset={themePreset} />
       <CartProvider
         storeSlug={store.slug}

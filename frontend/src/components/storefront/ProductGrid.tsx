@@ -126,8 +126,8 @@ export function ProductGrid({
                 </div>
               )}
 
-              {/* Quick-View Action Pill */}
-              <div className="absolute inset-x-2 bottom-2 opacity-0 group-hover:opacity-100 translate-y-1 group-hover:translate-y-0 transition-all duration-200 hidden sm:block z-20">
+              {/* Quick-View Action Pill (Desktop Hover + Mobile Corner Tap) */}
+              <div className="absolute right-2 bottom-2 sm:inset-x-2 sm:bottom-2 sm:opacity-0 sm:group-hover:opacity-100 sm:translate-y-1 sm:group-hover:translate-y-0 transition-all duration-200 z-20">
                 <button
                   type="button"
                   onClick={(e) => {
@@ -135,10 +135,11 @@ export function ProductGrid({
                     e.stopPropagation();
                     onSelectProduct(product);
                   }}
-                  className="w-full h-8 rounded-sf bg-sf-surface/95 hover:bg-sf-surface text-sf-ink text-[11px] font-sf-body font-semibold tracking-wide border border-sf-line shadow-md flex items-center justify-center gap-1 transition-all cursor-pointer"
+                  aria-label={`Quick view ${product.name}`}
+                  className="h-8 w-8 sm:w-full rounded-full sm:rounded-sf bg-sf-surface/95 hover:bg-sf-surface text-sf-ink text-[11px] font-sf-body font-semibold tracking-wide border border-sf-line shadow-md flex items-center justify-center gap-1 transition-all cursor-pointer backdrop-blur-xs"
                 >
-                  <Eye className="w-3 h-3 text-sf-muted" />
-                  <span>Quick View</span>
+                  <Eye className="w-3.5 h-3.5 text-sf-ink sm:text-sf-muted" />
+                  <span className="hidden sm:inline">Quick View</span>
                 </button>
               </div>
             </div>

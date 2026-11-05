@@ -193,7 +193,7 @@ export function StorefrontCatalogView({
     },
     {
       q: "What are your delivery times and shipping rates?",
-      a: `Inside Kathmandu Valley orders typically arrive within 24 to 48 hours for Rs. ${formatNpr(store.inside_valley_shipping_minor || 10000)}. Outside Kathmandu Valley deliveries take 2 to 4 business days via Pathao express courier for Rs. ${formatNpr(store.outside_valley_shipping_minor || 20000)}.${store.free_shipping_threshold_minor ? ` Orders over ${formatNpr(store.free_shipping_threshold_minor)} qualify for FREE shipping!` : ""}`,
+      a: `Inside Kathmandu Valley orders typically arrive within 24 to 48 hours for ${formatNpr(store.inside_valley_shipping_minor || 10000)}. Outside Kathmandu Valley deliveries take 2 to 4 business days via Pathao express courier for ${formatNpr(store.outside_valley_shipping_minor || 20000)}.${store.free_shipping_threshold_minor ? ` Orders over ${formatNpr(store.free_shipping_threshold_minor)} qualify for FREE shipping!` : ""}`,
     },
     {
       q: "How do I pay with Khalti?",

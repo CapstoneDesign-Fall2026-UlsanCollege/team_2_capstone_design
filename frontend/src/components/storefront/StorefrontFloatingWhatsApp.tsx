@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState } from "react";
+import { usePathname } from "next/navigation";
 import { MessageCircle, Phone, X } from "lucide-react";
 
 export interface StorefrontFloatingWhatsAppProps {
@@ -13,6 +14,12 @@ export function StorefrontFloatingWhatsApp({
   contactPhone,
 }: StorefrontFloatingWhatsAppProps) {
   const [isOpen, setIsOpen] = useState(false);
+  const pathname = usePathname();
+
+  // Hide floating WhatsApp button on checkout to prevent collision with sticky payment bar
+  if (pathname?.includes("/checkout")) {
+    return null;
+  }
 
   const phone = contactPhone?.trim() || "9801234567";
   const cleanPhone = phone.replace(/\D/g, "");
@@ -31,13 +38,13 @@ export function StorefrontFloatingWhatsApp({
       {isOpen && (
         <div
           role="region"
-          aria-label="Direct Roastery Support"
+          aria-label="Direct Merchant Support"
           className="mb-3 w-72 rounded-sf border border-sf-line bg-sf-surface p-4 shadow-xl text-left animate-in fade-in slide-in-from-bottom-2 duration-200"
         >
           <div className="flex items-start justify-between gap-2 border-b border-sf-line pb-2.5">
             <div>
               <p className="font-sf-display text-sm font-bold text-sf-ink">
-                Direct Roastery Support
+                Direct Merchant Support
               </p>
               <p className="text-[11px] font-sf-mono text-sf-muted">
                 Usually replies in 15 mins
@@ -54,7 +61,7 @@ export function StorefrontFloatingWhatsApp({
           </div>
 
           <p className="py-2.5 text-xs text-sf-muted leading-relaxed">
-            Need advice on grind size for your V60/French Press, roast dates, or Valley delivery?
+            Have questions about products, custom orders, or delivery timing? Chat directly with {storeName}.
           </p>
 
           <div className="flex flex-col gap-2 pt-1">

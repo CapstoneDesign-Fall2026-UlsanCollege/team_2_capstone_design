@@ -32,7 +32,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en" className={notoSansDevanagari.variable}>
+    <html lang="en" suppressHydrationWarning className={notoSansDevanagari.variable}>
       <body
         suppressHydrationWarning
         className="min-h-dvh antialiased bg-[var(--sc-paper)] text-[var(--sc-ink)]"

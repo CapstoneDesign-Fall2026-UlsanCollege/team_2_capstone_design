@@ -3,6 +3,7 @@
 import React, { use, useEffect, useState, useMemo, useCallback } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
+import { ExternalLink, Plus, Search } from "lucide-react";
 import { ApiError, fetchMerchantProducts, ProductItem } from "@/lib/api";
 import { ProductListTable } from "@/components/merchant/ProductListTable";
 import { ProductSheet } from "@/components/merchant/ProductSheet";
@@ -52,7 +53,13 @@ export default function MerchantProductsPage({ params }: PageProps) {
           msg.toLowerCase().includes("credentials");
 
         if (isAuth) {
-          setTimeout(() => router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/products`), 0);
+          setTimeout(
+            () =>
+              router.replace(
+                `/login?next=/merchant/${encodeURIComponent(storeSlug)}/products`
+              ),
+            0
+          );
           return;
         }
         setError(msg);
@@ -69,13 +76,31 @@ export default function MerchantProductsPage({ params }: PageProps) {
     return cleanup;
   }, [loadProducts]);
 
+  // Listen to global quick-add product saves from ConsoleShell or Sidebar
+  useEffect(() => {
+    const handleGlobalSaved = (ev: Event) => {
+      const customEv = ev as CustomEvent<ProductItem>;
+      const saved = customEv.detail;
+      if (saved && saved.id) {
+        setProducts((prev) => {
+          const exists = prev.some((p) => p.id === saved.id);
+          return exists ? prev.map((p) => (p.id === saved.id ? saved : p)) : [saved, ...prev];
+        });
+      } else {
+        loadProducts();
+      }
+    };
+    window.addEventListener("merchant:product-saved", handleGlobalSaved);
+    return () => {
+      window.removeEventListener("merchant:product-saved", handleGlobalSaved);
+    };
+  }, [loadProducts]);
+
   const filteredProducts = useMemo(() => {
     return products.filter((p) => {
-      // Status filter
       if (statusFilter === "active" && !p.is_active) return false;
       if (statusFilter === "draft" && p.is_active) return false;
 
-      // Text search
       if (!searchQuery.trim()) return true;
       const q = searchQuery.toLowerCase().trim();
       const inName = p.name.toLowerCase().includes(q);
@@ -112,20 +137,23 @@ export default function MerchantProductsPage({ params }: PageProps) {
   const handleSheetOpenChange = (isOpen: boolean) => {
     setUserSheetOpen(isOpen);
     if (!isOpen && actionNew) {
-      setTimeout(() => router.replace(`/merchant/${encodeURIComponent(storeSlug)}/products`), 0);
+      setTimeout(
+        () => router.replace(`/merchant/${encodeURIComponent(storeSlug)}/products`),
+        0
+      );
     }
   };
 
   return (
     <div className="space-y-6">
-      {/* Header Banner */}
+      {/* Steep Minimal Header */}
       <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between border-b border-[var(--border)] pb-4">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-[var(--foreground)]">
+          <h1 className="text-xl font-semibold tracking-tight text-[var(--foreground)]">
             Products &amp; Catalog
           </h1>
-          <p className="text-xs text-[var(--muted-foreground)]">
-            Manage your store offerings, attributes, and packaging variants.
+          <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
+            Manage store offerings, photos, attributes, and packaging variants.
           </p>
         </div>
 
@@ -133,45 +161,42 @@ export default function MerchantProductsPage({ params }: PageProps) {
           <Link
             href={`/s/${encodeURIComponent(storeSlug)}`}
             target="_blank"
-            className="hidden sm:inline-flex items-center gap-1 px-2.5 py-1.5 rounded font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--secondary)] text-[var(--foreground)] text-xs transition-colors"
+            className="hidden sm:inline-flex items-center gap-1.5 h-8 px-3 rounded-lg font-medium border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--secondary)] text-[var(--foreground)] text-xs transition-colors"
           >
             <span>Storefront</span>
-            <span className="text-[10px]">↗</span>
+            <ExternalLink className="w-3 h-3 text-[var(--muted-foreground)]" />
           </Link>
           <button
             type="button"
             onClick={handleAddNew}
-            className="h-8 px-3.5 rounded bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center gap-1.5"
+            className="h-8 px-3.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium hover:opacity-90 transition-opacity cursor-pointer inline-flex items-center gap-1.5"
           >
-            <span>+ New Product</span>
+            <Plus className="w-3.5 h-3.5" />
+            <span>New Product</span>
           </button>
         </div>
       </div>
 
       {/* Search & Filter Toolbar */}
       <div className="flex flex-col sm:flex-row items-stretch sm:items-center justify-between gap-3">
-        {/* Search */}
         <div className="relative flex-1 max-w-sm">
-          <span className="absolute left-3 top-2.5 text-xs text-[var(--muted-foreground)]">
-            🔍
-          </span>
+          <Search className="w-3.5 h-3.5 absolute left-3 top-2.5 text-[var(--muted-foreground)] pointer-events-none" />
           <input
             type="text"
             placeholder="Search by title, tag, or description..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-8 pl-8 pr-3 rounded border border-[var(--border)] bg-[var(--card)] text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:border-[var(--ring)]"
+            className="w-full h-8 pl-8 pr-3 rounded-lg border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:border-[var(--ring)]"
           />
         </div>
 
-        {/* Filter Chips */}
-        <div className="flex items-center gap-1 bg-[var(--secondary)]/60 p-0.5 rounded-lg border border-[var(--border)]">
+        <div className="flex items-center gap-1 bg-[var(--background)] p-0.5 rounded-lg border border-[var(--border)] self-start sm:self-auto">
           <button
             type="button"
             onClick={() => setStatusFilter("all")}
             className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
               statusFilter === "all"
-                ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
@@ -182,7 +207,7 @@ export default function MerchantProductsPage({ params }: PageProps) {
             onClick={() => setStatusFilter("active")}
             className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
               statusFilter === "active"
-                ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
@@ -193,7 +218,7 @@ export default function MerchantProductsPage({ params }: PageProps) {
             onClick={() => setStatusFilter("draft")}
             className={`px-2.5 py-1 rounded-md text-[11px] font-medium transition-colors cursor-pointer ${
               statusFilter === "draft"
-                ? "bg-[var(--card)] text-[var(--foreground)] shadow-xs"
+                ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
@@ -205,9 +230,9 @@ export default function MerchantProductsPage({ params }: PageProps) {
       {/* Main Content Area */}
       {loading ? (
         <div className="space-y-3">
-          <div className="h-12 rounded-lg border border-[var(--border)] bg-[var(--card)] animate-pulse" />
-          <div className="h-14 rounded-lg border border-[var(--border)] bg-[var(--card)] animate-pulse" />
-          <div className="h-14 rounded-lg border border-[var(--border)] bg-[var(--card)] animate-pulse" />
+          <div className="h-12 rounded-lg border border-[var(--border)] bg-[var(--background)] animate-pulse" />
+          <div className="h-14 rounded-lg border border-[var(--border)] bg-[var(--background)] animate-pulse" />
+          <div className="h-14 rounded-lg border border-[var(--border)] bg-[var(--background)] animate-pulse" />
         </div>
       ) : error ? (
         <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 text-center space-y-3">

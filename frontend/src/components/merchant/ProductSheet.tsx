@@ -4,7 +4,7 @@ import React, { useState, useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import {
   Upload,
-  Image as ImageIcon,
+
   Link as LinkIcon,
   Sparkles,
   Trash2,
@@ -80,7 +80,7 @@ export function ProductSheet({
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs transition-opacity" />
-        <Dialog.Content className="fixed right-0 top-0 bottom-0 z-50 w-full max-w-md border-l border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] p-6 shadow-2xl flex flex-col justify-between overflow-y-auto outline-none animate-in slide-in-from-right duration-200">
+        <Dialog.Content className="console fixed right-0 top-0 bottom-0 z-50 w-full max-w-md border-l border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] p-6 shadow-2xl flex flex-col justify-between overflow-y-auto outline-none animate-in slide-in-from-right duration-200">
           <ProductForm
             key={product ? `edit-${product.id}` : "new"}
             storeSlug={storeSlug}

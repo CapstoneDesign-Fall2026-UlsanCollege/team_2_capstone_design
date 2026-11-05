@@ -542,7 +542,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
           <div className="space-y-1.5">
             <label
               htmlFor="checkout-email"
-              className="text-xs font-sf-mono font-medium text-sf-ink"
+              className="text-xs font-sf-body font-medium text-sf-ink"
             >
               Email Address (Receipt &amp; Tracking)
             </label>
@@ -555,14 +555,14 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
+              className="w-full px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
             />
           </div>
 
           <div className="space-y-1.5 sm:col-span-2">
             <label
               htmlFor="checkout-recipient"
-              className="text-xs font-sf-mono font-medium text-sf-ink"
+              className="text-xs font-sf-body font-medium text-sf-ink"
             >
               Recipient Full Name
             </label>
@@ -574,7 +574,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               placeholder="e.g. Nisha Shrestha"
               value={recipientName}
               onChange={(e) => setRecipientName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
+              className="w-full px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
             />
           </div>
         </div>
@@ -684,58 +684,64 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               <div className="space-y-1.5">
                 <label
                   htmlFor="checkout-province"
-                  className="text-xs font-sf-mono font-medium text-sf-ink"
+                  className="text-xs font-sf-body font-medium text-sf-ink"
                 >
                   Province
                 </label>
-                <select
-                  id="checkout-province"
-                  value={province}
-                  onChange={(e) => {
-                    const nextProv = e.target.value;
-                    setProvince(nextProv);
-                    const availableDistricts = PROVINCE_DISTRICTS[nextProv] || [];
-                    if (availableDistricts.length > 0) {
-                      setDistrict(availableDistricts[0]);
-                    }
-                  }}
-                  className="w-full px-3 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
-                >
-                  {NEPALI_PROVINCES.map((p) => (
-                    <option key={p} value={p}>
-                      {p}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    id="checkout-province"
+                    value={province}
+                    onChange={(e) => {
+                      const nextProv = e.target.value;
+                      setProvince(nextProv);
+                      const availableDistricts = PROVINCE_DISTRICTS[nextProv] || [];
+                      if (availableDistricts.length > 0) {
+                        setDistrict(availableDistricts[0]);
+                      }
+                    }}
+                    className="w-full h-10 pl-3 pr-8 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs appearance-none focus:outline-none focus:ring-2 focus:ring-sf-cta/30 focus:border-sf-cta transition-all cursor-pointer"
+                  >
+                    {NEPALI_PROVINCES.map((p) => (
+                      <option key={p} value={p}>
+                        {p}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-sf-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               {/* District */}
               <div className="space-y-1.5">
                 <label
                   htmlFor="checkout-district"
-                  className="text-xs font-sf-mono font-medium text-sf-ink"
+                  className="text-xs font-sf-body font-medium text-sf-ink"
                 >
                   District
                 </label>
-                <select
-                  id="checkout-district"
-                  value={district}
-                  onChange={(e) => setDistrict(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
-                >
-                  {(PROVINCE_DISTRICTS[province] || [district]).map((d) => (
-                    <option key={d} value={d}>
-                      {d}
-                    </option>
-                  ))}
-                </select>
+                <div className="relative">
+                  <select
+                    id="checkout-district"
+                    value={district}
+                    onChange={(e) => setDistrict(e.target.value)}
+                    className="w-full h-10 pl-3 pr-8 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs appearance-none focus:outline-none focus:ring-2 focus:ring-sf-cta/30 focus:border-sf-cta transition-all cursor-pointer"
+                  >
+                    {(PROVINCE_DISTRICTS[province] || [district]).map((d) => (
+                      <option key={d} value={d}>
+                        {d}
+                      </option>
+                    ))}
+                  </select>
+                  <ChevronDown className="w-3.5 h-3.5 text-sf-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                </div>
               </div>
 
               {/* Ward */}
               <div className="space-y-1.5 col-span-2 sm:col-span-1">
                 <label
                   htmlFor="checkout-ward"
-                  className="text-xs font-sf-mono font-medium text-sf-ink"
+                  className="text-xs font-sf-body font-medium text-sf-ink"
                 >
                   Ward No.
                 </label>
@@ -748,7 +754,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                   placeholder="e.g. 3"
                   value={ward}
                   onChange={(e) => setWard(e.target.value)}
-                  className="w-full px-3 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40 tabular-nums"
+                  className="w-full h-10 px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40 tabular-nums"
                 />
               </div>
 
@@ -756,7 +762,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               <div className="space-y-1.5 col-span-2">
                 <label
                   htmlFor="checkout-municipality"
-                  className="text-xs font-sf-mono font-medium text-sf-ink"
+                  className="text-xs font-sf-body font-medium text-sf-ink"
                 >
                   Municipality / Palika
                 </label>
@@ -767,7 +773,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                   placeholder="e.g. Kathmandu Metropolitan City"
                   value={municipality}
                   onChange={(e) => setMunicipality(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
+                  className="w-full h-10 px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
                 />
               </div>
 
@@ -775,7 +781,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               <div className="space-y-1.5 col-span-2 sm:col-span-3">
                 <label
                   htmlFor="checkout-landmark"
-                  className="text-xs font-sf-mono font-medium text-sf-ink"
+                  className="text-xs font-sf-body font-medium text-sf-ink"
                 >
                   Nearest Chowk / Landmark / Tole
                 </label>
@@ -786,13 +792,13 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                   placeholder="e.g. Near Lazimpat Chowk, Opposite Standard Chartered"
                   value={streetLandmark}
                   onChange={(e) => setStreetLandmark(e.target.value)}
-                  className="w-full px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
+                  className="w-full h-10 px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
                 />
               </div>
             </div>
 
             {isAuthenticated && (
-              <label className="flex items-center gap-2 pt-1 text-xs font-sf-mono text-sf-ink cursor-pointer select-none">
+              <label className="flex items-center gap-2 pt-1 text-xs font-sf-body text-sf-ink cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={saveAddressToAccount}

@@ -7,12 +7,11 @@ import {
   BarChart3,
   Banknote,
   CreditCard,
+  LineChart,
   MapPin,
   Package,
   RefreshCw,
   Repeat,
-  TrendingUp,
-  Users,
 } from "lucide-react";
 import {
   AnalyticsRange,
@@ -21,6 +20,7 @@ import {
   formatNpr,
   MerchantAnalyticsResponse,
 } from "@/lib/api";
+import { SteepChart } from "@/components/merchant/SteepChart";
 
 interface PageProps {
   params: Promise<{ storeSlug: string }>;
@@ -38,6 +38,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
   const router = useRouter();
 
   const [range, setRange] = useState<AnalyticsRange>("30d");
+  const [chartMode, setChartMode] = useState<"line" | "bar">("line");
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<MerchantAnalyticsResponse | null>(null);
@@ -83,11 +84,11 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
   }, [storeSlug, range, router]);
 
   return (
-    <div className="space-y-6">
-      {/* 1. Polaris Page Header + Range Selector */}
+    <div className="space-y-8">
+      {/* 1. Steep Minimal Page Header + Range & Chart Mode Switcher */}
       <div className="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-[var(--border)] pb-4">
         <div>
-          <h1 className="text-lg font-bold tracking-tight text-[var(--foreground)]">
+          <h1 className="text-xl font-semibold tracking-tight text-[var(--foreground)]">
             Analytics &amp; Nepal Reports
           </h1>
           <p className="text-xs text-[var(--muted-foreground)] mt-0.5">
@@ -96,49 +97,77 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
           </p>
         </div>
 
-        <div className="inline-flex items-center p-0.5 rounded-lg border border-[var(--border)] bg-[var(--secondary)] self-start sm:self-auto">
-          {RANGE_OPTIONS.map((opt) => {
-            const active = range === opt.id;
-            return (
-              <button
-                key={opt.id}
-                type="button"
-                onClick={() => setRange(opt.id)}
-                className={`px-2.5 py-1.5 rounded-md text-xs font-medium transition-colors cursor-pointer ${
-                  active
-                    ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs font-semibold"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                }`}
-              >
-                {opt.label}
-              </button>
-            );
-          })}
+        <div className="flex flex-wrap items-center gap-2 self-start sm:self-auto">
+          <div className="inline-flex items-center p-0.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+            {RANGE_OPTIONS.map((opt) => {
+              const active = range === opt.id;
+              return (
+                <button
+                  key={opt.id}
+                  type="button"
+                  onClick={() => setRange(opt.id)}
+                  className={`px-2.5 py-1 rounded-md text-xs font-medium transition-colors cursor-pointer ${
+                    active
+                      ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
+                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  }`}
+                >
+                  {opt.label}
+                </button>
+              );
+            })}
+          </div>
+
+          <div className="inline-flex items-center p-0.5 rounded-lg border border-[var(--border)] bg-[var(--background)]">
+            <button
+              type="button"
+              onClick={() => setChartMode("line")}
+              title="Smooth curve view"
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                chartMode === "line"
+                  ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <LineChart className="w-3.5 h-3.5" />
+            </button>
+            <button
+              type="button"
+              onClick={() => setChartMode("bar")}
+              title="Column bar view"
+              className={`p-1.5 rounded-md transition-colors cursor-pointer ${
+                chartMode === "bar"
+                  ? "bg-[var(--card)] text-[var(--foreground)] shadow-2xs"
+                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+              }`}
+            >
+              <BarChart3 className="w-3.5 h-3.5" />
+            </button>
+          </div>
         </div>
       </div>
 
       {/* Loading State */}
       {loading && (
-        <div className="space-y-4">
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
+        <div className="space-y-6">
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
             {[1, 2, 3, 4].map((i) => (
               <div
                 key={i}
-                className="h-24 rounded-lg border border-[var(--border)] bg-[var(--card)] animate-pulse"
-              />
+                className="space-y-2 border-l-2 border-[var(--border)] pl-3 animate-pulse"
+              >
+                <div className="h-3 w-20 bg-[var(--secondary)] rounded" />
+                <div className="h-5 w-24 bg-[var(--secondary)] rounded" />
+              </div>
             ))}
           </div>
-          <div className="h-56 rounded-lg border border-[var(--border)] bg-[var(--card)] animate-pulse" />
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-4">
-            <div className="h-64 rounded-lg border border-[var(--border)] bg-[var(--card)] animate-pulse" />
-            <div className="h-64 rounded-lg border border-[var(--border)] bg-[var(--card)] animate-pulse" />
-          </div>
+          <div className="h-60 rounded-xl bg-[var(--background)] animate-pulse" />
         </div>
       )}
 
       {/* Error State */}
       {!loading && (error || !data) && (
-        <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-6 text-center space-y-3">
+        <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-6 text-center space-y-3">
           <p className="text-sm font-semibold text-[var(--foreground)]">
             {error || "Unable to load analytics report."}
           </p>
@@ -155,41 +184,33 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
 
       {!loading && data && (
         <>
-          {/* 2. KPI Summary Cards */}
-          <div className="grid grid-cols-2 lg:grid-cols-4 gap-3">
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 space-y-1">
-              <div className="flex items-center justify-between text-[11px] font-medium text-[var(--muted-foreground)]">
-                <span>Gross Sales</span>
-                <TrendingUp className="w-3.5 h-3.5 text-emerald-500" />
-              </div>
-              <p className="text-xl font-bold font-mono tabular-nums text-[var(--foreground)]">
+          {/* 2. Steep Vertical-Accent Inline Metrics Strip */}
+          <div className="grid grid-cols-2 lg:grid-cols-4 gap-6">
+            <div className="border-l-[2.5px] border-blue-500 pl-3.5 space-y-0.5">
+              <p className="text-xs text-[var(--muted-foreground)]">Gross Sales</p>
+              <p className="text-xl font-semibold tracking-tight text-[var(--foreground)] tabular-nums">
                 {formatNpr(data.kpis.gross_sales_minor)}
               </p>
               <p className="text-[11px] text-[var(--muted-foreground)] tabular-nums">
                 {formatNpr(data.kpis.paid_sales_minor)} paid ·{" "}
-                {formatNpr(data.kpis.cod_pending_minor)} COD pending
+                {formatNpr(data.kpis.cod_pending_minor)} COD
               </p>
             </div>
 
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 space-y-1">
-              <div className="flex items-center justify-between text-[11px] font-medium text-[var(--muted-foreground)]">
-                <span>Avg. Order Value</span>
-                <BarChart3 className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-              </div>
-              <p className="text-xl font-bold font-mono tabular-nums text-[var(--foreground)]">
+            <div className="border-l-[2.5px] border-[#E89578] pl-3.5 space-y-0.5">
+              <p className="text-xs text-[var(--muted-foreground)]">Avg. Order Value</p>
+              <p className="text-xl font-semibold tracking-tight text-[var(--foreground)] tabular-nums">
                 {formatNpr(data.kpis.aov_minor)}
               </p>
               <p className="text-[11px] text-[var(--muted-foreground)] tabular-nums">
-                {data.kpis.orders_count} orders · {formatNpr(data.kpis.discounts_given_minor)} promos
+                {data.kpis.orders_count} orders · {formatNpr(data.kpis.discounts_given_minor)}{" "}
+                promos
               </p>
             </div>
 
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 space-y-1">
-              <div className="flex items-center justify-between text-[11px] font-medium text-[var(--muted-foreground)]">
-                <span>Repeat Customer Rate</span>
-                <Users className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-              </div>
-              <p className="text-xl font-bold font-mono tabular-nums text-[var(--foreground)]">
+            <div className="border-l-[2.5px] border-emerald-500 pl-3.5 space-y-0.5">
+              <p className="text-xs text-[var(--muted-foreground)]">Repeat Customer Rate</p>
+              <p className="text-xl font-semibold tracking-tight text-[var(--foreground)] tabular-nums">
                 {data.kpis.repeat_customer_rate_pct}%
               </p>
               <p className="text-[11px] text-[var(--muted-foreground)] tabular-nums">
@@ -197,25 +218,22 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
               </p>
             </div>
 
-            <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-4 space-y-1">
-              <div className="flex items-center justify-between text-[11px] font-medium text-[var(--muted-foreground)]">
-                <span>Subscription MRR</span>
-                <Repeat className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
-              </div>
-              <p className="text-xl font-bold font-mono tabular-nums text-[var(--foreground)]">
+            <div className="border-l-[2.5px] border-violet-500 pl-3.5 space-y-0.5">
+              <p className="text-xs text-[var(--muted-foreground)]">Subscription MRR</p>
+              <p className="text-xl font-semibold tracking-tight text-[var(--foreground)] tabular-nums">
                 {formatNpr(data.kpis.active_mrr_minor)}
               </p>
               <p className="text-[11px] text-[var(--muted-foreground)]">
-                Normalized 30-day cycle run-rate
+                Normalized 30-day run-rate
               </p>
             </div>
           </div>
 
-          {/* 3. Daily Revenue & Order Volume Chart */}
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 space-y-4">
+          {/* 3. Steep Smooth Trajectory Chart */}
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 space-y-4">
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
-                <h2 className="text-sm font-bold text-[var(--foreground)]">
+                <h2 className="text-sm font-semibold text-[var(--foreground)]">
                   Daily Sales Trajectory
                 </h2>
                 <p className="text-xs text-[var(--muted-foreground)]">
@@ -227,69 +245,26 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
               </span>
             </div>
 
-            {data.daily_series.length === 0 ? (
-              <div className="h-44 flex items-center justify-center text-xs text-[var(--muted-foreground)]">
-                No time-series points in selected range.
-              </div>
-            ) : (
-              <div className="space-y-2">
-                <div className="h-44 flex items-end gap-1 sm:gap-1.5 pt-4 border-b border-[var(--border)] pb-2 overflow-x-auto">
-                  {(() => {
-                    const maxVal = Math.max(
-                      100,
-                      ...data.daily_series.map((d) => d.revenue_minor)
-                    );
-                    return data.daily_series.map((pt) => {
-                      const pct =
-                        pt.revenue_minor > 0
-                          ? Math.max(8, Math.round((pt.revenue_minor / maxVal) * 100))
-                          : 3;
-                      return (
-                        <div
-                          key={pt.date}
-                          className="flex-1 min-w-[10px] flex flex-col items-center justify-end h-full group"
-                          title={`${pt.label}: ${formatNpr(pt.revenue_minor)} (${pt.orders_count} orders)`}
-                        >
-                          <div className="w-full h-36 flex items-end justify-center">
-                            <div
-                              className={`w-full max-w-[24px] rounded-t transition-all ${
-                                pt.revenue_minor > 0
-                                  ? "bg-zinc-900 dark:bg-zinc-100 group-hover:bg-emerald-600"
-                                  : "bg-[var(--secondary)]"
-                              }`}
-                              style={{ height: `${pct}%` }}
-                            />
-                          </div>
-                        </div>
-                      );
-                    });
-                  })()}
-                </div>
-                <div className="flex items-center justify-between text-[10px] font-mono text-[var(--muted-foreground)] tabular-nums">
-                  <span>{data.daily_series[0]?.label}</span>
-                  <span>
-                    {data.daily_series[Math.floor(data.daily_series.length / 2)]?.label}
-                  </span>
-                  <span>{data.daily_series[data.daily_series.length - 1]?.label}</span>
-                </div>
-              </div>
-            )}
+            <SteepChart
+              series={data.daily_series}
+              mode={chartMode}
+              showOrdersOverlay={true}
+              showTargetLine={true}
+              height={256}
+            />
           </div>
 
           {/* 4. Nepal 7-Province Breakdown + Payment Rail Mix */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 gap-4">
-            {/* Nepal 7 Provinces */}
-            <div className="lg:col-span-7 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 space-y-4">
-              <div className="flex items-center justify-between">
-                <div>
-                  <h2 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-1.5">
-                    <MapPin className="w-4 h-4 text-emerald-500" />
-                    <span>Sales by Nepal Province</span>
-                  </h2>
-                  <p className="text-xs text-[var(--muted-foreground)]">
-                    Normalized across all 7 provinces from ward &amp; district delivery addresses
-                  </p>
-                </div>
+          <div className="grid grid-cols-1 lg:grid-cols-12 gap-5">
+            <div className="lg:col-span-7 rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 space-y-4">
+              <div>
+                <h2 className="text-sm font-semibold text-[var(--foreground)] flex items-center gap-1.5">
+                  <MapPin className="w-4 h-4 text-blue-500" />
+                  <span>Sales by Nepal Province</span>
+                </h2>
+                <p className="text-xs text-[var(--muted-foreground)]">
+                  Normalized across all 7 provinces from ward &amp; district delivery addresses
+                </p>
               </div>
 
               <div className="space-y-3">
@@ -297,7 +272,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
                   <div key={prov.province} className="space-y-1">
                     <div className="flex items-center justify-between text-xs">
                       <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[var(--foreground)]">
+                        <span className="font-medium text-[var(--foreground)]">
                           {prov.province} Province
                         </span>
                         <span className="text-[11px] font-mono text-[var(--muted-foreground)] tabular-nums">
@@ -305,7 +280,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
                         </span>
                       </div>
                       <div className="flex items-center gap-2 font-mono tabular-nums">
-                        <span className="font-bold text-[var(--foreground)]">
+                        <span className="font-semibold text-[var(--foreground)]">
                           {formatNpr(prov.revenue_minor)}
                         </span>
                         <span className="text-[11px] text-[var(--muted-foreground)] w-11 text-right">
@@ -313,9 +288,9 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
                         </span>
                       </div>
                     </div>
-                    <div className="w-full h-2 rounded-full bg-[var(--secondary)] overflow-hidden">
+                    <div className="w-full h-1.5 rounded-full bg-[var(--secondary)] overflow-hidden">
                       <div
-                        className="h-full rounded-full bg-zinc-900 dark:bg-zinc-100 transition-all duration-300"
+                        className="h-full rounded-full bg-blue-500 transition-all duration-300"
                         style={{
                           width: `${prov.revenue_minor > 0 ? Math.max(4, prov.share_pct) : 0}%`,
                         }}
@@ -326,11 +301,10 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
               </div>
             </div>
 
-            {/* Payment Rail Mix */}
-            <div className="lg:col-span-5 rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 flex flex-col justify-between space-y-4">
+            <div className="lg:col-span-5 rounded-xl border border-[var(--border)] bg-[var(--card)] p-5 flex flex-col justify-between space-y-4">
               <div className="space-y-4">
                 <div>
-                  <h2 className="text-sm font-bold text-[var(--foreground)]">
+                  <h2 className="text-sm font-semibold text-[var(--foreground)]">
                     Payment Rail Mix
                   </h2>
                   <p className="text-xs text-[var(--muted-foreground)]">
@@ -354,11 +328,11 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
                         <div className="flex items-center justify-between gap-2">
                           <div className="flex items-center gap-2 min-w-0">
                             <RailIcon className="w-4 h-4 text-[var(--muted-foreground)] shrink-0" />
-                            <span className="text-xs font-semibold text-[var(--foreground)] truncate">
+                            <span className="text-xs font-medium text-[var(--foreground)] truncate">
                               {rail.label}
                             </span>
                           </div>
-                          <span className="text-xs font-mono font-bold text-[var(--foreground)] tabular-nums shrink-0">
+                          <span className="text-xs font-mono font-semibold text-[var(--foreground)] tabular-nums shrink-0">
                             {formatNpr(rail.revenue_minor)}
                           </span>
                         </div>
@@ -367,10 +341,10 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
                           <div
                             className={`h-full rounded-full ${
                               rail.method === "KHALTI"
-                                ? "bg-emerald-600"
+                                ? "bg-blue-500"
                                 : rail.method === "COD"
-                                ? "bg-amber-500"
-                                : "bg-zinc-600 dark:bg-zinc-300"
+                                ? "bg-[#E89578]"
+                                : "bg-emerald-500"
                             }`}
                             style={{
                               width: `${rail.orders_count > 0 ? Math.max(6, rail.share_pct) : 0}%`,
@@ -394,7 +368,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
                 <span className="text-[var(--muted-foreground)]">Payment rails &amp; COD rules</span>
                 <Link
                   href={`/merchant/${encodeURIComponent(storeSlug)}/settings?tab=payments`}
-                  className="font-mono font-medium text-[var(--foreground)] hover:underline"
+                  className="font-medium text-blue-600 dark:text-blue-400 hover:underline"
                 >
                   Configure →
                 </Link>
@@ -403,20 +377,20 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
           </div>
 
           {/* 5. Top Selling Products Table */}
-          <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden">
+          <div className="rounded-xl border border-[var(--border)] bg-[var(--card)] overflow-hidden">
             <div className="p-4 sm:p-5 border-b border-[var(--border)] flex items-center justify-between">
               <div>
-                <h2 className="text-sm font-bold text-[var(--foreground)] flex items-center gap-1.5">
+                <h2 className="text-sm font-semibold text-[var(--foreground)] flex items-center gap-1.5">
                   <Package className="w-4 h-4 text-[var(--muted-foreground)]" />
                   <span>Top Products by Revenue</span>
                 </h2>
                 <p className="text-xs text-[var(--muted-foreground)]">
-                  Best-performing SKUs and bags sold in selected period
+                  Best-performing SKUs and units sold in selected period
                 </p>
               </div>
               <Link
                 href={`/merchant/${encodeURIComponent(storeSlug)}/products`}
-                className="text-xs font-mono font-medium text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                className="text-xs font-medium text-blue-600 dark:text-blue-400 hover:underline"
               >
                 Catalog →
               </Link>
@@ -430,17 +404,17 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
               <div className="overflow-x-auto">
                 <table className="w-full text-left border-collapse">
                   <thead>
-                    <tr className="border-b border-[var(--border)] bg-[var(--secondary)]/50 text-[11px] font-mono uppercase text-[var(--muted-foreground)]">
-                      <th className="py-2.5 px-4 font-semibold">Product</th>
-                      <th className="py-2.5 px-4 font-semibold text-right">Units Sold</th>
-                      <th className="py-2.5 px-4 font-semibold text-right">Gross Revenue</th>
+                    <tr className="border-b border-[var(--border)] bg-[var(--background)] text-[11px] font-medium text-[var(--muted-foreground)]">
+                      <th className="py-2.5 px-4">Product</th>
+                      <th className="py-2.5 px-4 text-right">Units Sold</th>
+                      <th className="py-2.5 px-4 text-right">Gross Revenue</th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-[var(--border)] text-xs">
                     {data.top_products.map((prod, idx) => (
                       <tr
                         key={prod.product_name}
-                        className="hover:bg-[var(--secondary)]/40 transition-colors"
+                        className="hover:bg-[var(--background)]/70 transition-colors"
                       >
                         <td className="py-3 px-4 font-medium text-[var(--foreground)]">
                           <span className="font-mono text-[11px] text-[var(--muted-foreground)] mr-2 tabular-nums">
@@ -451,7 +425,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
                         <td className="py-3 px-4 text-right font-mono tabular-nums text-[var(--foreground)]">
                           {prod.units_sold}
                         </td>
-                        <td className="py-3 px-4 text-right font-mono font-bold tabular-nums text-[var(--foreground)]">
+                        <td className="py-3 px-4 text-right font-mono font-semibold tabular-nums text-[var(--foreground)]">
                           {formatNpr(prod.revenue_minor)}
                         </td>
                       </tr>

@@ -24,9 +24,14 @@ async function fetchOrderData(
       ? `${origin}/api/stores/${encodeURIComponent(storeSlug)}/public-orders/${encodeURIComponent(orderId)}/?token=${encodeURIComponent(token)}`
       : `${origin}/api/stores/${encodeURIComponent(storeSlug)}/public-orders/${encodeURIComponent(orderId)}/`;
 
-    const orderRes = await fetch(orderUrl, { cache: "no-store" });
+    let orderRes = await fetch(orderUrl, { cache: "no-store" });
     if (orderRes.status === 404) {
-      return { order: null, store: null };
+      // Retry once after 350ms to allow remote cloud DB transaction propagation immediately following checkout
+      await new Promise((r) => setTimeout(r, 350));
+      orderRes = await fetch(orderUrl, { cache: "no-store" });
+      if (orderRes.status === 404) {
+        return { order: null, store: null };
+      }
     }
     const storeRes = await fetch(
       `${origin}/api/stores/${encodeURIComponent(storeSlug)}/`,

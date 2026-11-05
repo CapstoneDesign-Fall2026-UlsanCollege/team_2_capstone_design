@@ -117,56 +117,62 @@ export function ShopifyComparisonTable() {
 
       {/* Clean Comparison Matrix */}
       <div className="rounded-3xl border border-zinc-200 dark:border-zinc-800 bg-white dark:bg-zinc-900/80 overflow-hidden shadow-2xs">
-        {/* Table Header */}
-        <div className="grid grid-cols-12 bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 px-4 sm:px-6 py-3.5 text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300">
-          <div className="col-span-5 sm:col-span-4">Capability</div>
-          <div className="col-span-7 sm:col-span-8 grid grid-cols-3 gap-2 text-center">
-            <div className="text-emerald-700 dark:text-emerald-400 font-bold">ShopCraft 🇳🇵</div>
+        {/* Table Header - Hide capability column label on mobile, show 3-col grid */}
+        <div className="hidden sm:grid sm:grid-cols-12 bg-zinc-50 dark:bg-zinc-800/60 border-b border-zinc-200 dark:border-zinc-800 px-6 py-3.5 text-xs font-mono font-bold text-zinc-700 dark:text-zinc-300">
+          <div className="col-span-4">Capability</div>
+          <div className="col-span-8 grid grid-cols-3 gap-2 text-center">
+            <div className="text-emerald-700 dark:text-emerald-400 font-bold">ShopCraft</div>
             <div className="text-zinc-500">Shopify</div>
             <div className="text-zinc-500">Instagram DMs</div>
           </div>
         </div>
 
-        {/* Table Rows */}
+        {/* Table Rows - Responsive Stack on Mobile, 12-col Grid on Desktop */}
         <div className="divide-y divide-zinc-100 dark:divide-zinc-800">
           {filteredRows.map((row, idx) => (
             <div
               key={row.feature}
-              className={`grid grid-cols-12 px-4 sm:px-6 py-3.5 items-center gap-2 text-xs transition-colors ${
+              className={`p-4 sm:px-6 sm:py-3.5 flex flex-col sm:grid sm:grid-cols-12 sm:items-center gap-2.5 sm:gap-2 text-xs transition-colors ${
                 idx % 2 === 0 ? "bg-white dark:bg-zinc-900/40" : "bg-zinc-50/50 dark:bg-zinc-900/80"
               }`}
             >
-              <div className="col-span-5 sm:col-span-4 font-bold text-zinc-900 dark:text-white truncate">
+              <div className="sm:col-span-4 font-bold text-zinc-900 dark:text-white text-sm sm:text-xs">
                 {row.feature}
               </div>
-
-              <div className="col-span-7 sm:col-span-8 grid grid-cols-3 gap-2 text-center text-[11px] font-mono">
+              <div className="sm:col-span-8 grid grid-cols-3 gap-1.5 sm:gap-2 text-center text-[10px] sm:text-[11px] font-mono">
                 {/* ShopCraft */}
-                <div className="flex items-center justify-center gap-1.5 font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/40 py-1.5 px-2 rounded-xl">
-                  <Check className="w-3.5 h-3.5 shrink-0 stroke-[3]" />
-                  <span className="truncate">{row.shopcraft.label}</span>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 font-bold text-emerald-700 dark:text-emerald-400 bg-emerald-50/70 dark:bg-emerald-950/40 py-2 sm:py-1.5 px-1.5 sm:px-2 rounded-xl border border-emerald-500/20">
+                  <span className="sm:hidden text-[9px] uppercase tracking-wider opacity-70">ShopCraft</span>
+                  <div className="flex items-center gap-1 max-w-full">
+                    <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 shrink-0 stroke-[3]" />
+                    <span className="truncate">{row.shopcraft.label}</span>
+                  </div>
                 </div>
-
                 {/* Shopify */}
-                <div className="flex items-center justify-center gap-1.5 font-medium text-zinc-600 dark:text-zinc-400 py-1.5 px-2 rounded-xl">
-                  {row.shopify.status === "no" ? (
-                    <X className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                  ) : (
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  )}
-                  <span className="truncate">{row.shopify.label}</span>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100/60 dark:bg-zinc-800/40 sm:bg-transparent py-2 sm:py-1.5 px-1.5 sm:px-2 rounded-xl">
+                  <span className="sm:hidden text-[9px] uppercase tracking-wider opacity-70">Shopify</span>
+                  <div className="flex items-center gap-1 max-w-full">
+                    {row.shopify.status === "no" ? (
+                      <X className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-500 shrink-0" />
+                    ) : (
+                      <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 shrink-0" />
+                    )}
+                    <span className="truncate">{row.shopify.label}</span>
+                  </div>
                 </div>
-
                 {/* Instagram */}
-                <div className="flex items-center justify-center gap-1.5 font-medium text-zinc-600 dark:text-zinc-400 py-1.5 px-2 rounded-xl">
-                  {row.instagram.status === "no" ? (
-                    <X className="w-3.5 h-3.5 text-red-500 shrink-0" />
-                  ) : row.instagram.status === "warning" ? (
-                    <AlertTriangle className="w-3.5 h-3.5 text-amber-500 shrink-0" />
-                  ) : (
-                    <Check className="w-3.5 h-3.5 text-zinc-500 shrink-0" />
-                  )}
-                  <span className="truncate">{row.instagram.label}</span>
+                <div className="flex flex-col sm:flex-row items-center justify-center gap-1 sm:gap-1.5 font-medium text-zinc-600 dark:text-zinc-400 bg-zinc-100/60 dark:bg-zinc-800/40 sm:bg-transparent py-2 sm:py-1.5 px-1.5 sm:px-2 rounded-xl">
+                  <span className="sm:hidden text-[9px] uppercase tracking-wider opacity-70">Instagram</span>
+                  <div className="flex items-center gap-1 max-w-full">
+                    {row.instagram.status === "no" ? (
+                      <X className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-red-500 shrink-0" />
+                    ) : row.instagram.status === "warning" ? (
+                      <AlertTriangle className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-amber-500 shrink-0" />
+                    ) : (
+                      <Check className="w-3 h-3 sm:w-3.5 sm:h-3.5 text-zinc-500 shrink-0" />
+                    )}
+                    <span className="truncate">{row.instagram.label}</span>
+                  </div>
                 </div>
               </div>
             </div>

@@ -409,7 +409,7 @@ export function ProductDetailView({
                 {formatNpr(unitPriceMinor)}
               </span>
               {isSubscription && (
-                <span className="text-xs font-sf-mono text-emerald-800 font-bold bg-emerald-50 px-2 py-0.5 rounded border border-emerald-200">
+                <span className="text-xs font-sf-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
                   Save 10% on recurring delivery
                 </span>
               )}
@@ -537,7 +537,7 @@ export function ProductDetailView({
                 onClick={() => setPurchaseType("subscription")}
                 className={`min-h-[50px] p-3 rounded-sf border transition-all cursor-pointer space-y-2.5 ${
                   purchaseType === "subscription"
-                    ? "border-emerald-700 bg-emerald-50/40 ring-2 ring-emerald-700 shadow-xs"
+                    ? "border-emerald-600 bg-emerald-500/10 ring-1 ring-emerald-600 shadow-xs"
                     : "border-sf-line bg-sf-canvas hover:border-sf-muted"
                 }`}
               >
@@ -548,12 +548,12 @@ export function ProductDetailView({
                       name="purchase_option_detail"
                       checked={purchaseType === "subscription"}
                       onChange={() => setPurchaseType("subscription")}
-                      className="accent-emerald-700 w-4 h-4 cursor-pointer"
+                      className="accent-emerald-600 w-4 h-4 cursor-pointer"
                     />
                     <div>
                       <div className="flex items-center gap-1.5">
                         <span className="font-bold text-sf-ink">Repeat Subscription</span>
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-sf-mono font-bold bg-emerald-800 text-white">
+                        <span className="px-1.5 py-0.2 rounded text-[9px] font-sf-mono font-bold bg-emerald-600 text-white">
                           Save 10%
                         </span>
                       </div>
@@ -561,7 +561,7 @@ export function ProductDetailView({
                     </div>
                   </div>
                   <div className="text-right">
-                    <span className="font-sf-mono font-bold text-emerald-800 text-sm tabular-nums block">
+                    <span className="font-sf-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm tabular-nums block">
                       {formatNpr(Math.round(basePriceMinor * 0.9))}
                     </span>
                     <span className="text-[10px] text-sf-muted">/ delivery</span>
@@ -569,10 +569,10 @@ export function ProductDetailView({
                 </div>
 
                 {purchaseType === "subscription" && (
-                  <div className="pt-2 border-t border-emerald-200 space-y-2 animate-in fade-in duration-200">
+                  <div className="pt-2 border-t border-emerald-500/30 space-y-2 animate-in fade-in duration-200">
                     <div className="flex items-center justify-between text-[11px] font-sf-mono text-sf-muted">
                       <span className="font-semibold text-sf-ink">Delivery Schedule:</span>
-                      <span className="text-emerald-800 font-semibold">✓ Pause or skip anytime</span>
+                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">✓ Pause or skip anytime</span>
                     </div>
 
                     <div className="grid grid-cols-3 gap-2">
@@ -747,7 +747,7 @@ export function ProductDetailView({
                     </span>
                   </div>
                   {store.free_shipping_threshold_minor && (
-                    <p className="text-emerald-800 font-semibold pt-1">
+                    <p className="text-emerald-600 dark:text-emerald-400 font-semibold pt-1">
                       ✓ Free Shipping on orders over {formatNpr(store.free_shipping_threshold_minor)}!
                     </p>
                   )}

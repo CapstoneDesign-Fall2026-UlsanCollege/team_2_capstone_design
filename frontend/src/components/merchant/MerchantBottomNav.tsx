@@ -86,7 +86,7 @@ export function MerchantBottomNav({ storeSlug }: MerchantBottomNavProps) {
               href={tab.href}
               className={`flex-1 flex flex-col items-center justify-center h-full text-center py-1 transition-colors ${
                 isActive
-                  ? "text-emerald-500 font-semibold"
+                  ? "text-blue-600 dark:text-blue-400 font-semibold"
                   : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] font-normal"
               }`}
             >
