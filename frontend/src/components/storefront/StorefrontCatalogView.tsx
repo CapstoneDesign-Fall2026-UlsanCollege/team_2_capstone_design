@@ -5,40 +5,46 @@ import Link from "next/link";
 import {
   ArrowDown,
   ArrowRight,
-  Check,
   ChevronDown,
-
-
   MapPin,
   MessageCircle,
   Package,
   Phone,
-  RefreshCw,
   Search,
-  ShieldCheck,
-
   Star,
-  Truck,
   X,
 } from "lucide-react";
-import { formatNpr, ProductItem, SellingPlanItem, StorePublicMetadata } from "@/lib/api";
-import { getCategoryMedia } from "@/lib/storefront-media";
+import { formatNpr, ProductItem, StorePublicMetadata } from "@/lib/api";
 import { StorefrontHeader } from "./StorefrontHeader";
 import { ProductGrid } from "./ProductGrid";
 import { ProductDetailSheet, SelectedCartItem } from "./ProductDetailSheet";
-import { StorefrontBottomNav } from "./StorefrontBottomNav";
 import { useCart } from "./CartContext";
+import { Button } from "@/components/ui/button";
+
+function isPlaceholderText(text?: string | null): boolean {
+  if (!text) return true;
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+  const lower = trimmed.toLowerCase();
+  return (
+    lower === "general" ||
+    lower === "aaa" ||
+    lower === "placeholder" ||
+    lower === "online storefront · nepal" ||
+    lower === "online storefront" ||
+    lower === "official online store"
+  );
+}
 
 export interface StorefrontCatalogViewProps {
   store: StorePublicMetadata;
   products: ProductItem[];
-  sellingPlans: SellingPlanItem[];
+  sellingPlans?: unknown[];
 }
 
 export function StorefrontCatalogView({
   store,
   products = [],
-  sellingPlans = [],
 }: StorefrontCatalogViewProps) {
   const { itemCount, openCart, addItem } = useCart();
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
@@ -51,45 +57,6 @@ export function StorefrontCatalogView({
   const [sortBy, setSortBy] = useState<"featured" | "price-asc" | "price-desc">("featured");
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
-
-  // Theme-preset dynamic copy & showcase attributes
-  const themeInfo = useMemo(() => {
-    switch (store.theme_preset) {
-      case "pahadi-sage":
-        return {
-          badge: "Himalayan Botanical Terroir · Direct Mountain Harvest",
-          defaultTagline: "Pristine mountain teas, wild honey, and natural Himalayan harvests delivered fresh to your doorstep.",
-          cardTag: "Mountain Terroir Origin",
-          cardNote: "Direct ethical sourcing from high-altitude Himalayan cooperatives.",
-        };
-      case "ktm-bold":
-        return {
-          badge: "Kathmandu Urban Essentials · 24h Express Dispatch",
-          defaultTagline: "Modern apparel, streetwear, and lifestyle essentials built for the streets of Nepal.",
-          cardTag: "Independent Label",
-          cardNote: "Contemporary craft engineered with strict local quality control.",
-        };
-      case "midnight-obsidian":
-        return {
-          badge: "Luxury Obsidian Curation · Precision Craft & Drops",
-          defaultTagline: "Curated collections characterized by luxury craft, enduring materials, and refined doorstep delivery.",
-          cardTag: "Obsidian Precision",
-          cardNote: "Uncompromising standards for discerning collectors and connoisseurs.",
-        };
-      case "editorial-warm":
-      default:
-        return {
-          badge: "Handcrafted Heritage · Nepal Artisanal Studio",
-          defaultTagline: "Discover artisanal goods handcrafted with care in Nepal. Order online with instant Khalti ePayment and verified Cash on Delivery.",
-          cardTag: "Official Storefront",
-          cardNote: "Small-batch integrity settled 100% in Nepalese Rupees (NPR).",
-        };
-    }
-  }, [store.theme_preset]);
-
-  const categoryMedia = useMemo(() => {
-    return getCategoryMedia(store.category, store.theme_preset);
-  }, [store.category, store.theme_preset]);
 
   // Pure catalog from backend (no hardcoded coffee fallback)
   const fullCatalog: ProductItem[] = useMemo(() => {
@@ -168,9 +135,104 @@ export function StorefrontCatalogView({
       unitPriceMinor: item.unitPriceMinor,
       quantity: item.quantity,
       imageUrl: item.productImageUrl,
-      purchaseType: item.purchaseType,
-      sellingPlan: item.sellingPlan,
     });
+  };
+
+  // Featured product (first available product with image and in stock, or first product)
+  const featuredProduct = useMemo(() => {
+    if (!fullCatalog || fullCatalog.length === 0) return null;
+    return (
+      fullCatalog.find((p) => p.image_url && p.variants?.some((v) => v.in_stock)) ||
+      fullCatalog.find((p) => p.image_url) ||
+      fullCatalog[0]
+    );
+  }, [fullCatalog]);
+
+  const featuredPriceMinor = useMemo(() => {
+    if (!featuredProduct || !featuredProduct.variants || featuredProduct.variants.length === 0) {
+      return 0;
+    }
+    const prices = featuredProduct.variants
+      .map((v) => v.price_minor)
+      .filter((p): p is number => typeof p === "number" && p > 0);
+    return prices.length > 0 ? Math.min(...prices) : (featuredProduct.variants[0]?.price_minor ?? 0);
+  }, [featuredProduct]);
+
+  const minCatalogPriceMinor = useMemo(() => {
+    if (!fullCatalog || fullCatalog.length === 0) return 0;
+    let min = Infinity;
+    for (const p of fullCatalog) {
+      for (const v of p.variants || []) {
+        if (typeof v.price_minor === "number" && v.price_minor > 0 && v.price_minor < min) {
+          min = v.price_minor;
+        }
+      }
+    }
+    return min === Infinity ? 0 : min;
+  }, [fullCatalog]);
+
+  const cleanCategory = useMemo(() => {
+    if (!store.category || isPlaceholderText(store.category)) return "";
+    return store.category.trim();
+  }, [store.category]);
+
+  const shopButtonText = useMemo(() => {
+    const formattedPrice = minCatalogPriceMinor > 0 ? formatNpr(minCatalogPriceMinor) : null;
+    const categoryPart = cleanCategory ? `Shop ${cleanCategory}` : "Shop collection";
+    return formattedPrice ? `${categoryPart} · from ${formattedPrice}` : categoryPart;
+  }, [cleanCategory, minCatalogPriceMinor]);
+
+  const headline = useMemo(() => {
+    if (store.story_headline && !isPlaceholderText(store.story_headline)) {
+      return store.story_headline.trim();
+    }
+    return store.name;
+  }, [store.story_headline, store.name]);
+
+  const description = useMemo(() => {
+    if (store.tagline && !isPlaceholderText(store.tagline)) {
+      return store.tagline.trim();
+    }
+    return null;
+  }, [store.tagline]);
+
+  const heroImageUrl = useMemo(() => {
+    return featuredProduct?.image_url || store.banner_url || null;
+  }, [featuredProduct, store.banner_url]);
+
+  const waUrl = useMemo(() => {
+    if (!store.contact_phone) return null;
+    const clean = store.contact_phone.replace(/\D/g, "").replace(/^0+/, "");
+    if (!clean) return null;
+    const phoneWithCountry = clean.startsWith("977") ? clean : `977${clean}`;
+    return `https://wa.me/${phoneWithCountry}?text=Hi%20${encodeURIComponent(store.name)}%2C%20I%20have%20an%20inquiry%20about%20your%20products.`;
+  }, [store.contact_phone, store.name]);
+
+  const handleQuickAddFeatured = () => {
+    if (!featuredProduct) {
+      scrollToCollection();
+      return;
+    }
+    if (featuredProduct.variants && featuredProduct.variants.length > 1) {
+      handleOpenSheet(featuredProduct);
+      return;
+    }
+    const singleVariant = featuredProduct.variants?.[0];
+    if (singleVariant) {
+      handleAddToCart({
+        productId: featuredProduct.id,
+        productSlug: featuredProduct.slug,
+        productName: featuredProduct.name,
+        variantId: singleVariant.id,
+        variantLabel: singleVariant.label || "Standard",
+        unitPriceMinor: singleVariant.price_minor,
+        quantity: 1,
+        productImageUrl: featuredProduct.image_url || undefined,
+      });
+      openCart();
+    } else {
+      handleOpenSheet(featuredProduct);
+    }
   };
 
   const scrollToCollection = () => {
@@ -200,48 +262,48 @@ export function StorefrontCatalogView({
       a: "Choose Khalti at checkout. You will be securely redirected to the Khalti payment gateway where you can authenticate with your mobile number and MPIN or scan the instant Fonepay/Khalti QR code. Once confirmed, you return right back to this storefront with your verified receipt.",
     },
     {
-      q: "Can I subscribe for repeat deliveries?",
-      a: "Yes! Items marked with 'Subscribe & Save' allow you to choose recurring prepaid delivery cycles (3, 6, or 12 cycles) or automated pay-per-delivery renewal links sent directly to your phone via WhatsApp and SMS without bank auto-debit.",
+      q: "Can I track my order status?",
+      a: "Yes! As soon as your order is placed, you receive an instant confirmation receipt page with real-time status updates as your package transitions from packaged to out for delivery.",
     },
   ];
 
   return (
-    <div className="w-full min-h-dvh bg-sf-canvas text-sf-ink font-sf-body antialiased flex flex-col selection:bg-sf-cta selection:text-sf-cta-ink">
+    <div className="w-full min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans antialiased flex flex-col pb-20 md:pb-0">
       
-      {/* 1. Header with Sliding Marquee Announcement Bar */}
+      {/* 1. Header with Static Merchant Announcement Bar */}
       <StorefrontHeader
         storeSlug={store.slug}
         storeName={store.name}
         tagline={store.tagline}
         logoUrl={store.logo_url}
-        contactPhone={store.contact_phone}
         cartCount={itemCount}
         freeShippingThresholdMinor={store.free_shipping_threshold_minor}
         categories={availableCategories}
         onOpenCart={openCart}
         onOpenSearch={() => setSearchOpen((prev) => !prev)}
+        onCatalogClick={scrollToCollection}
         onSelectCategory={handleNavCategorySelect}
         activeCategory={selectedCategory}
       />
 
       {/* Expandable Search Drawer */}
       {searchOpen && (
-        <div className="w-full bg-sf-surface border-b border-sf-line px-4 py-3 animate-in fade-in duration-200">
+        <div className="w-full bg-[var(--surface)] border-b border-[var(--border)] px-4 py-3 animate-in fade-in duration-200">
           <div className="max-w-2xl mx-auto flex items-center gap-2.5">
-            <Search className="w-4 h-4 text-sf-muted" />
+            <Search className="w-4 h-4 text-[var(--ink-2)]" />
             <input
               type="text"
               autoFocus
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
               placeholder="Search products, variants, or categories..."
-              className="w-full bg-transparent text-sm text-sf-ink placeholder:text-sf-muted focus:outline-none"
+              className="w-full bg-transparent text-sm text-[var(--ink)] placeholder:text-[var(--ink-2)] focus:outline-none"
             />
             {searchQuery && (
               <button
                 type="button"
                 onClick={() => setSearchQuery("")}
-                className="p-1 text-sf-muted hover:text-sf-ink cursor-pointer"
+                className="p-1 text-[var(--ink-2)] hover:text-[var(--ink)] cursor-pointer"
                 aria-label="Clear search"
               >
                 <X className="w-4 h-4" />
@@ -250,7 +312,7 @@ export function StorefrontCatalogView({
             <button
               type="button"
               onClick={() => setSearchOpen(false)}
-              className="text-xs font-semibold text-sf-ink px-2 py-1 hover:underline cursor-pointer"
+              className="text-xs font-semibold text-[var(--ink)] px-2 py-1 hover:underline cursor-pointer"
             >
               Close
             </button>
@@ -258,157 +320,152 @@ export function StorefrontCatalogView({
         </div>
       )}
 
-      {/* 2. Pure Dynamic Masthead (Shopify Dawn/Craft Editorial Visual Hero) */}
-      <section className="w-full border-b border-sf-line bg-sf-canvas pt-8 pb-10 sm:pt-14 sm:pb-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-center">
-          
-          {/* Left Column (7 cols): Editorial Typography & Direct CTAs */}
-          <div className="md:col-span-7 space-y-5 text-left">
-            <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-sf-surface border border-sf-line text-[11px] font-sf-mono text-sf-muted font-medium shadow-2xs">
-              <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-              <span>{store.category ? `${store.category} · Verified Maker` : themeInfo.badge}</span>
-            </div>
+      {/* 2. Hero Section (Desktop: 2 columns, Mobile: stacked with sticky bottom bar) */}
+      <section className="w-full border-b border-[var(--border)] bg-[var(--canvas)] py-8 md:py-16 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-6xl mx-auto">
+          {/* Desktop 2-Column Hero */}
+          <div className="hidden md:grid md:grid-cols-2 gap-10 lg:gap-16 items-center text-left">
+            {/* Left Column: Plain-text eyebrow, merchant headline (serif, ~42px, max 3 lines), optional description, ONE black primary button, WhatsApp plain link, single delivery line */}
+            <div className="space-y-4">
+              {cleanCategory && (
+                <p className="text-xs font-semibold tracking-wider uppercase text-[var(--ink-2)]">
+                  {cleanCategory}
+                </p>
+              )}
 
-            <div className="space-y-2">
-              <h1 className="font-sf-display text-4xl sm:text-6xl font-bold tracking-tight text-sf-ink leading-[1.06]">
-                {store.name}
+              <h1 className="font-serif text-3xl lg:text-[42px] leading-[1.15] font-semibold text-[var(--ink)]">
+                {headline}
               </h1>
-              <p className="font-sf-display text-lg sm:text-xl text-sf-ink/80 font-medium tracking-tight">
-                {store.story_headline || categoryMedia.headline}
+
+              {description && (
+                <p className="text-sm lg:text-base text-[var(--ink-2)] leading-relaxed max-w-xl">
+                  {description}
+                </p>
+              )}
+
+              <div className="flex flex-wrap items-center gap-4 pt-2">
+                <Button
+                  variant="primary"
+                  onClick={scrollToCollection}
+                  className="h-11 px-6 text-sm font-semibold"
+                >
+                  {shopButtonText}
+                </Button>
+
+                {waUrl && (
+                  <a
+                    href={waUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-2 text-sm font-medium text-[var(--ink-2)] hover:text-[var(--ink)] underline-offset-4 hover:underline min-h-[44px] px-2 transition-colors"
+                  >
+                    <MessageCircle className="w-4 h-4 text-[var(--ink-2)]" />
+                    <span>Order on WhatsApp</span>
+                  </a>
+                )}
+              </div>
+
+              <p className="pt-2 text-xs lg:text-sm text-[var(--ink-2)]">
+                Kathmandu Valley 1-2 days · Nationwide courier · Khalti or Cash on Delivery
               </p>
             </div>
 
-            <p className="text-sm sm:text-base text-sf-muted leading-relaxed max-w-xl font-sf-body">
-              {store.tagline || categoryMedia.tagline || themeInfo.defaultTagline}
-            </p>
+            {/* Right Column: Real product photo (12px radius, no overlay) with caption row below: name, Rs. price, Add button */}
+            <div>
+              <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)]">
+                {heroImageUrl ? (
+                  // eslint-disable-next-line @next/next/no-img-element
+                  <img
+                    src={heroImageUrl}
+                    alt={featuredProduct?.name || store.name}
+                    loading="eager"
+                    className="w-full h-full object-cover"
+                  />
+                ) : (
+                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)]">
+                    <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
+                    <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
+                  </div>
+                )}
+              </div>
 
-            {/* Asymmetric Action Row */}
-            <div className="pt-2 flex flex-col sm:flex-row items-stretch sm:items-center gap-3">
-              <button
-                type="button"
-                onClick={scrollToCollection}
-                className="h-12 px-7 rounded-sf bg-sf-cta hover:opacity-95 text-sf-cta-ink text-xs sm:text-sm font-semibold tracking-wide flex items-center justify-center gap-2 shadow-xs cursor-pointer active:scale-[0.99] transition-all"
-              >
-                <span>Browse Collection</span>
-                <ArrowDown className="w-4 h-4" />
-              </button>
+              {featuredProduct && (
+                <div className="mt-3 flex items-center justify-between gap-3 px-1">
+                  <span className="text-sm font-medium text-[var(--ink)] truncate max-w-[240px]">
+                    {featuredProduct.name}
+                  </span>
+                  <div className="flex items-center gap-3 shrink-0">
+                    <span className="text-sm font-semibold tabular-nums text-[var(--ink)]">
+                      {formatNpr(featuredPriceMinor)}
+                    </span>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={handleQuickAddFeatured}
+                      className="h-8 px-3 text-xs"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
+              )}
+            </div>
+          </div>
 
-              {store.contact_phone && (
-                <a
-                  href={`https://wa.me/977${store.contact_phone.replace(/\D/g, "")}?text=Hi%20${encodeURIComponent(store.name)}%2C%20I%20have%20an%20inquiry%20about%20your%20products.`}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="h-12 px-5 rounded-sf border border-sf-line bg-sf-surface hover:bg-sf-canvas text-sf-ink text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors shadow-2xs"
-                >
-                  <MessageCircle className="w-4 h-4 text-emerald-600" />
-                  <span>Order on WhatsApp</span>
-                </a>
+          {/* Mobile Hero (Compact, full-width photo, 28px headline, delivery line, no overlay) */}
+          <div className="md:hidden flex flex-col space-y-4 text-left">
+            {cleanCategory && (
+              <p className="text-xs font-semibold tracking-wider uppercase text-[var(--ink-2)]">
+                {cleanCategory}
+              </p>
+            )}
+
+            <h1 className="font-serif text-[28px] font-semibold leading-tight text-[var(--ink)]">
+              {headline}
+            </h1>
+
+            {description && (
+              <p className="text-sm text-[var(--ink-2)] leading-relaxed">
+                {description}
+              </p>
+            )}
+
+            <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)]">
+              {heroImageUrl ? (
+                // eslint-disable-next-line @next/next/no-img-element
+                <img
+                  src={heroImageUrl}
+                  alt={featuredProduct?.name || store.name}
+                  loading="eager"
+                  className="w-full h-full object-cover"
+                />
+              ) : (
+                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)]">
+                  <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
+                  <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
+                </div>
               )}
             </div>
 
-            {/* Micro-Trust Strip */}
-            <div className="pt-2 flex flex-wrap items-center gap-4 text-xs font-sf-mono text-sf-muted">
-              <span className="flex items-center gap-1.5">
-                <Truck className="w-3.5 h-3.5 text-sf-cta" />
-                <span>Kathmandu Valley Express</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <ShieldCheck className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Nationwide Courier</span>
-              </span>
-              <span className="flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-sf-ink" />
-                <span>Khalti &amp; COD</span>
-              </span>
-            </div>
-          </div>
-
-          {/* Right Column (5 cols): Editorial Visual Showcase Frame */}
-          <div className="md:col-span-5 flex justify-center md:justify-end">
-            <div className="relative w-full max-w-md aspect-[4/3] rounded-2xl sm:rounded-3xl overflow-hidden border border-sf-line bg-sf-surface shadow-md group">
-              {/* Featured High-Res Category/Banner Photography */}
-              {/* eslint-disable-next-line @next/next/no-img-element */}
-              <img
-                src={store.banner_url || categoryMedia.heroImage}
-                alt={`${store.name} hero collection`}
-                loading="eager"
-                className="w-full h-full object-cover transition-transform duration-700 ease-out group-hover:scale-105"
-              />
-
-              {/* Editorial Gradient Overlay */}
-              <div className="absolute inset-0 bg-gradient-to-t from-black/80 via-black/25 to-transparent pointer-events-none" />
-
-              {/* Floating Top Glass Origin Badge */}
-              <div className="absolute top-3 left-3 sm:top-4 sm:left-4 pointer-events-none z-10">
-                <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-sf-surface/90 text-sf-ink border border-sf-line text-[11px] font-sf-mono shadow-xs backdrop-blur-md">
-                  <span className="w-2 h-2 rounded-full bg-emerald-600 animate-pulse" />
-                  <span>{store.city || "Kathmandu"}, Nepal · 100% Authentic</span>
-                </div>
+            {featuredProduct && (
+              <div className="flex items-center justify-between text-xs px-1 text-[var(--ink)]">
+                <span className="font-medium truncate max-w-[200px]">{featuredProduct.name}</span>
+                <span className="font-semibold tabular-nums">{formatNpr(featuredPriceMinor)}</span>
               </div>
+            )}
 
-              {/* Floating Bottom Editorial Overlay */}
-              <div className="absolute inset-x-3 bottom-3 sm:inset-x-4 sm:bottom-4 text-left pointer-events-none z-10 space-y-1 text-white">
-                <div className="flex items-center gap-2 text-[11px] font-sf-mono text-white/90">
-                  <span className="flex items-center gap-1 text-amber-300">
-                    <Star className="w-3.5 h-3.5 fill-amber-300 text-amber-300" />
-                    <span>4.9</span>
-                  </span>
-                  <span>·</span>
-                  <span>{store.category || categoryMedia.originDistrict}</span>
-                </div>
-                <h4 className="font-sf-display text-base sm:text-lg font-bold text-white drop-shadow-xs line-clamp-1">
-                  {store.story_headline || categoryMedia.headline}
-                </h4>
-                <p className="text-[11px] text-white/80 line-clamp-1 font-sf-body">
-                  {themeInfo.cardNote}
-                </p>
-              </div>
-            </div>
-          </div>
+            <p className="text-xs text-[var(--ink-2)] pt-1">
+              Kathmandu Valley 1-2 days · Nationwide courier · Khalti or Cash on Delivery
+            </p>
 
-        </div>
-      </section>
-
-      {/* 3. Four-Pill Brand Trust & Guarantee Strip */}
-      <section className="w-full border-b border-sf-line bg-sf-surface/50 py-6 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-5xl mx-auto grid grid-cols-2 md:grid-cols-4 gap-4 text-left">
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sf-canvas border border-sf-line flex items-center justify-center text-sf-ink shrink-0">
-              <Truck className="w-4 h-4 text-sf-cta" />
-            </div>
-            <div>
-              <h5 className="text-xs font-bold text-sf-ink">Fast Delivery</h5>
-              <p className="text-[11px] text-sf-muted leading-tight mt-0.5">24h Kathmandu &amp; 7 Provinces</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sf-canvas border border-sf-line flex items-center justify-center text-sf-ink shrink-0">
-              <RefreshCw className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div>
-              <h5 className="text-xs font-bold text-sf-ink">Khalti &amp; COD</h5>
-              <p className="text-[11px] text-sf-muted leading-tight mt-0.5">Instant wallet or pay on delivery</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sf-canvas border border-sf-line flex items-center justify-center text-sf-ink shrink-0">
-              <Phone className="w-4 h-4 text-amber-600" />
-            </div>
-            <div>
-              <h5 className="text-xs font-bold text-sf-ink">Call &amp; WhatsApp</h5>
-              <p className="text-[11px] text-sf-muted leading-tight mt-0.5">We confirm before dispatching</p>
-            </div>
-          </div>
-
-          <div className="flex items-start gap-3">
-            <div className="w-8 h-8 rounded-lg bg-sf-canvas border border-sf-line flex items-center justify-center text-sf-ink shrink-0">
-              <ShieldCheck className="w-4 h-4 text-emerald-600" />
-            </div>
-            <div>
-              <h5 className="text-xs font-bold text-sf-ink">100% Nepali</h5>
-              <p className="text-[11px] text-sf-muted leading-tight mt-0.5">Handcrafted authentic products</p>
+            <div className="pt-1">
+              <Button
+                variant="primary"
+                onClick={scrollToCollection}
+                className="w-full h-11 text-sm font-semibold"
+              >
+                {shopButtonText}
+              </Button>
             </div>
           </div>
         </div>
@@ -626,7 +683,7 @@ export function StorefrontCatalogView({
 
             <div className="p-4 rounded-xl border border-sf-line bg-sf-surface space-y-2">
               <p className="text-xs text-sf-muted leading-relaxed">
-                &quot;The recurring delivery option is super convenient. I get fresh supplies without hassle.&quot;
+                &quot;The fast Kathmandu doorstep delivery is super convenient. Everything arrived fresh and perfectly packaged.&quot;
               </p>
               <span className="text-[11px] font-mono font-bold text-sf-ink block">
                 — Bikash T., Kathmandu
@@ -681,16 +738,41 @@ export function StorefrontCatalogView({
         product={selectedProduct}
         open={isSheetOpen}
         onOpenChange={setIsSheetOpen}
-        sellingPlans={sellingPlans}
         onAddToCart={handleAddToCart}
       />
 
-      {/* 9. Mobile Bottom Navigation */}
-      <StorefrontBottomNav
-        storeSlug={store.slug}
-        contactPhone={store.contact_phone}
-        onOpenSearch={() => setSearchOpen(true)}
-      />
+      {/* 9. Mobile Sticky Bottom Bar (44px tap targets: price + Add to bag + WhatsApp icon) */}
+      <aside
+        aria-label="Quick order bar"
+        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[var(--surface)] border-t border-[var(--border)] p-3 flex items-center gap-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))]"
+      >
+        <div className="flex flex-col shrink-0 min-w-[70px]">
+          <span className="text-[10px] text-[var(--ink-2)] uppercase tracking-wider font-medium">Price</span>
+          <span className="text-base font-semibold text-[var(--ink)] tabular-nums leading-none">
+            {featuredPriceMinor > 0 ? formatNpr(featuredPriceMinor) : "Rs. 0"}
+          </span>
+        </div>
+
+        <Button
+          variant="primary"
+          onClick={handleQuickAddFeatured}
+          className="flex-1 h-11 text-sm font-semibold"
+        >
+          Add to bag
+        </Button>
+
+        {waUrl && (
+          <a
+            href={waUrl}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="w-11 h-11 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] flex items-center justify-center hover:bg-[var(--canvas)] transition-colors"
+            aria-label="Chat on WhatsApp"
+          >
+            <MessageCircle className="w-5 h-5 text-[var(--ink)]" />
+          </a>
+        )}
+      </aside>
 
       {/* 10. Multi-Column Storefront Footer (Matching Pasalify & Dawn Standards) */}
       <footer className="w-full border-t border-sf-line bg-sf-surface pt-12 pb-16 px-4 sm:px-6 lg:px-8 text-left">
@@ -789,28 +871,16 @@ export function StorefrontCatalogView({
               </ul>
             </div>
 
-            {/* Col 4: Trust & Payment Badges (3 cols) */}
-            <div className="md:col-span-3 space-y-2.5 text-xs font-sf-mono">
-              <span className="font-bold uppercase tracking-wider text-sf-ink block text-[11px]">
-                Trust &amp; Payments
+            {/* Col 4: Payments & Delivery (3 cols) */}
+            <div className="md:col-span-3 space-y-2.5 text-xs">
+              <span className="font-semibold uppercase tracking-wider text-[var(--ink)] block text-[11px]">
+                Payments &amp; Delivery
               </span>
-              <div className="space-y-2 text-sf-muted text-[11px]">
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                  <span>Khalti Wallet Verified</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                  <span>Cash on Delivery (COD)</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                  <span>24h Pathao Valley Courier</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <span className="w-1.5 h-1.5 rounded-full bg-emerald-600" />
-                  <span>100% NPR Infrastructure</span>
-                </div>
+              <div className="space-y-1.5 text-[var(--ink-2)] text-xs">
+                <div>Khalti ePayment</div>
+                <div>Cash on Delivery (COD)</div>
+                <div>Nationwide Courier Delivery</div>
+                <div>Settled in NPR</div>
               </div>
             </div>
 

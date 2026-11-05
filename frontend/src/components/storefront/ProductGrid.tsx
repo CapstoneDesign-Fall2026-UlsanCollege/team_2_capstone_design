@@ -48,9 +48,6 @@ export function ProductGrid({
         const maxPrice = prices.length > 0 ? Math.max(...prices) : 0;
         const hasMultiplePrices = minPrice !== maxPrice;
 
-        // Subscription discount calculation (10% standard)
-        const subscriptionPriceMinor = Math.round(minPrice * 0.9);
-
         // Tags & attributes
         const categoryLabel = product.category || (product.attributes?.category as string) || "";
         const originDistrict =
@@ -101,11 +98,6 @@ export function ProductGrid({
 
               {/* Badges Overlay (Top Left) */}
               <div className="absolute top-2 left-2 flex flex-col items-start gap-1 pointer-events-none z-10">
-                {product.allow_subscription && (
-                  <span className="px-1.5 py-0.5 rounded text-[9px] font-sf-mono font-bold uppercase tracking-wider bg-emerald-800 text-white shadow-xs">
-                    Sub 10%
-                  </span>
-                )}
                 {originDistrict ? (
                   <span className="px-1.5 py-0.5 rounded text-[9px] font-sf-mono font-medium uppercase tracking-wider bg-sf-surface/95 text-sf-ink border border-sf-line shadow-xs backdrop-blur-xs">
                     {originDistrict}
@@ -162,12 +154,6 @@ export function ProductGrid({
                 <span className="text-xs sm:text-sm font-bold text-sf-ink tabular-nums font-sf-mono">
                   {hasMultiplePrices ? `From ${formatNpr(minPrice)}` : formatNpr(minPrice)}
                 </span>
-
-                {product.allow_subscription && (
-                  <span className="text-[10px] font-sf-mono text-emerald-800 font-semibold tabular-nums">
-                    or {formatNpr(subscriptionPriceMinor)}/sub
-                  </span>
-                )}
               </div>
             </div>
           </>

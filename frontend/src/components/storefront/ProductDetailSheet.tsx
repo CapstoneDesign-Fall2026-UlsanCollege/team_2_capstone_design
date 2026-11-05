@@ -5,18 +5,12 @@ import Link from "next/link";
 import {
   ArrowUpRight,
   Check,
-  ChevronDown,
-  Info,
   Minus,
   Package,
   Plus,
-  RefreshCw,
-  ShieldCheck,
-  Sparkles,
-  Truck,
   X,
 } from "lucide-react";
-import { formatNpr, ProductItem, ProductVariant, SellingPlanItem } from "@/lib/api";
+import { formatNpr, ProductItem, ProductVariant } from "@/lib/api";
 
 export interface SelectedCartItem {
   productId: number;
@@ -27,47 +21,22 @@ export interface SelectedCartItem {
   variantLabel: string;
   unitPriceMinor: number;
   quantity: number;
-  purchaseType: "one_time" | "subscription";
-  sellingPlan?: {
-    id: number;
-    code: string;
-    name: string;
-    commitmentCycles: number;
-    discountPct: number;
-    isPrepaid: boolean;
-  } | null;
+  purchaseType?: "one_time" | "subscription";
+  sellingPlan?: any;
 }
 
 export interface ProductDetailSheetProps {
   storeSlug: string;
   product: ProductItem | null;
-  sellingPlans?: SellingPlanItem[];
   open: boolean;
   onOpenChange: (open: boolean) => void;
+  sellingPlans?: any;
   onAddToCart?: (item: SelectedCartItem) => void;
-}
-
-function getPlanCadenceLabel(plan: SellingPlanItem): string {
-  if (plan.name) {
-    const n = plan.name.toLowerCase();
-    if (n.includes("weekly") && !n.includes("bi-weekly") && !n.includes("biweekly")) return "Weekly";
-    if (n.includes("bi-weekly") || n.includes("biweekly") || n.includes("every 2 weeks")) return "Bi-Weekly";
-    if (n.includes("monthly") || n.includes("every 4 weeks")) return "Monthly";
-    if (plan.is_prepaid && plan.commitment_cycles) return `${plan.commitment_cycles}-Delivery`;
-    return plan.name.replace(/^(repeat|club|subscription)\s*[-:]?\s*/i, "").trim() || plan.name;
-  }
-  if (plan.code.includes("weekly") && !plan.code.includes("biweekly")) return "Weekly";
-  if (plan.code.includes("biweekly")) return "Bi-Weekly";
-  if (plan.code.includes("3m")) return "3-Month";
-  if (plan.code.includes("6m")) return "6-Month";
-  if (plan.code.includes("12m")) return "12-Month";
-  return plan.name || "Repeat";
 }
 
 export function ProductDetailSheet({
   storeSlug,
   product,
-  sellingPlans = [],
   open,
   onOpenChange,
   onAddToCart,
@@ -89,7 +58,6 @@ export function ProductDetailSheet({
         <ProductDetailSheetContent
           storeSlug={storeSlug}
           product={product}
-          sellingPlans={sellingPlans}
           onClose={() => onOpenChange(false)}
           onAddToCart={onAddToCart}
         />
@@ -101,13 +69,11 @@ export function ProductDetailSheet({
 function ProductDetailSheetContent({
   storeSlug,
   product,
-  sellingPlans = [],
   onClose,
   onAddToCart,
 }: {
   storeSlug: string;
   product: ProductItem;
-  sellingPlans: SellingPlanItem[];
   onClose: () => void;
   onAddToCart?: (item: SelectedCartItem) => void;
 }) {
@@ -139,9 +105,6 @@ function ProductDetailSheetContent({
     return init;
   });
 
-  const [purchaseType, setPurchaseType] = useState<"one_time" | "subscription">(
-    product.allow_subscription ? "subscription" : "one_time"
-  );
   const [quantity, setQuantity] = useState<number>(1);
   const [justAdded, setJustAdded] = useState<boolean>(false);
 
@@ -149,44 +112,9 @@ function ProductDetailSheetContent({
   const selectedVariant: ProductVariant | null =
     variants.find((v) => v.id === selectedVariantId) || defaultVariant;
 
-  // Subscription configuration
-  const allowSubscription = Boolean(
-    product.allow_subscription && (selectedVariant?.allow_subscription ?? true)
-  );
-
-  // Filter valid active selling plans
-  const activePlans = sellingPlans.filter((p) => p.is_active);
-  const defaultPlan =
-    activePlans.find((p) => p.code === "hr-biweekly") ||
-    activePlans.find((p) => !p.is_prepaid) ||
-    activePlans[0] ||
-    null;
-
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(
-    defaultPlan ? defaultPlan.id : null
-  );
-
-  const selectedPlan: SellingPlanItem | null =
-    activePlans.find((p) => p.id === selectedPlanId) || defaultPlan;
-
-  const discountPct = selectedPlan ? selectedPlan.discount_pct : 10;
-
-  // Price calculations
   const basePriceMinor = selectedVariant ? selectedVariant.price_minor : 75000;
-  const isSubscription = purchaseType === "subscription" && allowSubscription;
-
-  let unitPriceMinor = basePriceMinor;
-  let totalPriceMinor = basePriceMinor * quantity;
-
-  if (isSubscription && selectedPlan) {
-    const discountMultiplier = (100 - discountPct) / 100;
-    unitPriceMinor = Math.round(basePriceMinor * discountMultiplier);
-    if (selectedPlan.is_prepaid) {
-      totalPriceMinor = unitPriceMinor * selectedPlan.commitment_cycles * quantity;
-    } else {
-      totalPriceMinor = unitPriceMinor * quantity;
-    }
-  }
+  const unitPriceMinor = basePriceMinor;
+  const totalPriceMinor = basePriceMinor * quantity;
 
   const isInStock = selectedVariant ? selectedVariant.in_stock : true;
 
@@ -211,17 +139,6 @@ function ProductDetailSheetContent({
         unitPriceMinor,
         quantity,
         productImageUrl: product.image_url,
-        purchaseType: isSubscription ? "subscription" : "one_time",
-        sellingPlan: isSubscription && selectedPlan
-          ? {
-              id: selectedPlan.id,
-              code: selectedPlan.code,
-              name: selectedPlan.name,
-              commitmentCycles: selectedPlan.commitment_cycles,
-              discountPct: selectedPlan.discount_pct,
-              isPrepaid: selectedPlan.is_prepaid,
-            }
-          : null,
       });
     }
 
@@ -261,7 +178,6 @@ function ProductDetailSheetContent({
 
       {/* Scrollable Body */}
       <div className="flex-1 overflow-y-auto py-4 space-y-5 pr-1">
-        
         {/* Product Media & Price Header */}
         <div className="flex items-center gap-3.5">
           <div className="relative w-20 h-20 rounded-sf border border-sf-line bg-sf-canvas overflow-hidden shrink-0 flex items-center justify-center">
@@ -282,11 +198,6 @@ function ProductDetailSheetContent({
               <span className="font-sf-mono text-lg font-bold text-sf-ink tabular-nums">
                 {formatNpr(unitPriceMinor)}
               </span>
-              {isSubscription && (
-                <span className="text-[10px] font-sf-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-1.5 py-0.2 rounded border border-emerald-500/30">
-                  Save 10%
-                </span>
-              )}
             </div>
 
             {product.description && (
@@ -374,97 +285,7 @@ function ProductDetailSheetContent({
           </div>
         )}
 
-        {/* 3. Purchase Mode Toggle */}
-        {allowSubscription && (
-          <div className="space-y-2 pt-1 border-t border-sf-line">
-            <label className="font-bold text-sf-ink uppercase tracking-wider text-[10px] font-sf-mono block">
-              Purchase Option
-            </label>
-
-            {/* One-time */}
-            <div
-              onClick={() => setPurchaseType("one_time")}
-              className={`p-2.5 rounded-sf border transition-all cursor-pointer ${
-                purchaseType === "one_time"
-                  ? "border-sf-ink bg-sf-surface ring-2 ring-sf-ink shadow-2xs"
-                  : "border-sf-line bg-sf-canvas hover:border-sf-muted"
-              }`}
-            >
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="sheet_purchase_option"
-                    checked={purchaseType === "one_time"}
-                    onChange={() => setPurchaseType("one_time")}
-                    className="accent-sf-cta w-3.5 h-3.5 cursor-pointer"
-                  />
-                  <span className="font-bold text-sf-ink">One-time purchase</span>
-                </div>
-                <span className="font-sf-mono font-bold text-sf-ink text-xs tabular-nums">
-                  {formatNpr(basePriceMinor)}
-                </span>
-              </div>
-            </div>
-
-            {/* Subscribe & Save */}
-            <div
-              onClick={() => setPurchaseType("subscription")}
-              className={`p-2.5 rounded-sf border transition-all cursor-pointer space-y-2 ${
-                purchaseType === "subscription"
-                  ? "border-emerald-600 bg-emerald-500/10 ring-1 ring-emerald-600 shadow-xs"
-                  : "border-sf-line bg-sf-canvas hover:border-sf-muted"
-              }`}
-            >
-              <div className="flex items-center justify-between text-xs">
-                <div className="flex items-center gap-2">
-                  <input
-                    type="radio"
-                    name="sheet_purchase_option"
-                    checked={purchaseType === "subscription"}
-                    onChange={() => setPurchaseType("subscription")}
-                    className="accent-emerald-600 w-3.5 h-3.5 cursor-pointer"
-                  />
-                  <div className="flex items-center gap-1.5">
-                    <span className="font-bold text-sf-ink">Subscribe &amp; Save 10%</span>
-                  </div>
-                </div>
-                <span className="font-sf-mono font-bold text-emerald-600 dark:text-emerald-400 text-xs tabular-nums">
-                  {formatNpr(Math.round(basePriceMinor * 0.9))}
-                </span>
-              </div>
-
-              {purchaseType === "subscription" && (
-                <div className="pt-2 border-t border-emerald-500/30">
-                  <div className="grid grid-cols-3 gap-1.5">
-                    {activePlans.map((plan) => {
-                      const isPlanSelected = plan.id === selectedPlanId;
-                      return (
-                        <button
-                          key={plan.id}
-                          type="button"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            setSelectedPlanId(plan.id);
-                          }}
-                          className={`p-1.5 rounded border text-center transition-all cursor-pointer ${
-                            isPlanSelected
-                              ? "border-sf-ink bg-sf-ink text-white font-bold text-[10px]"
-                              : "border-sf-line bg-sf-surface text-sf-ink text-[10px] hover:border-sf-muted"
-                          }`}
-                        >
-                          <div className="truncate">{getPlanCadenceLabel(plan)}</div>
-                        </button>
-                      );
-                    })}
-                  </div>
-                </div>
-              )}
-            </div>
-          </div>
-        )}
-
-        {/* 4. Quantity Stepper */}
+        {/* 3. Quantity Stepper */}
         <div className="flex items-center justify-between pt-1 border-t border-sf-line">
           <label className="font-bold text-sf-ink uppercase tracking-wider text-[10px] font-sf-mono">
             Quantity
@@ -491,7 +312,6 @@ function ProductDetailSheetContent({
             </button>
           </div>
         </div>
-
       </div>
 
       {/* Sticky Bottom Thumb-Zone Action Bar */}
@@ -522,8 +342,6 @@ function ProductDetailSheetContent({
             </>
           ) : !isInStock ? (
             <span>Sold Out</span>
-          ) : isSubscription ? (
-            <span>Start Subscription · {formatNpr(totalPriceMinor)}</span>
           ) : (
             <span>Add to Bag · {formatNpr(totalPriceMinor)}</span>
           )}

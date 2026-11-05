@@ -11,7 +11,6 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { formatNpr, OrderDetail, StorePublicMetadata } from "@/lib/api";
-import { OrderRenewalPaymentBox } from "@/components/storefront/OrderRenewalPaymentBox";
 
 async function fetchOrderData(
   storeSlug: string,
@@ -77,10 +76,6 @@ export default async function StorefrontOrderDetailPage({
   const isPaymentFailed = statusUpper === "PAYMENT_FAILED" || order.payment_status === "FAILED";
   const isPendingPayment =
     (statusUpper === "PENDING_PAYMENT" || isPaymentFailed) && !isPaid;
-  const isSubscriptionCycle = order.order_type === "SUBSCRIPTION_CYCLE";
-  const hasPrepaidLabel = order.items.some((it) =>
-    (it.variant_label_snapshot || "").toLowerCase().includes("cycles prepaid")
-  );
 
   const isConfirmed =
     statusUpper === "CONFIRMED" ||
@@ -140,19 +135,15 @@ export default async function StorefrontOrderDetailPage({
             <h1 className="font-sf-display text-xl sm:text-2xl font-bold tracking-tight text-sf-ink">
               {isPaymentFailed
                 ? "Payment Not Completed"
-                : isPendingPayment && isSubscriptionCycle
-                ? "Subscription Renewal Ready"
                 : isPendingPayment
                 ? "Awaiting Payment Confirmation"
-                : isPaid && order.total_minor === 0
-                ? "Prepaid Cycle Scheduled!"
                 : isPaid
                 ? "Payment Verified & Confirmed!"
                 : "Order Confirmed for Delivery!"}
             </h1>
             <p className="text-xs text-sf-muted font-sf-mono">
               {isPendingPayment
-                ? `Complete confirmation below so ${store.name} can dispatch your parcel.`
+                ? `Please complete payment so ${store.name} can dispatch your parcel.`
                 : `Thank you for ordering directly from ${store.name}.`}
             </p>
           </div>
@@ -162,19 +153,6 @@ export default async function StorefrontOrderDetailPage({
             <span className="font-bold text-sf-accent">{order.order_number}</span>
           </div>
         </div>
-
-        {/* One-Click Renewal / Retry Payment Box (shown only when unpaid/failed) */}
-        {isPendingPayment && effectiveToken && (
-          <OrderRenewalPaymentBox
-            storeSlug={store.slug}
-            orderId={order.id}
-            token={effectiveToken}
-            totalMinor={order.total_minor}
-            isSubscriptionCycle={isSubscriptionCycle}
-            allowCod={!hasPrepaidLabel && store.cod_enabled !== false}
-            isFailed={isPaymentFailed}
-          />
-        )}
 
         {/* Order Lifecycle Progress Timeline */}
         <section className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-4 shadow-xs">

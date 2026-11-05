@@ -8,7 +8,6 @@ import {
   Gift,
   Minus,
   Plus,
-  RefreshCw,
   ShieldCheck,
   ShoppingBag,
   Trash2,
@@ -168,20 +167,11 @@ export function CartDrawer() {
               </div>
             ) : (
               items.map((item) => {
-                const isSubscription = item.purchaseType === "subscription";
-                const isPrepaid = Boolean(item.sellingPlan?.isPrepaid);
-                const cycles = item.sellingPlan?.commitmentCycles || 1;
-
-                const lineItemTotalMinor =
-                  isSubscription && isPrepaid
-                    ? item.unitPriceMinor * cycles * item.quantity
-                    : item.unitPriceMinor * item.quantity;
-
-                const planId = item.sellingPlan ? item.sellingPlan.id : null;
+                const lineItemTotalMinor = item.unitPriceMinor * item.quantity;
 
                 return (
                   <div
-                    key={`${item.variantId}-${item.purchaseType}-${planId}`}
+                    key={item.variantId}
                     className="py-3.5 first:pt-0 last:pb-0 flex gap-3.5"
                   >
                     {/* Thumbnail with aspect-square */}
@@ -196,11 +186,6 @@ export function CartDrawer() {
                       ) : (
                         <ShoppingBag className="w-6 h-6 text-sf-muted" aria-hidden="true" />
                       )}
-                      {isSubscription && (
-                        <div className="absolute top-1 left-1 px-1 py-0.2 rounded bg-sf-cta text-white text-[9px] font-sf-mono font-bold uppercase">
-                          -10%
-                        </div>
-                      )}
                     </div>
 
                     {/* Details */}
@@ -212,9 +197,7 @@ export function CartDrawer() {
                           </h4>
                           <button
                             type="button"
-                            onClick={() =>
-                              removeItem(item.variantId, item.purchaseType, planId)
-                            }
+                            onClick={() => removeItem(item.variantId)}
                             aria-label={`Remove ${item.productName}`}
                             className="min-h-[36px] min-w-[36px] text-sf-muted hover:text-sf-ink p-1 transition-colors cursor-pointer shrink-0 flex items-center justify-center"
                           >
@@ -222,17 +205,11 @@ export function CartDrawer() {
                           </button>
                         </div>
 
-                        {/* Variant and Subscription Badge */}
+                        {/* Variant Badge */}
                         <div className="flex flex-wrap items-center gap-1.5 mt-0.5">
                           <span className="text-[10px] font-sf-mono text-sf-muted bg-sf-canvas px-1.5 py-0.5 rounded border border-sf-line">
                             {item.variantLabel}
                           </span>
-                          {isSubscription && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-sf-mono px-1.5 py-0.5 rounded bg-emerald-500/10 border border-emerald-500/30 text-emerald-600 dark:text-emerald-400 font-semibold">
-                              <RefreshCw className="w-2.5 h-2.5 text-emerald-600 dark:text-emerald-400" aria-hidden="true" />
-                              <span>{item.sellingPlan?.name || "Repeat Club"}</span>
-                            </span>
-                          )}
                         </div>
                       </div>
 
@@ -241,14 +218,7 @@ export function CartDrawer() {
                         <div className="inline-flex items-center rounded-sf border border-sf-line bg-sf-canvas">
                           <button
                             type="button"
-                            onClick={() =>
-                              updateQty(
-                                item.variantId,
-                                item.purchaseType,
-                                planId,
-                                item.quantity - 1
-                              )
-                            }
+                            onClick={() => updateQty(item.variantId, item.quantity - 1)}
                             aria-label="Decrease quantity"
                             className="w-9 h-9 flex items-center justify-center text-sf-muted hover:text-sf-ink transition-colors cursor-pointer"
                           >
@@ -259,14 +229,7 @@ export function CartDrawer() {
                           </span>
                           <button
                             type="button"
-                            onClick={() =>
-                              updateQty(
-                                item.variantId,
-                                item.purchaseType,
-                                planId,
-                                item.quantity + 1
-                              )
-                            }
+                            onClick={() => updateQty(item.variantId, item.quantity + 1)}
                             aria-label="Increase quantity"
                             className="w-9 h-9 flex items-center justify-center text-sf-muted hover:text-sf-ink transition-colors cursor-pointer"
                           >

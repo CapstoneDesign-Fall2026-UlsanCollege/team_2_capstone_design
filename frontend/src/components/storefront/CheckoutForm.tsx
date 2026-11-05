@@ -102,12 +102,9 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
-  // Check if cart contains prepaid subscription or merchant disabled COD
-  const hasPrepaidSubscription = items.some(
-    (it) => it.purchaseType === "subscription" && it.sellingPlan?.isPrepaid
-  );
+  // Check if merchant disabled COD
   const isStoreCodDisabled = store.cod_enabled === false;
-  const isCodUnavailable = hasPrepaidSubscription || isStoreCodDisabled;
+  const isCodUnavailable = isStoreCodDisabled;
 
   // 1. Fetch Session & Saved Addresses on Mount
   useEffect(() => {
@@ -175,8 +172,6 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
     const payloadItems = items.map((it) => ({
       variant_id: it.variantId,
       quantity: it.quantity,
-      purchase_type: it.purchaseType,
-      selling_plan_id: it.sellingPlan?.id ?? null,
     }));
 
     fetchCheckoutQuote(store.slug, {
@@ -192,7 +187,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
       });
   }, [items, district, store.slug, appliedPromoCode]);
 
-  // If cart contains prepaid plan or store disabled COD, automatically switch off COD
+  // If store disabled COD, automatically switch off COD
   useEffect(() => {
     if (isCodUnavailable && paymentMethod === "COD") {
       Promise.resolve().then(() => setPaymentMethod("KHALTI"));
@@ -210,8 +205,6 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
         items: items.map((it) => ({
           variant_id: it.variantId,
           quantity: it.quantity,
-          purchase_type: it.purchaseType,
-          selling_plan_id: it.sellingPlan?.id ?? null,
         })),
         district,
         discount_code: clean,
@@ -315,8 +308,6 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
       const payloadItems = items.map((it) => ({
         variant_id: it.variantId,
         quantity: it.quantity,
-        purchase_type: it.purchaseType,
-        selling_plan_id: it.sellingPlan?.id ?? null,
       }));
 
       // If user typed a new address while authenticated and checked save, persist it
@@ -405,14 +396,13 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
             <div className="divide-y divide-sf-line/60">
               {items.map((it) => (
                 <div
-                  key={`${it.variantId}-${it.purchaseType}`}
+                  key={it.variantId}
                   className="py-2 first:pt-0 last:pb-0 flex items-center justify-between text-xs font-sf-mono"
                 >
                   <div className="space-y-0.5 min-w-0 pr-2">
                     <p className="font-medium text-sf-ink truncate">{it.productName}</p>
                     <p className="text-[11px] text-sf-muted">
                       {it.variantLabel} × {it.quantity}
-                      {it.purchaseType === "subscription" && " (Subscription)"}
                     </p>
                   </div>
                   <span className="font-semibold text-sf-ink tabular-nums whitespace-nowrap">
@@ -911,9 +901,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                   )}
                 </p>
                 <p className="text-[11px] font-sf-mono text-sf-muted">
-                  {hasPrepaidSubscription
-                    ? "Prepaid plans need Khalti"
-                    : isStoreCodDisabled
+                  {isStoreCodDisabled
                     ? "Digital Khalti payment only"
                     : `Pay ${formatNpr(computedTotal)} cash to rider`}
                 </p>

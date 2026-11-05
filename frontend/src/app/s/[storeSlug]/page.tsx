@@ -1,10 +1,9 @@
 import { notFound } from "next/navigation";
 import { StorefrontCatalogView } from "@/components/storefront/StorefrontCatalogView";
-import { ProductItem, SellingPlanItem, StorePublicMetadata } from "@/lib/api";
+import { ProductItem, StorePublicMetadata } from "@/lib/api";
 
 interface StoreCatalogData {
   products: ProductItem[];
-  selling_plans: SellingPlanItem[];
 }
 
 async function fetchStoreData(storeSlug: string): Promise<{
@@ -23,7 +22,7 @@ async function fetchStoreData(storeSlug: string): Promise<{
     ]);
 
     if (storeRes.status === 404) {
-      return { store: null, catalog: { products: [], selling_plans: [] } };
+      return { store: null, catalog: { products: [] } };
     }
 
     const store: StorePublicMetadata = storeRes.ok
@@ -44,13 +43,13 @@ async function fetchStoreData(storeSlug: string): Promise<{
 
     const catalog: StoreCatalogData = catalogRes.ok
       ? await catalogRes.json()
-      : { products: [], selling_plans: [] };
+      : { products: [] };
 
     return { store, catalog };
   } catch {
     return {
       store: null,
-      catalog: { products: [], selling_plans: [] },
+      catalog: { products: [] },
     };
   }
 }
@@ -71,7 +70,6 @@ export default async function StorefrontHomePage({
     <StorefrontCatalogView
       store={store}
       products={catalog.products}
-      sellingPlans={catalog.selling_plans}
     />
   );
 }

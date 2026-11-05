@@ -1,8 +1,8 @@
 "use client";
 
-import React, { useId, useMemo, useState } from "react";
+import React, { useEffect, useId, useMemo, useRef, useState } from "react";
 import Link from "next/link";
-import { ArrowRight, BarChart2, Check, SlidersHorizontal, Target, TrendingUp } from "lucide-react";
+import { ArrowRight, BarChart2, SlidersHorizontal } from "lucide-react";
 import { formatNpr, OverviewDailyPoint } from "@/lib/api";
 import { Button } from "@/components/ui/button";
 
@@ -27,7 +27,6 @@ function computeNiceScale(rawMaxMinor: number): { maxMinor: number; ticks: numbe
   else niceMultiplier = 10;
 
   const niceMaxRs = Math.max(3000, niceMultiplier * magnitude);
-  // Generate 4 clean tick points: 0, 1/3, 2/3, 1 (or 0, 1/4, 2/4, 3/4, 1)
   const stepRs = niceMaxRs / 3;
   const ticks = [0, Math.round(stepRs), Math.round(stepRs * 2), niceMaxRs];
   return {
@@ -55,7 +54,29 @@ export function SalesBarChart({
   const [showTarget, setShowTarget] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
+  const popoverRef = useRef<HTMLDivElement>(null);
   const popoverId = useId();
+
+  // Close popover on outside click or Escape key
+  useEffect(() => {
+    if (!optionsOpen) return;
+    const handleDown = (e: MouseEvent) => {
+      if (popoverRef.current && !popoverRef.current.contains(e.target as Node)) {
+        setOptionsOpen(false);
+      }
+    };
+    const handleKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        setOptionsOpen(false);
+      }
+    };
+    document.addEventListener("mousedown", handleDown);
+    document.addEventListener("keydown", handleKey);
+    return () => {
+      document.removeEventListener("mousedown", handleDown);
+      document.removeEventListener("keydown", handleKey);
+    };
+  }, [optionsOpen]);
 
   // If fewer than 5 orders in range, show a compact summary instead of a large empty chart
   const isCompact = totalOrdersInRange < 5;
@@ -110,7 +131,7 @@ export function SalesBarChart({
 
         <div className="flex items-center gap-2">
           {/* Controls Popover button */}
-          <div className="relative">
+          <div className="relative" ref={popoverRef}>
             <button
               type="button"
               aria-haspopup="dialog"

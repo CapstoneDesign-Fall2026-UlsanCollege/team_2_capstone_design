@@ -6,12 +6,11 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from accounts.models import DeliveryAddress
-from catalog.models import Discount, Product, SellingPlan, Variant
+from catalog.models import Discount, Product, Variant
 from core.tenant_context import TenantDatabaseContext, BypassRLSContext, get_current_tenant_id
 from django.core.files.uploadedfile import SimpleUploadedFile
 from orders.models import Order, OrderItem
 from stores.models import Customer, MerchantAuditLog, Store, StoreMembership, provision_store_customer
-from subscriptions.models import Subscription
 
 User = get_user_model()
 
@@ -41,7 +40,6 @@ class TenantIsolationTests(APITestCase):
             slug="wild-cliff-honey",
             name="Wild Cliff Honey",
             allow_one_time=True,
-            allow_subscription=True,
         )
         self.var_b = Variant.objects.create(
             store=self.store_b,
@@ -50,7 +48,6 @@ class TenantIsolationTests(APITestCase):
             label="500g",
             price_minor=85000,
             allow_one_time=True,
-            allow_subscription=True,
         )
         self.cust_b = Customer.objects.create(
             store=self.store_b,
@@ -75,7 +72,7 @@ class TenantIsolationTests(APITestCase):
         anon_res = self.client.get("/api/merchant/stores/brewmellow/overview/")
         self.assertIn(anon_res.status_code, (status.HTTP_401_UNAUTHORIZED, status.HTTP_403_FORBIDDEN))
 
-        # 2. Authenticate as Owner A -> probing Store B must return 404 on all 6 endpoints
+        # 2. Authenticate as Owner A -> probing Store B must return 404 on all 5 endpoints
         self.client.force_login(self.owner_a)
         b_endpoints = [
             ("get", "/api/merchant/stores/pahadi-honey/overview/"),
@@ -83,7 +80,6 @@ class TenantIsolationTests(APITestCase):
             ("post", "/api/merchant/stores/pahadi-honey/products/"),
             ("get", "/api/merchant/stores/pahadi-honey/orders/"),
             ("get", "/api/merchant/stores/pahadi-honey/customers/"),
-            ("get", "/api/merchant/stores/pahadi-honey/subscriptions/"),
         ]
         for method, url in b_endpoints:
             if method == "get":
@@ -92,7 +88,7 @@ class TenantIsolationTests(APITestCase):
                 r = self.client.post(url, {"name": "Spy Product", "slug": "spy-product"})
             self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND, f"Failed on {method.upper()} {url}")
 
-        # 3. Authenticate as Owner B -> probing Store A must return 404 on all 6 endpoints
+        # 3. Authenticate as Owner B -> probing Store A must return 404 on all 5 endpoints
         self.client.force_login(self.owner_b)
         a_endpoints = [
             ("get", "/api/merchant/stores/brewmellow/overview/"),
@@ -100,7 +96,6 @@ class TenantIsolationTests(APITestCase):
             ("post", "/api/merchant/stores/brewmellow/products/"),
             ("get", "/api/merchant/stores/brewmellow/orders/"),
             ("get", "/api/merchant/stores/brewmellow/customers/"),
-            ("get", "/api/merchant/stores/brewmellow/subscriptions/"),
         ]
         for method, url in a_endpoints:
             if method == "get":
@@ -189,11 +184,7 @@ class TenantIsolationTests(APITestCase):
         s = Store.objects.get(slug="brewmellow")
         self.assertEqual(Product.objects.for_store(s).count(), 3)
         self.assertEqual(Variant.objects.for_store(s).count(), 12)
-        self.assertEqual(Variant.objects.for_store(s).filter(label="150g", allow_subscription=False).count(), 3)
-        self.assertEqual(Variant.objects.for_store(s).filter(allow_subscription=True).count(), 9)
-        self.assertEqual(SellingPlan.objects.for_store(s).count(), 4)
         self.assertEqual(Order.objects.for_store(s).count(), 3)
-        self.assertEqual(Subscription.objects.for_store(s).count(), 2)
 
         # Check exact integer paisa range
         prices = Variant.objects.for_store(s).values_list("price_minor", flat=True)
@@ -285,7 +276,7 @@ class TenantIsolationTests(APITestCase):
         self.assertEqual(del_res.status_code, status.HTTP_200_OK)
         self.assertFalse(del_res.data["is_active"])
 
-    def test_merchant_variant_crud_and_selling_plan_isolation(self):
+    def test_merchant_variant_crud_isolation(self):
         self.client.force_login(self.owner_a)
 
         # Get first product of Store A
@@ -299,7 +290,6 @@ class TenantIsolationTests(APITestCase):
                 "label": "1kg Big Bag",
                 "price_minor": 285000,
                 "in_stock": True,
-                "allow_subscription": True,
             },
             format="json",
         )
@@ -322,10 +312,6 @@ class TenantIsolationTests(APITestCase):
             f"/api/merchant/stores/brewmellow/products/{prod.id}/variants/{variant_id}/"
         )
         self.assertEqual(cross_b.status_code, status.HTTP_404_NOT_FOUND)
-
-        # Owner B accessing Store A selling plans -> 404 on cross store
-        cross_plans = self.client.get("/api/merchant/stores/brewmellow/selling-plans/")
-        self.assertEqual(cross_plans.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_store_checkout_quote_and_placement_isolation(self):
         """Verify server-authoritative checkout quote, COD placement, and Khalti verify with strict multi-tenant isolation."""
@@ -512,215 +498,6 @@ class TenantIsolationTests(APITestCase):
             format="json",
         )
         self.assertEqual(res_b_trans.status_code, status.HTTP_404_NOT_FOUND)
-
-
-    def test_prepaid_subscription_checkout_and_idempotent_cycles(self):
-        """
-        SUBS-01 and SUBS-02:
-        Verifies checkout subscription creation, upfront payment activation,
-        and idempotent $0 cycle order generation with cycle countdown.
-        """
-        from datetime import timedelta
-        from django.utils import timezone
-        from catalog.models import Product, SellingPlan, Variant
-        from orders.models import Order
-        from subscriptions.models import Subscription
-        from subscriptions.services import execute_due_subscription_cycles
-
-        # 1. Setup subscription product & 3M prepaid plan
-        plan_3m, _ = SellingPlan.objects.get_or_create(
-            store=self.store_a,
-            code="test-3m-plan",
-            defaults={
-                "name": "3 Months Prepaid",
-                "interval_unit": "MONTH",
-                "interval_count": 1,
-                "commitment_cycles": 3,
-                "discount_pct": 10,
-                "is_prepaid": True,
-                "is_active": True,
-                "sort_order": 1,
-            },
-        )
-        prod = Product.objects.create(
-            store=self.store_a,
-            slug="sub-tea",
-            name="Subscription Tea",
-            allow_one_time=True,
-            allow_subscription=True,
-        )
-        variant = Variant.objects.create(
-            store=self.store_a,
-            product=prod,
-            sku="TEA-SUB-01",
-            label="250g",
-            price_minor=100000,  # Rs. 1,000 base
-            allow_one_time=True,
-            allow_subscription=True,
-            in_stock=True,
-            is_active=True,
-        )
-
-        # 2. Place checkout order with 3M prepaid plan
-        shipping_addr = {
-            "recipient_name": "Suman Thapa",
-            "phone": "9841223344",
-            "province": "Bagmati",
-            "district": "Kathmandu",
-            "municipality": "Kathmandu Metro",
-            "ward": "3",
-            "street_address": "Lazimpat",
-        }
-        res_place = self.client.post(
-            f"/api/stores/{self.store_a.slug}/checkout/place/",
-            {
-                "customer_email": "suman.thapa@example.com", "email": "suman.thapa@example.com",
-                "items": [
-                    {
-                        "variant_id": variant.id,
-                        "quantity": 1,
-                        "purchase_type": "subscription",
-                        "selling_plan_id": plan_3m.id,
-                    }
-                ],
-                "shipping_address": shipping_addr,
-                "payment_method": "KHALTI",
-            },
-            format="json",
-        )
-        if res_place.status_code != 201: print("RES PLACE ERROR:", res_place.status_code, res_place.data)
-        self.assertEqual(res_place.status_code, status.HTTP_201_CREATED)
-        order_id = res_place.data["order_id"]
-        pidx = res_place.data["pidx"]
-
-        # Initial subscription created in PENDING_PAYMENT
-        sub = Subscription.objects.get(order_id=order_id)
-        self.assertEqual(sub.status, "PENDING_PAYMENT")
-        self.assertEqual(sub.cycles_total, 3)
-        self.assertEqual(sub.cycles_remaining, 2)
-
-        # 3. Verify Khalti Payment
-        res_verify = self.client.post(
-            f"/api/stores/{self.store_a.slug}/checkout/khalti-verify/",
-            {"pidx": pidx, "order_id": order_id},
-            format="json",
-        )
-        self.assertEqual(res_verify.status_code, status.HTTP_200_OK)
-
-        # Subscription is now ACTIVE
-        sub.refresh_from_db()
-        self.assertEqual(sub.status, "ACTIVE")
-
-        # 4. Run cycle runner for next month (Cycle 2)
-        target_cycle_2 = timezone.now().date() + timedelta(days=32)
-        sub.next_delivery_date = target_cycle_2
-        sub.save()
-
-        res_cycle_2 = execute_due_subscription_cycles(store=self.store_a, target_date=target_cycle_2)
-        self.assertGreaterEqual(res_cycle_2["orders_generated"], 1)
-
-        # Cycle 2 order for our subscription must be $0 / Rs. 0 because it was prepaid
-        sub_order = next((o for o in res_cycle_2["orders"] if o.customer.email == "suman.thapa@example.com"), None)
-        self.assertIsNotNone(sub_order)
-        self.assertEqual(sub_order.order_type, "SUBSCRIPTION_CYCLE")
-        self.assertEqual(sub_order.total_minor, 0)
-        self.assertEqual(sub_order.status, "CONFIRMED")
-        self.assertEqual(sub_order.payment_status, "PAID")
-
-        sub.refresh_from_db()
-        self.assertEqual(sub.cycles_remaining, 1)
-        self.assertEqual(sub.status, "ACTIVE")
-
-        # 5. Idempotency test: Re-running on same date must NEVER duplicate orders
-        res_repeat = execute_due_subscription_cycles(store=self.store_a, target_date=target_cycle_2)
-        self.assertEqual(res_repeat["orders_generated"], 0)
-
-        # 6. Cycle 3 (Final commitment delivery): Completes subscription
-        target_cycle_3 = target_cycle_2 + timedelta(days=32)
-        sub.next_delivery_date = target_cycle_3
-        sub.save()
-
-        res_cycle_3 = execute_due_subscription_cycles(store=self.store_a, target_date=target_cycle_3)
-        self.assertGreaterEqual(res_cycle_3["orders_generated"], 1)
-        self.assertGreaterEqual(res_cycle_3["completed_subscriptions"], 1)
-
-        sub.refresh_from_db()
-        self.assertEqual(sub.cycles_remaining, 0)
-        self.assertEqual(sub.status, "COMPLETED")
-
-    def test_merchant_run_subscription_cycles_isolation(self):
-        """
-        Verifies merchant can trigger cycle processing and cross-tenant access returns 404.
-        """
-        # Owner A can trigger on their store
-        self.client.force_login(self.owner_a)
-        res_a = self.client.post(
-            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/run-cycles/",
-            {},
-            format="json",
-        )
-        self.assertEqual(res_a.status_code, status.HTTP_200_OK)
-        self.assertTrue(res_a.data["success"])
-
-        # Owner B cannot trigger on Store A
-        self.client.force_login(self.owner_b)
-        res_b = self.client.post(
-            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/run-cycles/",
-            {},
-            format="json",
-        )
-        self.assertEqual(res_b.status_code, status.HTTP_404_NOT_FOUND)
-
-
-    def test_merchant_subscription_actions_and_isolation(self):
-        """
-        SUBS-03:
-        Verifies merchant can pause, resume, skip cycle, and cancel subscriptions,
-        and unauthorized cross-tenant actions return 404.
-        """
-        from subscriptions.models import Subscription
-
-        sub = Subscription.objects.filter(store=self.store_a, status="ACTIVE").first()
-        self.assertIsNotNone(sub)
-
-        # 1. Merchant A pauses subscription
-        self.client.force_login(self.owner_a)
-        res_pause = self.client.post(
-            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/{sub.id}/action/",
-            {"action": "pause"},
-            format="json",
-        )
-        self.assertEqual(res_pause.status_code, status.HTTP_200_OK)
-        self.assertEqual(res_pause.data["status"], "PAUSED")
-
-        # 2. Merchant A resumes subscription
-        res_resume = self.client.post(
-            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/{sub.id}/action/",
-            {"action": "resume"},
-            format="json",
-        )
-        self.assertEqual(res_resume.status_code, status.HTTP_200_OK)
-        self.assertEqual(res_resume.data["status"], "ACTIVE")
-
-        # 3. Merchant A skips next delivery date
-        old_date = sub.next_delivery_date
-        res_skip = self.client.post(
-            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/{sub.id}/action/",
-            {"action": "skip_cycle"},
-            format="json",
-        )
-        self.assertEqual(res_skip.status_code, status.HTTP_200_OK)
-        sub.refresh_from_db()
-        self.assertGreater(sub.next_delivery_date, old_date)
-
-        # 4. Cross-tenant security: Owner B cannot pause or cancel Store A's subscription
-        self.client.force_login(self.owner_b)
-        res_b_pause = self.client.post(
-            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/{sub.id}/action/",
-            {"action": "pause"},
-            format="json",
-        )
-        self.assertEqual(res_b_pause.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_admin_email_backdoor_removed(self):
         """
@@ -1038,7 +815,6 @@ class TenantIsolationTests(APITestCase):
         self.assertEqual(res_legit.status_code, status.HTTP_200_OK)
         self.assertEqual(res_legit.data["customer"]["id"], cust_a.id)
         self.assertIn("orders", res_legit.data)
-        self.assertIn("subscriptions", res_legit.data)
 
         # IDOR attack: Store A merchant tries to fetch Store B customer ID
         res_idor = self.client.get(f"/api/merchant/stores/brewmellow/customers/{self.cust_b.id}/")
@@ -1159,91 +935,16 @@ class TenantIsolationTests(APITestCase):
         res_b_pub = self.client.get("/api/stores/pahadi-honey/")
         self.assertEqual(res_b_pub.data["theme_preset"], "pahadi-sage")
 
-    def test_merchant_subscription_actions_and_renewal_link_isolation(self):
+    def test_public_pay_order_token_cross_store_isolation(self):
         """
-        Slice 5: Proves Merchant A cannot pause, skip, cancel, or generate renewal links
-        for Merchant B's subscriptions, and running cycles on Store A never touches Store B.
-        """
-        today = timezone.now().date()
-        with BypassRLSContext():
-            plan_b = SellingPlan.objects.create(
-                store=self.store_b,
-                code="ph-monthly",
-                name="Monthly Honey Jar",
-                interval_unit="MONTH",
-                interval_count=1,
-                commitment_cycles=1,
-                discount_pct=5,
-                is_prepaid=False,
-                is_active=True,
-            )
-            sub_b = Subscription.objects.create(
-                store=self.store_b,
-                customer=self.cust_b,
-                variant=self.var_b,
-                selling_plan=plan_b,
-                status="ACTIVE",
-                unit_price_minor=80750,
-                next_delivery_date=today,
-                shipping_address_snapshot={"recipient_name": "Shopper B", "phone": "9800001111", "district": "Kathmandu"},
-            )
-            b_orders_before = Order.objects.filter(store=self.store_b).count()
-
-        self.client.force_login(self.owner_a)
-
-        # 1. Merchant A trying to act on sub_b via Store A's URL (IDOR) -> 404
-        for action in ("pause", "skip_cycle", "cancel", "generate_renewal"):
-            idor_res = self.client.post(
-                f"/api/merchant/stores/{self.store_a.slug}/subscriptions/{sub_b.id}/action/",
-                {"action": action},
-                format="json",
-            )
-            self.assertEqual(idor_res.status_code, status.HTTP_404_NOT_FOUND)
-
-        # 2. Merchant A trying to act on sub_b via Store B's URL -> 404
-        direct_res = self.client.post(
-            f"/api/merchant/stores/{self.store_b.slug}/subscriptions/{sub_b.id}/action/",
-            {"action": "generate_renewal"},
-            format="json",
-        )
-        self.assertEqual(direct_res.status_code, status.HTTP_404_NOT_FOUND)
-
-        # 3. Merchant A running due cycles on Store A must NEVER generate orders for Store B's due sub_b
-        run_res = self.client.post(
-            f"/api/merchant/stores/{self.store_a.slug}/subscriptions/run-cycles/",
-            {"target_date": today.isoformat()},
-            format="json",
-        )
-        self.assertEqual(run_res.status_code, status.HTTP_200_OK)
-
-        with BypassRLSContext():
-            sub_b.refresh_from_db()
-            self.assertEqual(sub_b.status, "ACTIVE")
-            self.assertEqual(sub_b.next_delivery_date, today)
-            self.assertEqual(Order.objects.filter(store=self.store_b).count(), b_orders_before)
-
-    def test_merchant_selling_plan_crud_and_public_pay_isolation(self):
-        """
-        Slice 5: Proves Merchant A cannot modify or archive Merchant B's SellingPlans,
-        and Store B's unpaid order token cannot be paid through Store A's public endpoint.
+        Proves Store B's unpaid order token cannot be paid through Store A's public endpoint.
         """
         with BypassRLSContext():
-            plan_b = SellingPlan.objects.create(
-                store=self.store_b,
-                code="ph-prepaid-6",
-                name="6 Months Honey",
-                interval_unit="MONTH",
-                interval_count=1,
-                commitment_cycles=6,
-                discount_pct=10,
-                is_prepaid=True,
-                is_active=True,
-            )
             unpaid_b = Order.objects.create(
                 store=self.store_b,
                 customer=self.cust_b,
                 order_number="#PH-RENEW-01",
-                order_type="SUBSCRIPTION_CYCLE",
+                order_type="ONE_TIME",
                 status="PENDING_PAYMENT",
                 payment_method="KHALTI",
                 payment_status="UNPAID",
@@ -1254,25 +955,6 @@ class TenantIsolationTests(APITestCase):
             b_token = str(unpaid_b.token)
 
         self.client.force_login(self.owner_a)
-
-        # Merchant A trying to PATCH Store B's plan via Store A URL (IDOR) -> 404
-        patch_idor = self.client.patch(
-            f"/api/merchant/stores/{self.store_a.slug}/selling-plans/{plan_b.id}/",
-            {"discount_pct": 50},
-            format="json",
-        )
-        self.assertEqual(patch_idor.status_code, status.HTTP_404_NOT_FOUND)
-
-        # Merchant A trying to DELETE Store B's plan via Store B URL -> 404
-        del_cross = self.client.delete(
-            f"/api/merchant/stores/{self.store_b.slug}/selling-plans/{plan_b.id}/"
-        )
-        self.assertEqual(del_cross.status_code, status.HTTP_404_NOT_FOUND)
-
-        with BypassRLSContext():
-            plan_b.refresh_from_db()
-            self.assertEqual(plan_b.discount_pct, 10)
-            self.assertTrue(plan_b.is_active)
 
         # Cross-store public-orders/pay attempt using Store B's valid token against Store A -> 404
         cross_pay = self.client.post(

@@ -19,7 +19,7 @@ export interface NavItem {
   icon: LucideIcon;
 }
 
-/** One-time purchases only: no subscriptions. Single source for sidebar, tab bar, drawer. */
+/** Single source for sidebar, tab bar, drawer. */
 export function buildMerchantNav(baseHref: string) {
   const main: NavItem[] = [
     { key: "home", label: "Home", href: baseHref, exact: true, icon: Home },

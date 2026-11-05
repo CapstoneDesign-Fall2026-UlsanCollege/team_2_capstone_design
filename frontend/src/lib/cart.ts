@@ -6,15 +6,6 @@
  * leakage when a shopper navigates between different merchant storefronts.
  */
 
-export interface CartItemSellingPlan {
-  id: number;
-  code: string;
-  name: string;
-  commitmentCycles: number;
-  discountPct: number;
-  isPrepaid: boolean;
-}
-
 export interface CartItem {
   variantId: number;
   productId: number;
@@ -24,8 +15,8 @@ export interface CartItem {
   unitPriceMinor: number;
   quantity: number;
   imageUrl?: string;
-  purchaseType: "one_time" | "subscription";
-  sellingPlan?: CartItemSellingPlan | null;
+  purchaseType?: "one_time" | "subscription";
+  sellingPlan?: any;
 }
 
 export interface CartState {
@@ -41,33 +32,11 @@ function getStorageKey(storeSlug: string): string {
 }
 
 function calculateSubtotal(items: CartItem[]): number {
-  return items.reduce((sum, item) => {
-    // If prepaid subscription, total per line item includes cycles
-    if (item.purchaseType === "subscription" && item.sellingPlan?.isPrepaid) {
-      return (
-        sum +
-        item.unitPriceMinor * item.sellingPlan.commitmentCycles * item.quantity
-      );
-    }
-    return sum + item.unitPriceMinor * item.quantity;
-  }, 0);
+  return items.reduce((sum, item) => sum + item.unitPriceMinor * item.quantity, 0);
 }
 
 function calculateItemCount(items: CartItem[]): number {
   return items.reduce((sum, item) => sum + item.quantity, 0);
-}
-
-function matchesItem(
-  existing: CartItem,
-  variantId: number,
-  purchaseType: "one_time" | "subscription",
-  sellingPlanId?: number | null
-): boolean {
-  if (existing.variantId !== variantId) return false;
-  if (existing.purchaseType !== purchaseType) return false;
-  const existingPlanId = existing.sellingPlan ? existing.sellingPlan.id : null;
-  const targetPlanId = sellingPlanId ?? null;
-  return existingPlanId === targetPlanId;
 }
 
 /**
@@ -149,16 +118,13 @@ export function addToCart(storeSlug: string, newItem: CartItem): CartState {
   const current = getCart(storeSlug);
   const items = [...current.items];
 
-  const planId = newItem.sellingPlan ? newItem.sellingPlan.id : null;
-  const existingIndex = items.findIndex((i) =>
-    matchesItem(i, newItem.variantId, newItem.purchaseType, planId)
-  );
+  const existingIndex = items.findIndex((i) => i.variantId === newItem.variantId);
 
   if (existingIndex >= 0) {
     items[existingIndex] = {
       ...items[existingIndex],
       quantity: items[existingIndex].quantity + newItem.quantity,
-      unitPriceMinor: newItem.unitPriceMinor, // Refresh unit price
+      unitPriceMinor: newItem.unitPriceMinor,
     };
   } else {
     items.push(newItem);
@@ -173,18 +139,16 @@ export function addToCart(storeSlug: string, newItem: CartItem): CartState {
 export function updateCartItemQuantity(
   storeSlug: string,
   variantId: number,
-  purchaseType: "one_time" | "subscription",
-  sellingPlanId: number | null | undefined,
   quantity: number
 ): CartState {
   const current = getCart(storeSlug);
 
   if (quantity <= 0) {
-    return removeFromCart(storeSlug, variantId, purchaseType, sellingPlanId);
+    return removeFromCart(storeSlug, variantId);
   }
 
   const items = current.items.map((item) => {
-    if (matchesItem(item, variantId, purchaseType, sellingPlanId)) {
+    if (item.variantId === variantId) {
       return { ...item, quantity };
     }
     return item;
@@ -196,16 +160,9 @@ export function updateCartItemQuantity(
 /**
  * Remove an item from the tenant's cart.
  */
-export function removeFromCart(
-  storeSlug: string,
-  variantId: number,
-  purchaseType: "one_time" | "subscription",
-  sellingPlanId?: number | null
-): CartState {
+export function removeFromCart(storeSlug: string, variantId: number): CartState {
   const current = getCart(storeSlug);
-  const items = current.items.filter(
-    (item) => !matchesItem(item, variantId, purchaseType, sellingPlanId)
-  );
+  const items = current.items.filter((item) => item.variantId !== variantId);
   return saveCart(storeSlug, items);
 }
 

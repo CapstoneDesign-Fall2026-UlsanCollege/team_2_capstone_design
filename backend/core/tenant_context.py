@@ -20,12 +20,10 @@ TENANT_TABLES = [
     "stores_merchantauditlog",
     "catalog_product",
     "catalog_variant",
-    "catalog_sellingplan",
     "catalog_discount",
     "orders_order",
     "orders_orderitem",
     "orders_orderevent",
-    "subscriptions_subscription",
 ]
 
 

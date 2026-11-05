@@ -1,18 +1,8 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React from "react";
 import Link from "next/link";
-import {
-  ChevronDown,
-  Globe,
-  MapPin,
-  Phone,
-  RefreshCw,
-  Search,
-  ShoppingBag,
-  Sparkles,
-  Truck,
-} from "lucide-react";
+import { Search, ShoppingBag } from "lucide-react";
 import { formatNpr } from "@/lib/api";
 
 export interface StorefrontHeaderProps {
@@ -21,13 +11,30 @@ export interface StorefrontHeaderProps {
   tagline?: string;
   logoUrl?: string | null;
   contactPhone?: string | null;
-  cartCount?: number;
+  announcementMessage?: string | null;
   freeShippingThresholdMinor?: number | null;
-  categories?: string[];
+  cartCount?: number;
   onOpenCart?: () => void;
   onOpenSearch?: () => void;
+  onCatalogClick?: () => void;
   onSelectCategory?: (category: string) => void;
   activeCategory?: string;
+  categories?: string[];
+}
+
+function isPlaceholderText(text?: string | null): boolean {
+  if (!text) return true;
+  const trimmed = text.trim();
+  if (!trimmed) return true;
+  const lower = trimmed.toLowerCase();
+  return (
+    lower === "general" ||
+    lower === "aaa" ||
+    lower === "placeholder" ||
+    lower === "online storefront · nepal" ||
+    lower === "online storefront" ||
+    lower === "official online store"
+  );
 }
 
 export function StorefrontHeader({
@@ -35,83 +42,51 @@ export function StorefrontHeader({
   storeName,
   tagline,
   logoUrl,
-  contactPhone,
-  cartCount = 0,
+  announcementMessage,
   freeShippingThresholdMinor,
-  categories = [],
+  cartCount = 0,
   onOpenCart,
   onOpenSearch,
-  onSelectCategory,
-  activeCategory = "all",
+  onCatalogClick,
 }: StorefrontHeaderProps) {
-  const [currentSlide, setCurrentSlide] = useState(0);
+  // Determine announcement message. Hidden if empty.
+  const announcementText = React.useMemo(() => {
+    if (announcementMessage && !isPlaceholderText(announcementMessage)) {
+      return announcementMessage.trim();
+    }
+    if (
+      typeof freeShippingThresholdMinor === "number" &&
+      freeShippingThresholdMinor > 0
+    ) {
+      return `Free Kathmandu Valley delivery on orders over ${formatNpr(
+        freeShippingThresholdMinor
+      )}`;
+    }
+    return null;
+  }, [announcementMessage, freeShippingThresholdMinor]);
 
-  const marqueeAnnouncements = [
-    freeShippingThresholdMinor
-      ? {
-          icon: Truck,
-          text: `FREE KATHMANDU VALLEY DELIVERY ON ORDERS OVER ${formatNpr(freeShippingThresholdMinor).toUpperCase()}`,
-        }
-      : {
-          icon: Truck,
-          text: "FAST KATHMANDU VALLEY & 7-PROVINCE NATIONWIDE DELIVERY",
-        },
-    {
-      icon: RefreshCw,
-      text: "VERIFIED KHALTI EPAYMENTS & CASH ON DELIVERY (COD) ACCEPTED",
-    },
-    {
-      icon: Sparkles,
-      text: "AUTHENTIC QUALITY GOODS DIRECT FROM NEPALI MAKERS",
-    },
-    {
-      icon: MapPin,
-      text: `OFFICIAL ONLINE STORE OF ${storeName.toUpperCase()}`,
-    },
-  ];
-
-  // Auto-rotate announcement marquee every 4.5 seconds
-  useEffect(() => {
-    const timer = setInterval(() => {
-      setCurrentSlide((prev) => (prev + 1) % marqueeAnnouncements.length);
-    }, 4500);
-    return () => clearInterval(timer);
-  }, [marqueeAnnouncements.length]);
-
-  const ActiveIcon = marqueeAnnouncements[currentSlide].icon;
+  const cleanTagline = React.useMemo(() => {
+    if (!tagline || isPlaceholderText(tagline)) return null;
+    return tagline.trim();
+  }, [tagline]);
 
   return (
-    <div className="w-full font-sf-body">
-      {/* 1. Sliding Marquee Announcement Bar */}
-      <div className="w-full bg-sf-ink text-sf-surface text-[11px] font-sf-mono tracking-wider py-2 px-4 transition-all overflow-hidden border-b border-sf-line/40">
-        <div className="max-w-5xl mx-auto flex items-center justify-between">
-          <div className="flex-1 flex items-center justify-center gap-2 overflow-hidden text-center">
-            <ActiveIcon className="w-3.5 h-3.5 text-sf-cta shrink-0" />
-            <span className="font-semibold truncate uppercase">
-              {marqueeAnnouncements[currentSlide].text}
-            </span>
-          </div>
+    <div className="w-full">
+      {/* 1. Announcement Bar: 36px, charcoal (#171716), single static merchant message. Hidden if empty. */}
+      {announcementText && (
+        <aside
+          aria-label="Store announcement"
+          className="w-full h-9 bg-[var(--ink)] text-[var(--surface)] text-xs font-medium px-4 flex items-center justify-center border-b border-[var(--border)] overflow-hidden"
+        >
+          <p className="truncate text-center max-w-4xl tracking-normal">
+            {announcementText}
+          </p>
+        </aside>
+      )}
 
-          {/* Micro dots */}
-          <div className="hidden sm:flex items-center gap-1.5 shrink-0 pl-3">
-            {marqueeAnnouncements.map((_, idx) => (
-              <button
-                key={idx}
-                type="button"
-                onClick={() => setCurrentSlide(idx)}
-                className={`h-1 rounded-full transition-all cursor-pointer ${
-                  currentSlide === idx ? "w-4 bg-sf-surface" : "w-1.5 bg-sf-surface/30"
-                }`}
-                aria-label={`Go to slide ${idx + 1}`}
-              />
-            ))}
-          </div>
-        </div>
-      </div>
-
-      {/* 2. Minimalist Masthead Sticky Navbar */}
-      <header className="sticky top-0 z-30 w-full border-b border-sf-line bg-sf-surface/95 backdrop-blur-md transition-all">
-        <div className="max-w-5xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+      {/* 2. Header Bar: Logo/Name, Clean Navigation, Search, Bag. No glass/blur, 1px border. */}
+      <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--surface)]">
+        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           
           {/* Left: Brand Identity */}
           <Link
@@ -123,109 +98,78 @@ export function StorefrontHeader({
               <img
                 src={logoUrl}
                 alt={storeName}
-                className="h-9 max-w-[140px] object-contain rounded"
+                className="h-8 sm:h-9 max-w-[150px] object-contain rounded"
               />
             ) : (
               <div className="flex flex-col text-left">
-                <span className="font-sf-display text-base sm:text-lg font-bold tracking-tight text-sf-ink uppercase group-hover:opacity-80 transition-opacity">
+                <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-[var(--ink)] leading-none group-hover:opacity-85 transition-opacity">
                   {storeName}
                 </span>
-                <span className="text-[10px] font-sf-mono text-sf-muted tracking-wider uppercase truncate max-w-[200px]">
-                  {tagline || "Online Storefront · Nepal"}
-                </span>
+                {cleanTagline && (
+                  <span className="text-xs text-[var(--ink-2)] truncate max-w-[220px] mt-1 font-normal">
+                    {cleanTagline}
+                  </span>
+                )}
               </div>
             )}
           </Link>
 
-          {/* Center: Dynamic Category & Store Page Links */}
-          <nav className="hidden md:flex items-center gap-4 lg:gap-5 text-xs font-semibold text-sf-ink tracking-wide">
+          {/* Center: Desktop Navigation (Catalog, Our story, Delivery & COD, Contact) */}
+          <nav
+            aria-label="Main storefront navigation"
+            className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--ink-2)]"
+          >
             <button
               type="button"
-              onClick={() => onSelectCategory && onSelectCategory("all")}
-              className={`hover:underline underline-offset-4 cursor-pointer transition-colors ${
-                activeCategory === "all" ? "text-sf-ink font-bold underline" : "text-sf-muted"
-              }`}
+              onClick={onCatalogClick}
+              className="hover:text-[var(--ink)] cursor-pointer transition-colors"
             >
               Catalog
             </button>
-            {categories.slice(0, 3).map((cat) => (
-              <button
-                key={cat}
-                type="button"
-                onClick={() => onSelectCategory && onSelectCategory(cat)}
-                className={`hover:underline underline-offset-4 cursor-pointer transition-colors ${
-                  activeCategory === cat ? "text-sf-ink font-bold underline" : "text-sf-muted"
-                }`}
-              >
-                {cat}
-              </button>
-            ))}
-            <Link
-              href={`/s/${encodeURIComponent(storeSlug)}/subscriptions`}
-              className="text-sf-muted hover:text-sf-ink transition-colors"
-            >
-              Subscriptions
-            </Link>
             <Link
               href={`/s/${encodeURIComponent(storeSlug)}/about`}
-              className="text-sf-muted hover:text-sf-ink transition-colors"
+              className="hover:text-[var(--ink)] cursor-pointer transition-colors"
             >
-              About
+              Our story
             </Link>
             <Link
               href={`/s/${encodeURIComponent(storeSlug)}/shipping`}
-              className="text-sf-muted hover:text-sf-ink transition-colors"
+              className="hover:text-[var(--ink)] cursor-pointer transition-colors"
             >
               Delivery &amp; COD
             </Link>
             <Link
               href={`/s/${encodeURIComponent(storeSlug)}/contact`}
-              className="text-sf-muted hover:text-sf-ink transition-colors"
+              className="hover:text-[var(--ink)] cursor-pointer transition-colors"
             >
               Contact
             </Link>
           </nav>
 
-          {/* Right: Actions (Search, WhatsApp, Cart) */}
-          <div className="flex items-center gap-2">
+          {/* Right: Actions (Search, Bag) with min 44px tap targets */}
+          <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Search Trigger */}
             <button
               type="button"
               onClick={onOpenSearch}
-              className="p-2 text-sf-ink hover:text-sf-cta rounded-full hover:bg-sf-canvas transition-colors cursor-pointer"
+              className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
               aria-label="Search catalog"
             >
               <Search className="w-4 h-4" />
             </button>
 
-            {/* Direct Phone / WhatsApp Button */}
-            {contactPhone && (
-              <a
-                href={`https://wa.me/${(() => {
-                  const d = contactPhone.replace(/\D/g, "").replace(/^0+/, "");
-                  return d.startsWith("977") ? d : `977${d}`;
-                })()}?text=Hi%20${encodeURIComponent(storeName)}%2C%20I%20have%20an%20inquiry%20about%20your%20products.`}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="hidden sm:flex items-center gap-1.5 px-3 py-1.5 rounded-full border border-sf-line text-[11px] font-sf-mono text-sf-muted hover:text-sf-ink hover:border-sf-ink transition-colors"
-              >
-                <Phone className="w-3 h-3 text-sf-accent" />
-                <span>Contact</span>
-              </a>
-            )}
-
-            {/* Slide-Out Cart Trigger Button */}
+            {/* Bag Button: Bag (count) */}
             <button
               type="button"
               onClick={onOpenCart}
-              className="relative flex items-center gap-2 px-3.5 py-1.5 rounded-full bg-sf-ink text-sf-surface hover:opacity-90 transition-all active:scale-95 shadow-xs cursor-pointer text-xs font-semibold"
-              aria-label={`Open shopping cart with ${cartCount} items`}
+              className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] transition-colors cursor-pointer flex items-center gap-2 text-xs sm:text-sm font-medium"
+              aria-label={`Open shopping bag with ${cartCount} items`}
             >
-              <ShoppingBag className="w-4 h-4" />
+              <ShoppingBag className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Bag</span>
               {cartCount > 0 && (
-                <span className="px-1.5 py-0.2 rounded-full bg-sf-cta text-sf-cta-ink text-[10px] font-bold font-sf-mono">
-                  {cartCount}
+                <span className="tabular-nums font-semibold">
+                  ({cartCount})
                 </span>
               )}
             </button>

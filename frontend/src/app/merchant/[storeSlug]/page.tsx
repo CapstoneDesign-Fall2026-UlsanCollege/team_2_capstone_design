@@ -206,6 +206,7 @@ export default function MerchantOverviewPage({ params }: PageProps) {
           ))}
         </div>
         <div className="h-64 rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-pulse" />
+        <div className="h-48 rounded-xl border border-[var(--border)] bg-[var(--surface)] animate-pulse" />
       </div>
     );
   }

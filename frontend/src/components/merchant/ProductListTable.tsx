@@ -199,11 +199,6 @@ export function ProductListTable({
                             <span className="font-mono text-[10px] text-[var(--muted-foreground)] truncate">
                               /{p.slug}
                             </span>
-                            {p.allow_subscription && (
-                              <span className="text-[9px] font-mono px-1 py-0.2 rounded bg-[var(--secondary)] text-[var(--muted-foreground)] border border-[var(--border)]">
-                                ↻ Sub
-                              </span>
-                            )}
                           </div>
                         </div>
                       </div>

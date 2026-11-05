@@ -2,12 +2,11 @@ import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
-import { ProductItem, SellingPlanItem, StorePublicMetadata } from "@/lib/api";
+import { ProductItem, StorePublicMetadata } from "@/lib/api";
 import { ProductDetailView } from "@/components/storefront/ProductDetailView";
 
 interface StoreCatalogData {
   products: ProductItem[];
-  selling_plans: SellingPlanItem[];
 }
 
 async function fetchStoreAndProduct(
@@ -16,7 +15,6 @@ async function fetchStoreAndProduct(
 ): Promise<{
   store: StorePublicMetadata | null;
   product: ProductItem | null;
-  sellingPlans: SellingPlanItem[];
   relatedProducts: ProductItem[];
 }> {
   const origin = process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000";
@@ -48,7 +46,7 @@ async function fetchStoreAndProduct(
 
     const catalog: StoreCatalogData = catalogRes.ok
       ? await catalogRes.json()
-      : { products: [], selling_plans: [] };
+      : { products: [] };
 
     // Find product strictly from backend catalog
     const product: ProductItem | null =
@@ -65,14 +63,12 @@ async function fetchStoreAndProduct(
     return {
       store,
       product,
-      sellingPlans: catalog.selling_plans,
       relatedProducts,
     };
   } catch {
     return {
       store: null,
       product: null,
-      sellingPlans: [],
       relatedProducts: [],
     };
   }
@@ -84,7 +80,7 @@ export default async function StorefrontProductDetailPage({
   params: Promise<{ storeSlug: string; productId: string }>;
 }) {
   const { storeSlug, productId } = await params;
-  const { store, product, sellingPlans, relatedProducts } =
+  const { store, product, relatedProducts } =
     await fetchStoreAndProduct(storeSlug, productId);
 
   if (!store || !product) {
@@ -120,7 +116,6 @@ export default async function StorefrontProductDetailPage({
         <ProductDetailView
           store={store}
           product={product}
-          sellingPlans={sellingPlans}
           relatedProducts={relatedProducts}
         />
       </main>

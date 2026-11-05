@@ -95,17 +95,7 @@ export function OrderQueueTable({
                 >
                   {/* Order Number */}
                   <td className="py-3.5 px-4 font-mono font-bold text-[var(--foreground)] tabular-nums whitespace-nowrap">
-                    <div className="flex items-center gap-1.5">
-                      <span>{order.order_number}</span>
-                      {order.order_type === "SUBSCRIPTION_CYCLE" && (
-                        <span
-                          title="Recurring Delivery Order"
-                          className="text-[10px] text-blue-600 font-bold"
-                        >
-                          ↻
-                        </span>
-                      )}
-                    </div>
+                    <span>{order.order_number}</span>
                   </td>
 
                   {/* Customer */}

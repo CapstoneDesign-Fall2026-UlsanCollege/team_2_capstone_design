@@ -16,7 +16,6 @@ import {
   Minus,
   Package,
   Plus,
-  RefreshCw,
   Share2,
   ShieldCheck,
   ShoppingBag,
@@ -27,7 +26,6 @@ import {
   formatNpr,
   ProductItem,
   ProductVariant,
-  SellingPlanItem,
   StorePublicMetadata,
 } from "@/lib/api";
 import { useCart } from "./CartContext";
@@ -35,31 +33,13 @@ import { useCart } from "./CartContext";
 export interface ProductDetailViewProps {
   store: StorePublicMetadata;
   product: ProductItem;
-  sellingPlans: SellingPlanItem[];
+  sellingPlans?: any;
   relatedProducts: ProductItem[];
-}
-
-function getPlanCadenceLabel(plan: SellingPlanItem): string {
-  if (plan.name) {
-    const n = plan.name.toLowerCase();
-    if (n.includes("weekly") && !n.includes("bi-weekly") && !n.includes("biweekly")) return "Weekly";
-    if (n.includes("bi-weekly") || n.includes("biweekly") || n.includes("every 2 weeks")) return "Bi-Weekly";
-    if (n.includes("monthly") || n.includes("every 4 weeks")) return "Monthly";
-    if (plan.is_prepaid && plan.commitment_cycles) return `${plan.commitment_cycles}-Delivery`;
-    return plan.name.replace(/^(repeat|club|subscription)\s*[-:]?\s*/i, "").trim() || plan.name;
-  }
-  if (plan.code.includes("weekly") && !plan.code.includes("biweekly")) return "Weekly";
-  if (plan.code.includes("biweekly")) return "Bi-Weekly";
-  if (plan.code.includes("3m")) return "3-Month";
-  if (plan.code.includes("6m")) return "6-Month";
-  if (plan.code.includes("12m")) return "12-Month";
-  return plan.name || "Repeat Delivery";
 }
 
 export function ProductDetailView({
   store,
   product,
-  sellingPlans = [],
   relatedProducts = [],
 }: ProductDetailViewProps) {
   const router = useRouter();
@@ -121,9 +101,6 @@ export function ProductDetailView({
     setSelectedAttributes((prev) => ({ ...prev, [attrName]: value }));
   };
 
-  const [purchaseType, setPurchaseType] = useState<"one_time" | "subscription">(
-    product.allow_subscription ? "subscription" : "one_time"
-  );
   const [quantity, setQuantity] = useState<number>(1);
   const [justAdded, setJustAdded] = useState<boolean>(false);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
@@ -137,40 +114,9 @@ export function ProductDetailView({
   const selectedVariant: ProductVariant | null =
     variants.find((v) => v.id === selectedVariantId) || defaultVariant;
 
-  const allowSubscription = Boolean(
-    product.allow_subscription && (selectedVariant?.allow_subscription ?? true)
-  );
-
-  const activePlans = sellingPlans.filter((p) => p.is_active);
-  const defaultPlan =
-    activePlans.find((p) => p.code === "hr-biweekly") ||
-    activePlans.find((p) => !p.is_prepaid) ||
-    activePlans[0] ||
-    null;
-
-  const [selectedPlanId, setSelectedPlanId] = useState<number | null>(
-    defaultPlan ? defaultPlan.id : null
-  );
-
-  const selectedPlan: SellingPlanItem | null =
-    activePlans.find((p) => p.id === selectedPlanId) || defaultPlan;
-
-  const discountPct = selectedPlan ? selectedPlan.discount_pct : 10;
   const basePriceMinor = selectedVariant ? selectedVariant.price_minor : 75000;
-  const isSubscription = purchaseType === "subscription" && allowSubscription;
-
-  let unitPriceMinor = basePriceMinor;
-  let totalPriceMinor = basePriceMinor * quantity;
-
-  if (isSubscription && selectedPlan) {
-    const discountMultiplier = (100 - discountPct) / 100;
-    unitPriceMinor = Math.round(basePriceMinor * discountMultiplier);
-    if (selectedPlan.is_prepaid) {
-      totalPriceMinor = unitPriceMinor * selectedPlan.commitment_cycles * quantity;
-    } else {
-      totalPriceMinor = unitPriceMinor * quantity;
-    }
-  }
+  const unitPriceMinor = basePriceMinor;
+  const totalPriceMinor = basePriceMinor * quantity;
 
   const isInStock = selectedVariant ? selectedVariant.in_stock : true;
 
@@ -212,17 +158,6 @@ export function ProductDetailView({
       unitPriceMinor,
       quantity,
       imageUrl: product.image_url,
-      purchaseType: isSubscription ? "subscription" : "one_time",
-      sellingPlan: isSubscription && selectedPlan
-        ? {
-            id: selectedPlan.id,
-            code: selectedPlan.code,
-            name: selectedPlan.name,
-            commitmentCycles: selectedPlan.commitment_cycles,
-            discountPct: selectedPlan.discount_pct,
-            isPrepaid: selectedPlan.is_prepaid,
-          }
-        : null,
     });
 
     setJustAdded(true);
@@ -244,17 +179,6 @@ export function ProductDetailView({
         unitPriceMinor,
         quantity,
         imageUrl: product.image_url,
-        purchaseType: isSubscription ? "subscription" : "one_time",
-        sellingPlan: isSubscription && selectedPlan
-          ? {
-              id: selectedPlan.id,
-              code: selectedPlan.code,
-              name: selectedPlan.name,
-              commitmentCycles: selectedPlan.commitment_cycles,
-              discountPct: selectedPlan.discount_pct,
-              isPrepaid: selectedPlan.is_prepaid,
-            }
-          : null,
       },
       false
     );
@@ -342,11 +266,6 @@ export function ProductDetailView({
 
             {/* Badges Overlay */}
             <div className="absolute top-3 left-3 flex flex-col gap-1.5 pointer-events-none z-10">
-              {allowSubscription && (
-                <span className="px-2 py-0.5 rounded text-[10px] font-sf-mono font-bold uppercase tracking-wider bg-emerald-800 text-white shadow-xs">
-                  Subscribe &amp; Save 10%
-                </span>
-              )}
               {isInStock ? (
                 <span className="px-2 py-0.5 rounded text-[10px] font-sf-mono font-medium uppercase tracking-wider bg-sf-surface/95 text-sf-ink border border-sf-line shadow-xs">
                   In Stock · Dispatch in 24h
@@ -408,11 +327,6 @@ export function ProductDetailView({
               <span className="font-sf-mono text-2xl sm:text-3xl font-bold text-sf-ink tabular-nums">
                 {formatNpr(unitPriceMinor)}
               </span>
-              {isSubscription && (
-                <span className="text-xs font-sf-mono text-emerald-600 dark:text-emerald-400 font-bold bg-emerald-500/10 px-2 py-0.5 rounded border border-emerald-500/30">
-                  Save 10% on recurring delivery
-                </span>
-              )}
             </div>
           </div>
 
@@ -496,123 +410,7 @@ export function ProductDetailView({
             </div>
           )}
 
-          {/* 3. Purchase Mode: One-Time vs. Subscription */}
-          {allowSubscription && (
-            <div className="space-y-2 pt-1">
-              <label className="font-bold text-sf-ink uppercase tracking-wider text-[11px] font-sf-mono block">
-                Purchase Mode
-              </label>
-
-              {/* Option A: One-time Purchase */}
-              <div
-                onClick={() => setPurchaseType("one_time")}
-                className={`min-h-[50px] p-3 rounded-sf border transition-all cursor-pointer ${
-                  purchaseType === "one_time"
-                    ? "border-sf-ink bg-sf-surface ring-2 ring-sf-ink shadow-xs"
-                    : "border-sf-line bg-sf-canvas hover:border-sf-muted"
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="radio"
-                      name="purchase_option_detail"
-                      checked={purchaseType === "one_time"}
-                      onChange={() => setPurchaseType("one_time")}
-                      className="accent-sf-cta w-4 h-4 cursor-pointer"
-                    />
-                    <div>
-                      <span className="font-bold text-sf-ink">One-time purchase</span>
-                      <p className="text-[11px] text-sf-muted">Standard one-time doorstep delivery</p>
-                    </div>
-                  </div>
-                  <span className="font-sf-mono font-bold text-sf-ink text-sm tabular-nums">
-                    {formatNpr(basePriceMinor)}
-                  </span>
-                </div>
-              </div>
-
-              {/* Option B: Subscribe & Save 10% */}
-              <div
-                onClick={() => setPurchaseType("subscription")}
-                className={`min-h-[50px] p-3 rounded-sf border transition-all cursor-pointer space-y-2.5 ${
-                  purchaseType === "subscription"
-                    ? "border-emerald-600 bg-emerald-500/10 ring-1 ring-emerald-600 shadow-xs"
-                    : "border-sf-line bg-sf-canvas hover:border-sf-muted"
-                }`}
-              >
-                <div className="flex items-center justify-between text-xs">
-                  <div className="flex items-center gap-2.5">
-                    <input
-                      type="radio"
-                      name="purchase_option_detail"
-                      checked={purchaseType === "subscription"}
-                      onChange={() => setPurchaseType("subscription")}
-                      className="accent-emerald-600 w-4 h-4 cursor-pointer"
-                    />
-                    <div>
-                      <div className="flex items-center gap-1.5">
-                        <span className="font-bold text-sf-ink">Repeat Subscription</span>
-                        <span className="px-1.5 py-0.2 rounded text-[9px] font-sf-mono font-bold bg-emerald-600 text-white">
-                          Save 10%
-                        </span>
-                      </div>
-                      <p className="text-[11px] text-sf-muted">Automated fresh delivery on your schedule</p>
-                    </div>
-                  </div>
-                  <div className="text-right">
-                    <span className="font-sf-mono font-bold text-emerald-600 dark:text-emerald-400 text-sm tabular-nums block">
-                      {formatNpr(Math.round(basePriceMinor * 0.9))}
-                    </span>
-                    <span className="text-[10px] text-sf-muted">/ delivery</span>
-                  </div>
-                </div>
-
-                {purchaseType === "subscription" && (
-                  <div className="pt-2 border-t border-emerald-500/30 space-y-2 animate-in fade-in duration-200">
-                    <div className="flex items-center justify-between text-[11px] font-sf-mono text-sf-muted">
-                      <span className="font-semibold text-sf-ink">Delivery Schedule:</span>
-                      <span className="text-emerald-600 dark:text-emerald-400 font-semibold">✓ Pause or skip anytime</span>
-                    </div>
-
-                    <div className="grid grid-cols-3 gap-2">
-                      {activePlans.map((plan) => {
-                        const isPlanSelected = plan.id === selectedPlanId;
-                        const planPrice = Math.round(
-                          basePriceMinor * ((100 - plan.discount_pct) / 100)
-                        );
-
-                        return (
-                          <button
-                            key={plan.id}
-                            type="button"
-                            onClick={(e) => {
-                              e.stopPropagation();
-                              setSelectedPlanId(plan.id);
-                            }}
-                            className={`min-h-[44px] p-2 rounded-sf border text-center transition-all cursor-pointer ${
-                              isPlanSelected
-                                ? "border-sf-ink bg-sf-ink text-white font-bold shadow-xs"
-                                : "border-sf-line bg-sf-surface text-sf-ink hover:border-sf-muted"
-                            }`}
-                          >
-                            <div className="text-[11px] font-bold line-clamp-1">
-                              {getPlanCadenceLabel(plan)}
-                            </div>
-                            <div className={`text-[10px] font-sf-mono mt-0.5 ${isPlanSelected ? "text-zinc-300" : "text-sf-muted"}`}>
-                              {formatNpr(planPrice)}
-                            </div>
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
-          )}
-
-          {/* 4. Quantity Stepper & Add to Bag */}
+          {/* 3. Quantity Stepper & Add to Bag */}
           <div className="space-y-3 pt-2">
             <div className="flex items-center justify-between">
               <label className="font-bold text-sf-ink uppercase tracking-wider text-[11px] font-sf-mono">

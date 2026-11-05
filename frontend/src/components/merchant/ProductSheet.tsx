@@ -112,9 +112,6 @@ function ProductForm({
   const [imageUrl, setImageUrl] = useState(product?.image_url || "");
   const [initialPriceRs, setInitialPriceRs] = useState("1200");
   const [allowOneTime, setAllowOneTime] = useState(product ? product.allow_one_time : true);
-  const [allowSubscription, setAllowSubscription] = useState(
-    product ? product.allow_subscription : false
-  );
   const [isActive, setIsActive] = useState(product ? product.is_active : true);
 
   // Image upload state

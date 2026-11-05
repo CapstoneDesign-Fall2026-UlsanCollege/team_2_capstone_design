@@ -9,7 +9,6 @@ import {
   Mail,
   MapPin,
   ShoppingBag,
-  Repeat,
   Calendar,
   ExternalLink,
   CreditCard,
@@ -310,62 +309,6 @@ export function CustomerDetailSheet({
                     </div>
                   )}
                 </div>
-
-                {/* Subscriptions Section (if any) */}
-                {detail.subscriptions && detail.subscriptions.length > 0 && (
-                  <div className="space-y-3">
-                    <div className="flex items-center justify-between">
-                      <h3 className="text-xs font-mono uppercase tracking-wider font-bold text-[var(--muted-foreground)] flex items-center gap-1.5">
-                        <Repeat className="w-3.5 h-3.5 text-emerald-500" />
-                        <span>Subscriptions ({detail.subscriptions.length})</span>
-                      </h3>
-                      <Link
-                        href={`/merchant/${encodeURIComponent(storeSlug)}/subscriptions`}
-                        className="inline-flex items-center gap-1 text-[11px] font-mono text-[var(--foreground)] hover:underline"
-                      >
-                        <span>Manage All</span>
-                        <ExternalLink className="w-3 h-3" />
-                      </Link>
-                    </div>
-
-                    <div className="space-y-2">
-                      {detail.subscriptions.map((sub) => (
-                        <div
-                          key={sub.id}
-                          className="p-3 rounded-lg border border-[var(--border)] bg-emerald-500/5 space-y-1.5"
-                        >
-                          <div className="flex items-center justify-between gap-2">
-                            <span className="text-xs font-bold text-[var(--foreground)]">
-                              {sub.product_name} ({sub.variant_label})
-                            </span>
-                            {sub.is_lapsed ? (
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-rose-500/10 text-rose-600 dark:text-rose-400 border border-rose-500/20 font-semibold">
-                                Payment Due
-                              </span>
-                            ) : (
-                              <span className="text-[10px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-semibold">
-                                {sub.status}
-                              </span>
-                            )}
-                          </div>
-                          <div className="text-[11px] text-[var(--muted-foreground)] font-mono flex items-center justify-between tabular-nums">
-                            <span>Plan: {sub.plan_name}</span>
-                            <span>
-                              {sub.cycles_total != null && sub.cycles_remaining != null
-                                ? `${sub.cycles_remaining} of ${sub.cycles_total} left`
-                                : "Pay-per-delivery"}
-                            </span>
-                          </div>
-                          {sub.next_delivery_date && (
-                            <p className="text-[10px] font-mono text-[var(--muted-foreground)] pt-1 border-t border-[var(--border)]/40 tabular-nums">
-                              Next dispatch: {sub.next_delivery_date}
-                            </p>
-                          )}
-                        </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
               </>
             ) : null}
           </div>

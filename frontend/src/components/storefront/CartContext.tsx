@@ -29,17 +29,8 @@ export interface CartContextValue {
   closeCart: () => void;
   toggleCart: () => void;
   addItem: (item: CartItem, openDrawer?: boolean) => void;
-  updateQty: (
-    variantId: number,
-    purchaseType: "one_time" | "subscription",
-    sellingPlanId: number | null | undefined,
-    quantity: number
-  ) => void;
-  removeItem: (
-    variantId: number,
-    purchaseType: "one_time" | "subscription",
-    sellingPlanId?: number | null
-  ) => void;
+  updateQty: (variantId: number, quantity: number) => void;
+  removeItem: (variantId: number) => void;
   clear: () => void;
 }
 
@@ -91,19 +82,8 @@ export function CartProvider({
   );
 
   const updateQty = useCallback(
-    (
-      variantId: number,
-      purchaseType: "one_time" | "subscription",
-      sellingPlanId: number | null | undefined,
-      quantity: number
-    ) => {
-      const next = updateCartItemQuantity(
-        storeSlug,
-        variantId,
-        purchaseType,
-        sellingPlanId,
-        quantity
-      );
+    (variantId: number, quantity: number) => {
+      const next = updateCartItemQuantity(storeSlug, variantId, quantity);
       setItems(next.items);
       setSubtotalMinor(next.subtotalMinor);
       setItemCount(next.itemCount);
@@ -112,12 +92,8 @@ export function CartProvider({
   );
 
   const removeItem = useCallback(
-    (
-      variantId: number,
-      purchaseType: "one_time" | "subscription",
-      sellingPlanId?: number | null
-    ) => {
-      const next = removeFromCart(storeSlug, variantId, purchaseType, sellingPlanId);
+    (variantId: number) => {
+      const next = removeFromCart(storeSlug, variantId);
       setItems(next.items);
       setSubtotalMinor(next.subtotalMinor);
       setItemCount(next.itemCount);

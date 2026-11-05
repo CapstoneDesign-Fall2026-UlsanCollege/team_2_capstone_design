@@ -843,6 +843,7 @@ export interface OrderQueueCounts {
 
 export interface MerchantOrdersResponse {
   orders: OrderDetail[];
+  subscriptions?: any[];
   counts: OrderQueueCounts;
 }
 
