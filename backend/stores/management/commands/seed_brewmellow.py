@@ -4,11 +4,10 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from catalog.models import Product, SellingPlan, Variant
+from catalog.models import Product, Variant
 from core.tenant_context import BypassRLSContext
 from orders.models import Order, OrderEvent, OrderItem
 from stores.models import Customer, Store, StoreMembership
-from subscriptions.models import Subscription
 
 User = get_user_model()
 
@@ -128,7 +127,6 @@ class Command(BaseCommand):
                         "image_url": p_data["image_url"],
                         "attributes": p_data["attributes"],
                         "allow_one_time": True,
-                        "allow_subscription": True,
                         "is_active": True,
                         "sort_order": p_idx,
                     }
@@ -143,38 +141,12 @@ class Command(BaseCommand):
                             "weight_grams": v_data["weight"],
                             "price_minor": v_data["price"],
                             "allow_one_time": True,
-                            "allow_subscription": v_data["sub"],
                             "in_stock": True,
                             "is_active": True,
                             "sort_order": v_idx,
                         }
                     )
                     variants_by_sku[v_data["sku"]] = variant
-
-            # 5. Selling Plans
-            plans_data = [
-                {"code": "bm-payg", "name": "Pay-per-delivery", "cycles": 1, "discount": 0, "prepaid": False, "order": 0},
-                {"code": "bm-3m", "name": "3 Months Prepaid", "cycles": 3, "discount": 5, "prepaid": True, "order": 1},
-                {"code": "bm-6m", "name": "6 Months Prepaid", "cycles": 6, "discount": 10, "prepaid": True, "order": 2},
-                {"code": "bm-12m", "name": "12 Months Prepaid", "cycles": 12, "discount": 15, "prepaid": True, "order": 3},
-            ]
-            plans_by_code = {}
-            for pl in plans_data:
-                plan, _ = SellingPlan.objects.update_or_create(
-                    store=store,
-                    code=pl["code"],
-                    defaults={
-                        "name": pl["name"],
-                        "interval_unit": "MONTH",
-                        "interval_count": 1,
-                        "commitment_cycles": pl["cycles"],
-                        "discount_pct": pl["discount"],
-                        "is_prepaid": pl["prepaid"],
-                        "is_active": True,
-                        "sort_order": pl["order"],
-                    }
-                )
-                plans_by_code[pl["code"]] = plan
 
             # 6. Customers
             customers_seed = [
@@ -259,14 +231,14 @@ class Command(BaseCommand):
                 defaults={"from_status": "SHIPPED", "note": "Delivered · Collected Rs. 750 cash"}
             )
 
-            # Order 2: Bikash, Subscription Cycle Khalti
+            # Order 2: Bikash, One-time Khalti
             bikash_cust, bikash_addr = customers_by_email["bikash.gurung@example.com.np"]
             order2, _ = Order.objects.update_or_create(
                 store=store,
                 order_number="BM-2026-0002",
                 defaults={
                     "customer": bikash_cust,
-                    "order_type": "SUBSCRIPTION_CYCLE",
+                    "order_type": "ONE_TIME",
                     "status": "SHIPPED",
                     "payment_method": "KHALTI",
                     "payment_status": "PAID",
@@ -349,39 +321,6 @@ class Command(BaseCommand):
                 order=order3,
                 to_status="PROCESSING",
                 defaults={"from_status": "PAID", "note": "Roasting batch scheduled"}
-            )
-
-            # 8. Subscriptions
-            now = timezone.now().date()
-            Subscription.objects.update_or_create(
-                store=store,
-                customer=sita_cust,
-                variant=variants_by_sku["bm-gul-250g"],
-                defaults={
-                    "selling_plan": plans_by_code["bm-3m"],
-                    "order": order1,
-                    "status": "ACTIVE",
-                    "unit_price_minor": 61750,
-                    "next_delivery_date": now + timedelta(days=5),
-                    "cycles_total": 3,
-                    "cycles_remaining": 2,
-                    "shipping_address_snapshot": sita_addr,
-                }
-            )
-            Subscription.objects.update_or_create(
-                store=store,
-                customer=bikash_cust,
-                variant=variants_by_sku["bm-ilm-500g"],
-                defaults={
-                    "selling_plan": plans_by_code["bm-6m"],
-                    "order": order2,
-                    "status": "ACTIVE",
-                    "unit_price_minor": 126000,
-                    "next_delivery_date": now + timedelta(days=21),
-                    "cycles_total": 6,
-                    "cycles_remaining": 5,
-                    "shipping_address_snapshot": bikash_addr,
-                }
             )
 
         self.stdout.write(self.style.SUCCESS("BrewMellow Store #1 seeded successfully."))

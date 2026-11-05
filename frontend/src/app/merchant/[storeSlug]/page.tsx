@@ -32,7 +32,8 @@ import { SetupGuideCard } from "@/components/merchant/SetupGuideCard";
 import { NeedsAttentionCards } from "@/components/merchant/NeedsAttentionCards";
 import { HomeKpiStrip, HomeKpiData } from "@/components/merchant/HomeKpiStrip";
 import { ProductSheet } from "@/components/merchant/ProductSheet";
-import { SteepChart } from "@/components/merchant/SteepChart";
+import { SalesBarChart } from "@/components/merchant/SalesBarChart";
+import { RecentOrdersSection } from "@/components/merchant/RecentOrdersSection";
 import {
   countsAsSales,
   fulfillmentView,
@@ -280,112 +281,20 @@ export default function MerchantOverviewPage({ params }: PageProps) {
       {/* 4. KPI Strip */}
       <HomeKpiStrip data={kpiData} rangeLabel={rangeLabel} />
 
-      {/* 5. Sales Chart Section (BAR chart, today highlighted, 240px tall) */}
-      <div className="space-y-2">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Sales</h2>
-          <Button variant="tertiary" size="sm" asChild className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)]">
-            <Link href={`${baseHref}/analytics`}>
-              <span>Full report</span>
-              <ArrowRight className="size-3.5 ml-1" />
-            </Link>
-          </Button>
-        </div>
+      {/* 5. Sales Chart Section (BAR chart, near-black bars, today highlighted, 240px tall, compact summary if < 5 orders) */}
+      <SalesBarChart
+        series={chartSeries}
+        storeSlug={storeSlug}
+        totalOrdersInRange={kpiData.ordersCount}
+        totalSalesMinor={kpiData.salesPaidMinor}
+        rangeLabel={rangeLabel}
+      />
 
-        <Card className="border-[var(--border)] bg-[var(--surface)] overflow-hidden">
-          <CardContent className="p-4 sm:p-5">
-            <SteepChart
-              series={chartSeries}
-              mode={chartMode}
-              showOrdersOverlay={false}
-              showTargetLine={showCompare}
-              height={240}
-            />
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* 6. Recent Orders Section */}
-      <div className="space-y-2.5">
-        <div className="flex items-center justify-between">
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Recent orders</h2>
-          <Button variant="tertiary" size="sm" asChild className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)]">
-            <Link href={`${baseHref}/orders`}>
-              <span>All orders</span>
-              <ArrowRight className="size-3.5 ml-1" />
-            </Link>
-          </Button>
-        </div>
-
-        {recentOrders.length === 0 ? (
-          <Card className="border-[var(--border)] bg-[var(--surface)]">
-            <CardContent className="p-8 text-center space-y-3">
-              <div className="size-10 rounded-full border border-[var(--border)] bg-[var(--canvas)] flex items-center justify-center mx-auto text-[var(--ink-2)]">
-                <ShoppingBag className="size-5" />
-              </div>
-              <div className="space-y-1">
-                <p className="text-sm font-semibold text-[var(--ink)]">No orders yet</p>
-                <p className="text-xs text-[var(--ink-2)] max-w-sm mx-auto">
-                  When customers purchase from your store, their orders will appear here.
-                </p>
-              </div>
-              <div className="pt-1">
-                <Button variant="secondary" size="sm" asChild>
-                  <a href={`/s/${encodeURIComponent(storeSlug)}`} target="_blank" rel="noopener noreferrer">
-                    <span>Visit live store</span>
-                    <ExternalLink className="size-3.5 ml-1" />
-                  </a>
-                </Button>
-              </div>
-            </CardContent>
-          </Card>
-        ) : (
-          <Card className="border-[var(--border)] bg-[var(--surface)] overflow-hidden">
-            <div className="divide-y divide-[var(--border)]">
-              {recentOrders.map((ord) => {
-                const p = paymentView(ord);
-                const f = fulfillmentView(ord);
-                return (
-                  <Link
-                    key={ord.id}
-                    href={`${baseHref}/orders`}
-                    className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 p-4 hover:bg-[var(--canvas)] transition-colors"
-                  >
-                    <div className="space-y-1 min-w-0">
-                      <div className="flex items-center gap-2">
-                        <span className="font-semibold text-[var(--ink)] tabular-nums">
-                          {ord.order_number}
-                        </span>
-                        <span className="text-xs text-[var(--ink-2)] truncate">
-                          · {ord.customer_name}
-                        </span>
-                      </div>
-                      <p className="text-xs text-[var(--ink-2)]">
-                        {new Date(ord.created_at).toLocaleDateString("en-NP", {
-                          month: "short",
-                          day: "numeric",
-                          hour: "2-digit",
-                          minute: "2-digit",
-                        })}
-                      </p>
-                    </div>
-
-                    <div className="flex items-center justify-between sm:justify-end gap-3 shrink-0">
-                      <span className="text-sm font-semibold text-[var(--ink)] tabular-nums">
-                        {formatNpr(ord.total_minor)}
-                      </span>
-                      <div className="flex items-center gap-1.5">
-                        <Chip tone={p.tone}>{p.label}</Chip>
-                        <Chip tone={f.tone}>{f.label}</Chip>
-                      </div>
-                    </div>
-                  </Link>
-                );
-              })}
-            </div>
-          </Card>
-        )}
-      </div>
+      {/* 6. Recent Orders Section (Responsive table on desktop/tablet, card list on mobile) */}
+      <RecentOrdersSection
+        orders={recentOrders}
+        storeSlug={storeSlug}
+      />
 
       {/* Inline Product Create / Edit Slide-Over Sheet */}
       <ProductSheet

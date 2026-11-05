@@ -13,7 +13,6 @@ from catalog.models import Discount
 from core.tenant_context import BypassRLSContext
 from orders.models import Order, OrderItem
 from stores.models import Customer, MerchantAuditLog, StoreMembership
-from subscriptions.models import Subscription
 
 
 DISTRICT_TO_PROVINCE = {
@@ -139,8 +138,6 @@ def build_slice6_views(StoreMerchantMixin):
 
     class MerchantAnalyticsView(StoreMerchantMixin, APIView):
         def get(self, request, store_slug):
-            from subscriptions.services import compute_plan_interval_days
-
             range_key = str(request.query_params.get("range", "30d")).strip().lower()
             now = timezone.now()
             today = now.date()
@@ -201,17 +198,6 @@ def build_slice6_views(StoreMerchantMixin):
                 else 0
             )
 
-            # Active MRR
-            active_subs = (
-                Subscription.objects.for_store(self.store)
-                .filter(status="ACTIVE")
-                .select_related("selling_plan")
-            )
-            active_mrr_minor = 0
-            for sub in active_subs:
-                interval_days = max(1, compute_plan_interval_days(sub.selling_plan))
-                active_mrr_minor += round(sub.unit_price_minor * (30 / interval_days))
-
             # Daily chart series (up to 14 or 30 daily points for crisp Polaris bar chart)
             chart_days = 7 if range_key == "7d" else 14
             daily_map = {}
@@ -262,13 +248,11 @@ def build_slice6_views(StoreMerchantMixin):
             # Payment Rail Mix
             khalti_orders = [o for o in valid_orders if o.payment_method == "KHALTI" and o.total_minor > 0]
             cod_orders = [o for o in valid_orders if o.payment_method == "COD"]
-            prepaid_cycle_orders = [o for o in valid_orders if o.total_minor == 0 and o.order_type == "SUBSCRIPTION_CYCLE"]
 
             payment_mix = []
             for code, label, bucket in [
                 ("KHALTI", "Khalti Digital Wallet", khalti_orders),
                 ("COD", "Cash on Delivery (COD)", cod_orders),
-                ("PREPAID_CYCLE", "Prepaid Cycle Dispatch (Rs. 0)", prepaid_cycle_orders),
             ]:
                 rev = sum(o.total_minor for o in bucket)
                 cnt = len(bucket)
@@ -318,7 +302,6 @@ def build_slice6_views(StoreMerchantMixin):
                     "repeat_customer_rate_pct": repeat_customer_rate_pct,
                     "total_customers": buying_customers,
                     "repeat_customers": repeat_customers,
-                    "active_mrr_minor": active_mrr_minor,
                 },
                 "daily_series": daily_series,
                 "sales_by_province": sales_by_province,

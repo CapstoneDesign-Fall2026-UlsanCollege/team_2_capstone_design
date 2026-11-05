@@ -7,7 +7,6 @@ from stores.models import StoreScopedManager
 class Order(models.Model):
     ORDER_TYPE_CHOICES = [
         ("ONE_TIME", "One-time"),
-        ("SUBSCRIPTION_CYCLE", "Subscription cycle"),
     ]
 
     STATUS_CHOICES = [
@@ -42,13 +41,6 @@ class Order(models.Model):
         "stores.Customer",
         on_delete=models.PROTECT,
         related_name="orders"
-    )
-    subscription = models.ForeignKey(
-        "subscriptions.Subscription",
-        on_delete=models.SET_NULL,
-        null=True,
-        blank=True,
-        related_name="cycle_orders",
     )
     order_number = models.CharField(max_length=32)
     token = models.UUIDField(default=uuid.uuid4, unique=True, editable=False, db_index=True)

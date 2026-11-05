@@ -4,10 +4,9 @@ from django.core.management.base import BaseCommand
 from django.db import transaction
 from django.utils import timezone
 
-from catalog.models import Product, SellingPlan, Variant
+from catalog.models import Product, Variant
 from orders.models import Order, OrderEvent, OrderItem
 from stores.models import Customer, Store, StoreMembership
-from subscriptions.models import Subscription
 
 User = get_user_model()
 
@@ -70,7 +69,6 @@ class Command(BaseCommand):
                         "origin": "Manufactured in Lalitpur, Nepal",
                     },
                     "allow_one_time": True,
-                    "allow_subscription": True,
                     "is_active": True,
                 }
             )
@@ -83,7 +81,6 @@ class Command(BaseCommand):
                     "label": "Size L (Oversized)",
                     "price_minor": 185000,
                     "allow_one_time": True,
-                    "allow_subscription": True,
                     "in_stock": True,
                     "is_active": True,
                 }
@@ -98,7 +95,6 @@ class Command(BaseCommand):
                         "label": f"Size {size}",
                         "price_minor": price,
                         "allow_one_time": True,
-                        "allow_subscription": True,
                         "in_stock": True,
                         "is_active": True,
                     }
@@ -117,7 +113,6 @@ class Command(BaseCommand):
                         "color": "Nightfall Black",
                     },
                     "allow_one_time": True,
-                    "allow_subscription": False,
                     "is_active": True,
                 }
             )
@@ -131,7 +126,6 @@ class Command(BaseCommand):
                         "label": f"Size {size}",
                         "price_minor": price,
                         "allow_one_time": True,
-                        "allow_subscription": False,
                         "in_stock": True,
                         "is_active": True,
                     }
@@ -149,7 +143,6 @@ class Command(BaseCommand):
                         "color": "Forest / Mustard",
                     },
                     "allow_one_time": True,
-                    "allow_subscription": False,
                     "is_active": True,
                 }
             )
@@ -162,29 +155,12 @@ class Command(BaseCommand):
                     "label": "One Size (Adjustable)",
                     "price_minor": 95000,
                     "allow_one_time": True,
-                    "allow_subscription": False,
                     "in_stock": True,
                     "is_active": True,
                 }
             )
 
-            # 5. Selling Plans (Monthly Streetwear Drop Club)
-            plan_drop, _ = SellingPlan.objects.update_or_create(
-                store=store,
-                code="ktm-monthly",
-                defaults={
-                    "name": "Monthly Streetwear Drop Club",
-                    "interval_unit": "MONTH",
-                    "interval_count": 1,
-                    "commitment_cycles": 1,
-                    "discount_pct": 10,
-                    "is_prepaid": False,
-                    "is_active": True,
-                    "sort_order": 0,
-                }
-            )
-
-            # 6. Demo Orders
+            # 5. Demo Orders
             c1, _ = Customer.objects.get_or_create(
                 store=store,
                 email="siddharth@example.com",
