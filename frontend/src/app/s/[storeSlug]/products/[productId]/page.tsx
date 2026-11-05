@@ -16,60 +16,69 @@ async function fetchStoreAndProduct(
   relatedProducts: ProductItem[];
 }> {
   const origin = process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000";
-  try {
-    const [storeRes, catalogRes] = await Promise.all([
-      fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-        cache: "no-store",
-      }),
-      fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/catalog/`, {
-        cache: "no-store",
-      }),
-    ]);
+  const cleanTarget = decodeURIComponent(productIdOrSlug).trim().toLowerCase();
 
-    const store: StorePublicMetadata | null = storeRes.ok
-      ? await storeRes.json()
-      : {
-          slug: storeSlug,
-          name: storeSlug,
-          tagline: "Quality goods delivered across Nepal.",
-          currency: "NPR",
-          theme_preset: "editorial-warm",
-          logo_url: "",
-          accent_color: "",
-          contact_phone: "9801234567",
-          inside_valley_shipping_minor: 10000,
-          outside_valley_shipping_minor: 20000,
-          free_shipping_threshold_minor: null,
-        };
+  for (let attempt = 0; attempt < 3; attempt++) {
+    try {
+      const [storeRes, catalogRes] = await Promise.all([
+        fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
+          cache: "no-store",
+        }),
+        fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/catalog/`, {
+          cache: "no-store",
+        }),
+      ]);
 
-    const catalog: StoreCatalogData = catalogRes.ok
-      ? await catalogRes.json()
-      : { products: [] };
+      if (!storeRes.ok || !catalogRes.ok) {
+        if (attempt < 2) {
+          await new Promise((r) => setTimeout(r, 300));
+          continue;
+        }
+      }
 
-    // Find product strictly from backend catalog
-    const product: ProductItem | null =
-      catalog.products.find(
-        (p) =>
-          String(p.id) === productIdOrSlug ||
-          p.slug.toLowerCase() === productIdOrSlug.toLowerCase()
-      ) || null;
+      const store: StorePublicMetadata | null = storeRes.ok
+        ? await storeRes.json()
+        : null;
 
-    const relatedProducts = (
-      catalog.products.length > 0 ? catalog.products : []
-    ).filter((p) => p.id !== product?.id).slice(0, 3);
+      const catalog: StoreCatalogData = catalogRes.ok
+        ? await catalogRes.json()
+        : { products: [] };
 
-    return {
-      store,
-      product,
-      relatedProducts,
-    };
-  } catch {
-    return {
-      store: null,
-      product: null,
-      relatedProducts: [],
-    };
+      // Find product strictly from backend catalog by id or slug
+      const product: ProductItem | null =
+        catalog.products.find(
+          (p) =>
+            String(p.id) === cleanTarget ||
+            (p.slug && p.slug.toLowerCase() === cleanTarget)
+        ) || null;
+
+      if (!product && attempt < 2) {
+        await new Promise((r) => setTimeout(r, 300));
+        continue;
+      }
+
+      const relatedProducts = (
+        catalog.products.length > 0 ? catalog.products : []
+      ).filter((p) => p.id !== product?.id).slice(0, 3);
+
+      return {
+        store,
+        product,
+        relatedProducts,
+      };
+    } catch {
+      if (attempt < 2) {
+        await new Promise((r) => setTimeout(r, 300));
+        continue;
+      }
+    }
   }
+
+  return {
+    store: null,
+    product: null,
+    relatedProducts: [],
+  };
 }
 
 export default async function StorefrontProductDetailPage({
