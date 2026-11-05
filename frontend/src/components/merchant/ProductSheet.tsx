@@ -228,7 +228,6 @@ function ProductForm({
           image_url: imageUrl.trim(),
           attributes: attrDict,
           allow_one_time: allowOneTime,
-          allow_subscription: allowSubscription,
           is_active: isActive,
         };
         const updated = await updateMerchantProduct(storeSlug, product.id, payload);
@@ -242,7 +241,6 @@ function ProductForm({
           image_url: imageUrl.trim(),
           attributes: attrDict,
           allow_one_time: allowOneTime,
-          allow_subscription: allowSubscription,
           is_active: isActive,
           initial_price_minor: priceMinor,
         };
@@ -639,18 +637,6 @@ function ProductForm({
               type="checkbox"
               checked={allowOneTime}
               onChange={(e) => setAllowOneTime(e.target.checked)}
-              className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
-            />
-          </label>
-
-          <label className="flex items-center justify-between cursor-pointer">
-            <span className="text-xs font-medium text-[var(--foreground)]">
-              Subscription delivery enabled
-            </span>
-            <input
-              type="checkbox"
-              checked={allowSubscription}
-              onChange={(e) => setAllowSubscription(e.target.checked)}
               className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
             />
           </label>
