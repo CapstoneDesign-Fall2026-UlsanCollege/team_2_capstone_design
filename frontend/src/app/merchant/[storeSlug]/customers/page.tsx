@@ -266,7 +266,7 @@ export default function MerchantCustomersPage({ params }: PageProps) {
                 {customers.map((c) => {
                   const initials = (c.full_name || c.email || "C")
                     .split(" ")
-                    .map((w) => w[0])
+                    .map((w: string) => w[0])
                     .join("")
                     .toUpperCase()
                     .slice(0, 2);

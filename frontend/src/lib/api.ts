@@ -270,7 +270,6 @@ export async function fetchStorePublic(storeSlug: string) {
 
 export interface StoreCatalogResponse {
   products: ProductItem[];
-  selling_plans: SellingPlanItem[];
 }
 
 export async function fetchStoreCatalog(storeSlug: string) {
@@ -350,7 +349,6 @@ export interface MerchantStoreOverview {
   today_orders_count?: number;
   pending_fulfillment_count?: number;
   cod_pending_minor?: number;
-  active_subscriptions_count?: number;
   active_discounts_count?: number;
   daily_sales_7d?: OverviewDailyPoint[];
   recent_orders?: OverviewRecentOrder[];
@@ -430,7 +428,6 @@ export interface ProductVariant {
   weight_grams: number | null;
   price_minor: number;
   allow_one_time: boolean;
-  allow_subscription: boolean;
   in_stock: boolean;
   is_active: boolean;
   sort_order: number;
@@ -445,7 +442,6 @@ export interface ProductItem {
   image_url: string;
   attributes: Record<string, unknown>;
   allow_one_time: boolean;
-  allow_subscription: boolean;
   is_active: boolean;
   sort_order: number;
   variants: ProductVariant[];
@@ -459,7 +455,6 @@ export interface ProductPayload {
   image_url?: string;
   attributes?: Record<string, string>;
   allow_one_time?: boolean;
-  allow_subscription?: boolean;
   is_active?: boolean;
   sort_order?: number;
   initial_price_minor?: number;
@@ -522,23 +517,9 @@ export interface VariantPayload {
   price_minor: number;
   weight_grams?: number | null;
   allow_one_time?: boolean;
-  allow_subscription?: boolean;
   in_stock?: boolean;
   is_active?: boolean;
   sort_order?: number;
-}
-
-export interface SellingPlanItem {
-  id: number;
-  code: string;
-  name: string;
-  interval_unit: "WEEK" | "MONTH";
-  interval_count: number;
-  commitment_cycles: number;
-  discount_pct: number;
-  is_prepaid: boolean;
-  is_active: boolean;
-  sort_order: number;
 }
 
 export async function fetchProductVariants(storeSlug: string, productId: number) {
@@ -591,51 +572,6 @@ export async function deleteProductVariant(
   );
 }
 
-export async function fetchMerchantSellingPlans(storeSlug: string) {
-  return apiFetch<SellingPlanItem[]>(
-    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/selling-plans/`
-  );
-}
-
-export async function createMerchantSellingPlan(
-  storeSlug: string,
-  payload: Partial<SellingPlanItem>
-) {
-  return apiFetch<SellingPlanItem>(
-    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/selling-plans/`,
-    {
-      method: "POST",
-      body: JSON.stringify(payload),
-    }
-  );
-}
-
-export async function updateMerchantSellingPlan(
-  storeSlug: string,
-  planId: number,
-  payload: Partial<SellingPlanItem>
-) {
-  return apiFetch<SellingPlanItem>(
-    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/selling-plans/${planId}/`,
-    {
-      method: "PATCH",
-      body: JSON.stringify(payload),
-    }
-  );
-}
-
-export async function archiveMerchantSellingPlan(
-  storeSlug: string,
-  planId: number
-) {
-  return apiFetch<{ detail: string; id: number; is_active: boolean }>(
-    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/selling-plans/${planId}/`,
-    {
-      method: "DELETE",
-    }
-  );
-}
-
 // -----------------------------------------------------------------------------
 // Checkout & Order APIs
 // -----------------------------------------------------------------------------
@@ -654,8 +590,6 @@ export interface CheckoutQuotePayload {
   items: Array<{
     variant_id: number;
     quantity: number;
-    purchase_type?: "one_time" | "subscription";
-    selling_plan_id?: number | null;
   }>;
   district?: string;
   discount_code?: string;
@@ -668,7 +602,6 @@ export interface CheckoutQuoteResponse {
   discount_code?: string | null;
   total_minor: number;
   is_free_shipping: boolean;
-  has_prepaid_subscription: boolean;
   currency: string;
   items: Array<{
     variant_id: number;
@@ -677,8 +610,6 @@ export interface CheckoutQuoteResponse {
     unit_price_minor: number;
     quantity: number;
     line_total_minor: number;
-    purchase_type: string;
-    selling_plan?: string | null;
   }>;
 }
 
@@ -686,8 +617,6 @@ export interface CheckoutPlacePayload {
   items: Array<{
     variant_id: number;
     quantity: number;
-    purchase_type?: "one_time" | "subscription";
-    selling_plan_id?: number | null;
   }>;
   shipping_address: CheckoutAddressPayload;
   customer_email?: string;
@@ -843,7 +772,6 @@ export interface OrderQueueCounts {
 
 export interface MerchantOrdersResponse {
   orders: OrderDetail[];
-  subscriptions?: any[];
   counts: OrderQueueCounts;
 }
 
@@ -885,149 +813,6 @@ export async function transitionMerchantOrderStatus(
 }
 
 
-export interface PendingRenewalOrderSummary {
-  id: number;
-  order_number: string;
-  token: string;
-  total_minor: number;
-  status: string;
-  payment_status: string;
-}
-
-export interface SubscriptionItem {
-  id: number;
-  status: "ACTIVE" | "PAUSED" | "CANCELLED" | "COMPLETED" | "PENDING_PAYMENT";
-  unit_price_minor: number;
-  next_delivery_date: string;
-  cycles_total: number | null;
-  cycles_remaining: number | null;
-  shipping_address_snapshot: Record<string, string>;
-  variant_label: string;
-  product_name: string;
-  plan_name: string;
-  plan_code: string;
-  is_prepaid: boolean;
-  interval_unit?: "WEEK" | "MONTH" | string;
-  interval_count?: number;
-  discount_pct?: number;
-  customer_email: string;
-  customer_name: string;
-  customer_phone: string;
-  is_lapsed?: boolean;
-  pending_renewal_order?: PendingRenewalOrderSummary | null;
-  created_at: string;
-}
-
-export interface SubscriptionMetrics {
-  active_count: number;
-  paused_count: number;
-  completed_count: number;
-  cancelled_count: number;
-  lapsed_count?: number;
-  prepaid_cycles_remaining?: number;
-  upcoming_7d_count?: number;
-  mrr_minor: number;
-}
-
-export interface MerchantSubscriptionsResponse {
-  metrics: SubscriptionMetrics;
-  subscriptions: SubscriptionItem[];
-}
-
-export interface RenewalGenerationResponse {
-  subscription: SubscriptionItem;
-  newly_created: boolean;
-  renewal_order: {
-    id: number;
-    order_number: string;
-    token: string;
-    total_minor: number;
-    status: string;
-    payment_status: string;
-    is_prepaid_dispatch: boolean;
-    renewal_path: string;
-    whatsapp_message: string;
-  };
-}
-
-export async function fetchMerchantSubscriptions(
-  storeSlug: string,
-  params?: { status?: string; q?: string }
-) {
-  const query = new URLSearchParams();
-  if (params?.status && params.status !== "ALL") query.set("status", params.status);
-  if (params?.q) query.set("q", params.q);
-  const qStr = query.toString() ? `?${query.toString()}` : "";
-
-  return apiFetch<MerchantSubscriptionsResponse>(
-    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/subscriptions/${qStr}`
-  );
-}
-
-export async function performMerchantSubscriptionAction(
-  storeSlug: string,
-  subId: number,
-  action: "pause" | "resume" | "skip_cycle" | "cancel"
-) {
-  return apiFetch<SubscriptionItem>(
-    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/subscriptions/${subId}/action/`,
-    {
-      method: "POST",
-      body: JSON.stringify({ action }),
-    }
-  );
-}
-
-export async function generateMerchantSubscriptionRenewal(
-  storeSlug: string,
-  subId: number
-) {
-  return apiFetch<RenewalGenerationResponse>(
-    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/subscriptions/${subId}/action/`,
-    {
-      method: "POST",
-      body: JSON.stringify({ action: "generate_renewal" }),
-    }
-  );
-}
-
-export async function runMerchantSubscriptionCycles(
-  storeSlug: string,
-  targetDate?: string
-) {
-  return apiFetch<{ success: boolean; orders_generated: number; completed_subscriptions: number }>(
-    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/subscriptions/run-cycles/`,
-    {
-      method: "POST",
-      body: JSON.stringify({ target_date: targetDate }),
-    }
-  );
-}
-
-export async function fetchShopperSubscriptions(storeSlug: string) {
-  return apiFetch<SubscriptionItem[]>(
-    `/api/stores/${encodeURIComponent(storeSlug)}/subscriptions/`
-  );
-}
-
-export async function performShopperSubscriptionAction(
-  storeSlug: string,
-  subId: number,
-  action: "pause" | "resume" | "skip_cycle" | "cancel"
-) {
-  return apiFetch<SubscriptionItem>(
-    `/api/stores/${encodeURIComponent(storeSlug)}/subscriptions/${subId}/action/`,
-    {
-      method: "POST",
-      body: JSON.stringify({ action }),
-    }
-  );
-}
-
-// -----------------------------------------------------------------------------
-// Merchant Customer APIs (Shopify Parity)
-// -----------------------------------------------------------------------------
-
 export interface MerchantCustomerItem {
   id: number;
   email: string;
@@ -1042,7 +827,6 @@ export interface MerchantCustomerItem {
 export interface MerchantCustomerDetail {
   customer: MerchantCustomerItem;
   orders: OrderDetail[];
-  subscriptions: SubscriptionItem[];
 }
 
 export async function fetchMerchantCustomers(storeSlug: string, query?: string) {

@@ -68,7 +68,7 @@ export function CustomerDetailSheet({
 
   const initials = (customer.full_name || customer.email || "C")
     .split(" ")
-    .map((w) => w[0])
+    .map((w: string) => w[0])
     .join("")
     .toUpperCase()
     .slice(0, 2);

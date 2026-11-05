@@ -15,8 +15,6 @@ export interface CartItem {
   unitPriceMinor: number;
   quantity: number;
   imageUrl?: string;
-  purchaseType?: "one_time" | "subscription";
-  sellingPlan?: any;
 }
 
 export interface CartState {

@@ -3,15 +3,14 @@
 import React, { useMemo, useState } from "react";
 import Link from "next/link";
 import {
-  ArrowDown,
   ArrowRight,
+  Check,
   ChevronDown,
   MapPin,
   MessageCircle,
   Package,
-  Phone,
   Search,
-  Star,
+  SlidersHorizontal,
   X,
 } from "lucide-react";
 import { formatNpr, ProductItem, StorePublicMetadata } from "@/lib/api";
@@ -39,7 +38,6 @@ function isPlaceholderText(text?: string | null): boolean {
 export interface StorefrontCatalogViewProps {
   store: StorePublicMetadata;
   products: ProductItem[];
-  sellingPlans?: unknown[];
 }
 
 export function StorefrontCatalogView({
@@ -49,6 +47,7 @@ export function StorefrontCatalogView({
   const { itemCount, openCart, addItem } = useCart();
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
+  const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
 
   // Search & Filter State
   const [searchQuery, setSearchQuery] = useState<string>("");
@@ -58,18 +57,20 @@ export function StorefrontCatalogView({
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
-  // Pure catalog from backend (no hardcoded coffee fallback)
+  // Pure catalog from backend (no hardcoded fallback)
   const fullCatalog: ProductItem[] = useMemo(() => {
     return products || [];
   }, [products]);
 
-  // Derived category list
+  // Derived category list (ignoring placeholders)
   const availableCategories = useMemo(() => {
     const set = new Set<string>();
     fullCatalog.forEach((p) => {
       const rawCat = p.category || (p.attributes as Record<string, unknown> | undefined)?.category;
       const cat = typeof rawCat === "string" ? rawCat : undefined;
-      if (cat) set.add(cat);
+      if (cat && !isPlaceholderText(cat)) {
+        set.add(cat.trim());
+      }
     });
     return Array.from(set);
   }, [fullCatalog]);
@@ -208,31 +209,35 @@ export function StorefrontCatalogView({
     return `https://wa.me/${phoneWithCountry}?text=Hi%20${encodeURIComponent(store.name)}%2C%20I%20have%20an%20inquiry%20about%20your%20products.`;
   }, [store.contact_phone, store.name]);
 
+  const handleQuickAddProduct = (product: ProductItem) => {
+    if (product.variants && product.variants.length > 1) {
+      handleOpenSheet(product);
+      return;
+    }
+    const singleVariant = product.variants?.[0];
+    if (singleVariant && singleVariant.in_stock && singleVariant.is_active) {
+      handleAddToCart({
+        productId: product.id,
+        productSlug: product.slug,
+        productName: product.name,
+        variantId: singleVariant.id,
+        variantLabel: singleVariant.label || "Standard",
+        unitPriceMinor: singleVariant.price_minor,
+        quantity: 1,
+        productImageUrl: product.image_url || undefined,
+      });
+      openCart();
+    } else {
+      handleOpenSheet(product);
+    }
+  };
+
   const handleQuickAddFeatured = () => {
     if (!featuredProduct) {
       scrollToCollection();
       return;
     }
-    if (featuredProduct.variants && featuredProduct.variants.length > 1) {
-      handleOpenSheet(featuredProduct);
-      return;
-    }
-    const singleVariant = featuredProduct.variants?.[0];
-    if (singleVariant) {
-      handleAddToCart({
-        productId: featuredProduct.id,
-        productSlug: featuredProduct.slug,
-        productName: featuredProduct.name,
-        variantId: singleVariant.id,
-        variantLabel: singleVariant.label || "Standard",
-        unitPriceMinor: singleVariant.price_minor,
-        quantity: 1,
-        productImageUrl: featuredProduct.image_url || undefined,
-      });
-      openCart();
-    } else {
-      handleOpenSheet(featuredProduct);
-    }
+    handleQuickAddProduct(featuredProduct);
   };
 
   const scrollToCollection = () => {
@@ -255,7 +260,7 @@ export function StorefrontCatalogView({
     },
     {
       q: "What are your delivery times and shipping rates?",
-      a: `Inside Kathmandu Valley orders typically arrive within 24 to 48 hours for ${formatNpr(store.inside_valley_shipping_minor || 10000)}. Outside Kathmandu Valley deliveries take 2 to 4 business days via Pathao express courier for ${formatNpr(store.outside_valley_shipping_minor || 20000)}.${store.free_shipping_threshold_minor ? ` Orders over ${formatNpr(store.free_shipping_threshold_minor)} qualify for FREE shipping!` : ""}`,
+      a: `Inside Kathmandu Valley orders typically arrive within 24 to 48 hours for ${formatNpr(store.inside_valley_shipping_minor || 10000)}. Outside Kathmandu Valley deliveries take 2 to 4 business days via express courier for ${formatNpr(store.outside_valley_shipping_minor || 20000)}.${store.free_shipping_threshold_minor ? ` Orders over ${formatNpr(store.free_shipping_threshold_minor)} qualify for free delivery!` : ""}`,
     },
     {
       q: "How do I pay with Khalti?",
@@ -296,7 +301,7 @@ export function StorefrontCatalogView({
               autoFocus
               value={searchQuery}
               onChange={(e) => setSearchQuery(e.target.value)}
-              placeholder="Search products, variants, or categories..."
+              placeholder="Search products, variants, or collections..."
               className="w-full bg-transparent text-sm text-[var(--ink)] placeholder:text-[var(--ink-2)] focus:outline-none"
             />
             {searchQuery && (
@@ -325,7 +330,6 @@ export function StorefrontCatalogView({
         <div className="max-w-6xl mx-auto">
           {/* Desktop 2-Column Hero */}
           <div className="hidden md:grid md:grid-cols-2 gap-10 lg:gap-16 items-center text-left">
-            {/* Left Column: Plain-text eyebrow, merchant headline (serif, ~42px, max 3 lines), optional description, ONE black primary button, WhatsApp plain link, single delivery line */}
             <div className="space-y-4">
               {cleanCategory && (
                 <p className="text-xs font-semibold tracking-wider uppercase text-[var(--ink-2)]">
@@ -370,7 +374,7 @@ export function StorefrontCatalogView({
               </p>
             </div>
 
-            {/* Right Column: Real product photo (12px radius, no overlay) with caption row below: name, Rs. price, Add button */}
+            {/* Right Column: Real product photo with caption row below */}
             <div>
               <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)]">
                 {heroImageUrl ? (
@@ -471,116 +475,126 @@ export function StorefrontCatalogView({
         </div>
       </section>
 
-      {/* 4. Catalog & Products Section */}
-      <section id="collection-section" className="w-full max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1">
+      {/* 3. Catalog & Products Section */}
+      <section id="collection-section" className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1">
         
-        {/* Controls Bar */}
-        {availableCategories.length > 0 && (
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-sf-line">
-            {/* Category Pills */}
-            <div className="flex flex-wrap items-center gap-2">
+        {/* Controls: Desktop Bar (8px radius, no mono) */}
+        <div className="hidden sm:flex sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
+          {/* Category Tabs */}
+          <div className="flex flex-wrap items-center gap-2">
+            <button
+              type="button"
+              onClick={() => setSelectedCategory("all")}
+              className={`h-9 px-3.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                selectedCategory === "all"
+                  ? "bg-[var(--ink)] text-[var(--surface)]"
+                  : "bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:text-[var(--ink)]"
+              }`}
+            >
+              All ({fullCatalog.length})
+            </button>
+            {availableCategories.map((cat) => (
               <button
+                key={cat}
                 type="button"
-                onClick={() => setSelectedCategory("all")}
-                className={`px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all ${
-                  selectedCategory === "all"
-                    ? "bg-sf-ink text-sf-surface shadow-xs"
-                    : "bg-sf-surface text-sf-muted border border-sf-line hover:text-sf-ink"
+                onClick={() => setSelectedCategory(cat)}
+                className={`h-9 px-3.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors capitalize ${
+                  selectedCategory === cat
+                    ? "bg-[var(--ink)] text-[var(--surface)]"
+                    : "bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:text-[var(--ink)]"
                 }`}
               >
-                All ({fullCatalog.length})
+                {cat}
               </button>
-              {availableCategories.map((cat) => (
-                <button
-                  key={cat}
-                  type="button"
-                  onClick={() => setSelectedCategory(cat)}
-                  className={`px-3 py-1.5 rounded-full text-xs font-semibold cursor-pointer transition-all ${
-                    selectedCategory === cat
-                      ? "bg-sf-ink text-sf-surface shadow-xs"
-                      : "bg-sf-surface text-sf-muted border border-sf-line hover:text-sf-ink"
-                  }`}
-                >
-                  {cat}
-                </button>
-              ))}
-            </div>
-
-            {/* Sort & Filter controls */}
-            <div className="flex items-center gap-3 text-xs font-sf-mono">
-              <label className="flex items-center gap-1.5 text-sf-muted cursor-pointer">
-                <input
-                  type="checkbox"
-                  checked={inStockOnly}
-                  onChange={(e) => setInStockOnly(e.target.checked)}
-                  className="rounded border-sf-line accent-sf-cta"
-                />
-                <span>In Stock Only</span>
-              </label>
-
-              <select
-                value={sortBy}
-                onChange={(e) => setSortBy(e.target.value as "featured" | "price-asc" | "price-desc")}
-                className="bg-sf-surface border border-sf-line rounded px-2 py-1 text-sf-ink text-xs focus:outline-none"
-              >
-                <option value="featured">Featured</option>
-                <option value="price-asc">Price: Low to High</option>
-                <option value="price-desc">Price: High to Low</option>
-              </select>
-            </div>
+            ))}
           </div>
-        )}
 
-        {/* Catalog Body or Pure Empty Template */}
+          {/* Sort & In-Stock controls */}
+          <div className="flex items-center gap-4 text-xs">
+            <label className="flex items-center gap-2 text-[var(--ink-2)] hover:text-[var(--ink)] cursor-pointer select-none">
+              <input
+                type="checkbox"
+                checked={inStockOnly}
+                onChange={(e) => setInStockOnly(e.target.checked)}
+                className="w-4 h-4 rounded border-[var(--border)] accent-[var(--ink)] cursor-pointer"
+              />
+              <span>In stock only</span>
+            </label>
+
+            <select
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as "featured" | "price-asc" | "price-desc")}
+              className="h-9 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1 text-[var(--ink)] text-xs focus:outline-none focus:border-[var(--ink)] cursor-pointer"
+            >
+              <option value="featured">Featured</option>
+              <option value="price-asc">Price: Low to High</option>
+              <option value="price-desc">Price: High to Low</option>
+            </select>
+          </div>
+        </div>
+
+        {/* Controls: Mobile 44px Filter & Sort Trigger */}
+        <div className="sm:hidden flex items-center justify-between gap-3 mb-6">
+          <button
+            type="button"
+            onClick={() => setIsMobileFilterOpen(true)}
+            className="flex-1 h-11 px-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs font-semibold flex items-center justify-between hover:bg-[var(--canvas)] transition-colors cursor-pointer"
+          >
+            <span className="flex items-center gap-2">
+              <SlidersHorizontal className="w-4 h-4 text-[var(--ink-2)]" />
+              <span>Filter &amp; Sort</span>
+            </span>
+            {(selectedCategory !== "all" || inStockOnly || sortBy !== "featured") && (
+              <span className="w-2 h-2 rounded-full bg-[var(--ink)]" />
+            )}
+          </button>
+          <span className="text-xs text-[var(--ink-2)] shrink-0">
+            {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
+          </span>
+        </div>
+
+        {/* Catalog Body or Empty State */}
         {fullCatalog.length === 0 ? (
-          <div className="max-w-md mx-auto my-16 p-8 rounded-2xl border border-sf-line bg-sf-surface text-center space-y-4 shadow-xs">
-            <div className="w-12 h-12 rounded-full bg-sf-canvas border border-sf-line mx-auto flex items-center justify-center text-sf-muted">
+          <div className="max-w-md mx-auto my-16 p-8 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-center space-y-4">
+            <div className="w-12 h-12 rounded-lg bg-[var(--canvas)] border border-[var(--border)] mx-auto flex items-center justify-center text-[var(--ink-2)]">
               <Package className="w-6 h-6" />
             </div>
             <div className="space-y-1.5">
-              <h3 className="font-sf-display text-xl font-bold text-sf-ink">
+              <h3 className="font-serif text-xl font-semibold text-[var(--ink)]">
                 Catalog in Preparation
               </h3>
-              <p className="text-xs text-sf-muted leading-relaxed">
+              <p className="text-xs text-[var(--ink-2)] leading-relaxed">
                 {store.name} hasn&apos;t published any items yet. We&apos;re stocking our shelves with fresh goods — please check back soon!
               </p>
             </div>
 
-            {store.contact_phone && (
+            {waUrl && (
               <div className="pt-2">
                 <a
-                  href={`https://wa.me/977${store.contact_phone.replace(/\D/g, "")}`}
+                  href={waUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-sf-ink text-sf-surface text-xs font-semibold hover:opacity-90 transition-opacity"
+                  className="inline-flex items-center gap-2 px-4 py-2.5 rounded-lg bg-[var(--ink)] text-[var(--surface)] text-xs font-semibold hover:opacity-90 transition-opacity"
                 >
-                  <Phone className="w-3.5 h-3.5 text-emerald-400" />
+                  <MessageCircle className="w-4 h-4" />
                   <span>Inquire via WhatsApp</span>
                 </a>
               </div>
             )}
-
-            <div className="pt-4 border-t border-sf-line text-[11px] font-sf-mono text-sf-muted">
-              <span>Are you the store owner? </span>
-              <Link
-                href={`/merchant/${encodeURIComponent(store.slug)}/products?action=new`}
-                className="font-bold text-sf-cta underline hover:opacity-80"
-              >
-                Add your first product in the merchant console →
-              </Link>
-            </div>
           </div>
         ) : filteredProducts.length === 0 ? (
-          <div className="py-20 text-center space-y-3">
-            <p className="text-sm font-semibold text-sf-ink">No products found matching your filter.</p>
+          <div className="py-16 text-center space-y-3 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-8">
+            <Package className="w-8 h-8 text-[var(--ink-2)] mx-auto opacity-50" />
+            <p className="text-sm font-semibold text-[var(--ink)]">No products found matching your filter.</p>
             <button
               type="button"
               onClick={() => {
                 setSearchQuery("");
                 setSelectedCategory("all");
                 setInStockOnly(false);
+                setSortBy("featured");
               }}
-              className="text-xs font-sf-mono text-sf-cta underline cursor-pointer"
+              className="text-xs font-semibold text-[var(--ink)] underline cursor-pointer"
             >
               Reset filters
             </button>
@@ -590,6 +604,7 @@ export function StorefrontCatalogView({
             storeSlug={store.slug}
             products={filteredProducts}
             onSelectProduct={handleOpenSheet}
+            onQuickAdd={handleQuickAddProduct}
             themePreset={store.theme_preset}
             defaultCategory={store.category}
           />
@@ -597,142 +612,148 @@ export function StorefrontCatalogView({
 
       </section>
 
-      {/* 5. Brand Story & Heritage Card */}
-      <section className="w-full border-t border-sf-line bg-sf-surface/40 py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto rounded-3xl border border-sf-line bg-sf-surface p-6 sm:p-10 shadow-xs flex flex-col md:flex-row items-center justify-between gap-8 text-left">
-          <div className="space-y-3 max-w-xl">
-            <div className="inline-flex items-center gap-1.5 text-xs font-mono text-sf-muted">
-              <MapPin className="w-3.5 h-3.5 text-sf-cta" />
-              <span>{store.address || "Kathmandu Valley, Nepal"}</span>
-            </div>
-            <h3 className="font-sf-display text-2xl font-bold text-sf-ink">
-              {store.story_headline || `Crafted with Care by ${store.name}`}
-            </h3>
-            <p className="text-xs sm:text-sm text-sf-muted leading-relaxed font-sf-body">
-              {store.about_text
-                ? store.about_text.length > 220
-                  ? store.about_text.slice(0, 220) + "..."
-                  : store.about_text
-                : (store.tagline ||
-                  "Every item in our collection is carefully packaged and dispatched fresh. We believe in high standards, fair local sourcing, and seamless doorstep deliveries across Nepal.")}
-            </p>
-            {store.contact_phone && (
-              <p className="text-xs text-sf-muted pt-1">
-                Direct phone inquiries: <span className="font-mono font-bold text-sf-ink">{store.contact_phone}</span>
-              </p>
+      {/* 4. Brand Story Strip (12px radius, 1px border, serif headline, plain WhatsApp link) */}
+      <section className="w-full border-t border-[var(--border)] bg-[var(--canvas)] py-12 px-4 sm:px-6 lg:px-8">
+        <div className="max-w-4xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-10 text-left space-y-4">
+          <div className="space-y-2 max-w-2xl">
+            {store.address && (
+              <div className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-2)]">
+                <MapPin className="w-3.5 h-3.5 text-[var(--ink-2)]" />
+                <span>{store.address}</span>
+              </div>
             )}
+            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[var(--ink)]">
+              {store.story_headline || `About ${store.name}`}
+            </h2>
+            <p className="text-sm text-[var(--ink-2)] leading-relaxed">
+              {store.about_text || store.tagline ||
+                "Every item in our collection is carefully packaged and dispatched fresh. We believe in high standards, fair local sourcing, and reliable doorstep delivery across Nepal."}
+            </p>
           </div>
 
-          <div className="shrink-0 w-full md:w-auto flex flex-col sm:flex-row gap-3">
+          <div className="pt-2 flex flex-wrap items-center gap-4">
             <Link
               href={`/s/${encodeURIComponent(store.slug)}/about`}
-              className="px-5 py-3 rounded-full border border-sf-line bg-sf-canvas hover:bg-sf-surface text-sf-ink text-xs font-semibold hover:border-sf-ink transition-all flex items-center justify-center gap-1.5 cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)] underline underline-offset-4 hover:opacity-80 min-h-[44px]"
             >
-              <span>Our Story</span>
+              <span>Read our full story</span>
               <ArrowRight className="w-3.5 h-3.5" />
             </Link>
 
-            <button
-              type="button"
-              onClick={scrollToCollection}
-              className="px-6 py-3 rounded-full bg-sf-ink text-sf-surface text-xs font-semibold hover:opacity-90 transition-opacity flex items-center justify-center gap-2 cursor-pointer shadow-xs"
-            >
-              <span>Explore Products</span>
-              <ArrowDown className="w-3.5 h-3.5" />
-            </button>
+            {waUrl && (
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-2)] hover:text-[var(--ink)] min-h-[44px]"
+              >
+                <MessageCircle className="w-3.5 h-3.5" />
+                <span>Ask on WhatsApp</span>
+              </a>
+            )}
           </div>
         </div>
       </section>
 
-      {/* 6. Customer Confidence & Reviews Strip */}
-      <section className="w-full border-t border-sf-line bg-sf-canvas py-12 px-4 sm:px-6 lg:px-8 text-left">
-        <div className="max-w-5xl mx-auto space-y-6">
-          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2">
-            <div>
-              <div className="flex items-center gap-1.5 text-amber-500 mb-1">
-                {[1, 2, 3, 4, 5].map((i) => (
-                  <Star key={i} className="w-4 h-4 fill-amber-400 text-amber-400" />
-                ))}
-                <span className="text-xs font-mono font-bold text-sf-ink ml-1.5">4.9 / 5.0</span>
-              </div>
-              <h4 className="font-sf-display text-lg font-bold text-sf-ink">
-                Verified Shopper Experience
-              </h4>
-            </div>
-            <span className="text-xs font-mono text-sf-muted">Based on verified orders across Nepal</span>
-          </div>
-
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <div className="p-4 rounded-xl border border-sf-line bg-sf-surface space-y-2">
-              <p className="text-xs text-sf-muted leading-relaxed">
-                &quot;The checkout took less than 30 seconds with Khalti. Package arrived in Lalitpur the next afternoon!&quot;
-              </p>
-              <span className="text-[11px] font-mono font-bold text-sf-ink block">
-                — Aarav S., Patan
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl border border-sf-line bg-sf-surface space-y-2">
-              <p className="text-xs text-sf-muted leading-relaxed">
-                &quot;Paid cash on delivery when the Pathao rider arrived. Great packaging and verified quality.&quot;
-              </p>
-              <span className="text-[11px] font-mono font-bold text-sf-ink block">
-                — Sushila K., Pokhara
-              </span>
-            </div>
-
-            <div className="p-4 rounded-xl border border-sf-line bg-sf-surface space-y-2">
-              <p className="text-xs text-sf-muted leading-relaxed">
-                &quot;The fast Kathmandu doorstep delivery is super convenient. Everything arrived fresh and perfectly packaged.&quot;
-              </p>
-              <span className="text-[11px] font-mono font-bold text-sf-ink block">
-                — Bikash T., Kathmandu
-              </span>
-            </div>
-          </div>
-        </div>
-      </section>
-
-      {/* 7. Store Delivery & FAQ Accordion */}
-      <section className="w-full border-t border-sf-line bg-sf-surface py-12 px-4 sm:px-6 lg:px-8 text-left">
-        <div className="max-w-3xl mx-auto space-y-6">
+      {/* 5. ONE Delivery & Payment Section (Say it once; no repeated trust chips, no fake reviews) */}
+      <section className="w-full border-t border-[var(--border)] bg-[var(--surface)] py-12 px-4 sm:px-6 lg:px-8 text-left">
+        <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-1">
-            <span className="text-[11px] font-mono text-sf-muted uppercase tracking-wider">Help &amp; Policies</span>
-            <h4 className="font-sf-display text-xl font-bold text-sf-ink">
-              Frequently Asked Questions
-            </h4>
+            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-2)]">
+              Store Information
+            </p>
+            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[var(--ink)]">
+              Delivery &amp; Payment in Nepal
+            </h2>
           </div>
 
-          <div className="divide-y divide-sf-line border-t border-b border-sf-line">
-            {STORE_FAQS.map((faq, idx) => {
-              const isOpen = openFaqIndex === idx;
-              return (
-                <div key={idx} className="py-3.5">
-                  <button
-                    type="button"
-                    onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                    className="w-full flex items-center justify-between text-left text-xs sm:text-sm font-semibold text-sf-ink hover:text-sf-cta transition-colors cursor-pointer py-1"
-                  >
-                    <span>{faq.q}</span>
-                    <ChevronDown
-                      className={`w-4 h-4 text-sf-muted transition-transform duration-200 shrink-0 ${
-                        isOpen ? "rotate-180" : ""
-                      }`}
-                    />
-                  </button>
-                  {isOpen && (
-                    <p className="text-xs text-sf-muted pt-2 pb-1 leading-relaxed font-sf-body">
-                      {faq.a}
-                    </p>
-                  )}
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+            {/* Delivery Card */}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-5 sm:p-6 space-y-3">
+              <h3 className="font-semibold text-sm text-[var(--ink)]">
+                Doorstep Delivery
+              </h3>
+              <div className="space-y-2 text-xs text-[var(--ink-2)] leading-relaxed">
+                <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
+                  <span>Kathmandu Valley (1–2 days)</span>
+                  <span className="font-semibold text-[var(--ink)] tabular-nums">
+                    {formatNpr(store.inside_valley_shipping_minor || 10000)}
+                  </span>
                 </div>
-              );
-            })}
+                <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
+                  <span>Outside Valley (2–4 business days)</span>
+                  <span className="font-semibold text-[var(--ink)] tabular-nums">
+                    {formatNpr(store.outside_valley_shipping_minor || 20000)}
+                  </span>
+                </div>
+                {store.free_shipping_threshold_minor && (
+                  <p className="text-xs font-medium text-[var(--ink)] pt-1">
+                    Free delivery on orders over {formatNpr(store.free_shipping_threshold_minor)}.
+                  </p>
+                )}
+                <p className="text-[11px] text-[var(--ink-2)] pt-1">
+                  Dispatched via verified local couriers with phone confirmation.
+                </p>
+              </div>
+            </div>
+
+            {/* Payment Methods Card */}
+            <div className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-5 sm:p-6 space-y-3">
+              <h3 className="font-semibold text-sm text-[var(--ink)]">
+                Payment Options
+              </h3>
+              <div className="space-y-2 text-xs text-[var(--ink-2)] leading-relaxed">
+                <div className="py-1 border-b border-[var(--border)]/60">
+                  <span className="font-semibold text-[var(--ink)] block">Khalti ePayment</span>
+                  <span>Instant wallet redirect, MPIN verification, or scan Fonepay QR.</span>
+                </div>
+                <div className="py-1">
+                  <span className="font-semibold text-[var(--ink)] block">Cash on Delivery (COD)</span>
+                  <span>Inspect package on arrival and pay cash or mobile banking QR to courier.</span>
+                </div>
+                <p className="text-[11px] text-[var(--ink-2)] pt-1">
+                  All transactions settled securely in Nepalese Rupees (NPR).
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Clean FAQ Accordion */}
+          <div className="pt-4 border-t border-[var(--border)] space-y-2">
+            <h3 className="font-semibold text-sm text-[var(--ink)] mb-3">
+              Frequently Asked Questions
+            </h3>
+            <div className="divide-y divide-[var(--border)] border-t border-b border-[var(--border)]">
+              {STORE_FAQS.map((faq, idx) => {
+                const isOpen = openFaqIndex === idx;
+                return (
+                  <div key={idx} className="py-3">
+                    <button
+                      type="button"
+                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
+                      className="w-full flex items-center justify-between text-left text-xs sm:text-sm font-medium text-[var(--ink)] hover:text-[var(--ink-2)] transition-colors cursor-pointer min-h-[44px]"
+                    >
+                      <span>{faq.q}</span>
+                      <ChevronDown
+                        className={`w-4 h-4 text-[var(--ink-2)] transition-transform duration-200 shrink-0 ${
+                          isOpen ? "rotate-180" : ""
+                        }`}
+                      />
+                    </button>
+                    {isOpen && (
+                      <p className="text-xs text-[var(--ink-2)] pt-1 pb-2 leading-relaxed">
+                        {faq.a}
+                      </p>
+                    )}
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       </section>
 
-      {/* 8. Product Detail Sheet Drawer */}
+      {/* 6. Product Detail Sheet Drawer (Mobile quick add / variant picker) */}
       <ProductDetailSheet
         storeSlug={store.slug}
         product={selectedProduct}
@@ -741,7 +762,134 @@ export function StorefrontCatalogView({
         onAddToCart={handleAddToCart}
       />
 
-      {/* 9. Mobile Sticky Bottom Bar (44px tap targets: price + Add to bag + WhatsApp icon) */}
+      {/* 7. Mobile Filter Bottom Sheet (44px tap targets, 8px radius buttons) */}
+      {isMobileFilterOpen && (
+        <div
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="mobile-filter-title"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:hidden animate-in fade-in duration-200"
+          onClick={() => setIsMobileFilterOpen(false)}
+        >
+          <div
+            onClick={(e) => e.stopPropagation()}
+            className="w-full bg-[var(--surface)] rounded-t-xl border-t border-[var(--border)] p-5 space-y-5 max-h-[85dvh] overflow-y-auto animate-in slide-in-from-bottom duration-250 text-left"
+          >
+            <div className="flex items-center justify-between pb-3 border-b border-[var(--border)]">
+              <h3 id="mobile-filter-title" className="font-serif text-lg font-semibold text-[var(--ink)]">
+                Filter &amp; Sort
+              </h3>
+              <button
+                type="button"
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="w-11 h-11 -mr-2 flex items-center justify-center text-[var(--ink-2)] hover:text-[var(--ink)] cursor-pointer"
+                aria-label="Close filters"
+              >
+                <X className="w-5 h-5" />
+              </button>
+            </div>
+
+            {/* Category selection */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-2)]">
+                Collection
+              </label>
+              <div className="flex flex-wrap gap-2">
+                <button
+                  type="button"
+                  onClick={() => setSelectedCategory("all")}
+                  className={`min-h-[44px] px-4 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+                    selectedCategory === "all"
+                      ? "bg-[var(--ink)] text-[var(--surface)]"
+                      : "bg-[var(--canvas)] text-[var(--ink-2)] border border-[var(--border)]"
+                  }`}
+                >
+                  All Products ({fullCatalog.length})
+                </button>
+                {availableCategories.map((cat) => (
+                  <button
+                    key={cat}
+                    type="button"
+                    onClick={() => setSelectedCategory(cat)}
+                    className={`min-h-[44px] px-4 rounded-lg text-xs font-semibold cursor-pointer transition-colors capitalize ${
+                      selectedCategory === cat
+                        ? "bg-[var(--ink)] text-[var(--surface)]"
+                        : "bg-[var(--canvas)] text-[var(--ink-2)] border border-[var(--border)]"
+                    }`}
+                  >
+                    {cat}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* Sort options */}
+            <div className="space-y-2">
+              <label className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-2)]">
+                Sort by
+              </label>
+              <div className="grid grid-cols-1 gap-2">
+                {[
+                  { id: "featured", label: "Featured" },
+                  { id: "price-asc", label: "Price: Low to High" },
+                  { id: "price-desc", label: "Price: High to Low" },
+                ].map((item) => (
+                  <button
+                    key={item.id}
+                    type="button"
+                    onClick={() => setSortBy(item.id as "featured" | "price-asc" | "price-desc")}
+                    className={`min-h-[44px] px-4 rounded-lg text-xs font-medium text-left flex items-center justify-between border cursor-pointer transition-colors ${
+                      sortBy === item.id
+                        ? "border-[var(--ink)] bg-[var(--canvas)] font-semibold text-[var(--ink)]"
+                        : "border-[var(--border)] bg-[var(--surface)] text-[var(--ink-2)]"
+                    }`}
+                  >
+                    <span>{item.label}</span>
+                    {sortBy === item.id && <Check className="w-4 h-4 text-[var(--ink)]" />}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            {/* In stock toggle */}
+            <div className="pt-2 border-t border-[var(--border)]">
+              <label className="flex items-center justify-between min-h-[44px] cursor-pointer">
+                <span className="text-xs font-semibold text-[var(--ink)]">In stock only</span>
+                <input
+                  type="checkbox"
+                  checked={inStockOnly}
+                  onChange={(e) => setInStockOnly(e.target.checked)}
+                  className="w-5 h-5 rounded border-[var(--border)] accent-[var(--ink)] cursor-pointer"
+                />
+              </label>
+            </div>
+
+            {/* Actions */}
+            <div className="pt-3 border-t border-[var(--border)] flex items-center gap-3">
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setSelectedCategory("all");
+                  setInStockOnly(false);
+                  setSortBy("featured");
+                }}
+                className="flex-1 h-11 text-xs font-semibold"
+              >
+                Reset
+              </Button>
+              <Button
+                variant="primary"
+                onClick={() => setIsMobileFilterOpen(false)}
+                className="flex-1 h-11 text-xs font-semibold"
+              >
+                Show ({filteredProducts.length})
+              </Button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 8. Mobile Sticky Bottom Bar (44px tap targets: price + Add to bag + WhatsApp icon) */}
       <aside
         aria-label="Quick order bar"
         className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[var(--surface)] border-t border-[var(--border)] p-3 flex items-center gap-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))]"
@@ -774,46 +922,46 @@ export function StorefrontCatalogView({
         )}
       </aside>
 
-      {/* 10. Multi-Column Storefront Footer (Matching Pasalify & Dawn Standards) */}
-      <footer className="w-full border-t border-sf-line bg-sf-surface pt-12 pb-16 px-4 sm:px-6 lg:px-8 text-left">
-        <div className="max-w-5xl mx-auto space-y-10">
+      {/* 9. Multi-Column Storefront Footer */}
+      <footer className="w-full border-t border-[var(--border)] bg-[var(--surface)] pt-12 pb-16 px-4 sm:px-6 lg:px-8 text-left">
+        <div className="max-w-6xl mx-auto space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
             
-            {/* Col 1: Brand Bio (5 cols) */}
+            {/* Col 1: Brand Bio */}
             <div className="md:col-span-5 space-y-3">
-              <span className="font-sf-display text-lg font-bold text-sf-ink block">
+              <span className="font-serif text-lg font-semibold text-[var(--ink)] block">
                 {store.name}
               </span>
-              <p className="text-xs text-sf-muted leading-relaxed max-w-sm font-sf-body">
+              <p className="text-xs text-[var(--ink-2)] leading-relaxed max-w-sm">
                 {store.tagline ||
-                  "Quality handcrafted and curated goods delivered directly to your doorstep across Kathmandu Valley and all 7 provinces of Nepal."}
+                  "Quality goods delivered directly to your doorstep across Kathmandu Valley and nationwide."}
               </p>
-              {store.contact_phone && (
+              {waUrl && (
                 <div className="pt-1">
                   <a
-                    href={`https://wa.me/977${store.contact_phone.replace(/\D/g, "")}`}
+                    href={waUrl}
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full border border-sf-line text-xs font-sf-mono text-sf-muted hover:text-sf-ink hover:border-sf-ink transition-colors"
+                    className="inline-flex items-center gap-2 px-3 py-1.5 rounded-lg border border-[var(--border)] text-xs text-[var(--ink-2)] hover:text-[var(--ink)] hover:border-[var(--ink)] transition-colors"
                   >
-                    <MessageCircle className="w-3.5 h-3.5 text-emerald-600" />
-                    <span>WhatsApp: +977 {store.contact_phone}</span>
+                    <MessageCircle className="w-3.5 h-3.5 text-[var(--ink)]" />
+                    <span>WhatsApp Inquiries</span>
                   </a>
                 </div>
               )}
             </div>
 
-            {/* Col 2: Navigation Links (2 cols) */}
-            <div className="md:col-span-2 space-y-2.5 text-xs font-sf-mono">
-              <span className="font-bold uppercase tracking-wider text-sf-ink block text-[11px]">
+            {/* Col 2: Navigation Links */}
+            <div className="md:col-span-2 space-y-2.5 text-xs">
+              <span className="font-semibold uppercase tracking-wider text-[var(--ink)] block text-[11px]">
                 Store Pages
               </span>
-              <ul className="space-y-2 text-sf-muted">
+              <ul className="space-y-2 text-[var(--ink-2)]">
                 <li>
                   <button
                     type="button"
                     onClick={scrollToCollection}
-                    className="hover:text-sf-ink transition-colors cursor-pointer"
+                    className="hover:text-[var(--ink)] transition-colors cursor-pointer"
                   >
                     All Products
                   </button>
@@ -821,7 +969,7 @@ export function StorefrontCatalogView({
                 <li>
                   <Link
                     href={`/s/${encodeURIComponent(store.slug)}/about`}
-                    className="hover:text-sf-ink transition-colors"
+                    className="hover:text-[var(--ink)] transition-colors"
                   >
                     About Us
                   </Link>
@@ -829,7 +977,7 @@ export function StorefrontCatalogView({
                 <li>
                   <Link
                     href={`/s/${encodeURIComponent(store.slug)}/shipping`}
-                    className="hover:text-sf-ink transition-colors"
+                    className="hover:text-[var(--ink)] transition-colors"
                   >
                     Delivery &amp; COD
                   </Link>
@@ -837,7 +985,7 @@ export function StorefrontCatalogView({
                 <li>
                   <Link
                     href={`/s/${encodeURIComponent(store.slug)}/contact`}
-                    className="hover:text-sf-ink transition-colors"
+                    className="hover:text-[var(--ink)] transition-colors"
                   >
                     Contact &amp; Help
                   </Link>
@@ -845,19 +993,19 @@ export function StorefrontCatalogView({
               </ul>
             </div>
 
-            {/* Col 3: Categories (2 cols) */}
-            <div className="md:col-span-2 space-y-2.5 text-xs font-sf-mono">
-              <span className="font-bold uppercase tracking-wider text-sf-ink block text-[11px]">
+            {/* Col 3: Categories */}
+            <div className="md:col-span-2 space-y-2.5 text-xs">
+              <span className="font-semibold uppercase tracking-wider text-[var(--ink)] block text-[11px]">
                 Collections
               </span>
-              <ul className="space-y-2 text-sf-muted">
+              <ul className="space-y-2 text-[var(--ink-2)]">
                 {availableCategories.length > 0 ? (
                   availableCategories.slice(0, 4).map((cat) => (
                     <li key={cat}>
                       <button
                         type="button"
                         onClick={() => handleNavCategorySelect(cat)}
-                        className="hover:text-sf-ink transition-colors cursor-pointer capitalize text-left"
+                        className="hover:text-[var(--ink)] transition-colors cursor-pointer capitalize text-left"
                       >
                         {cat}
                       </button>
@@ -865,29 +1013,29 @@ export function StorefrontCatalogView({
                   ))
                 ) : (
                   <li>
-                    <span className="text-sf-muted">Curated Goods</span>
+                    <span className="text-[var(--ink-2)]">Curated Goods</span>
                   </li>
                 )}
               </ul>
             </div>
 
-            {/* Col 4: Payments & Delivery (3 cols) */}
+            {/* Col 4: Payments & Delivery */}
             <div className="md:col-span-3 space-y-2.5 text-xs">
               <span className="font-semibold uppercase tracking-wider text-[var(--ink)] block text-[11px]">
                 Payments &amp; Delivery
               </span>
               <div className="space-y-1.5 text-[var(--ink-2)] text-xs">
-                <div>Khalti ePayment</div>
+                <div>Khalti ePayment (Instant redirect)</div>
                 <div>Cash on Delivery (COD)</div>
                 <div>Nationwide Courier Delivery</div>
-                <div>Settled in NPR</div>
+                <div>Settled in Nepalese Rupees (NPR)</div>
               </div>
             </div>
 
           </div>
 
           {/* Bottom Bar */}
-          <div className="pt-6 border-t border-sf-line flex flex-col sm:flex-row items-center justify-between gap-4 text-[11px] font-sf-mono text-sf-muted">
+          <div className="pt-6 border-t border-[var(--border)] flex flex-col sm:flex-row items-center justify-between gap-4 text-xs text-[var(--ink-2)]">
             <div>
               © {new Date().getFullYear()} {store.name}. All rights reserved.
             </div>
@@ -896,7 +1044,7 @@ export function StorefrontCatalogView({
               <span>·</span>
               <span>Powered by ShopCraft</span>
               <span>·</span>
-              <Link href="/" className="hover:text-sf-ink underline transition-colors">
+              <Link href="/" className="hover:text-[var(--ink)] underline transition-colors">
                 Launch Your Store
               </Link>
             </div>
