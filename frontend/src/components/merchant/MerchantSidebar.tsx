@@ -3,524 +3,332 @@
 import React from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import {
-  BarChart3,
-  Check,
-  ChevronDown,
-  ChevronRight,
-  ChevronsUpDown,
-  ExternalLink,
-  Home,
-  Moon,
-  Palette,
-  Plus,
-  Search,
-  Settings,
-  ShoppingBag,
-  Sun,
-  X,
-} from "lucide-react";
-import { usePlatformTheme } from "@/context/PlatformThemeContext";
-import { fetchMyStores, MerchantStoreMembership } from "@/lib/api";
+import * as Dialog from "@radix-ui/react-dialog";
+import { Check, ChevronsUpDown, ExternalLink, PanelLeftOpen, Plus, X } from "lucide-react";
+import { MerchantStoreMembership } from "@/lib/api";
+import { Badge } from "@/components/ui/badge";
+import { buildMerchantNav, isNavActive, type NavItem } from "./merchant-nav";
 
 interface MerchantSidebarProps {
   storeSlug: string;
-  onOpenCommandPalette: () => void;
-  onQuickAddProduct?: () => void;
-  mobileOpen?: boolean;
-  onCloseMobile?: () => void;
+  stores: MerchantStoreMembership[];
+  /** Orders waiting to be dispatched; shown as a count badge on Orders. */
+  ordersCount: number;
+  drawerOpen: boolean;
+  onDrawerOpenChange: (open: boolean) => void;
 }
 
-const SETTINGS_SUBITEMS = [
-  { label: "Store & Story", tab: "general" },
-  { label: "Payments & COD", tab: "payments" },
-  { label: "Shipping & Domains", tab: "shipping" },
-  { label: "Staff & Roles", tab: "staff" },
-  { label: "Security Audit", tab: "audit" },
-];
+const formatCount = (n: number) => (n > 99 ? "99+" : String(n));
 
-export function MerchantSidebar({
-  storeSlug,
-  onOpenCommandPalette,
-  onQuickAddProduct,
-  mobileOpen = false,
-  onCloseMobile,
-}: MerchantSidebarProps) {
-  const pathname = usePathname();
-  const router = useRouter();
-  const { theme, toggleTheme } = usePlatformTheme();
-
-  const [stores, setStores] = React.useState<MerchantStoreMembership[]>([]);
-  const [isSwitcherOpen, setIsSwitcherOpen] = React.useState(false);
-  const isOnSettingsRoute = pathname.startsWith(
-    `/merchant/${encodeURIComponent(storeSlug)}/settings`
+function NavLink({
+  item,
+  active,
+  count,
+  collapsed,
+  onNavigate,
+}: {
+  item: NavItem;
+  active: boolean;
+  count?: number;
+  collapsed?: boolean;
+  onNavigate?: () => void;
+}) {
+  const Icon = item.icon;
+  return (
+    <Link
+      href={item.href}
+      onClick={onNavigate}
+      aria-current={active ? "page" : undefined}
+      title={collapsed ? item.label : undefined}
+      className={`relative flex min-h-11 md:min-h-9 items-center gap-2.5 rounded-lg px-2.5 text-[13px] transition-colors ${
+        collapsed ? "justify-center" : ""
+      } ${
+        active
+          ? "bg-[var(--nav-active)] font-medium text-[var(--ink)]"
+          : "text-[var(--ink-2)] hover:bg-[var(--nav-active)] hover:text-[var(--ink)]"
+      }`}
+    >
+      <Icon className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+      {collapsed ? (
+        <span className="sr-only">{item.label}</span>
+      ) : (
+        <span className="truncate">{item.label}</span>
+      )}
+      {count ? (
+        collapsed ? (
+          <span
+            aria-hidden="true"
+            className="absolute right-1 top-1 size-2 rounded-full bg-[var(--ink)]"
+          />
+        ) : null
+      ) : null}
+      {count ? (
+        <>
+          {!collapsed && <Badge className="ml-auto">{formatCount(count)}</Badge>}
+          <span className="sr-only">, {count} to dispatch</span>
+        </>
+      ) : null}
+    </Link>
   );
-  const [manualSettingsOpen, setManualSettingsOpen] = React.useState<boolean | null>(null);
-  const settingsExpanded = manualSettingsOpen ?? isOnSettingsRoute;
-  const switcherRef = React.useRef<HTMLDivElement>(null);
+}
+
+function StoreSwitcher({
+  storeSlug,
+  stores,
+  onNavigate,
+}: {
+  storeSlug: string;
+  stores: MerchantStoreMembership[];
+  onNavigate?: () => void;
+}) {
+  const router = useRouter();
+  const [open, setOpen] = React.useState(false);
+  const ref = React.useRef<HTMLDivElement>(null);
+  const current = (stores || []).find((s) => s.slug === storeSlug);
+  const name = current?.name || storeSlug;
 
   React.useEffect(() => {
-    if (typeof window !== "undefined" && storeSlug) {
-      localStorage.setItem("shopcraft_active_store_slug", storeSlug);
-    }
-    fetchMyStores()
-      .then((res) => {
-        if (res.stores && res.stores.length > 0) {
-          setStores(res.stores);
-        } else {
-          setStores([
-            {
-              id: 0,
-              slug: storeSlug,
-              name: storeSlug,
-              category: "Specialty Goods",
-              city: "Kathmandu",
-              province: "Bagmati Province",
-              theme_preset: "editorial-warm",
-              logo_url: "",
-              accent_color: "",
-              role: "OWNER",
-              created_at: new Date().toISOString(),
-            },
-          ]);
-        }
-      })
-      .catch(() => {
-        setStores([
-          {
-            id: 0,
-            slug: storeSlug,
-            name: storeSlug,
-            category: "Specialty Goods",
-            city: "Kathmandu",
-            province: "Bagmati Province",
-            theme_preset: "editorial-warm",
-            logo_url: "",
-            accent_color: "",
-            role: "OWNER",
-            created_at: new Date().toISOString(),
-          },
-        ]);
-      });
-  }, [storeSlug]);
-
-  React.useEffect(() => {
-    function handleClickOutside(e: MouseEvent) {
-      if (switcherRef.current && !switcherRef.current.contains(e.target as Node)) {
-        setIsSwitcherOpen(false);
+    if (!open) return;
+    const onDown = (e: MouseEvent) => {
+      if (ref.current && !ref.current.contains(e.target as Node)) setOpen(false);
+    };
+    const onKey = (e: KeyboardEvent) => {
+      if (e.key === "Escape") {
+        e.stopPropagation();
+        setOpen(false);
       }
-    }
-    if (isSwitcherOpen) {
-      document.addEventListener("mousedown", handleClickOutside);
-      return () => document.removeEventListener("mousedown", handleClickOutside);
-    }
-  }, [isSwitcherOpen]);
+    };
+    document.addEventListener("mousedown", onDown);
+    document.addEventListener("keydown", onKey, true);
+    return () => {
+      document.removeEventListener("mousedown", onDown);
+      document.removeEventListener("keydown", onKey, true);
+    };
+  }, [open]);
 
-  const currentStore = stores.find((s) => s.slug === storeSlug);
-  const baseHref = `/merchant/${encodeURIComponent(storeSlug)}`;
+  return (
+    <div ref={ref} className="relative px-3 pt-4 pb-2">
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-haspopup="listbox"
+        aria-expanded={open}
+        aria-label={`Store: ${name}. Switch store`}
+        className="flex min-h-11 md:min-h-10 w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 text-left transition-colors hover:bg-[var(--nav-active)]"
+      >
+        <span
+          aria-hidden="true"
+          className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs font-semibold text-[var(--ink)]"
+        >
+          {name.slice(0, 1).toUpperCase()}
+        </span>
+        <span className="truncate text-[13px] font-semibold text-[var(--ink)]">{name}</span>
+        <ChevronsUpDown className="ml-auto size-4 shrink-0 text-[var(--ink-2)]" aria-hidden="true" />
+      </button>
 
-  const primaryItems = [
-    {
-      label: "Home",
-      href: baseHref,
-      exact: true,
-      icon: Home,
-    },
-    {
-      label: "Orders",
-      href: `${baseHref}/orders`,
-      exact: false,
-      icon: ShoppingBag,
-    },
-  ];
-
-  const catalogModules = [
-    {
-      badge: "P",
-      badgeClass: "bg-blue-500/15 text-blue-600 dark:text-blue-400",
-      label: "Products",
-      href: `${baseHref}/products`,
-      hasQuickAdd: true,
-    },
-    {
-      badge: "S",
-      badgeClass: "bg-emerald-500/15 text-emerald-600 dark:text-emerald-400",
-      label: "Subscriptions",
-      href: `${baseHref}/subscriptions`,
-      hasQuickAdd: false,
-    },
-    {
-      badge: "D",
-      badgeClass: "bg-orange-500/15 text-orange-600 dark:text-orange-400",
-      label: "Discounts",
-      href: `${baseHref}/discounts`,
-      hasQuickAdd: false,
-    },
-    {
-      badge: "C",
-      badgeClass: "bg-violet-500/15 text-violet-600 dark:text-violet-400",
-      label: "Customers",
-      href: `${baseHref}/customers`,
-      hasQuickAdd: false,
-    },
-  ];
-
-  const reportItems = [
-    {
-      label: "Analytics",
-      href: `${baseHref}/analytics`,
-      icon: BarChart3,
-    },
-    {
-      label: "Themes & Storefront",
-      href: `${baseHref}/themes`,
-      icon: Palette,
-    },
-  ];
-
-  const sidebarBody = (
-    <div className="flex flex-col h-full w-[236px] bg-[var(--background)] text-[var(--foreground)] select-none border-r border-[var(--border)]">
-      {/* 1. Calm Workspace Switcher (Steep style) */}
-      <div className="px-3.5 pt-4 pb-2 relative" ref={switcherRef}>
-        <div className="flex items-center justify-between gap-1">
-          <button
-            type="button"
-            onClick={() => setIsSwitcherOpen((prev) => !prev)}
-            className="flex-1 flex items-center gap-2.5 px-2 py-1.5 rounded-lg hover:bg-[var(--secondary)] transition-colors text-left cursor-pointer min-w-0 group"
-          >
-            {/* Steep-inspired dual-accent workspace mark */}
-            <span className="w-6 h-6 rounded-md bg-[var(--card)] border border-[var(--border)] shadow-2xs flex items-center justify-center shrink-0">
-              <span className="flex items-center -space-x-1">
-                <span className="w-2.5 h-2.5 rounded-full bg-orange-500/90" />
-                <span className="w-2.5 h-2.5 rounded-full bg-blue-500/90" />
-              </span>
-            </span>
-
-            <span className="text-[13px] font-semibold tracking-tight text-[var(--foreground)] truncate">
-              {currentStore?.name || storeSlug}
-            </span>
-
-            <ChevronsUpDown className="w-3.5 h-3.5 text-[var(--muted-foreground)] group-hover:text-[var(--foreground)] shrink-0 ml-auto transition-colors" />
-          </button>
-
-          {onCloseMobile && (
-            <button
-              type="button"
-              onClick={onCloseMobile}
-              aria-label="Close navigation"
-              className="lg:hidden p-1.5 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] cursor-pointer"
-            >
-              <X className="w-4 h-4" />
-            </button>
-          )}
-        </div>
-
-        {/* Store Switcher Popover */}
-        {isSwitcherOpen && (
-          <div className="absolute top-full left-3 right-3 mt-1 z-50 rounded-xl border border-[var(--border)] bg-[var(--popover)] p-1.5 shadow-lg text-xs space-y-1">
-            <div className="px-2 py-1 text-[11px] font-medium text-[var(--muted-foreground)]">
-              Workspaces
-            </div>
-
-            <div className="max-h-52 overflow-y-auto space-y-0.5">
-              {stores.map((st) => {
-                const isCurrent = st.slug === storeSlug;
-                return (
-                  <button
-                    key={`${st.id}-${st.slug}`}
-                    type="button"
-                    onClick={() => {
-                      setIsSwitcherOpen(false);
-                      onCloseMobile?.();
-                      if (!isCurrent) {
-                        if (typeof window !== "undefined") {
-                          localStorage.setItem("shopcraft_active_store_slug", st.slug);
-                        }
-                        router.push(`/merchant/${encodeURIComponent(st.slug)}`);
-                      }
-                    }}
-                    className={`w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-left transition-colors cursor-pointer ${
-                      isCurrent
-                        ? "bg-[var(--secondary)] font-semibold text-[var(--foreground)]"
-                        : "hover:bg-[var(--secondary)]/60 text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
-                    }`}
-                  >
-                    <div className="min-w-0">
-                      <span className="truncate block text-xs">{st.name}</span>
-                      <span className="text-[10px] font-mono text-[var(--muted-foreground)] truncate block">
-                        /s/{st.slug}
-                      </span>
-                    </div>
-                    {isCurrent && <Check className="w-3.5 h-3.5 text-blue-500 shrink-0 ml-2" />}
-                  </button>
-                );
-              })}
-            </div>
-
-            <div className="border-t border-[var(--border)] pt-1 mt-1 space-y-0.5">
-              <Link
-                href="/merchant/new"
-                onClick={() => {
-                  setIsSwitcherOpen(false);
-                  onCloseMobile?.();
-                }}
-                className="w-full px-2.5 py-1.5 rounded-lg flex items-center gap-2 text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors"
-              >
-                <Plus className="w-3.5 h-3.5 text-blue-500" />
-                <span>Create new store</span>
-              </Link>
-              <Link
-                href="/"
-                onClick={() => {
-                  setIsSwitcherOpen(false);
-                  onCloseMobile?.();
-                }}
-                className="w-full px-2.5 py-1.5 rounded-lg flex items-center justify-between text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)] transition-colors"
-              >
-                <span>ShopCraft Home</span>
-                <ExternalLink className="w-3 h-3 opacity-60" />
-              </Link>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* Scrollable Navigation Sections */}
-      <nav className="flex-1 px-3 py-2 space-y-5 overflow-y-auto">
-        {/* Primary Links: Home, Orders, Settings > */}
-        <div className="space-y-0.5">
-          {primaryItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = item.exact
-              ? pathname === item.href
-              : pathname.startsWith(item.href);
-
-            return (
-              <Link
-                key={item.href}
-                href={item.href}
-                onClick={onCloseMobile}
-                className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${
-                  isActive
-                    ? "bg-[var(--secondary)] text-[var(--foreground)] font-medium"
-                    : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]/60"
-                }`}
-              >
-                <Icon
-                  className={`w-4 h-4 shrink-0 stroke-[1.75] ${
-                    isActive ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"
-                  }`}
-                />
-                <span>{item.label}</span>
-              </Link>
-            );
-          })}
-
-          {/* Expandable Settings Row (Steep `Settings >` pattern) */}
-          <div>
-            <div
-              className={`flex items-center justify-between rounded-lg transition-colors ${
-                isOnSettingsRoute
-                  ? "bg-[var(--secondary)] text-[var(--foreground)] font-medium"
-                  : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]/60"
-              }`}
-            >
-              <Link
-                href={`${baseHref}/settings`}
-                onClick={onCloseMobile}
-                className="flex-1 flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] min-w-0"
-              >
-                <Settings
-                  className={`w-4 h-4 shrink-0 stroke-[1.75] ${
-                    isOnSettingsRoute ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"
-                  }`}
-                />
-                <span>Settings</span>
-              </Link>
-              <button
-                type="button"
-                onClick={() => setManualSettingsOpen(!settingsExpanded)}
-                aria-label="Toggle settings sections"
-                className="p-1.5 mr-1 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-pointer"
-              >
-                {settingsExpanded ? (
-                  <ChevronDown className="w-3.5 h-3.5" />
-                ) : (
-                  <ChevronRight className="w-3.5 h-3.5" />
-                )}
-              </button>
-            </div>
-
-            {settingsExpanded && (
-              <div className="mt-0.5 ml-4 pl-2.5 border-l border-[var(--border)] space-y-0.5">
-                {SETTINGS_SUBITEMS.map((sub) => (
-                  <Link
-                    key={sub.tab}
-                    href={`${baseHref}/settings?tab=${sub.tab}`}
-                    onClick={onCloseMobile}
-                    className="flex items-center gap-2 px-2 py-1 rounded-md text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]/50 transition-colors"
-                  >
-                    <span className="w-1.5 h-1.5 rotate-45 bg-[var(--muted-foreground)]/60 shrink-0" />
-                    <span className="truncate">{sub.label}</span>
-                  </Link>
-                ))}
-              </div>
-            )}
-          </div>
-        </div>
-
-        {/* Group 2: Store & Catalog (Steep Pastel Squircle Badges + Quick Add) */}
-        <div className="space-y-1">
-          <div className="px-2.5 flex items-center justify-between">
-            <span className="text-[11px] font-medium text-[var(--muted-foreground)]">
-              Catalog &amp; Sales
-            </span>
-          </div>
-
-          <div className="space-y-0.5">
-            {catalogModules.map((mod) => {
-              const isActive = pathname.startsWith(mod.href);
+      {open && (
+        <div
+          role="listbox"
+          aria-label="Your stores"
+          className="absolute left-3 right-3 top-full z-50 mt-1 space-y-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 text-[13px]"
+        >
+          <div className="max-h-52 space-y-0.5 overflow-y-auto">
+            {((stores || []).length ? stores : current ? [current] : []).map((st) => {
+              const isCurrent = st.slug === storeSlug;
               return (
-                <div
-                  key={mod.href}
-                  className={`group flex items-center justify-between rounded-lg transition-colors ${
-                    isActive
-                      ? "bg-[var(--secondary)] text-[var(--foreground)] font-medium"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]/60"
+                <button
+                  key={`${st.id}-${st.slug}`}
+                  type="button"
+                  role="option"
+                  aria-selected={isCurrent}
+                  onClick={() => {
+                    setOpen(false);
+                    if (!isCurrent) {
+                      onNavigate?.();
+                      router.push(`/merchant/${encodeURIComponent(st.slug)}`);
+                    }
+                  }}
+                  className={`flex min-h-11 md:min-h-9 w-full cursor-pointer items-center justify-between rounded-lg px-2.5 text-left transition-colors hover:bg-[var(--nav-active)] ${
+                    isCurrent ? "bg-[var(--nav-active)] font-medium text-[var(--ink)]" : "text-[var(--ink-2)]"
                   }`}
                 >
-                  <Link
-                    href={mod.href}
-                    onClick={onCloseMobile}
-                    className="flex-1 flex items-center gap-2.5 px-2.5 py-1.5 text-[13px] min-w-0"
-                  >
-                    <span
-                      className={`w-[18px] h-[18px] rounded-[5px] text-[10px] font-bold flex items-center justify-center shrink-0 ${mod.badgeClass}`}
-                    >
-                      {mod.badge}
-                    </span>
-                    <span className="truncate">{mod.label}</span>
-                  </Link>
-
-                  {mod.hasQuickAdd && onQuickAddProduct && (
-                    <button
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        onCloseMobile?.();
-                        onQuickAddProduct();
-                      }}
-                      title="Quick add new product"
-                      aria-label="Quick add new product"
-                      className="mr-1.5 p-1 rounded-md text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--card)] opacity-80 group-hover:opacity-100 transition-all cursor-pointer"
-                    >
-                      <Plus className="w-3.5 h-3.5" />
-                    </button>
-                  )}
-                </div>
+                  <span className="truncate">{st.name}</span>
+                  {isCurrent && <Check className="ml-2 size-4 shrink-0" aria-hidden="true" />}
+                </button>
               );
             })}
           </div>
-        </div>
-
-        {/* Group 3: Insights & Storefront */}
-        <div className="space-y-1">
-          <div className="px-2.5">
-            <span className="text-[11px] font-medium text-[var(--muted-foreground)]">
-              Reports &amp; Storefront
-            </span>
-          </div>
-
-          <div className="space-y-0.5">
-            {reportItems.map((item) => {
-              const Icon = item.icon;
-              const isActive = pathname.startsWith(item.href);
-              return (
-                <Link
-                  key={item.href}
-                  href={item.href}
-                  onClick={onCloseMobile}
-                  className={`flex items-center gap-2.5 px-2.5 py-1.5 rounded-lg text-[13px] transition-colors ${
-                    isActive
-                      ? "bg-[var(--secondary)] text-[var(--foreground)] font-medium"
-                      : "text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]/60"
-                  }`}
-                >
-                  <Icon
-                    className={`w-4 h-4 shrink-0 stroke-[1.75] ${
-                      isActive ? "text-[var(--foreground)]" : "text-[var(--muted-foreground)]"
-                    }`}
-                  />
-                  <span className="truncate">{item.label}</span>
-                </Link>
-              );
-            })}
-
+          <div className="border-t border-[var(--border)] pt-1">
             <Link
-              href={`/s/${encodeURIComponent(storeSlug)}`}
-              target="_blank"
-              onClick={onCloseMobile}
-              className="flex items-center justify-between px-2.5 py-1.5 rounded-lg text-[13px] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--secondary)]/60 transition-colors"
+              href="/merchant/new"
+              onClick={() => {
+                setOpen(false);
+                onNavigate?.();
+              }}
+              className="flex min-h-11 md:min-h-9 items-center gap-2 rounded-lg px-2.5 text-[var(--ink-2)] transition-colors hover:bg-[var(--nav-active)] hover:text-[var(--ink)]"
             >
-              <span>View Live Shop</span>
-              <ExternalLink className="w-3.5 h-3.5 opacity-60 shrink-0" />
+              <Plus className="size-4" aria-hidden="true" />
+              Create new store
             </Link>
           </div>
         </div>
+      )}
+    </div>
+  );
+}
+
+function SidebarBody({
+  storeSlug,
+  stores,
+  ordersCount,
+  onNavigate,
+  onClose,
+  showViewStore,
+}: {
+  storeSlug: string;
+  stores: MerchantStoreMembership[];
+  ordersCount: number;
+  onNavigate?: () => void;
+  onClose?: () => void;
+  /** Only in the mobile drawer; on larger screens "View store" lives in the top bar. */
+  showViewStore?: boolean;
+}) {
+  const pathname = usePathname();
+  const { main, settings } = buildMerchantNav(`/merchant/${encodeURIComponent(storeSlug)}`);
+
+  return (
+    <div className="flex h-full w-60 flex-col border-r border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)]">
+      <div className="flex items-start">
+        <div className="min-w-0 flex-1">
+          <StoreSwitcher storeSlug={storeSlug} stores={stores} onNavigate={onNavigate} />
+        </div>
+        {onClose && (
+          <button
+            type="button"
+            onClick={onClose}
+            aria-label="Close navigation"
+            className="mr-2 mt-4 flex size-11 cursor-pointer items-center justify-center rounded-lg text-[var(--ink-2)] hover:bg-[var(--nav-active)]"
+          >
+            <X className="size-4" aria-hidden="true" />
+          </button>
+        )}
+      </div>
+
+      <nav aria-label="Main" className="flex-1 space-y-0.5 overflow-y-auto px-3 py-2">
+        {main.map((item) => (
+          <NavLink
+            key={item.key}
+            item={item}
+            active={isNavActive(pathname, item)}
+            count={item.key === "orders" ? ordersCount : undefined}
+            onNavigate={onNavigate}
+          />
+        ))}
       </nav>
 
-      {/* 4. Minimal Bottom Bar: Search ⌘K + Theme Toggle */}
-      <div className="p-3 border-t border-[var(--border)] flex items-center gap-1.5">
-        <button
-          type="button"
-          onClick={() => {
-            onCloseMobile?.();
-            onOpenCommandPalette();
-          }}
-          className="flex-1 h-8 px-2.5 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--secondary)] flex items-center justify-between text-xs text-[var(--muted-foreground)] transition-colors cursor-pointer"
-        >
-          <span className="flex items-center gap-1.5">
-            <Search className="w-3.5 h-3.5" />
-            <span>Jump to...</span>
-          </span>
-          <kbd className="font-mono text-[10px] text-[var(--muted-foreground)]">⌘K</kbd>
-        </button>
-
-        <button
-          type="button"
-          onClick={toggleTheme}
-          aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-          className="h-8 w-8 rounded-lg border border-[var(--border)] bg-[var(--card)] hover:bg-[var(--secondary)] flex items-center justify-center text-[var(--muted-foreground)] hover:text-[var(--foreground)] transition-colors cursor-pointer shrink-0"
-        >
-          {theme === "dark" ? (
-            <Sun className="w-3.5 h-3.5 text-amber-400" />
-          ) : (
-            <Moon className="w-3.5 h-3.5" />
-          )}
-        </button>
+      <div className="space-y-0.5 border-t border-[var(--border)] px-3 py-3">
+        {showViewStore && (
+          <a
+            href={`/s/${encodeURIComponent(storeSlug)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            onClick={onNavigate}
+            className="flex min-h-11 items-center gap-2.5 rounded-lg px-2.5 text-[13px] text-[var(--ink-2)] transition-colors hover:bg-[var(--nav-active)] hover:text-[var(--ink)]"
+          >
+            <ExternalLink className="size-4 shrink-0" strokeWidth={1.75} aria-hidden="true" />
+            View store
+            <span className="sr-only">(opens in a new tab)</span>
+          </a>
+        )}
+        <NavLink
+          item={settings}
+          active={isNavActive(pathname, settings)}
+          onNavigate={onNavigate}
+        />
       </div>
     </div>
   );
+}
 
+function Rail({
+  storeSlug,
+  ordersCount,
+  onExpand,
+}: {
+  storeSlug: string;
+  ordersCount: number;
+  onExpand: () => void;
+}) {
+  const pathname = usePathname();
+  const { main, settings } = buildMerchantNav(`/merchant/${encodeURIComponent(storeSlug)}`);
+  return (
+    <div className="flex h-full w-16 flex-col items-center border-r border-[var(--border)] bg-[var(--canvas)]">
+      <button
+        type="button"
+        onClick={onExpand}
+        aria-label="Expand navigation"
+        className="mt-4 mb-2 flex size-10 cursor-pointer items-center justify-center rounded-lg text-[var(--ink-2)] hover:bg-[var(--nav-active)] hover:text-[var(--ink)]"
+      >
+        <PanelLeftOpen className="size-4" aria-hidden="true" />
+      </button>
+      <nav aria-label="Main" className="w-full flex-1 space-y-0.5 px-2 py-2">
+        {main.map((item) => (
+          <NavLink
+            key={item.key}
+            item={item}
+            collapsed
+            active={isNavActive(pathname, item)}
+            count={item.key === "orders" ? ordersCount : undefined}
+          />
+        ))}
+      </nav>
+      <div className="w-full border-t border-[var(--border)] px-2 py-3">
+        <NavLink item={settings} collapsed active={isNavActive(pathname, settings)} />
+      </div>
+    </div>
+  );
+}
+
+export function MerchantSidebar({
+  storeSlug,
+  stores,
+  ordersCount,
+  drawerOpen,
+  onDrawerOpenChange,
+}: MerchantSidebarProps) {
+  const close = () => onDrawerOpenChange(false);
   return (
     <>
-      {/* Desktop Sticky Sidebar */}
-      <aside className="hidden lg:block h-screen sticky top-0 shrink-0">
-        {sidebarBody}
+      {/* Desktop (>=1024px): full 240px sidebar */}
+      <aside className="sticky top-0 hidden h-dvh shrink-0 lg:block">
+        <SidebarBody storeSlug={storeSlug} stores={stores} ordersCount={ordersCount} />
       </aside>
 
-      {/* Mobile Slide-Over Sidebar Drawer */}
-      {mobileOpen && (
-        <div className="lg:hidden fixed inset-0 z-50 flex">
-          <div
-            className="fixed inset-0 bg-black/30 backdrop-blur-2xs"
-            onClick={onCloseMobile}
-            aria-hidden="true"
-          />
-          <div className="relative z-10 h-full shadow-2xl">{sidebarBody}</div>
-        </div>
-      )}
+      {/* Tablet (768-1023px): collapsed icon rail, expands into the drawer */}
+      <aside className="sticky top-0 hidden h-dvh shrink-0 md:block lg:hidden">
+        <Rail storeSlug={storeSlug} ordersCount={ordersCount} onExpand={() => onDrawerOpenChange(true)} />
+      </aside>
+
+      {/* Tablet expand + mobile "More": same navigation in an accessible drawer */}
+      <Dialog.Root open={drawerOpen} onOpenChange={onDrawerOpenChange}>
+        <Dialog.Portal>
+          <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 lg:hidden" />
+          <Dialog.Content
+            aria-describedby={undefined}
+            className="console fixed inset-y-0 left-0 z-50 outline-none lg:hidden"
+          >
+            <Dialog.Title className="sr-only">Navigation</Dialog.Title>
+            <SidebarBody
+              storeSlug={storeSlug}
+              stores={stores}
+              ordersCount={ordersCount}
+              onNavigate={close}
+              onClose={close}
+              showViewStore
+            />
+          </Dialog.Content>
+        </Dialog.Portal>
+      </Dialog.Root>
     </>
   );
 }

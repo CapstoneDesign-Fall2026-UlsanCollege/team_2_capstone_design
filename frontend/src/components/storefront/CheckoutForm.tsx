@@ -352,7 +352,9 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
       clear();
 
       if (paymentMethod === "COD") {
-        router.push(`/s/${encodeURIComponent(store.slug)}/orders/${response.token || response.order_id}`);
+        const targetId = response.token || response.order_id;
+        const tokenQuery = response.token ? `?token=${encodeURIComponent(response.token)}` : "";
+        router.push(`/s/${encodeURIComponent(store.slug)}/orders/${targetId}${tokenQuery}`);
       } else if (response.payment_url) {
         if (response.is_sandbox || response.payment_url.startsWith("/")) {
           router.push(response.payment_url);

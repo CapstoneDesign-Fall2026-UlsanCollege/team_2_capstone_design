@@ -9,7 +9,8 @@
     "start": "next start",
     "lint": "eslint",
     "typecheck": "tsc --noEmit",
-    "check:surfaces": "node scripts/check-surfaces.mjs"
+    "check:surfaces": "node scripts/check-surfaces.mjs",
+    "test": "vitest run"
   },
   "dependencies": {
     "@ducanh2912/next-pwa": "^10.2.9",
@@ -32,6 +33,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.3.5",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^3.2.7"
   }
 }
