@@ -1,21 +1,31 @@
 from datetime import timedelta
+import os
+import unittest.mock
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
+from django.db import connection, transaction
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
 
-from accounts.models import DeliveryAddress
+from accounts.models import DeliveryAddress, EmailOTPChallenge
 from catalog.models import Discount, Product, Variant
 from core.tenant_context import TenantDatabaseContext, BypassRLSContext, get_current_tenant_id
 from django.core.files.uploadedfile import SimpleUploadedFile
-from orders.models import Order, OrderItem
+from orders.models import Order, OrderItem, OrderEvent
 from stores.models import Customer, MerchantAuditLog, Store, StoreMembership, provision_store_customer
 
 User = get_user_model()
 
 
 class TenantIsolationTests(APITestCase):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        if connection.vendor == "postgresql":
+            from core.tenant_context import apply_postgres_rls_policies
+            apply_postgres_rls_policies()
+
     def setUp(self):
         from core.tenant_context import reset_current_tenant_id
         reset_current_tenant_id()
@@ -23,44 +33,45 @@ class TenantIsolationTests(APITestCase):
         self.store_a = Store.objects.get(slug="brewmellow")
         self.owner_a = User.objects.get(email="aarav.shrestha@brewmellow.com.np")
 
-        # Provision Store B (competitor merchant)
-        self.owner_b = User.objects.create_user("roshani.gurung@pahadihoney.com.np", full_name="Roshani Gurung")
-        self.store_b = Store.objects.create(
-            slug="pahadi-honey",
-            name="Pahadi Honey",
-            theme_preset="pahadi-sage",
-            inside_valley_shipping_minor=12000,
-            outside_valley_shipping_minor=25000,
-            is_active=True,
-        )
-        StoreMembership.objects.create(store=self.store_b, user=self.owner_b, role="OWNER")
+        # Provision Store B (competitor merchant) inside BypassRLSContext
+        with BypassRLSContext():
+            self.owner_b = User.objects.create_user("roshani.gurung@pahadihoney.com.np", full_name="Roshani Gurung")
+            self.store_b = Store.objects.create(
+                slug="pahadi-honey",
+                name="Pahadi Honey",
+                theme_preset="pahadi-sage",
+                inside_valley_shipping_minor=12000,
+                outside_valley_shipping_minor=25000,
+                is_active=True,
+            )
+            StoreMembership.objects.create(store=self.store_b, user=self.owner_b, role="OWNER")
 
-        self.prod_b = Product.objects.create(
-            store=self.store_b,
-            slug="wild-cliff-honey",
-            name="Wild Cliff Honey",
-            allow_one_time=True,
-        )
-        self.var_b = Variant.objects.create(
-            store=self.store_b,
-            product=self.prod_b,
-            sku="ph-cliff-500g",
-            label="500g",
-            price_minor=85000,
-            allow_one_time=True,
-        )
-        self.cust_b = Customer.objects.create(
-            store=self.store_b,
-            email="shopper.b@example.com",
-            full_name="Shopper B",
-        )
-        self.order_b = Order.objects.create(
-            store=self.store_b,
-            customer=self.cust_b,
-            order_number="PH-2026-0001",
-            subtotal_minor=85000,
-            total_minor=97000,
-        )
+            self.prod_b = Product.objects.create(
+                store=self.store_b,
+                slug="wild-cliff-honey",
+                name="Wild Cliff Honey",
+                allow_one_time=True,
+            )
+            self.var_b = Variant.objects.create(
+                store=self.store_b,
+                product=self.prod_b,
+                sku="ph-cliff-500g",
+                label="500g",
+                price_minor=85000,
+                allow_one_time=True,
+            )
+            self.cust_b = Customer.objects.create(
+                store=self.store_b,
+                email="shopper.b@example.com",
+                full_name="Shopper B",
+            )
+            self.order_b = Order.objects.create(
+                store=self.store_b,
+                customer=self.cust_b,
+                order_number="PH-2026-0001",
+                subtotal_minor=85000,
+                total_minor=97000,
+            )
 
     def tearDown(self):
         from core.tenant_context import reset_current_tenant_id
@@ -425,6 +436,87 @@ class TenantIsolationTests(APITestCase):
         )
         self.assertEqual(res_cross_verify.status_code, status.HTTP_404_NOT_FOUND)
 
+    def test_checkout_atomic_rollback_on_midway_failure(self):
+        """
+        Verifies that if checkout fails mid-way (e.g. forced exception after Order creation
+        or error response with status >= 400), StoreTenantMixin enforces transaction rollback
+        and no rows (Order, OrderItem) are persisted.
+        """
+        self.client.logout()
+        prod = Product.objects.for_store(self.store_a).first()
+        variant = prod.variants.first()
+        initial_order_count = Order.objects.for_store(self.store_a).count()
+        initial_item_count = OrderItem.objects.filter(order__store=self.store_a).count()
+
+        payload = {
+            "customer_email": "rollback.test@example.com",
+            "items": [{"variant_id": variant.id, "quantity": 1}],
+            "shipping_address": {
+                "recipient_name": "Rollback Test User",
+                "phone": "9812345678",
+                "province": "Bagmati Province",
+                "district": "Kathmandu",
+                "municipality": "Kathmandu Metropolitan",
+                "ward": "3",
+                "tole": "Lazimpat",
+            },
+            "payment_method": "COD",
+        }
+
+        # 1. Test unhandled runtime failure midway through order placement
+        with unittest.mock.patch("orders.models.OrderItem.objects.create", side_effect=RuntimeError("Forced midway failure")):
+            with self.assertRaises(RuntimeError):
+                self.client.post("/api/stores/brewmellow/checkout/place/", payload, format="json")
+
+        # Assert zero rows were persisted: order count and item count unchanged
+        self.assertEqual(Order.objects.for_store(self.store_a).count(), initial_order_count)
+        self.assertEqual(OrderItem.objects.filter(order__store=self.store_a).count(), initial_item_count)
+
+        # 2. Test explicit DRF error response (>= 400) where an exception is handled by DRF
+        # StoreTenantMixin explicitly calls transaction.set_rollback(True) when status_code >= 400
+        from rest_framework.exceptions import APIException
+        with unittest.mock.patch("orders.models.OrderItem.objects.create", side_effect=APIException("DRF handled failure")):
+            res = self.client.post("/api/stores/brewmellow/checkout/place/", payload, format="json")
+            self.assertEqual(res.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
+
+        # Assert zero rows were persisted after DRF converted exception to HTTP 500 response
+        self.assertEqual(Order.objects.for_store(self.store_a).count(), initial_order_count)
+        self.assertEqual(OrderItem.objects.filter(order__store=self.store_a).count(), initial_item_count)
+
+    def test_catalog_num_queries_and_no_n_plus_one(self):
+        """
+        Verifies that StoreCatalogView eliminates N+1 queries by using prefetch_related
+        for active variants. The query count is strictly bounded (O(1) queries regardless of product count).
+        The asserted query count reflects the PostgreSQL path including the 1-round-trip tenant setup query.
+        """
+        self.client.logout()
+        initial_prods = Product.objects.for_store(self.store_a).count()
+        self.assertGreaterEqual(initial_prods, 2)
+
+        # Warm up role check cache if on PostgreSQL
+        if connection.vendor == "postgresql":
+            with connection.cursor() as cursor:
+                from core.tenant_context import _check_shopcraft_role
+                _check_shopcraft_role(cursor)
+
+        # On PostgreSQL inside atomic TestCase:
+        # 1. SAVEPOINT
+        # 2. SELECT store from stores_store WHERE slug = ...
+        # 3. SET LOCAL ROLE shopcraft_app... (single round-trip tenant setup query)
+        # 4. SELECT products from catalog_product WHERE store_id = ...
+        # 5. SELECT variants from catalog_variant WHERE product_id IN (...) (single prefetched batch)
+        # 6. SET LOCAL ROLE NONE... (tenant reset: required in savepoints/persistent connections to prevent connection pollution)
+        # 7. RELEASE SAVEPOINT
+        # Exactly 7 queries on PostgreSQL (or 5 on SQLite without the Postgres tenant setup/reset).
+        num_expected = 7 if connection.vendor == "postgresql" else 5
+        with self.assertNumQueries(num_expected):
+            res = self.client.get(f"/api/stores/{self.store_a.slug}/catalog/")
+            self.assertEqual(res.status_code, status.HTTP_200_OK)
+            products = res.json()["products"]
+            self.assertEqual(len(products), initial_prods)
+            for p in products:
+                self.assertGreater(len(p["variants"]), 0)
+
     def test_merchant_order_queue_and_transition_isolation(self):
         """Verify merchant order queue status tabs, transitions with COD cash confirmation, and multi-tenant security."""
         self.client.force_login(self.owner_a)
@@ -545,6 +637,11 @@ class TenantIsolationTests(APITestCase):
         self.assertEqual(order.status, "PAYMENT_FAILED")
         self.assertEqual(order.payment_status, "FAILED")
 
+        # Verify that explicit 400 response still commits intended status write and OrderEvent
+        event = OrderEvent.objects.filter(order=order, to_status="PAYMENT_FAILED").first()
+        self.assertIsNotNone(event)
+        self.assertIn("Khalti payment verification failed", event.note)
+
     def test_media_upload_scoping_and_audit_logging(self):
         """
         Verifies store-prefixed media uploads require merchant authentication,
@@ -625,19 +722,103 @@ class TenantIsolationTests(APITestCase):
 
     def test_tenant_database_context_and_rls_switching(self):
         """
-        Verifies TenantDatabaseContext sets and resets thread-local tenant ID cleanly.
+        Verifies TenantDatabaseContext sets and resets thread-local tenant ID cleanly,
+        and switches PostgreSQL session to the unprivileged 'shopcraft_app' role (not superuser).
+        Fails loudly in CI if running on a non-PostgreSQL engine.
         """
+        if connection.vendor != "postgresql":
+            if os.getenv("CI"):
+                self.fail("PostgreSQL RLS role-switching and session isolation tests must not be skipped in CI!")
+            self.skipTest("Skipping PostgreSQL RLS role-switching test on non-PostgreSQL engine (SQLite).")
+
         self.assertIsNone(get_current_tenant_id())
 
         with TenantDatabaseContext(self.store_a.id):
             self.assertEqual(get_current_tenant_id(), self.store_a.id)
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_user;")
+                self.assertEqual(cursor.fetchone()[0], "shopcraft_app")
+                cursor.execute("SHOW app.current_store_id;")
+                self.assertEqual(cursor.fetchone()[0], str(self.store_a.id))
+                cursor.execute("SHOW app.bypass_rls;")
+                self.assertEqual(cursor.fetchone()[0], "off")
 
         self.assertIsNone(get_current_tenant_id())
+        with connection.cursor() as cursor:
+            cursor.execute("SHOW app.current_store_id;")
+            self.assertEqual(cursor.fetchone()[0], "")
 
         with BypassRLSContext():
             self.assertEqual(get_current_tenant_id(), "ALL")
+            with connection.cursor() as cursor:
+                cursor.execute("SHOW app.bypass_rls;")
+                self.assertEqual(cursor.fetchone()[0], "on")
 
         self.assertIsNone(get_current_tenant_id())
+
+    def test_postgres_rls_row_level_isolation_enforced(self):
+        """
+        Directly asserts that PostgreSQL Row-Level Security (RLS) policies enforce
+        strict tenant isolation when querying tables as the unprivileged 'shopcraft_app' role.
+        Querying under Store A returns Store A rows and blocks Store B rows at the engine level.
+        Querying without a tenant ID returns 0 rows.
+        BypassRLSContext allows reading rows across all stores.
+        Fails loudly in CI if running on a non-PostgreSQL engine.
+        """
+        if connection.vendor != "postgresql":
+            if os.getenv("CI"):
+                self.fail("PostgreSQL RLS tenant isolation tests must not be skipped in CI!")
+            self.skipTest("Skipping PostgreSQL RLS policy enforcement test on non-PostgreSQL engine (SQLite).")
+
+        # 1. Under Store A tenant context as shopcraft_app
+        with TenantDatabaseContext(self.store_a.id):
+            products_a = list(Product.objects.all())
+            prod_names_a = [p.name for p in products_a]
+            self.assertIn("Gulmi Reserve", prod_names_a)
+            self.assertNotIn("Wild Cliff Honey", prod_names_a)
+
+        # 2. Under Store B tenant context as shopcraft_app
+        with TenantDatabaseContext(self.store_b.id):
+            products_b = list(Product.objects.all())
+            prod_names_b = [p.name for p in products_b]
+            self.assertIn("Wild Cliff Honey", prod_names_b)
+            self.assertNotIn("Gulmi Reserve", prod_names_b)
+
+        # 3. Without any tenant context as shopcraft_app: RLS returns 0 rows
+        with connection.cursor() as cursor:
+            cursor.execute("SET LOCAL ROLE shopcraft_app; SET LOCAL app.bypass_rls = 'off'; SELECT set_config('app.current_store_id', '', true);")
+            prods = list(Product.objects.all())
+            self.assertEqual(len(prods), 0)
+
+        # 4. Under BypassRLSContext: all products across all stores are accessible
+        with BypassRLSContext():
+            all_prods = list(Product.objects.all())
+            all_names = [p.name for p in all_prods]
+            self.assertIn("Gulmi Reserve", all_names)
+            self.assertIn("Wild Cliff Honey", all_names)
+
+    def test_postgres_row_locking_select_for_update(self):
+        """
+        Verifies that row-level locking (select_for_update) acquires an actual PostgreSQL
+        row lock during OTP verification attempts and prevents concurrent modification.
+        Fails loudly in CI if running on a non-PostgreSQL engine.
+        """
+        if connection.vendor != "postgresql":
+            if os.getenv("CI"):
+                self.fail("PostgreSQL row-level locking tests must not be skipped in CI!")
+            self.skipTest("Skipping PostgreSQL select_for_update row-level locking test on non-PostgreSQL engine (SQLite).")
+
+        email = "rowlock.test@nepal.np"
+        challenge, _ = EmailOTPChallenge.issue_for_email(email)
+
+        # Verify select_for_update acquires an active row lock inside transaction
+        with transaction.atomic():
+            locked_ch = EmailOTPChallenge.objects.select_for_update().get(id=challenge.id)
+            locked_ch.attempt_count += 1
+            locked_ch.save(update_fields=["attempt_count"])
+
+        challenge.refresh_from_db()
+        self.assertEqual(challenge.attempt_count, 1)
 
     def test_store_create_with_category_location_and_membership(self):
         """

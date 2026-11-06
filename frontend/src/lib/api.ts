@@ -303,6 +303,81 @@ export async function deleteDeliveryAddress(id: number) {
   });
 }
 
+
+export interface StorefrontCustomerProfile {
+  id: number;
+  email: string;
+  full_name: string;
+  phone: string;
+  orders_count: number;
+  total_spent_minor: number;
+}
+
+export interface StorefrontAccountResponse {
+  user: UserProfile;
+  customer: StorefrontCustomerProfile;
+}
+
+export interface StorefrontOrderSummary {
+  id: number;
+  order_number: string;
+  status: string;
+  payment_status: string;
+  total_minor: number;
+  created_at: string;
+  items_summary: string;
+  token: string;
+}
+
+export async function requestStorefrontOTP(storeSlug: string, email: string) {
+  return apiFetch<{
+    ok: boolean;
+    detail: string;
+    resend_in_seconds: number;
+    dev_otp_hint?: string;
+  }>(`/api/stores/${encodeURIComponent(storeSlug)}/account/otp/request/`, {
+    method: "POST",
+    body: JSON.stringify({ email }),
+  });
+}
+
+export async function verifyStorefrontOTP(storeSlug: string, email: string, code: string) {
+  return apiFetch<{
+    ok: boolean;
+    user: UserProfile;
+    customer: StorefrontCustomerProfile;
+  }>(`/api/stores/${encodeURIComponent(storeSlug)}/account/otp/verify/`, {
+    method: "POST",
+    body: JSON.stringify({ email, code }),
+  });
+}
+
+export async function fetchStorefrontAccount(storeSlug: string) {
+  return apiFetch<StorefrontAccountResponse>(
+    `/api/stores/${encodeURIComponent(storeSlug)}/account/`
+  );
+}
+
+export async function updateStorefrontAccount(
+  storeSlug: string,
+  data: { full_name?: string; phone?: string }
+) {
+  return apiFetch<{
+    ok: boolean;
+    user: UserProfile;
+    customer: StorefrontCustomerProfile;
+  }>(`/api/stores/${encodeURIComponent(storeSlug)}/account/`, {
+    method: "PATCH",
+    body: JSON.stringify(data),
+  });
+}
+
+export async function fetchStorefrontOrders(storeSlug: string) {
+  return apiFetch<StorefrontOrderSummary[]>(
+    `/api/stores/${encodeURIComponent(storeSlug)}/account/orders/`
+  );
+}
+
 export async function fetchStorePublic(storeSlug: string) {
   return apiFetch<StorePublicMetadata>(`/api/stores/${storeSlug}/`);
 }
@@ -860,6 +935,7 @@ export interface MerchantCustomerItem {
   orders_count: number;
   total_spent_minor: number;
   city: string;
+  has_account?: boolean;
   created_at: string;
 }
 

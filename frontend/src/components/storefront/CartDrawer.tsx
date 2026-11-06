@@ -6,6 +6,7 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   ArrowRight,
   Minus,
+  Package,
   Plus,
   ShoppingBag,
   Trash2,
@@ -58,14 +59,13 @@ export function CartDrawer() {
   return (
     <Dialog.Root open={isCartOpen && !isCheckoutOrOrder} onOpenChange={(open) => !open && closeCart()}>
       <Dialog.Portal>
-        {/* Simple semi-transparent overlay without blur or gradient */}
+        {/* Dark token-based overlay with smooth fade animation */}
         <Dialog.Overlay
-          data-store-theme={themePreset || "editorial-warm"}
-          className="fixed inset-0 z-50 bg-[var(--ink)]/40 transition-opacity duration-200"
+          className="cart-drawer-overlay fixed inset-0 z-50 bg-black/60 transition-opacity"
         />
         <Dialog.Content
           data-store-theme={themePreset || "editorial-warm"}
-          className="fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-50 w-full sm:max-w-md border-t sm:border-t-0 sm:border-l border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] flex flex-col justify-between max-h-[90dvh] sm:max-h-dvh overflow-hidden outline-none duration-200"
+          className="cart-drawer-content fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-50 w-full sm:max-w-md border-t sm:border-t-0 sm:border-l border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] flex flex-col justify-between max-h-[90dvh] sm:max-h-dvh overflow-hidden outline-none font-sans"
         >
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-[var(--border)] flex items-center justify-between bg-[var(--surface)]">
@@ -161,18 +161,27 @@ export function CartDrawer() {
                     key={item.variantId}
                     className="py-3.5 first:pt-0 last:pb-0 flex gap-3.5"
                   >
-                    {/* Thumbnail */}
-                    <div className="w-16 h-16 rounded-xl border border-[var(--border)] bg-[var(--canvas)] overflow-hidden shrink-0 flex items-center justify-center">
+                    {/* Thumbnail with neutral placeholder */}
+                    <div className="w-16 h-16 rounded-xl border border-[var(--border)] bg-[var(--canvas)] overflow-hidden shrink-0 flex items-center justify-center relative">
                       {item.imageUrl ? (
                         // eslint-disable-next-line @next/next/no-img-element
                         <img
                           src={item.imageUrl}
                           alt={item.productName}
                           className="w-full h-full object-cover"
+                          onError={(e) => {
+                            e.currentTarget.style.display = "none";
+                            const fallback = e.currentTarget.parentElement?.querySelector(".img-fallback");
+                            if (fallback) fallback.classList.remove("hidden");
+                          }}
                         />
-                      ) : (
-                        <ShoppingBag className="w-5 h-5 text-[var(--ink-2)]" aria-hidden="true" />
-                      )}
+                      ) : null}
+                      <div
+                        className={`img-fallback w-full h-full flex items-center justify-center bg-[var(--canvas)] text-[var(--ink-2)] ${item.imageUrl ? "hidden" : "flex"}`}
+                        aria-hidden="true"
+                      >
+                        <Package className="w-6 h-6 stroke-[1.25] text-[var(--ink-2)] opacity-60" />
+                      </div>
                     </div>
 
                     {/* Details */}
@@ -199,8 +208,8 @@ export function CartDrawer() {
                         )}
                       </div>
 
-                      {/* Stepper and Price Row (44px tap targets) */}
-                      <div className="flex items-center justify-between pt-1">
+                      {/* Stepper and Price Row (44px tap targets, aligned to baseline) */}
+                      <div className="flex items-baseline justify-between pt-1">
                         <div className="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--surface)]">
                           <button
                             type="button"
@@ -223,7 +232,7 @@ export function CartDrawer() {
                           </button>
                         </div>
 
-                        <span className="text-sm font-semibold text-[var(--ink)] tabular-nums">
+                        <span className="text-sm font-semibold text-[var(--ink)] tabular-nums leading-none">
                           {formatNpr(lineItemTotalMinor)}
                         </span>
                       </div>

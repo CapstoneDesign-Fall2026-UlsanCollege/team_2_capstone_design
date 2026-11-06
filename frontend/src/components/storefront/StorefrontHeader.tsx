@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Search, ShoppingBag } from "lucide-react";
+import { Search, ShoppingBag, User } from "lucide-react";
 import { formatNpr } from "@/lib/api";
 
 export interface StorefrontHeaderProps {
@@ -16,6 +16,9 @@ export interface StorefrontHeaderProps {
   cartCount?: number;
   onOpenCart?: () => void;
   onOpenSearch?: () => void;
+  onOpenAccount?: () => void;
+  isAuthenticated?: boolean;
+  userInitial?: string | null;
   onCatalogClick?: () => void;
   onSelectCategory?: (category: string) => void;
   activeCategory?: string;
@@ -47,6 +50,9 @@ export function StorefrontHeader({
   cartCount = 0,
   onOpenCart,
   onOpenSearch,
+  onOpenAccount,
+  isAuthenticated = false,
+  userInitial = null,
   onCatalogClick,
 }: StorefrontHeaderProps) {
   // Determine announcement message. Hidden if empty.
@@ -84,7 +90,7 @@ export function StorefrontHeader({
         </aside>
       )}
 
-      {/* 2. Header Bar: Logo/Name, Clean Navigation, Search, Bag. No glass/blur, 1px border. */}
+      {/* 2. Header Bar: Logo/Name, Clean Navigation, Search, Account, Bag. 1px border. */}
       <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--surface)]">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           
@@ -146,7 +152,7 @@ export function StorefrontHeader({
             </Link>
           </nav>
 
-          {/* Right: Actions (Search, Bag) with min 44px tap targets */}
+          {/* Right: Actions (Search, Account, Bag) with min 44px tap targets */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Search Trigger */}
             <button
@@ -156,6 +162,30 @@ export function StorefrontHeader({
               aria-label="Search catalog"
             >
               <Search className="w-4 h-4" />
+            </button>
+
+            {/* Account Trigger (Lucide User, 44px tap target, between Search and Bag) */}
+            <button
+              type="button"
+              onClick={onOpenAccount}
+              className="w-11 h-11 relative flex items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
+              aria-label={isAuthenticated ? "Open your account menu" : "Sign in to your account"}
+            >
+              {isAuthenticated && userInitial ? (
+                <span className="w-6 h-6 rounded-full bg-[var(--ink)] text-[var(--surface)] text-xs font-semibold flex items-center justify-center">
+                  {userInitial.toUpperCase()}
+                </span>
+              ) : (
+                <>
+                  <User className="w-4 h-4" />
+                  {isAuthenticated && (
+                    <span
+                      className="absolute top-2.5 right-2.5 w-1.5 h-1.5 rounded-full bg-[var(--status-success-fg)]"
+                      aria-hidden="true"
+                    />
+                  )}
+                </>
+              )}
             </button>
 
             {/* Bag Button: Bag (count) */}

@@ -85,9 +85,20 @@ export function CustomerDetailSheet({
                 {initials}
               </div>
               <div className="min-w-0">
-                <Dialog.Title className="text-base font-bold text-[var(--foreground)] truncate">
-                  {customer.full_name || "Unnamed Customer"}
-                </Dialog.Title>
+                <div className="flex items-center gap-2">
+                  <Dialog.Title className="text-base font-bold text-[var(--foreground)] truncate">
+                    {customer.full_name || "Unnamed Customer"}
+                  </Dialog.Title>
+                  {customer.has_account ? (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
+                      Has account
+                    </span>
+                  ) : (
+                    <span className="inline-flex items-center px-1.5 py-0.5 rounded text-[10px] font-medium bg-[var(--secondary)] text-[var(--muted-foreground)] border border-[var(--border)]">
+                      Guest
+                    </span>
+                  )}
+                </div>
                 <Dialog.Description className="text-xs text-[var(--muted-foreground)] font-mono">
                   Customer ID #{customer.id} · Member since{" "}
                   {new Date(customer.created_at).toLocaleDateString("en-US", {

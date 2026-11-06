@@ -14,7 +14,7 @@ export interface CategoryMediaConfig {
 const CATEGORY_MEDIA_MAP: Record<string, CategoryMediaConfig> = {
   honey: {
     heroImage:
-      "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=1200&q=80",
+      "/images/products/himalayan-honey.svg",
     badge: "Himalayan Forest Terroir · 100% Raw & Wild Harvest",
     headline: "Pristine Mountain Wildflower & Cliff Honey Harvests",
     tagline:
@@ -24,32 +24,32 @@ const CATEGORY_MEDIA_MAP: Record<string, CategoryMediaConfig> = {
       {
         name: "Raw Himalayan Wild Cliff Honey (500g)",
         image:
-          "https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=800&q=80",
+          "/images/products/himalayan-honey.svg",
         category: "Raw Honey",
       },
       {
         name: "High-Altitude White Forest Honey (350g)",
         image:
-          "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80",
+          "/images/products/himalayan-honey.svg",
         category: "Wild Honey",
       },
       {
         name: "Himalayan Ginger & Tulsi Honey Infusion",
         image:
-          "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80",
+          "/images/products/himalayan-honey.svg",
         category: "Herbal Infusions",
       },
       {
         name: "Artisanal Raw Comb Honey Cut (250g)",
         image:
-          "https://images.unsplash.com/photo-1509358271058-acd22cc93898?auto=format&fit=crop&w=800&q=80",
+          "/images/products/himalayan-honey.svg",
         category: "Comb Honey",
       },
     ],
   },
   coffee: {
     heroImage:
-      "https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80",
+      "/images/products/gulmi-reserve.svg",
     badge: "High-Altitude Micro-Roast · Single-Origin Nuwakot & Ilam",
     headline: "Freshly Roasted Arabica Beans & Orthodox Mountain Teas",
     tagline:
@@ -59,25 +59,25 @@ const CATEGORY_MEDIA_MAP: Record<string, CategoryMediaConfig> = {
       {
         name: "Single-Origin Nuwakot Arabica Whole Bean (250g)",
         image:
-          "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80",
+          "/images/products/gulmi-reserve.svg",
         category: "Specialty Coffee",
       },
       {
         name: "Ilam First Flush Orthodox Black Tea (100g)",
         image:
-          "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
+          "/images/products/ilam-gold.svg",
         category: "Artisanal Tea",
       },
       {
         name: "Everest Dark Roast Filter Blend (500g)",
         image:
-          "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
+          "/images/products/nuwakot-heritage.svg",
         category: "Espresso & Roast",
       },
       {
         name: "Himalayan Herbal Lemongrass Green Tea",
         image:
-          "https://images.unsplash.com/photo-1576092768241-dec231879fc3?auto=format&fit=crop&w=800&q=80",
+          "/images/products/ilam-gold.svg",
         category: "Herbal Tea",
       },
     ],
@@ -183,7 +183,7 @@ const CATEGORY_MEDIA_MAP: Record<string, CategoryMediaConfig> = {
   },
   default: {
     heroImage:
-      "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1200&q=80",
+      "/images/products/placeholder.svg",
     badge: "Verified Nepali Merchant · Small-Batch Craftsmanship",
     headline: "Carefully Curated Local Goods Handcrafted in Nepal",
     tagline:
@@ -193,19 +193,19 @@ const CATEGORY_MEDIA_MAP: Record<string, CategoryMediaConfig> = {
       {
         name: "Signature Craft Small-Batch Edition",
         image:
-          "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80",
+          "/images/products/placeholder.svg",
         category: "Signature",
       },
       {
         name: "Artisanal Studio Edition Reserve",
         image:
-          "https://images.unsplash.com/photo-1523275335684-37898b6baf30?auto=format&fit=crop&w=800&q=80",
+          "/images/products/placeholder.svg",
         category: "Reserve",
       },
       {
         name: "Handcrafted Heritage Selection",
         image:
-          "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80",
+          "/images/products/himalayan-honey.svg",
         category: "Heritage",
       },
     ],

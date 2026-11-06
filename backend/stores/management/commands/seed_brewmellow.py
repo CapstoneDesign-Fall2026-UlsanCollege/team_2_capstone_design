@@ -61,7 +61,7 @@ class Command(BaseCommand):
                     "slug": "gulmi-reserve",
                     "name": "Gulmi Reserve",
                     "description": "Shade-grown Bourbon and Typica cultivated at 1,550m in Aapchaur, Gulmi. Crisp Himalayan acidity with notes of wild honey, green apple, and roasted walnut.",
-                    "image_url": "https://images.unsplash.com/photo-1559525839-b184a4d698c7",
+                    "image_url": "/images/products/gulmi-reserve.svg",
                     "attributes": {
                         "altitude_masl": 1550,
                         "process": "Washed",
@@ -80,7 +80,7 @@ class Command(BaseCommand):
                     "slug": "ilam-gold",
                     "name": "Ilam Gold",
                     "description": "High-altitude Typica harvested at 1,750m in the misty hills of Sandakphu, Ilam. Silky body with fragrant notes of jasmine tea, bergamot, and sweet stone fruit.",
-                    "image_url": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd",
+                    "image_url": "/images/products/ilam-gold.svg",
                     "attributes": {
                         "altitude_masl": 1750,
                         "process": "Natural",
@@ -99,7 +99,7 @@ class Command(BaseCommand):
                     "slug": "nuwakot-heritage",
                     "name": "Nuwakot Heritage",
                     "description": "Heritage Red Catuai micro-lot from Kakani, Nuwakot at 1,400m. Velvety mouthfeel with deep dark chocolate, toasted cardamom, and jaggery undertones.",
-                    "image_url": "https://images.unsplash.com/photo-1611854779393-1b2da9d400fe",
+                    "image_url": "/images/products/nuwakot-heritage.svg",
                     "attributes": {
                         "altitude_masl": 1400,
                         "process": "Honey",

@@ -2,7 +2,7 @@ import requests
 from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
-from django.db.models import Count, F, Q, Sum
+from django.db.models import Count, F, Prefetch, Q, Sum
 from django.http import Http404
 from django.urls import path
 from django.utils import timezone
@@ -29,7 +29,24 @@ from stores.models import (
 # Mixins
 # -----------------------------------------------------------------------------
 
-class StorePublicMixin:
+class StoreTenantMixin:
+    """
+    Enforces transaction-local PostgreSQL RLS context inside transaction.atomic()
+    for all tenant-scoped requests. No tenant state survives the transaction or HTTP request.
+    Guarantees atomic rollback whenever DRF catches an exception (response.exception = True)
+    or an error response with status >= 500 is returned.
+    """
+    store = None
+
+    def dispatch(self, request, *args, **kwargs):
+        with transaction.atomic():
+            response = super().dispatch(request, *args, **kwargs)
+            if getattr(response, "exception", False) or (hasattr(response, "status_code") and response.status_code >= 500):
+                transaction.set_rollback(True)
+            return response
+
+
+class StorePublicMixin(StoreTenantMixin):
     """Resolves active store from URL slug or raises HTTP 404. Sets Postgres RLS context."""
     store = None
 
@@ -39,14 +56,14 @@ class StorePublicMixin:
         self.store = Store.objects.filter(slug=store_slug, is_active=True).first()
         if not self.store:
             raise Http404("Store not found or inactive.")
-        set_current_tenant_id(self.store.id)
+        set_current_tenant_id(self.store.id, is_local=True)
 
     def finalize_response(self, request, response, *args, **kwargs):
         reset_current_tenant_id()
         return super().finalize_response(request, response, *args, **kwargs)
 
 
-class StoreMerchantMixin:
+class StoreMerchantMixin(StoreTenantMixin):
     """
     Requires authentication and verifies the user is a member of the store.
     Raises HTTP 404 if the store does not exist or user is not a member (D-03).
@@ -63,6 +80,9 @@ class StoreMerchantMixin:
         if not store:
             raise Http404("Store not found.")
 
+        # Activate tenant transaction before checking tenant-scoped StoreMembership
+        set_current_tenant_id(store.id, is_local=True)
+
         # Check membership & role
         membership = StoreMembership.objects.for_store(store).filter(user=request.user).first()
         is_member = membership is not None
@@ -77,7 +97,6 @@ class StoreMerchantMixin:
         self.store = store
         self.membership = membership
         self.member_role = membership.role if membership else "OWNER"
-        set_current_tenant_id(self.store.id)
 
     def finalize_response(self, request, response, *args, **kwargs):
         reset_current_tenant_id()
@@ -131,6 +150,7 @@ class CustomerSerializer(serializers.ModelSerializer):
     orders_count = serializers.IntegerField(read_only=True, default=0)
     total_spent_minor = serializers.IntegerField(read_only=True, default=0)
     city = serializers.SerializerMethodField()
+    has_account = serializers.SerializerMethodField()
 
     class Meta:
         model = Customer
@@ -142,9 +162,13 @@ class CustomerSerializer(serializers.ModelSerializer):
             "orders_count",
             "total_spent_minor",
             "city",
+            "has_account",
             "created_at",
         ]
         read_only_fields = ["id", "created_at"]
+
+    def get_has_account(self, obj):
+        return obj.user_id is not None
 
     def get_city(self, obj):
         last_order = obj.orders.order_by("-created_at").first()
@@ -208,7 +232,10 @@ class ProductSerializer(StoreScopedSerializerMixin):
         read_only_fields = ["id"]
 
     def get_variants(self, obj):
-        active_variants = obj.variants.filter(is_active=True).order_by("sort_order", "price_minor")
+        if hasattr(obj, "prefetched_active_variants"):
+            active_variants = obj.prefetched_active_variants
+        else:
+            active_variants = obj.variants.filter(is_active=True).order_by("sort_order", "price_minor")
         return VariantSerializer(active_variants, many=True).data
 
 
@@ -288,9 +315,13 @@ class StoreCatalogView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, store_slug):
+        active_variants_qs = Variant.objects.filter(is_active=True).order_by("sort_order", "price_minor")
         products = (
             Product.objects.for_store(self.store)
             .filter(is_active=True)
+            .prefetch_related(
+                Prefetch("variants", queryset=active_variants_qs, to_attr="prefetched_active_variants")
+            )
             .order_by("sort_order", "id")
         )
         return Response({
@@ -643,28 +674,45 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if request.user.is_authenticated:
-            customer = provision_store_customer(self.store, request.user)
-            if not customer.phone and phone:
-                customer.phone = phone
-                customer.save(update_fields=["phone"])
+        customer_email = str(
+            request.data.get("customer_email")
+            or request.data.get("email")
+            or shipping_address.get("email")
+            or (request.user.email if getattr(request.user, "is_authenticated", False) else "")
+            or ""
+        ).strip().lower()
+
+        if not customer_email:
+            return Response(
+                {"error": "Customer email is required for order confirmation."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        user_email_norm = (
+            request.user.email.strip().lower()
+            if getattr(request.user, "is_authenticated", False) and request.user.email
+            else None
+        )
+
+        if user_email_norm and customer_email == user_email_norm:
+            customer = provision_store_customer(
+                self.store,
+                request.user,
+                full_name=recipient_name,
+                phone=phone
+            )
         else:
-            customer_email = str(
-                request.data.get("customer_email")
-                or request.data.get("email")
-                or shipping_address.get("email")
-                or ""
-            ).strip().lower()
-            if not customer_email:
-                return Response(
-                    {"error": "Customer email is required for order confirmation."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            user, _ = User.objects.get_or_create(
+            customer, _ = Customer.objects.for_store(self.store).get_or_create(
+                store=self.store,
                 email=customer_email,
                 defaults={"full_name": recipient_name, "phone": phone},
             )
-            customer = provision_store_customer(self.store, user)
+            if not customer.phone and phone:
+                customer.phone = phone
+                customer.save(update_fields=["phone"])
+            if not customer.full_name and recipient_name:
+                customer.full_name = recipient_name
+                customer.save(update_fields=["full_name"])
 
         payment_method = str(request.data.get("payment_method", "KHALTI")).strip().upper()
         if payment_method not in ["KHALTI", "COD"]:
@@ -1211,7 +1259,14 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
 
 class MerchantProductListCreateView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
-        products = Product.objects.for_store(self.store).order_by("sort_order", "-id")
+        active_variants_qs = Variant.objects.all().order_by("sort_order", "price_minor")
+        products = (
+            Product.objects.for_store(self.store)
+            .prefetch_related(
+                Prefetch("variants", queryset=active_variants_qs, to_attr="prefetched_active_variants")
+            )
+            .order_by("sort_order", "-id")
+        )
         return Response(ProductSerializer(products, many=True).data)
 
     def post(self, request, store_slug):
@@ -1526,7 +1581,7 @@ def seed_starter_catalog(store):
                 "name": "Raw Himalayan Wild Cliff Honey",
                 "slug": f"{store.slug}-wild-cliff-honey",
                 "desc": "Pure unpasteurized honey harvested from wild cliff bee colonies in the Annapurna foothills. Rich in natural pollens, floral aromas, and medicinal enzymes.",
-                "image": "https://images.unsplash.com/photo-1587049352847-4a222e784d38?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/himalayan-honey.svg",
                 "attrs": {"category": "Wild Cliff Honey", "district": "Lamjung, Nepal"},
                 "variants": [
                     ("500g Glass Jar", f"{prefix}-HON-500", 145000),
@@ -1537,7 +1592,7 @@ def seed_starter_catalog(store):
                 "name": "High-Altitude White Forest Honey",
                 "slug": f"{store.slug}-white-forest-honey",
                 "desc": "Delicate and floral white honey sourced from sub-alpine wildflowers in Mustang and Manang valleys. Smooth crystalline texture with mild sweetness.",
-                "image": "https://images.unsplash.com/photo-1584308666744-24d5c474f2ae?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/himalayan-honey.svg",
                 "attrs": {"category": "Forest Honey", "district": "Mustang, Nepal"},
                 "variants": [
                     ("350g Jar", f"{prefix}-HON-350", 95000),
@@ -1547,7 +1602,7 @@ def seed_starter_catalog(store):
                 "name": "Himalayan Ginger & Tulsi Honey Infusion",
                 "slug": f"{store.slug}-ginger-tulsi-honey",
                 "desc": "Hand-infused raw wild honey steeped with fresh mountain ginger root and holy tulsi leaves. Ideal for soothing herbal teas and daily immunity.",
-                "image": "https://images.unsplash.com/photo-1615485290382-441e4d049cb5?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/himalayan-honey.svg",
                 "attrs": {"category": "Herbal Infusions", "district": "Kathmandu Valley"},
                 "variants": [
                     ("250g Jar", f"{prefix}-HON-GIN", 75000),
@@ -1560,7 +1615,7 @@ def seed_starter_catalog(store):
                 "name": "Single-Origin Nuwakot Arabica Whole Bean",
                 "slug": f"{store.slug}-nuwakot-arabica",
                 "desc": "High-altitude organic arabica grown at 1,400m in Nuwakot. Notes of brown sugar, dried plum, and dark chocolate with a velvety crema.",
-                "image": "https://images.unsplash.com/photo-1559056199-641a0ac8b55e?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/nuwakot-heritage.svg",
                 "attrs": {"category": "Specialty Coffee", "district": "Nuwakot, Nepal"},
                 "variants": [
                     ("250g Whole Bean", f"{prefix}-COF-250", 95000),
@@ -1571,7 +1626,7 @@ def seed_starter_catalog(store):
                 "name": "Ilam First Flush Orthodox Black Tea",
                 "slug": f"{store.slug}-ilam-first-flush",
                 "desc": "Delicately plucked spring orthodox black tea from eastern Himalayan gardens. Bright amber liquor with a fragrant muscatel finish.",
-                "image": "https://images.unsplash.com/photo-1514432324607-a09d9b4aefdd?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/ilam-gold.svg",
                 "attrs": {"category": "Artisanal Tea", "district": "Ilam, Nepal"},
                 "variants": [
                     ("100g Loose Leaf Tin", f"{prefix}-TEA-100", 65000),
@@ -1581,7 +1636,7 @@ def seed_starter_catalog(store):
                 "name": "Everest Mountain Dark Roast Espresso",
                 "slug": f"{store.slug}-everest-espresso",
                 "desc": "Bold, low-acidity espresso blend engineered for moka pot, aeropress, and commercial machine extraction.",
-                "image": "https://images.unsplash.com/photo-1511920170033-f8396924c348?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/gulmi-reserve.svg",
                 "attrs": {"category": "Espresso Blend", "district": "Kathmandu Valley"},
                 "variants": [
                     ("250g Ground", f"{prefix}-COF-ESP", 85000),
@@ -1594,7 +1649,7 @@ def seed_starter_catalog(store):
                 "name": "Heavyweight Boxy Drop-Shoulder Tee",
                 "slug": f"{store.slug}-heavyweight-tee",
                 "desc": "280 GSM combed cotton tee with reinforced ribbed collar and relaxed boxy drape. Hand-dyed and cut in Kathmandu.",
-                "image": "https://images.unsplash.com/photo-1521572267360-ee0c2909d518?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Apparel", "district": "Kathmandu, Nepal"},
                 "variants": [
                     ("Size M", f"{prefix}-TEE-M", 185000),
@@ -1606,7 +1661,7 @@ def seed_starter_catalog(store):
                 "name": "Raw Himalayan Hemp Utility Tote",
                 "slug": f"{store.slug}-hemp-utility-tote",
                 "desc": "Heavy-duty unbleached Himalayan hemp canvas with double-stitched webbing straps and inner brass zippered compartment.",
-                "image": "https://images.unsplash.com/photo-1556905055-8f358a7a47b2?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Bags & Gear", "district": "Pokhara, Nepal"},
                 "variants": [
                     ("Standard Tote", f"{prefix}-BAG-01", 120000),
@@ -1616,7 +1671,7 @@ def seed_starter_catalog(store):
                 "name": "Ribbed Mountain Wool Fisherman Beanie",
                 "slug": f"{store.slug}-fisherman-beanie",
                 "desc": "100% mountain wool knit with deep ribbed turn-up brim for warmth in high altitude winds.",
-                "image": "https://images.unsplash.com/photo-1576871337622-98d48d1cf531?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Headwear", "district": "Kathmandu, Nepal"},
                 "variants": [
                     ("One Size", f"{prefix}-HAT-01", 85000),
@@ -1629,7 +1684,7 @@ def seed_starter_catalog(store):
                 "name": "Hand-Hammered 7-Metal Tibetan Singing Bowl",
                 "slug": f"{store.slug}-tibetan-singing-bowl",
                 "desc": "Traditional hand-hammered bronze singing bowl tuned to healing vibrational frequencies. Comes with rosewood mallet and brocade cushion.",
-                "image": "https://images.unsplash.com/photo-1578749556568-bc2c40e68b61?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Sacred Metalwork", "district": "Patan, Nepal"},
                 "variants": [
                     ("14cm Diameter", f"{prefix}-BWL-14", 320000),
@@ -1639,7 +1694,7 @@ def seed_starter_catalog(store):
                 "name": "Pure Dhaka Handwoven Pashmina Stole",
                 "slug": f"{store.slug}-dhaka-pashmina-stole",
                 "desc": "Ultra-soft cashmere pashmina bordered with authentic Palpali Dhaka geometric handwoven patterns.",
-                "image": "https://images.unsplash.com/photo-1600585154340-be6161a56a0c?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Textiles", "district": "Bhaktapur, Nepal"},
                 "variants": [
                     ("Standard Stole (200x70cm)", f"{prefix}-STL-01", 240000),
@@ -1649,7 +1704,7 @@ def seed_starter_catalog(store):
                 "name": "Artisanal Studio Ceramic Matcha Tumbler",
                 "slug": f"{store.slug}-ceramic-matcha-tumbler",
                 "desc": "Wheel-thrown stoneware pottery with organic wood-ash glaze. Comfortable ergonomic handfeel for warm tea.",
-                "image": "https://images.unsplash.com/photo-1616046229478-9901c5536a45?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Ceramics", "district": "Thimi, Nepal"},
                 "variants": [
                     ("280ml Tumbler", f"{prefix}-POT-01", 75000),
@@ -1662,7 +1717,7 @@ def seed_starter_catalog(store):
                 "name": "Heritage Sourdough Country Loaf",
                 "slug": f"{store.slug}-sourdough-country-loaf",
                 "desc": "Naturally leavened with 36-hour slow cold fermentation. Crispy blistered crust and open airy crumb.",
-                "image": "https://images.unsplash.com/photo-1555507036-ab1f4038808a?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Sourdough", "district": "Lalitpur, Nepal"},
                 "variants": [
                     ("800g Loaf", f"{prefix}-BRD-01", 45000),
@@ -1672,7 +1727,7 @@ def seed_starter_catalog(store):
                 "name": "French Butter Almond Croissant (Box of 4)",
                 "slug": f"{store.slug}-almond-croissants",
                 "desc": "Twice-baked flaky croissant filled with rich almond frangipane cream and topped with toasted almond flakes.",
-                "image": "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Viennoiserie", "district": "Kathmandu, Nepal"},
                 "variants": [
                     ("Box of 4", f"{prefix}-CRS-04", 80000),
@@ -1682,7 +1737,7 @@ def seed_starter_catalog(store):
                 "name": "Artisan Dark Chocolate Sea-Salt Brownies",
                 "slug": f"{store.slug}-chocolate-sea-salt-brownies",
                 "desc": "Fudgy Belgian dark chocolate brownie bars sprinkled with flaky Himalayan mineral sea salt.",
-                "image": "https://images.unsplash.com/photo-1587314168485-3236d6710814?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Confectionery", "district": "Lalitpur, Nepal"},
                 "variants": [
                     ("Box of 6", f"{prefix}-BRW-06", 65000),
@@ -1695,7 +1750,7 @@ def seed_starter_catalog(store):
                 "name": f"{store.name} Signature Offering",
                 "slug": f"{store.slug}-signature-offering",
                 "desc": "Our introductory small-batch product, crafted with high standards and packaged in Nepal.",
-                "image": "https://images.unsplash.com/photo-1505740420928-5e560c06d30e?auto=format&fit=crop&w=800&q=80",
+                "image": "/images/products/placeholder.svg",
                 "attrs": {"category": "Signature Edition", "district": f"{store.city}, Nepal"},
                 "variants": [
                     ("Standard Edition", f"{prefix}-001", 125000),
@@ -1777,16 +1832,11 @@ class StoreCreateView(APIView):
         if not banner_url:
             norm_cat = f"{category} {theme_preset}".lower()
             if any(k in norm_cat for k in ["honey", "herb", "spice", "sage"]):
-                banner_url = "https://images.unsplash.com/photo-1587049352846-4a222e784d38?auto=format&fit=crop&w=1200&q=80"
+                banner_url = "/images/products/himalayan-honey.svg"
             elif any(k in norm_cat for k in ["coffee", "tea", "roast"]):
-                banner_url = "https://images.unsplash.com/photo-1447933601403-0c6688de566e?auto=format&fit=crop&w=1200&q=80"
-            elif any(k in norm_cat for k in ["streetwear", "fashion", "apparel", "obsidian"]):
-                banner_url = "https://images.unsplash.com/photo-1523381210434-271e8be1f52b?auto=format&fit=crop&w=1200&q=80"
-            elif any(k in norm_cat for k in ["craft", "handloom", "pashmina"]):
-                banner_url = "https://images.unsplash.com/photo-1607604276583-eef5d076aa5f?auto=format&fit=crop&w=1200&q=80"
-            elif any(k in norm_cat for k in ["bakery", "sweet", "pastry"]):
-                banner_url = "https://images.unsplash.com/photo-1509440159596-0249088772ff?auto=format&fit=crop&w=1200&q=80"
+                banner_url = "/images/products/gulmi-reserve.svg"
             else:
+                banner_url = "/images/products/placeholder.svg"
                 banner_url = "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1200&q=80"
 
         with transaction.atomic():
@@ -1805,6 +1855,7 @@ class StoreCreateView(APIView):
                 story_headline=story_headline,
                 about_text=about_text,
             )
+            set_current_tenant_id(store.id, is_local=True)
             StoreMembership.objects.create(
                 store=store,
                 user=request.user,
@@ -1969,6 +2020,13 @@ MerchantDiscountDetailView = _slice6_views["MerchantDiscountDetailView"]
 MerchantStaffListCreateView = _slice6_views["MerchantStaffListCreateView"]
 MerchantStaffDetailView = _slice6_views["MerchantStaffDetailView"]
 
+from stores.storefront_account_api import (
+    StorefrontAccountDetailView,
+    StorefrontCustomerOrdersView,
+    StorefrontOTPRequestView,
+    StorefrontOTPVerifyView,
+)
+
 urlpatterns = [
     # Store Creation & Slug Validation
     path("stores/check-slug/", StoreSlugCheckView.as_view(), name="store_check_slug"),
@@ -1979,6 +2037,10 @@ urlpatterns = [
     # Public Storefront
     path("stores/<slug:store_slug>/", StoreDetailView.as_view(), name="store_public_detail"),
     path("stores/<slug:store_slug>/catalog/", StoreCatalogView.as_view(), name="store_public_catalog"),
+    path("stores/<slug:store_slug>/account/", StorefrontAccountDetailView.as_view(), name="storefront_account_detail"),
+    path("stores/<slug:store_slug>/account/orders/", StorefrontCustomerOrdersView.as_view(), name="storefront_customer_orders"),
+    path("stores/<slug:store_slug>/account/otp/request/", StorefrontOTPRequestView.as_view(), name="storefront_otp_request"),
+    path("stores/<slug:store_slug>/account/otp/verify/", StorefrontOTPVerifyView.as_view(), name="storefront_otp_verify"),
     path("stores/<slug:store_slug>/customer/bootstrap/", CustomerBootstrapView.as_view(), name="store_customer_bootstrap"),
     path("stores/<slug:store_slug>/checkout/quote/", StoreCheckoutQuoteView.as_view(), name="store_checkout_quote"),
     path("stores/<slug:store_slug>/checkout/place/", StoreCheckoutPlaceView.as_view(), name="store_checkout_place"),

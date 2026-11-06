@@ -15,6 +15,7 @@ import {
   ShoppingBag,
   Tag,
   Truck,
+  User,
   X,
 } from "lucide-react";
 import {
@@ -25,12 +26,14 @@ import {
   DeliveryAddressPayload,
   fetchCheckoutQuote,
   fetchSession,
+  fetchStorefrontAccount,
   formatNpr,
   listDeliveryAddresses,
   placeCheckoutOrder,
   StorePublicMetadata,
 } from "@/lib/api";
 import { useCart } from "./CartContext";
+import { useAccount } from "./AccountContext";
 
 const NEPALI_PROVINCES = [
   "Bagmati",
@@ -69,6 +72,7 @@ export interface CheckoutFormProps {
 export function CheckoutForm({ store }: CheckoutFormProps) {
   const router = useRouter();
   const { items, itemCount, subtotalMinor, clear } = useCart();
+  const { openAccount } = useAccount();
 
   // Authentication & Saved Addresses State
   const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
@@ -104,7 +108,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const isStoreCodDisabled = store.cod_enabled === false;
   const isCodUnavailable = isStoreCodDisabled;
 
-  // 1. Fetch Session & Saved Addresses on Mount
+  // 1. Fetch Session & Saved Addresses on Mount & on Auth Change
   useEffect(() => {
     let mounted = true;
 
@@ -122,6 +126,19 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
             setRecipientName((prev) => prev || session.user?.full_name || "");
           }
 
+          try {
+            const account = await fetchStorefrontAccount(store.slug);
+            if (!mounted) return;
+            if (account.customer?.phone) {
+              setPhone((prev) => prev || account.customer.phone || "");
+            }
+            if (account.customer?.full_name) {
+              setRecipientName((prev) => prev || account.customer.full_name || "");
+            }
+          } catch {
+            // Customer profile not created yet or not accessible
+          }
+
           const addresses = await listDeliveryAddresses();
           if (!mounted) return;
 
@@ -137,6 +154,10 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
             setWard(String(defaultAddr.ward));
             setStreetLandmark(defaultAddr.street_landmark);
           }
+        } else {
+          setIsAuthenticated(false);
+          setSavedAddresses([]);
+          setSelectedAddressId(null);
         }
       } catch {
         // Guest shopper - proceed with manual form
@@ -145,10 +166,16 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
 
     loadAccountData();
 
+    const handleAuthChange = () => {
+      loadAccountData();
+    };
+    window.addEventListener("shopcraft:auth-change", handleAuthChange);
+
     return () => {
       mounted = false;
+      window.removeEventListener("shopcraft:auth-change", handleAuthChange);
     };
-  }, []);
+  }, [store.slug]);
 
   const handleSelectSavedAddress = (addr: DeliveryAddressItem) => {
     setSelectedAddressId(addr.id);
@@ -370,6 +397,25 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
         </div>
       )}
 
+      {/* Optional Soft Guest Sign-In Banner */}
+      {!isAuthenticated && (
+        <div className="p-3.5 sm:p-4 rounded-xl border border-[var(--border)] bg-[var(--surface)] flex items-center justify-between gap-3 text-xs">
+          <div className="flex items-center gap-2.5 min-w-0">
+            <User className="w-4 h-4 text-[var(--ink-2)] shrink-0" />
+            <span className="text-[var(--ink-2)] truncate">
+              Have an account? <span className="text-[var(--ink)] font-medium">Sign in for faster checkout</span>
+            </span>
+          </div>
+          <button
+            type="button"
+            onClick={() => openAccount(email.trim() || undefined)}
+            className="text-xs font-semibold text-[var(--ink)] underline hover:text-[var(--ink-2)] cursor-pointer shrink-0 min-h-[44px] inline-flex items-center"
+          >
+            Sign in
+          </button>
+        </div>
+      )}
+
       {/* 1. CONTACT DETAILS (Phone number FIRST as required) */}
       <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
         <div className="flex items-center justify-between">
@@ -377,12 +423,13 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
             1. Contact Details
           </h2>
           {!isAuthenticated && (
-            <Link
-              href={`/login?next=${encodeURIComponent(`/s/${store.slug}/checkout`)}`}
-              className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)] underline min-h-[44px] inline-flex items-center"
+            <button
+              type="button"
+              onClick={() => openAccount(email.trim() || undefined)}
+              className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)] underline min-h-[44px] inline-flex items-center cursor-pointer"
             >
               Sign in for saved address
-            </Link>
+            </button>
           )}
         </div>
 

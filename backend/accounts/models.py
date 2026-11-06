@@ -2,11 +2,11 @@ import secrets
 from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
-from django.contrib.auth.hashers import check_password, make_password
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
 from django.db import models, transaction
 from django.utils import timezone
+from accounts.otp import check_otp_hash, compute_otp_hash
 
 
 NEPALI_MOBILE_VALIDATOR = RegexValidator(
@@ -49,6 +49,11 @@ class User(AbstractUser):
 
     objects = UserManager()
 
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return self.email
 
@@ -56,6 +61,7 @@ class User(AbstractUser):
 class EmailOTPChallenge(models.Model):
     email = models.EmailField(db_index=True)
     code_hash = models.CharField(max_length=256)
+    ip_address = models.GenericIPAddressField(null=True, blank=True)
     expires_at = models.DateTimeField()
     attempt_count = models.PositiveSmallIntegerField(default=0)
     consumed_at = models.DateTimeField(null=True, blank=True)
@@ -65,20 +71,72 @@ class EmailOTPChallenge(models.Model):
         ordering = ["-created_at"]
 
     @classmethod
-    def issue_for_email(cls, email: str) -> tuple["EmailOTPChallenge", str]:
+    def check_rate_limits(cls, email: str, ip_address: str | None = None) -> tuple[bool, str | None, int]:
+        """
+        Enforces rate limits using DB queries only:
+        - 60s cooldown per email
+        - Max 3 sends per email per 15 minutes
+        - Max 10 sends per IP per hour
+        Returns (is_allowed, reason, retry_after_seconds).
+        """
+        email = email.strip().lower()
+        now = timezone.now()
+
+        # 1. 60s cooldown
+        last_challenge = cls.objects.filter(email=email).order_by("-created_at").first()
+        if last_challenge:
+            elapsed = (now - last_challenge.created_at).total_seconds()
+            if elapsed < 60:
+                return False, "COOLDOWN", max(1, int(60 - elapsed))
+
+        # 2. Max 3 per 15 min per email
+        fifteen_min_ago = now - timedelta(minutes=15)
+        recent_email_count = cls.objects.filter(email=email, created_at__gte=fifteen_min_ago).count()
+        if recent_email_count >= 3:
+            oldest_in_window = (
+                cls.objects.filter(email=email, created_at__gte=fifteen_min_ago)
+                .order_by("created_at")
+                .first()
+            )
+            if oldest_in_window:
+                retry_after = int(15 * 60 - (now - oldest_in_window.created_at).total_seconds())
+            else:
+                retry_after = 900
+            return False, "EMAIL_LIMIT", max(1, retry_after)
+
+        # 3. Max 10 per hour per IP
+        if ip_address:
+            one_hour_ago = now - timedelta(hours=1)
+            recent_ip_count = cls.objects.filter(ip_address=ip_address, created_at__gte=one_hour_ago).count()
+            if recent_ip_count >= 10:
+                return False, "IP_LIMIT", 3600
+
+        return True, None, 0
+
+    @classmethod
+    def issue_for_email(cls, email: str, ip_address: str | None = None) -> tuple["EmailOTPChallenge", str]:
         email = email.strip().lower()
         now = timezone.now()
         with transaction.atomic():
+            # Invalidate prior unconsumed challenges for this email
             cls.objects.filter(email=email, consumed_at__isnull=True).update(consumed_at=now)
+
+            # Generate new 6-digit code from secrets module
             raw_code = f"{secrets.randbelow(1_000_000):06d}"
-            code_hash = make_password(raw_code)
+            code_hash = compute_otp_hash(email, raw_code)
             expires_at = now + timedelta(minutes=10)
+
             challenge = cls.objects.create(
                 email=email,
                 code_hash=code_hash,
+                ip_address=ip_address,
                 expires_at=expires_at,
                 attempt_count=0
             )
+
+            # Opportunistic cleanup: delete rows older than 24h so rate-limit windows keep working
+            cls.objects.filter(created_at__lt=now - timedelta(hours=24)).delete()
+
             return challenge, raw_code
 
     @classmethod
@@ -94,10 +152,11 @@ class EmailOTPChallenge(models.Model):
             )
             if not challenge:
                 return False
+
             if now > challenge.expires_at or challenge.attempt_count >= 5:
                 return False
 
-            if check_password(raw_code, challenge.code_hash):
+            if check_otp_hash(email, raw_code, challenge.code_hash):
                 challenge.consumed_at = now
                 challenge.save(update_fields=["consumed_at"])
                 return True

@@ -20,6 +20,8 @@ import {
   StorePublicMetadata,
 } from "@/lib/api";
 import { useCart } from "./CartContext";
+import { useAccount } from "./AccountContext";
+import { useStorefrontAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { StorefrontHeader } from "./StorefrontHeader";
@@ -51,6 +53,8 @@ export function ProductDetailView({
   relatedProducts = [],
 }: ProductDetailViewProps) {
   const { itemCount, openCart, addItem } = useCart();
+  const { openAccount } = useAccount();
+  const { isAuthenticated, user, customer } = useStorefrontAuth(store.slug);
 
   const variants = product.variants || [];
   const defaultVariant =
@@ -164,8 +168,7 @@ export function ProductDetailView({
     setJustAdded(true);
     setTimeout(() => {
       setJustAdded(false);
-      openCart();
-    }, 600);
+    }, 1500);
   };
 
   const handleShare = () => {
@@ -221,6 +224,9 @@ export function ProductDetailView({
         cartCount={itemCount}
         freeShippingThresholdMinor={store.free_shipping_threshold_minor}
         onOpenCart={openCart}
+        onOpenAccount={openAccount}
+        isAuthenticated={isAuthenticated}
+        userInitial={(customer?.full_name || user?.full_name || user?.email || "")[0]?.toUpperCase() || null}
       />
 
       {/* 2. Main Product Content */}

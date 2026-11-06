@@ -142,11 +142,21 @@ class Customer(models.Model):
     class Meta:
         unique_together = [("store", "email")]
 
+    def save(self, *args, **kwargs):
+        if self.email:
+            self.email = self.email.strip().lower()
+        super().save(*args, **kwargs)
+
     def __str__(self):
         return f"{self.email} ({self.store.slug})"
 
 
-def provision_store_customer(store: Store, user) -> Customer:
+def provision_store_customer(store: Store, user, full_name: str = "", phone: str = "") -> Customer:
+    """
+    Finds or creates a Customer record for user within the specified store.
+    Rule: Sets customer.user ONLY when customer.email == user.email (normalized),
+    and NEVER overwrites an existing customer.user that belongs to another user.
+    """
     email = user.email.strip().lower()
     with transaction.atomic():
         customer, created = Customer.objects.for_store(store).get_or_create(
@@ -154,13 +164,26 @@ def provision_store_customer(store: Store, user) -> Customer:
             email=email,
             defaults={
                 "user": user,
-                "full_name": getattr(user, "full_name", ""),
-                "phone": getattr(user, "phone", ""),
+                "full_name": full_name or getattr(user, "full_name", ""),
+                "phone": phone or getattr(user, "phone", ""),
             }
         )
-        if not created and customer.user is None:
-            customer.user = user
-            customer.save(update_fields=["user"])
+        if not created:
+            update_fields = []
+            if customer.user is None:
+                customer.user = user
+                update_fields.append("user")
+            elif customer.user != user:
+                # Security rule: Never overwrite another user's customer record!
+                pass
+            if full_name and not customer.full_name:
+                customer.full_name = full_name
+                update_fields.append("full_name")
+            if phone and not customer.phone:
+                customer.phone = phone
+                update_fields.append("phone")
+            if update_fields:
+                customer.save(update_fields=update_fields)
         return customer
 
 

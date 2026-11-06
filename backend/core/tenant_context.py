@@ -1,7 +1,7 @@
 import logging
 import threading
 from django.core.signals import request_finished
-from django.db import connection
+from django.db import connection, transaction
 from django.dispatch import receiver
 
 logger = logging.getLogger(__name__)
@@ -40,39 +40,53 @@ def _check_shopcraft_role(cursor) -> bool:
     return _shopcraft_role_exists
 
 
-def set_current_tenant_id(store_id: int | str):
+def set_current_tenant_id(store_id: int | str, is_local: bool = True):
     """
-    Enforces PostgreSQL Row-Level Security for the current session/request.
+    Enforces PostgreSQL Row-Level Security for the current transaction/request.
     Switches to the restricted non-bypass role 'shopcraft_app' and sets
-    app.current_store_id to the active store ID.
+    app.current_store_id to the active store ID in a single round-trip command.
+
+    When is_local=True (default), settings are transaction-local (SET LOCAL / set_config(..., true)),
+    guaranteeing they automatically revert on COMMIT or ROLLBACK.
     """
     _thread_locals.store_id = store_id
+    _thread_locals.is_local = is_local
     if connection.vendor == "postgresql":
         with connection.cursor() as cursor:
-            if _check_shopcraft_role(cursor):
-                cursor.execute("SET ROLE shopcraft_app;")
-            cursor.execute("SET app.bypass_rls = 'off';")
-            cursor.execute("SET app.current_store_id = %s;", [str(store_id)])
+            if is_local:
+                role_clause = "SET LOCAL ROLE shopcraft_app; " if _check_shopcraft_role(cursor) else ""
+                cursor.execute(
+                    f"{role_clause}SET LOCAL app.bypass_rls = 'off'; SELECT set_config('app.current_store_id', %s, true);",
+                    [str(store_id)],
+                )
+            else:
+                role_clause = "SET ROLE shopcraft_app; " if _check_shopcraft_role(cursor) else ""
+                cursor.execute(
+                    f"{role_clause}SET app.bypass_rls = 'off'; SELECT set_config('app.current_store_id', %s, false);",
+                    [str(store_id)],
+                )
 
 
-def reset_current_tenant_id():
+def reset_current_tenant_id(database_cleanup: bool = True):
     """
-    Resets the tenant session context back to empty and restores default connection role.
+    Resets the tenant context back to None on thread locals and optionally clears
+    PostgreSQL session/local settings in a single transaction-local round trip.
+    Only fires database cleanup if a tenant context was active and database_cleanup is True.
     """
+    had_store = getattr(_thread_locals, "store_id", None) is not None
     _thread_locals.store_id = None
-    if connection.vendor == "postgresql":
+    _thread_locals.is_local = True
+
+    if database_cleanup and had_store and connection.vendor == "postgresql":
         try:
-            with connection.cursor() as cursor:
-                try:
-                    cursor.execute("SET app.current_store_id = '';")
-                    cursor.execute("SET app.bypass_rls = 'off';")
-                finally:
-                    try:
-                        cursor.execute("RESET ROLE;")
-                    except Exception as e:
-                        logger.debug(f"Unable to reset role: {e}")
+            if connection.connection is not None and not getattr(connection, "needs_rollback", False):
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SET LOCAL ROLE NONE; SET LOCAL app.bypass_rls = 'off'; "
+                        "SELECT set_config('app.current_store_id', '', true);"
+                    )
         except Exception as conn_err:
-            logger.debug(f"Connection error in reset_current_tenant_id: {conn_err}")
+            logger.debug(f"Connection cleanup in reset_current_tenant_id: {conn_err}")
 
 
 @receiver(request_finished)
@@ -82,37 +96,55 @@ def on_request_finished_cleanup(sender, **kwargs):
 
 
 class TenantDatabaseContext:
-    """Context manager to scope a block of code to a specific tenant in PostgreSQL."""
+    """
+    Context manager to scope a block of code to a specific tenant in PostgreSQL
+    inside an isolated transaction.atomic() block with transaction-local RLS.
+    """
     def __init__(self, store_id: int | str):
         self.store_id = store_id
+        self._atomic = None
 
     def __enter__(self):
-        set_current_tenant_id(self.store_id)
+        _thread_locals.store_id = self.store_id
+        self._atomic = transaction.atomic()
+        self._atomic.__enter__()
+        set_current_tenant_id(self.store_id, is_local=True)
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        reset_current_tenant_id()
+        try:
+            reset_current_tenant_id(database_cleanup=True)
+            return self._atomic.__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            self._atomic = None
 
 
 class BypassRLSContext:
-    """Context manager for system/admin operations that require bypassing RLS."""
+    """
+    Context manager for system/admin operations that require bypassing RLS.
+    Guarantees transaction-local settings (SET LOCAL ROLE NONE and SET LOCAL app.bypass_rls = 'on')
+    inside transaction.atomic(), preventing any session-level SET/RESET ROLE leaks.
+    """
+    def __init__(self):
+        self._atomic = None
+        self._prev = None
+
     def __enter__(self):
         self._prev = getattr(_thread_locals, "store_id", None)
         _thread_locals.store_id = "ALL"
+        self._atomic = transaction.atomic()
+        self._atomic.__enter__()
         if connection.vendor == "postgresql":
             with connection.cursor() as cursor:
-                try:
-                    cursor.execute("RESET ROLE;")
-                except Exception:
-                    pass
-                cursor.execute("SET app.bypass_rls = 'on';")
+                cursor.execute("SET LOCAL ROLE NONE; SET LOCAL app.bypass_rls = 'on';")
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
         _thread_locals.store_id = self._prev
-        if connection.vendor == "postgresql":
-            with connection.cursor() as cursor:
-                cursor.execute("SET app.bypass_rls = 'off';")
+        try:
+            return self._atomic.__exit__(exc_type, exc_val, exc_tb)
+        finally:
+            self._atomic = None
 
 
 def apply_postgres_rls_policies():

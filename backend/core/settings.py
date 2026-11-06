@@ -89,17 +89,31 @@ WSGI_APPLICATION = "core.wsgi.application"
 # Database Configuration & Safety Guard for Legacy Neon Host
 LEGACY_NEON_HOST = os.getenv("LEGACY_NEON_HOST", "ep-dark-term-avy8vnke").strip()
 
-if "test" in sys.argv and not os.getenv("TEST_DATABASE_URL"):
-    DATABASES = {
-        "default": dj_database_url.parse("sqlite:///:memory:")
-    }
+test_db_url = os.getenv("TEST_DATABASE_URL", "").strip()
+
+TEST_RUNNER = "core.runner.PostgresRLSDiscoverRunner"
+
+if "test" in sys.argv:
+    if test_db_url:
+        DATABASES = {"default": dj_database_url.parse(test_db_url, conn_max_age=0)}
+        DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
+    else:
+        DATABASES = {"default": dj_database_url.parse("sqlite:///:memory:")}
 else:
     shopcraft_db = os.getenv("SHOPCRAFT_DATABASE_URL", "").strip()
     allow_db_url = os.getenv("SHOPCRAFT_ALLOW_DATABASE_URL", "").strip() == "1"
-    if shopcraft_db:
+    direct_db_url = os.getenv("DATABASE_URL_DIRECT", "").strip()
+    is_migration = any(cmd in sys.argv for cmd in ["migrate", "makemigrations", "showmigrations"])
+
+    # Release-phase schema migrations: use unpooled direct connection when DATABASE_URL_DIRECT is set
+    if is_migration and direct_db_url:
+        DATABASES = {"default": dj_database_url.parse(direct_db_url, conn_max_age=0)}
+    elif shopcraft_db:
         DATABASES = {"default": dj_database_url.parse(shopcraft_db, conn_max_age=600, conn_health_checks=True)}
+        DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
     elif allow_db_url and os.getenv("DATABASE_URL"):
         DATABASES = {"default": dj_database_url.parse(os.environ["DATABASE_URL"], conn_max_age=600, conn_health_checks=True)}
+        DATABASES["default"]["DISABLE_SERVER_SIDE_CURSORS"] = True
     else:
         sqlite_path = "sqlite:///" + str(BASE_DIR / "shopcraft_dev.sqlite3")
         DATABASES = {
@@ -143,6 +157,8 @@ STATIC_ROOT = BASE_DIR / "staticfiles"
 # Email Configuration
 DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "ShopCraft <noreply@shopcraft.com.np>")
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+TRUSTED_PROXY_HEADER = os.getenv("TRUSTED_PROXY_HEADER", "").strip() or None
 
 if RESEND_API_KEY and not DEBUG:
     EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"

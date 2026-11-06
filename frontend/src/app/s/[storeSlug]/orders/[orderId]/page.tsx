@@ -14,6 +14,7 @@ import {
 } from "lucide-react";
 import { formatNpr, OrderDetail, StorePublicMetadata } from "@/lib/api";
 import { Chip, ChipTone } from "@/components/ui/chip";
+import { OrderAccountBanner, OrderHeaderNav } from "@/components/storefront/OrderAccountBanner";
 
 async function fetchOrderData(
   storeSlug: string,
@@ -166,9 +167,7 @@ export default async function StorefrontOrderDetailPage({
             {store.name}
           </span>
 
-          <span className="text-xs text-[var(--ink-2)] tabular-nums">
-            {order.order_number}
-          </span>
+          <OrderHeaderNav storeSlug={store.slug} orderNumber={order.order_number} />
         </div>
       </header>
 
@@ -225,6 +224,9 @@ export default async function StorefrontOrderDetailPage({
             </div>
           )}
         </div>
+
+        {/* Soft Customer Account Creation Banner (for guest orders) */}
+        <OrderAccountBanner storeSlug={store.slug} customerEmail={order.customer_email} />
 
         {/* Order Lifecycle Timeline */}
         <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-4">

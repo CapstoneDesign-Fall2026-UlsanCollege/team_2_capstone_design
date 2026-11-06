@@ -91,14 +91,21 @@ export function ProductGrid({
                   src={product.image_url}
                   alt={product.name}
                   loading="lazy"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    const fallback = e.currentTarget.parentElement?.querySelector(".img-fallback");
+                    if (fallback) fallback.classList.remove("hidden");
+                  }}
                   className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
                 />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-4 text-[var(--ink-2)]">
-                  <Package className="w-8 h-8 stroke-[1.25] text-[var(--ink-2)] mb-1 opacity-50" />
-                  <span className="text-[11px] text-[var(--ink-2)]">No image</span>
-                </div>
-              )}
+              ) : null}
+              <div
+                className={`img-fallback w-full h-full flex flex-col items-center justify-center p-4 text-[var(--ink-2)] ${product.image_url ? "hidden" : "flex"}`}
+                aria-hidden="true"
+              >
+                <Package className="w-8 h-8 stroke-[1.25] text-[var(--ink-2)] mb-1 opacity-50" />
+                <span className="text-[11px] text-[var(--ink-2)]">No image</span>
+              </div>
 
               {/* Clean out-of-stock overlay only when actually sold out */}
               {!hasStock && variants.length > 0 && (

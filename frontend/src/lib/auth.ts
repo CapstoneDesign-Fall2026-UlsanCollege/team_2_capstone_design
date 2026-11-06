@@ -1,0 +1,98 @@
+"use client";
+
+import { useEffect, useState, useCallback } from "react";
+import {
+  fetchSession,
+  fetchStorefrontAccount,
+  logoutSession,
+  StorefrontCustomerProfile,
+  UserProfile,
+} from "./api";
+
+const AUTH_CHANGE_EVENT = "shopcraft:auth-change";
+
+export function emitAuthChange() {
+  if (typeof window !== "undefined") {
+    window.dispatchEvent(new CustomEvent(AUTH_CHANGE_EVENT));
+  }
+}
+
+export interface StorefrontAuthState {
+  isAuthenticated: boolean;
+  user: UserProfile | null;
+  customer: StorefrontCustomerProfile | null;
+  loading: boolean;
+  refresh: () => Promise<void>;
+  signOut: () => Promise<void>;
+}
+
+export function useStorefrontAuth(storeSlug: string): StorefrontAuthState {
+  const [isAuthenticated, setIsAuthenticated] = useState<boolean>(false);
+  const [user, setUser] = useState<UserProfile | null>(null);
+  const [customer, setCustomer] = useState<StorefrontCustomerProfile | null>(null);
+  const [loading, setLoading] = useState<boolean>(true);
+
+  const loadAuth = useCallback(async () => {
+    try {
+      const session = await fetchSession();
+      if (session.authenticated && session.user) {
+        setIsAuthenticated(true);
+        setUser(session.user);
+        try {
+          const account = await fetchStorefrontAccount(storeSlug);
+          setCustomer(account.customer);
+          if (account.user) {
+            setUser(account.user);
+          }
+        } catch {
+          // If customer profile fetch fails, user is still authenticated
+        }
+      } else {
+        setIsAuthenticated(false);
+        setUser(null);
+        setCustomer(null);
+      }
+    } catch {
+      setIsAuthenticated(false);
+      setUser(null);
+      setCustomer(null);
+    } finally {
+      setLoading(false);
+    }
+  }, [storeSlug]);
+
+  useEffect(() => {
+    loadAuth();
+
+    const handleAuthChange = () => {
+      loadAuth();
+    };
+
+    if (typeof window !== "undefined") {
+      window.addEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+      return () => {
+        window.removeEventListener(AUTH_CHANGE_EVENT, handleAuthChange);
+      };
+    }
+  }, [loadAuth]);
+
+  const signOut = useCallback(async () => {
+    try {
+      await logoutSession();
+    } finally {
+      setIsAuthenticated(false);
+      setUser(null);
+      setCustomer(null);
+      emitAuthChange();
+    }
+  }, []);
+
+  return {
+    isAuthenticated,
+    user,
+    customer,
+    loading,
+    refresh: loadAuth,
+    signOut,
+  };
+}

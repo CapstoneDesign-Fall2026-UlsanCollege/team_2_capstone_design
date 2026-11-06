@@ -18,6 +18,8 @@ import { StorefrontHeader } from "./StorefrontHeader";
 import { ProductGrid } from "./ProductGrid";
 import { ProductDetailSheet, SelectedCartItem } from "./ProductDetailSheet";
 import { useCart } from "./CartContext";
+import { useAccount } from "./AccountContext";
+import { useStorefrontAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 
 function isPlaceholderText(text?: string | null): boolean {
@@ -45,6 +47,8 @@ export function StorefrontCatalogView({
   products = [],
 }: StorefrontCatalogViewProps) {
   const { itemCount, openCart, addItem } = useCart();
+  const { openAccount } = useAccount();
+  const { isAuthenticated, user, customer } = useStorefrontAuth(store.slug);
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
@@ -127,16 +131,20 @@ export function StorefrontCatalogView({
   };
 
   const handleAddToCart = (item: SelectedCartItem) => {
-    addItem({
-      productId: item.productId,
-      productSlug: item.productSlug,
-      productName: item.productName,
-      variantId: item.variantId,
-      variantLabel: item.variantLabel,
-      unitPriceMinor: item.unitPriceMinor,
-      quantity: item.quantity,
-      imageUrl: item.productImageUrl,
-    });
+    setIsSheetOpen(false);
+    addItem(
+      {
+        productId: item.productId,
+        productSlug: item.productSlug,
+        productName: item.productName,
+        variantId: item.variantId,
+        variantLabel: item.variantLabel,
+        unitPriceMinor: item.unitPriceMinor,
+        quantity: item.quantity,
+        imageUrl: item.productImageUrl,
+      },
+      true
+    );
   };
 
   // Featured product (first available product with image and in stock, or first product)
@@ -226,7 +234,6 @@ export function StorefrontCatalogView({
         quantity: 1,
         productImageUrl: product.image_url || undefined,
       });
-      openCart();
     } else {
       handleOpenSheet(product);
     }
@@ -285,6 +292,9 @@ export function StorefrontCatalogView({
         freeShippingThresholdMinor={store.free_shipping_threshold_minor}
         categories={availableCategories}
         onOpenCart={openCart}
+        onOpenAccount={openAccount}
+        isAuthenticated={isAuthenticated}
+        userInitial={(customer?.full_name || user?.full_name || user?.email || "")[0]?.toUpperCase() || null}
         onOpenSearch={() => setSearchOpen((prev) => !prev)}
         onCatalogClick={scrollToCollection}
         onSelectCategory={handleNavCategorySelect}
@@ -376,21 +386,28 @@ export function StorefrontCatalogView({
 
             {/* Right Column: Real product photo with caption row below */}
             <div>
-              <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)]">
+              <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
                 {heroImageUrl ? (
                   // eslint-disable-next-line @next/next/no-img-element
                   <img
                     src={heroImageUrl}
                     alt={featuredProduct?.name || store.name}
                     loading="eager"
+                    onError={(e) => {
+                      e.currentTarget.style.display = "none";
+                      const fallback = e.currentTarget.parentElement?.querySelector(".hero-img-fallback");
+                      if (fallback) fallback.classList.remove("hidden");
+                    }}
                     className="w-full h-full object-cover"
                   />
-                ) : (
-                  <div className="w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)]">
-                    <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
-                    <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
-                  </div>
-                )}
+                ) : null}
+                <div
+                  className={`hero-img-fallback w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)] ${heroImageUrl ? "hidden" : "flex"}`}
+                  aria-hidden="true"
+                >
+                  <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
+                  <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
+                </div>
               </div>
 
               {featuredProduct && (
@@ -434,21 +451,28 @@ export function StorefrontCatalogView({
               </p>
             )}
 
-            <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)]">
+            <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
               {heroImageUrl ? (
                 // eslint-disable-next-line @next/next/no-img-element
                 <img
                   src={heroImageUrl}
                   alt={featuredProduct?.name || store.name}
                   loading="eager"
+                  onError={(e) => {
+                    e.currentTarget.style.display = "none";
+                    const fallback = e.currentTarget.parentElement?.querySelector(".mobile-hero-fallback");
+                    if (fallback) fallback.classList.remove("hidden");
+                  }}
                   className="w-full h-full object-cover"
                 />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)]">
-                  <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
-                  <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
-                </div>
-              )}
+              ) : null}
+              <div
+                className={`mobile-hero-fallback w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)] ${heroImageUrl ? "hidden" : "flex"}`}
+                aria-hidden="true"
+              >
+                <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
+                <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
+              </div>
             </div>
 
             {featuredProduct && (
