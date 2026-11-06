@@ -161,23 +161,24 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
   // Unauthenticated input
   const [guestEmailInput, setGuestEmailInput] = useState<string>("");
 
-  // Sync profile fields from customer
-  useEffect(() => {
+  // Sync profile fields from customer (adjust state during render, not in an effect)
+  const [syncedCustomer, setSyncedCustomer] = useState(customer);
+  if (customer !== syncedCustomer) {
+    setSyncedCustomer(customer);
     if (customer) {
       setProfileName(customer.full_name || "");
       setProfilePhone(customer.phone || "");
     }
-  }, [customer]);
+  }
 
   // Load Orders
   useEffect(() => {
     if (!isAuthenticated) return;
     let active = true;
-    setOrdersLoading(true);
-    setOrdersError(null);
     fetchStorefrontOrders(store.slug)
       .then((data) => {
         if (active) {
+          setOrdersError(null);
           setOrders(data);
           setOrdersLoading(false);
         }
@@ -197,11 +198,10 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
   useEffect(() => {
     if (!isAuthenticated) return;
     let active = true;
-    setAddressesLoading(true);
-    setAddressesError(null);
     listDeliveryAddresses()
       .then((data) => {
         if (active) {
+          setAddressesError(null);
           setAddresses(data);
           setAddressesLoading(false);
         }

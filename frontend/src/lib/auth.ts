@@ -62,7 +62,8 @@ export function useStorefrontAuth(storeSlug: string): StorefrontAuthState {
   }, [storeSlug]);
 
   useEffect(() => {
-    loadAuth();
+    // Defer so state updates never run synchronously in the effect body.
+    void Promise.resolve().then(loadAuth);
 
     const handleAuthChange = () => {
       loadAuth();

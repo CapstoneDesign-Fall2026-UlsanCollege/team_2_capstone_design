@@ -32,3 +32,10 @@ Enforce these conventions across all frontend React/Next.js code (`frontend/src/
 
 3. **Always Run Lint Validation:**
    - Whenever editing React components or hooks, ensure `npm run lint` passes without hook dependency warnings or errors.
+
+
+4. **No synchronous setState in effects (`react-hooks/set-state-in-effect`, CI-blocking error):**
+   - Never call `setX(...)` directly in a `useEffect` body, including via a helper such as `loadX()` that sets state synchronously.
+   - Derive values during render, or sync props to state with the "adjust state during render" pattern (`if (prop !== prev) { setPrev(prop); setX(...) }`).
+   - For data fetching, initialise `loading` to `true` and call setState only inside `.then`/`.catch` callbacks. Do not call `setLoading(true)` or `setError(null)` at the top of the effect.
+   - CI runs `npm --prefix frontend run lint`. Errors fail the push to main, so run lint locally before committing.
