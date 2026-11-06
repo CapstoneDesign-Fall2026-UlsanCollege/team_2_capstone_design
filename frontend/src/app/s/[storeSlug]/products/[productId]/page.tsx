@@ -18,67 +18,58 @@ async function fetchStoreAndProduct(
   const origin = process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000";
   const cleanTarget = decodeURIComponent(productIdOrSlug).trim().toLowerCase();
 
-  for (let attempt = 0; attempt < 3; attempt++) {
-    try {
-      const [storeRes, catalogRes] = await Promise.all([
-        fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-          cache: "no-store",
-        }),
-        fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/catalog/`, {
-          cache: "no-store",
-        }),
-      ]);
+  try {
+    const [storeRes, catalogRes] = await Promise.all([
+      fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
+        cache: "no-store",
+      }),
+      fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/catalog/`, {
+        cache: "no-store",
+      }),
+    ]);
 
-      if (!storeRes.ok || !catalogRes.ok) {
-        if (attempt < 2) {
-          await new Promise((r) => setTimeout(r, 300));
-          continue;
-        }
-      }
+    const store: StorePublicMetadata | null = storeRes.ok
+      ? await storeRes.json()
+      : null;
 
-      const store: StorePublicMetadata | null = storeRes.ok
-        ? await storeRes.json()
-        : null;
+    const catalog: StoreCatalogData = catalogRes.ok
+      ? await catalogRes.json()
+      : { products: [] };
 
-      const catalog: StoreCatalogData = catalogRes.ok
-        ? await catalogRes.json()
-        : { products: [] };
+    console.log("[PDP debug]", {
+      storeSlug,
+      cleanTarget,
+      storeResOk: storeRes.ok,
+      catalogResOk: catalogRes.ok,
+      catalogCount: catalog.products?.length,
+      productSlugs: catalog.products?.map((p) => p.slug),
+    });
 
-      // Find product strictly from backend catalog by id or slug
-      const product: ProductItem | null =
-        catalog.products.find(
-          (p) =>
-            String(p.id) === cleanTarget ||
-            (p.slug && p.slug.toLowerCase() === cleanTarget)
-        ) || null;
+    // Find product strictly from backend catalog by id or slug
+    const product: ProductItem | null =
+      catalog.products?.find(
+        (p) =>
+          String(p.id) === cleanTarget ||
+          (p.slug && p.slug.toLowerCase() === cleanTarget)
+      ) || null;
 
-      if (!product && attempt < 2) {
-        await new Promise((r) => setTimeout(r, 300));
-        continue;
-      }
+    const relatedProducts = (
+      catalog.products?.length > 0 ? catalog.products : []
+    ).filter((p) => p.id !== product?.id).slice(0, 3);
 
-      const relatedProducts = (
-        catalog.products.length > 0 ? catalog.products : []
-      ).filter((p) => p.id !== product?.id).slice(0, 3);
-
-      return {
-        store,
-        product,
-        relatedProducts,
-      };
-    } catch {
-      if (attempt < 2) {
-        await new Promise((r) => setTimeout(r, 300));
-        continue;
-      }
-    }
+    return {
+      store,
+      product,
+      relatedProducts,
+    };
+  } catch (err) {
+    console.error("[PDP debug error]", err);
+    return {
+      store: null,
+      product: null,
+      relatedProducts: [],
+    };
   }
-
-  return {
-    store: null,
-    product: null,
-    relatedProducts: [],
-  };
 }
 
 export default async function StorefrontProductDetailPage({

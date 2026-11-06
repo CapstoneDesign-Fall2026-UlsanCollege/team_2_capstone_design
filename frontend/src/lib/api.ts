@@ -123,78 +123,117 @@ export async function ensureCsrfToken(): Promise<string> {
   return getCookie("csrftoken") || "";
 }
 
+// Request deduplication & micro-cache for identical concurrent GET requests
+const inFlightRequests = new Map<string, Promise<unknown>>();
+const recentGetCache = new Map<string, { data: unknown; expires: number }>();
+
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method || "GET").toUpperCase();
-  const headers = new Headers(init?.headers || {});
 
-  if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) {
-    headers.set("Content-Type", "application/json");
-  }
-
-  if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-    const csrfToken = await ensureCsrfToken();
-    if (csrfToken) {
-      headers.set("X-CSRFToken", csrfToken);
+  // Deduplicate in-flight GET requests (e.g. overview called concurrently by page and sidebar shell)
+  if (method === "GET" && !init?.body && !init?.signal) {
+    const cached = recentGetCache.get(path);
+    if (cached && cached.expires > Date.now()) {
+      return cached.data as T;
+    }
+    const inFlight = inFlightRequests.get(path);
+    if (inFlight) {
+      return inFlight as Promise<T>;
     }
   }
 
-  let timeoutId: ReturnType<typeof setTimeout> | null = null;
-  let signal = init?.signal;
-  if (!signal && typeof AbortController !== "undefined") {
-    const controller = new AbortController();
-    timeoutId = setTimeout(() => controller.abort(new Error("Request timed out after 15 seconds")), 15000);
-    signal = controller.signal;
-  }
+  const exec = async (): Promise<T> => {
+    const headers = new Headers(init?.headers || {});
 
-  let res: Response;
-  try {
-    res = await fetch(path, {
-      ...init,
-      method,
-      headers,
-      credentials: "include",
-      signal,
-    });
-  } finally {
-    if (timeoutId) {
-      clearTimeout(timeoutId);
+    if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) {
+      headers.set("Content-Type", "application/json");
     }
-  }
 
-  const contentType = res.headers.get("content-type");
-  const isJson = contentType && contentType.includes("application/json");
-  const data = isJson ? await res.json() : null;
-
-  if (!res.ok) {
-    let detail = "An unexpected error occurred.";
-    let fieldErrors: Record<string, string[]> | undefined;
-
-    if (data) {
-      if (typeof data.detail === "string") {
-        detail = data.detail;
-      } else if (typeof data.error === "string") {
-        detail = data.error;
-      } else if (typeof data.message === "string") {
-        detail = data.message;
-      } else if (typeof data === "object") {
-        fieldErrors = {};
-        for (const [key, val] of Object.entries(data)) {
-          if (Array.isArray(val)) {
-            fieldErrors[key] = val.map(String);
-          } else if (typeof val === "string") {
-            fieldErrors[key] = [val];
-          }
-        }
-        const firstKey = Object.keys(fieldErrors)[0];
-        if (firstKey && fieldErrors[firstKey].length > 0) {
-          detail = `${firstKey}: ${fieldErrors[firstKey][0]}`;
-        }
+    if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
+      const csrfToken = await ensureCsrfToken();
+      if (csrfToken) {
+        headers.set("X-CSRFToken", csrfToken);
       }
     }
-    throw new ApiError(res.status, detail, fieldErrors);
+
+    let timeoutId: ReturnType<typeof setTimeout> | null = null;
+    let signal = init?.signal;
+    if (!signal && typeof AbortController !== "undefined") {
+      const controller = new AbortController();
+      timeoutId = setTimeout(
+        () =>
+          controller.abort(
+            new Error("Request timed out. The server or remote database may be waking up; please retry.")
+          ),
+        45000
+      );
+      signal = controller.signal;
+    }
+
+    let res: Response;
+    try {
+      res = await fetch(path, {
+        ...init,
+        method,
+        headers,
+        credentials: "include",
+        signal,
+      });
+    } finally {
+      if (timeoutId) {
+        clearTimeout(timeoutId);
+      }
+    }
+
+    const contentType = res.headers.get("content-type");
+    const isJson = contentType && contentType.includes("application/json");
+    const data = isJson ? await res.json() : null;
+
+    if (!res.ok) {
+      let detail = "An unexpected error occurred.";
+      let fieldErrors: Record<string, string[]> | undefined;
+
+      if (data) {
+        if (typeof data.detail === "string") {
+          detail = data.detail;
+        } else if (typeof data.error === "string") {
+          detail = data.error;
+        } else if (typeof data.message === "string") {
+          detail = data.message;
+        } else if (typeof data === "object") {
+          fieldErrors = {};
+          for (const [key, val] of Object.entries(data)) {
+            if (Array.isArray(val)) {
+              fieldErrors[key] = val.map(String);
+            } else if (typeof val === "string") {
+              fieldErrors[key] = [val];
+            }
+          }
+          const firstKey = Object.keys(fieldErrors)[0];
+          if (firstKey && fieldErrors[firstKey].length > 0) {
+            detail = `${firstKey}: ${fieldErrors[firstKey][0]}`;
+          }
+        }
+      }
+      throw new ApiError(res.status, detail, fieldErrors);
+    }
+
+    if (method === "GET" && !init?.body && !init?.signal) {
+      recentGetCache.set(path, { data, expires: Date.now() + 2500 });
+    }
+
+    return data as T;
+  };
+
+  if (method === "GET" && !init?.body && !init?.signal) {
+    const promise = exec().finally(() => {
+      inFlightRequests.delete(path);
+    });
+    inFlightRequests.set(path, promise);
+    return promise;
   }
 
-  return data as T;
+  return exec();
 }
 
 export async function requestEmailOtp(email: string) {

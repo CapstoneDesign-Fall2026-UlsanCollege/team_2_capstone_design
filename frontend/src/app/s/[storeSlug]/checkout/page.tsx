@@ -16,7 +16,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null
       return {
         slug: storeSlug,
         name: storeSlug,
-        tagline: "Specialty goods delivered across Nepal.",
+        tagline: "",
         currency: "NPR",
         theme_preset: "editorial-warm",
         logo_url: "",
@@ -32,7 +32,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null
     return {
       slug: storeSlug,
       name: storeSlug,
-      tagline: "Specialty goods delivered across Nepal.",
+      tagline: "",
       currency: "NPR",
       theme_preset: "editorial-warm",
       logo_url: "",
@@ -58,37 +58,37 @@ export default async function StorefrontCheckoutPage({
   }
 
   return (
-    <div className="min-h-dvh bg-sf-canvas text-sf-ink flex flex-col font-sf-body">
-      {/* Distraction-Free Header (DESIGN.md §5) */}
-      <header className="sticky top-0 z-30 w-full border-b border-sf-line bg-sf-surface/90 backdrop-blur-xs">
-        <div className="max-w-xl mx-auto px-4 h-14 flex items-center justify-between">
+    <div className="min-h-dvh bg-[var(--canvas)] text-[var(--ink)] flex flex-col font-sans">
+      {/* Distraction-Free Header */}
+      <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--surface)]">
+        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link
             href={`/s/${encodeURIComponent(store.slug)}`}
-            className="inline-flex items-center gap-1.5 text-xs font-sf-mono text-sf-muted hover:text-sf-ink transition-colors min-h-[44px]"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors min-h-[44px]"
           >
-            <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
             <span>Back to Store</span>
           </Link>
 
-          <span className="font-sf-display text-sm sm:text-base font-bold text-sf-ink">
+          <span className="font-serif text-base font-semibold text-[var(--ink)]">
             {store.name}
           </span>
 
-          <div className="inline-flex items-center gap-1 text-[11px] font-sf-mono text-sf-muted">
-            <ShieldCheck className="w-3.5 h-3.5 text-sf-accent" aria-hidden="true" />
-            <span className="hidden sm:inline">Secure</span>
+          <div className="inline-flex items-center gap-1 text-xs text-[var(--ink-2)]">
+            <ShieldCheck className="w-4 h-4 text-[var(--ink-2)]" aria-hidden="true" />
+            <span className="hidden sm:inline">Secure Checkout</span>
           </div>
         </div>
       </header>
 
       {/* Main Checkout Container */}
-      <main className="flex-1 w-full max-w-xl mx-auto px-4 py-6 sm:py-8">
+      <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-6 sm:py-8">
         <div className="mb-6 space-y-1 text-left">
-          <h1 className="font-sf-display text-xl sm:text-2xl font-bold tracking-tight text-sf-ink">
-            Single-Screen Checkout
+          <h1 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--ink)]">
+            Checkout
           </h1>
-          <p className="text-xs text-sf-muted font-sf-mono">
-            Fast, secure direct-to-consumer checkout powered by ShopCraft Nepal
+          <p className="text-xs text-[var(--ink-2)]">
+            Direct purchase from {store.name} · Khalti or Cash on Delivery
           </p>
         </div>
 

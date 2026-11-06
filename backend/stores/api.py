@@ -339,35 +339,36 @@ class StorePublicOrderDetailView(StorePublicMixin, APIView):
 
     def get(self, request, store_slug, order_id):
         import uuid
-        token_param = request.query_params.get("token", "").strip()
+        from core.tenant_context import TenantDatabaseContext
+        from django.db import transaction
+        token_param = request.query_params.get('token', '').strip()
         order = None
 
-        # Check if order_id is a UUID token
-        try:
-            uuid_token = uuid.UUID(str(order_id))
-            order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
-        except ValueError:
-            # Looked up by integer ID
+        with TenantDatabaseContext(self.store.id), transaction.atomic():
             try:
-                oid = int(order_id)
-                if token_param:
-                    try:
-                        param_uuid = uuid.UUID(token_param)
-                        order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
-                    except ValueError:
-                        pass
-                elif request.user.is_authenticated:
-                    # Authenticated shopper viewing their own order
-                    order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
+                uuid_token = uuid.UUID(str(order_id))
+                order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
             except ValueError:
-                pass
+                try:
+                    oid = int(order_id)
+                    if token_param:
+                        try:
+                            param_uuid = uuid.UUID(token_param)
+                            order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
+                        except ValueError:
+                            pass
+                    elif request.user.is_authenticated:
+                        order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
+                except ValueError:
+                    pass
 
-        if not order:
-            raise Http404("Order not found.")
-        response = Response(OrderSerializer(order).data)
-        response["Cache-Control"] = "no-store, no-cache, must-revalidate, private"
+            if not order:
+                raise Http404('Order not found.')
+            data = OrderSerializer(order).data
+
+        response = Response(data)
+        response['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
         return response
-
 
 class StorePublicOrderPayView(StorePublicMixin, APIView):
     """
@@ -985,27 +986,20 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
         orders_qs = Order.objects.for_store(self.store)
         valid_orders_qs = orders_qs.exclude(status__in=["CANCELLED", "PAYMENT_FAILED"])
 
-        orders_count = orders_qs.count()
-        revenue_agg = orders_qs.filter(payment_status__in=["PAID", "CONFIRMED"]).aggregate(
-            total_rev=Sum("total_minor")
+        orders_agg = orders_qs.aggregate(
+            orders_count=Count("id"),
+            revenue_minor=Sum("total_minor", filter=Q(payment_status__in=["PAID", "CONFIRMED"])),
+            today_orders_count=Count("id", filter=Q(created_at__gte=today_start) & ~Q(status__in=["CANCELLED", "PAYMENT_FAILED"])),
+            today_sales_minor=Sum("total_minor", filter=Q(created_at__gte=today_start) & ~Q(status__in=["CANCELLED", "PAYMENT_FAILED"])),
+            pending_fulfillment_count=Count("id", filter=Q(status__in=["CONFIRMED", "PAID", "PROCESSING"])),
+            cod_pending_minor=Sum("total_minor", filter=Q(payment_status="COD_PENDING") & ~Q(status="CANCELLED")),
         )
-        revenue_minor = revenue_agg["total_rev"] or 0
-
-        today_orders_qs = valid_orders_qs.filter(created_at__gte=today_start)
-        today_orders_count = today_orders_qs.count()
-        today_sales_minor = (
-            today_orders_qs.aggregate(total=Sum("total_minor"))["total"] or 0
-        )
-
-        pending_fulfillment_count = orders_qs.filter(
-            status__in=["CONFIRMED", "PAID", "PROCESSING"]
-        ).count()
-        cod_pending_minor = (
-            orders_qs.filter(payment_status="COD_PENDING")
-            .exclude(status="CANCELLED")
-            .aggregate(total=Sum("total_minor"))["total"]
-            or 0
-        )
+        orders_count = orders_agg["orders_count"] or 0
+        revenue_minor = orders_agg["revenue_minor"] or 0
+        today_orders_count = orders_agg["today_orders_count"] or 0
+        today_sales_minor = orders_agg["today_sales_minor"] or 0
+        pending_fulfillment_count = orders_agg["pending_fulfillment_count"] or 0
+        cod_pending_minor = orders_agg["cod_pending_minor"] or 0
 
         products_count = Product.objects.for_store(self.store).filter(is_active=True).count()
         customers_count = Customer.objects.for_store(self.store).count()

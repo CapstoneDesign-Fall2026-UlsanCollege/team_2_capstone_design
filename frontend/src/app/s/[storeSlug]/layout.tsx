@@ -142,16 +142,20 @@ export default async function StorefrontLayout({
   });
 
   const customStyle: React.CSSProperties = {
+    ["--canvas" as string]: safeTokens.tokens.canvas,
+    ["--surface" as string]: safeTokens.tokens.surface,
+    ["--border" as string]: safeTokens.tokens.border,
+    ["--ink" as string]: safeTokens.tokens.ink,
+    ["--ink-2" as string]: safeTokens.tokens.ink2,
     ["--primary" as string]: safeTokens.tokens.primary,
     ["--primary-hover" as string]: safeTokens.tokens.primaryHover,
-    ["--sf-cta" as string]: safeTokens.tokens.primary,
   };
 
   return (
     <div
       data-store-theme={themePreset}
       style={customStyle}
-      className={`${fontClasses} storefront min-h-dvh bg-sf-canvas text-sf-ink font-sf-body flex flex-col`}
+      className={`${fontClasses} storefront min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans flex flex-col`}
     >
       <ThemePreviewWatcher initialPreset={themePreset} />
       <CartProvider

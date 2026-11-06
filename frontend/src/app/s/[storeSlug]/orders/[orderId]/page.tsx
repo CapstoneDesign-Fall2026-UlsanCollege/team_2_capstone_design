@@ -1,3 +1,4 @@
+import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import {
@@ -8,9 +9,11 @@ import {
   CreditCard,
   MapPin,
   Package,
+  RotateCw,
   ShoppingBag,
 } from "lucide-react";
 import { formatNpr, OrderDetail, StorePublicMetadata } from "@/lib/api";
+import { Chip, ChipTone } from "@/components/ui/chip";
 
 async function fetchOrderData(
   storeSlug: string,
@@ -70,18 +73,72 @@ export default async function StorefrontOrderDetailPage({
     notFound();
   }
 
-  // Stages calculation
   const statusUpper = order.status.toUpperCase();
-  const isPaid = order.payment_status === "PAID" || statusUpper === "PAID";
-  const isPaymentFailed = statusUpper === "PAYMENT_FAILED" || order.payment_status === "FAILED";
-  const isPendingPayment =
-    (statusUpper === "PENDING_PAYMENT" || isPaymentFailed) && !isPaid;
+  const paymentStatusUpper = order.payment_status.toUpperCase();
+  const isKhalti = order.payment_method === "KHALTI";
+  const isCod = order.payment_method === "COD";
 
-  const isConfirmed =
-    statusUpper === "CONFIRMED" ||
-    isPaid ||
-    ["PACKED", "PROCESSING", "SHIPPED", "DELIVERED"].includes(statusUpper);
-  const isPacked = ["PACKED", "PROCESSING", "SHIPPED", "DELIVERED"].includes(statusUpper);
+  // Determine Semantic Status Mapping
+  let chipTone: ChipTone = "neutral";
+  let statusBadgeLabel = order.status.replace(/_/g, " ");
+  let heroHeadline = "Order Received";
+  let heroSubtitle = `Thank you for ordering directly from ${store.name}.`;
+  let canRetryPayment = false;
+
+  if (statusUpper === "DELIVERED") {
+    chipTone = "success";
+    statusBadgeLabel = "Delivered";
+    heroHeadline = "Order Delivered!";
+    heroSubtitle = "Your package has been safely delivered.";
+  } else if (paymentStatusUpper === "PAID" || statusUpper === "PAID") {
+    chipTone = "success";
+    statusBadgeLabel = isKhalti ? "Khalti Verified" : "Paid";
+    heroHeadline = "Payment Verified & Order Confirmed!";
+    heroSubtitle = `Your payment is verified. ${store.name} will prepare your order for dispatch.`;
+  } else if (statusUpper === "PAYMENT_FAILED" || paymentStatusUpper === "FAILED") {
+    chipTone = "error";
+    statusBadgeLabel = "Payment Failed";
+    heroHeadline = "Payment Not Completed";
+    heroSubtitle = "Your payment transaction was not completed. Tap below to retry.";
+    canRetryPayment = true;
+  } else if (statusUpper === "CANCELLED") {
+    chipTone = "error";
+    statusBadgeLabel = "Cancelled";
+    heroHeadline = "Order Cancelled";
+    heroSubtitle = "This order has been cancelled.";
+  } else if (statusUpper === "SHIPPED") {
+    chipTone = "warning";
+    statusBadgeLabel = "Out for Delivery";
+    heroHeadline = "Your Order is on the Way!";
+    heroSubtitle = "Courier has picked up your package for doorstep delivery.";
+  } else if (isCod || paymentStatusUpper === "COD_PENDING") {
+    chipTone = "warning";
+    statusBadgeLabel = "Awaiting COD";
+    heroHeadline = "Order Confirmed for Cash on Delivery";
+    heroSubtitle = `Please have ${formatNpr(order.total_minor)} ready in cash upon arrival.`;
+  } else if (statusUpper === "PENDING_PAYMENT") {
+    chipTone = "warning";
+    statusBadgeLabel = "Verifying Payment";
+    heroHeadline = "Awaiting Payment Confirmation";
+    heroSubtitle = "We are verifying your transaction. If unpaid, you can complete payment now.";
+    canRetryPayment = true;
+  } else if (statusUpper === "CONFIRMED" || statusUpper === "PROCESSING" || statusUpper === "PACKED") {
+    chipTone = "warning";
+    statusBadgeLabel = "Processing";
+    heroHeadline = "Order Confirmed!";
+    heroSubtitle = `${store.name} is preparing your items for courier dispatch.`;
+  }
+
+  // Stepper lifecycle calculation
+  const isConfirmed = [
+    "CONFIRMED",
+    "PAID",
+    "PROCESSING",
+    "PACKED",
+    "SHIPPED",
+    "DELIVERED",
+  ].includes(statusUpper);
+  const isPacked = ["PROCESSING", "PACKED", "SHIPPED", "DELIVERED"].includes(statusUpper);
   const isShipped = ["SHIPPED", "DELIVERED"].includes(statusUpper);
   const isDelivered = statusUpper === "DELIVERED";
 
@@ -92,93 +149,109 @@ export default async function StorefrontOrderDetailPage({
     { label: "Delivered", done: isDelivered, current: isShipped && !isDelivered },
   ];
 
-  const effectiveToken = token || order.token || "";
-
   return (
-    <div className="min-h-dvh bg-sf-canvas text-sf-ink flex flex-col">
-      {/* Minimal Header */}
-      <header className="sticky top-0 z-30 w-full border-b border-sf-line bg-sf-surface/90 backdrop-blur-xs">
+    <div className="min-h-dvh bg-[var(--canvas)] text-[var(--ink)] flex flex-col font-sans">
+      {/* Header */}
+      <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--surface)]">
         <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
           <Link
             href={`/s/${encodeURIComponent(store.slug)}`}
-            className="inline-flex items-center gap-1.5 text-xs font-sf-mono text-sf-muted hover:text-sf-ink transition-colors min-h-[44px]"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors min-h-[44px]"
           >
-            <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
+            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
             <span>Store Home</span>
           </Link>
 
-          <span className="font-sf-display text-sm sm:text-base font-bold text-sf-ink truncate">
+          <span className="font-serif text-base font-semibold text-[var(--ink)] truncate">
             {store.name}
           </span>
 
-          <span className="font-sf-mono text-xs text-sf-muted tabular-nums">
+          <span className="text-xs text-[var(--ink-2)] tabular-nums">
             {order.order_number}
           </span>
         </div>
       </header>
 
-      {/* Main Order Confirmation / Renewal Payment Screen */}
+      {/* Main Order Confirmation Screen */}
       <main className="flex-1 w-full max-w-2xl mx-auto px-4 py-6 sm:py-8 space-y-6">
-        {/* Status Hero Banner */}
-        <div className="p-6 rounded-sf border border-sf-line bg-sf-surface text-center space-y-3 shadow-xs">
-          <div className="w-12 h-12 rounded-full bg-sf-canvas border border-sf-line text-sf-accent mx-auto flex items-center justify-center">
-            {isPaymentFailed ? (
-              <AlertCircle className="w-7 h-7" aria-hidden="true" />
-            ) : isPendingPayment ? (
-              <Clock className="w-7 h-7" aria-hidden="true" />
-            ) : (
+        {/* Status Hero Card */}
+        <div className="p-6 sm:p-8 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-center space-y-4">
+          <div className="inline-flex justify-center">
+            <Chip tone={chipTone}>{statusBadgeLabel}</Chip>
+          </div>
+
+          <div
+            className={`w-14 h-14 rounded-full mx-auto flex items-center justify-center ${
+              chipTone === "success"
+                ? "bg-[var(--success-bg)] border border-[var(--success-bd)] text-[var(--success-fg)]"
+                : chipTone === "error"
+                ? "bg-[var(--error-bg)] border border-[var(--error-bd)] text-[var(--error-fg)]"
+                : "bg-[var(--warning-bg)] border border-[var(--warning-bd)] text-[var(--warning-fg)]"
+            }`}
+          >
+            {chipTone === "success" ? (
               <CheckCircle2 className="w-7 h-7" aria-hidden="true" />
+            ) : chipTone === "error" ? (
+              <AlertCircle className="w-7 h-7" aria-hidden="true" />
+            ) : (
+              <Clock className="w-7 h-7" aria-hidden="true" />
             )}
           </div>
 
-          <div className="space-y-1">
-            <h1 className="font-sf-display text-xl sm:text-2xl font-bold tracking-tight text-sf-ink">
-              {isPaymentFailed
-                ? "Payment Not Completed"
-                : isPendingPayment
-                ? "Awaiting Payment Confirmation"
-                : isPaid
-                ? "Payment Verified & Confirmed!"
-                : "Order Confirmed for Delivery!"}
+          <div className="space-y-1.5">
+            <h1 className="font-serif text-2xl sm:text-3xl font-semibold tracking-tight text-[var(--ink)]">
+              {heroHeadline}
             </h1>
-            <p className="text-xs text-sf-muted font-sf-mono">
-              {isPendingPayment
-                ? `Please complete payment so ${store.name} can dispatch your parcel.`
-                : `Thank you for ordering directly from ${store.name}.`}
+            <p className="text-xs sm:text-sm text-[var(--ink-2)] max-w-md mx-auto leading-relaxed">
+              {heroSubtitle}
             </p>
           </div>
 
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-sf bg-sf-canvas border border-sf-line text-xs font-sf-mono text-sf-ink tabular-nums">
-            <span>Order Reference:</span>
-            <span className="font-bold text-sf-accent">{order.order_number}</span>
+          <div className="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-lg bg-[var(--canvas)] border border-[var(--border)] text-xs text-[var(--ink)] tabular-nums">
+            <span className="text-[var(--ink-2)]">Order Number:</span>
+            <span className="font-semibold">{order.order_number}</span>
           </div>
+
+          {/* One-tap retry button for failed / pending payment */}
+          {canRetryPayment && (
+            <div className="pt-2 max-w-xs mx-auto">
+              <Link
+                href={`/s/${encodeURIComponent(store.slug)}/checkout`}
+                className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+              >
+                <RotateCw className="w-4 h-4" />
+                <span>Retry Payment</span>
+              </Link>
+            </div>
+          )}
         </div>
 
-        {/* Order Lifecycle Progress Timeline */}
-        <section className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-4 shadow-xs">
+        {/* Order Lifecycle Timeline */}
+        <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
           <div className="flex items-center justify-between">
-            <h3 className="font-sf-display text-sm font-bold text-sf-ink">Order Status</h3>
-            <span className="px-2.5 py-0.5 rounded-sf border border-sf-line bg-sf-canvas text-xs font-sf-mono font-semibold text-sf-ink uppercase">
-              {order.status.replace(/_/g, " ")}
+            <h2 className="font-serif text-base font-semibold text-[var(--ink)]">
+              Order Progress
+            </h2>
+            <span className="text-xs text-[var(--ink-2)]">
+              Estimated Delivery: 1–3 Days
             </span>
           </div>
 
-          {/* Stepper bar */}
           <div className="grid grid-cols-4 gap-2 pt-2">
             {timelineSteps.map((step, idx) => (
               <div key={step.label} className="flex flex-col items-center text-center space-y-1.5">
                 <div
-                  className={`w-7 h-7 rounded-full flex items-center justify-center text-xs font-sf-mono font-bold transition-all ${
+                  className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
                     step.done
-                      ? "bg-sf-cta text-sf-cta-ink shadow-xs"
+                      ? "bg-[var(--primary)] text-[var(--surface)]"
                       : step.current
-                      ? "border-2 border-sf-cta bg-sf-surface text-sf-ink"
-                      : "border border-sf-line bg-sf-canvas text-sf-muted"
+                      ? "border-2 border-[var(--ink)] bg-[var(--surface)] text-[var(--ink)]"
+                      : "border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink-2)]"
                   }`}
                 >
                   {step.done ? "✓" : idx + 1}
                 </div>
-                <span className="text-[10px] sm:text-xs font-sf-mono text-sf-ink leading-tight">
+                <span className="text-xs font-medium text-[var(--ink)] leading-tight">
                   {step.label}
                 </span>
               </div>
@@ -186,123 +259,123 @@ export default async function StorefrontOrderDetailPage({
           </div>
         </section>
 
-        {/* Delivery Address & Contact Details */}
-        <section className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-3 shadow-xs">
-          <h3 className="font-sf-display text-sm font-bold text-sf-ink flex items-center gap-2">
-            <MapPin className="w-4 h-4 text-sf-accent" aria-hidden="true" />
+        {/* Delivery Destination */}
+        <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-3">
+          <h2 className="font-serif text-base font-semibold text-[var(--ink)] flex items-center gap-2">
+            <MapPin className="w-4 h-4 text-[var(--ink-2)]" aria-hidden="true" />
             <span>Delivery Destination</span>
-          </h3>
+          </h2>
 
-          <div className="p-3.5 rounded-sf bg-sf-canvas border border-sf-line text-xs font-sf-mono space-y-1 text-sf-ink">
-            <p className="font-bold">
+          <div className="p-4 rounded-xl bg-[var(--canvas)] border border-[var(--border)] text-xs space-y-1 text-[var(--ink)]">
+            <p className="font-semibold text-sm">
               {order.shipping_address_snapshot?.recipient_name} ·{" "}
-              <span className="tabular-nums">{order.shipping_address_snapshot?.phone}</span>
+              <span className="tabular-nums font-normal text-[var(--ink-2)]">
+                +977 {order.shipping_address_snapshot?.phone}
+              </span>
             </p>
-            <p className="text-sf-muted">
+            <p className="text-[var(--ink-2)]">
               Ward {order.shipping_address_snapshot?.ward},{" "}
               {order.shipping_address_snapshot?.municipality},{" "}
               {order.shipping_address_snapshot?.district},{" "}
-              {order.shipping_address_snapshot?.province}
+              {order.shipping_address_snapshot?.province} Province
             </p>
             {order.shipping_address_snapshot?.street_landmark && (
-              <p className="text-[11px] text-sf-muted pt-0.5">
+              <p className="text-[var(--ink-2)] pt-0.5">
                 Landmark: {order.shipping_address_snapshot.street_landmark}
               </p>
             )}
           </div>
         </section>
 
-        {/* Order Items Breakdown */}
-        <section className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-4 shadow-xs">
-          <h3 className="font-sf-display text-sm font-bold text-sf-ink flex items-center gap-2">
-            <Package className="w-4 h-4 text-sf-accent" aria-hidden="true" />
+        {/* Items Ordered Breakdown */}
+        <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
+          <h2 className="font-serif text-base font-semibold text-[var(--ink)] flex items-center gap-2">
+            <Package className="w-4 h-4 text-[var(--ink-2)]" aria-hidden="true" />
             <span>Items Ordered</span>
-          </h3>
+          </h2>
 
-          <div className="divide-y divide-sf-line">
+          <div className="divide-y divide-[var(--border)]">
             {order.items.map((it) => (
               <div
                 key={it.id}
-                className="py-3 first:pt-0 last:pb-0 flex items-center justify-between text-xs font-sf-mono"
+                className="py-3 first:pt-0 last:pb-0 flex items-center justify-between text-xs"
               >
                 <div className="space-y-0.5 min-w-0 pr-3">
-                  <p className="font-semibold text-sf-ink truncate">
+                  <p className="font-medium text-[var(--ink)] truncate">
                     {it.product_name_snapshot}
                   </p>
-                  <p className="text-[11px] text-sf-muted">
-                    {it.variant_label_snapshot} × {it.quantity}
+                  <p className="text-[var(--ink-2)]">
+                    {it.variant_label_snapshot ? `${it.variant_label_snapshot} · ` : ""}Qty: {it.quantity}
                   </p>
                 </div>
 
-                <span className="font-bold text-sf-ink tabular-nums whitespace-nowrap">
-                  {order.total_minor === 0 && isPaid
-                    ? "Rs. 0 (Prepaid)"
-                    : formatNpr(it.line_total_minor)}
+                <span className="font-semibold text-[var(--ink)] tabular-nums whitespace-nowrap">
+                  {formatNpr(it.line_total_minor)}
                 </span>
               </div>
             ))}
           </div>
 
-          <div className="pt-3 border-t border-sf-line text-xs font-sf-mono space-y-1.5 text-sf-muted">
+          <div className="pt-3 border-t border-[var(--border)] text-xs space-y-1.5 text-[var(--ink-2)]">
             <div className="flex justify-between">
               <span>Subtotal</span>
-              <span className="text-sf-ink tabular-nums">{formatNpr(order.subtotal_minor)}</span>
+              <span className="text-[var(--ink)] tabular-nums">{formatNpr(order.subtotal_minor)}</span>
             </div>
             <div className="flex justify-between">
               <span>Delivery Fee</span>
-              <span className="text-sf-ink tabular-nums">
+              <span className="text-[var(--ink)] tabular-nums">
                 {order.shipping_minor === 0 ? "FREE" : formatNpr(order.shipping_minor)}
               </span>
             </div>
-            <div className="flex justify-between pt-1 border-t border-sf-line/60 font-bold text-sm text-sf-ink">
+            {order.discount_minor > 0 && (
+              <div className="flex justify-between text-[var(--success-fg)] font-medium">
+                <span>Discount</span>
+                <span className="tabular-nums">-{formatNpr(order.discount_minor)}</span>
+              </div>
+            )}
+            <div className="flex justify-between pt-2 border-t border-[var(--border)] font-semibold text-sm text-[var(--ink)]">
               <span>Total Amount</span>
-              <span className="tabular-nums">{formatNpr(order.total_minor)}</span>
+              <span className="text-base tabular-nums">{formatNpr(order.total_minor)}</span>
             </div>
           </div>
         </section>
 
         {/* Payment Summary */}
-        <section className="p-5 rounded-sf border border-sf-line bg-sf-surface flex items-center justify-between text-xs font-sf-mono shadow-xs">
-          <div className="flex items-center gap-2.5">
-            <CreditCard className="w-4 h-4 text-sf-accent" aria-hidden="true" />
+        <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] flex items-center justify-between text-xs">
+          <div className="flex items-center gap-3">
+            <div className="w-10 h-10 rounded-lg border border-[var(--border)] bg-[var(--canvas)] flex items-center justify-center text-[var(--ink-2)] shrink-0">
+              <CreditCard className="w-5 h-5" aria-hidden="true" />
+            </div>
             <div>
-              <p className="font-bold text-sf-ink">
-                {order.payment_method === "KHALTI" ? "Khalti ePayment" : "Cash on Delivery"}
+              <p className="font-semibold text-sm text-[var(--ink)]">
+                {isKhalti ? "Khalti ePayment" : "Cash on Delivery"}
               </p>
-              <p className="text-[11px] text-sf-muted tabular-nums">
-                {order.payment_status === "PAID"
-                  ? "✓ Paid in Full"
-                  : order.payment_status === "COD_PENDING"
-                  ? `Collect ${formatNpr(order.total_minor)} on delivery`
-                  : `Balance due: ${formatNpr(order.total_minor)}`}
+              <p className="text-xs text-[var(--ink-2)] tabular-nums mt-0.5">
+                {paymentStatusUpper === "PAID"
+                  ? "Paid in Full"
+                  : paymentStatusUpper === "COD_PENDING"
+                  ? `Collect ${formatNpr(order.total_minor)} on arrival`
+                  : `Balance: ${formatNpr(order.total_minor)}`}
               </p>
             </div>
           </div>
 
-          <span
-            className={`px-2.5 py-1 rounded-sf border font-bold text-[11px] tabular-nums ${
-              order.payment_status === "PAID"
-                ? "bg-sf-canvas border-sf-line text-sf-ink"
-                : "bg-sf-canvas border-sf-line text-sf-muted"
-            }`}
-          >
-            {order.payment_status}
-          </span>
+          <Chip tone={chipTone}>{statusBadgeLabel}</Chip>
         </section>
 
         {/* Back Link */}
         <div className="pt-2 text-center">
           <Link
             href={`/s/${encodeURIComponent(store.slug)}`}
-            className="inline-flex items-center gap-1.5 min-h-[44px] px-5 py-2.5 rounded-sf bg-sf-cta text-sf-cta-ink font-sf-mono text-xs font-semibold hover:opacity-90 transition-opacity"
+            className="inline-flex items-center gap-2 min-h-[44px] px-6 py-2.5 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-xs font-semibold transition-colors"
           >
-            <ShoppingBag className="w-3.5 h-3.5" aria-hidden="true" />
+            <ShoppingBag className="w-4 h-4" aria-hidden="true" />
             <span>Continue Shopping</span>
           </Link>
         </div>
       </main>
 
-      <footer className="border-t border-sf-line bg-sf-surface py-6 px-4 text-center text-xs text-sf-muted font-sf-mono">
+      <footer className="border-t border-[var(--border)] bg-[var(--surface)] py-6 px-4 text-center text-xs text-[var(--ink-2)]">
         <p>{store.name} · Powered by ShopCraft</p>
       </footer>
     </div>

@@ -8,12 +8,10 @@ import {
   Banknote,
   Check,
   ChevronDown,
-  ChevronUp,
   CreditCard,
   Lock,
   MapPin,
   Package,
-  Plus,
   ShoppingBag,
   Tag,
   Truck,
@@ -79,26 +77,26 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const [isEnteringNewAddress, setIsEnteringNewAddress] = useState<boolean>(false);
   const [saveAddressToAccount, setSaveAddressToAccount] = useState<boolean>(true);
 
-  // Contact State
+  // 1. Phone number FIRST, then name, then email
   const [phone, setPhone] = useState<string>("");
-  const [email, setEmail] = useState<string>("");
   const [recipientName, setRecipientName] = useState<string>("");
+  const [email, setEmail] = useState<string>("");
 
-  // Address State
+  // 2. Address State
   const [province, setProvince] = useState<string>("Bagmati");
   const [district, setDistrict] = useState<string>("Kathmandu");
   const [municipality, setMunicipality] = useState<string>("Kathmandu Metropolitan City");
   const [ward, setWard] = useState<string>("3");
   const [streetLandmark, setStreetLandmark] = useState<string>("");
 
-  // Payment, Promo Code & Quote State
+  // 3. Payment, Promo Code & Quote State
   const [paymentMethod, setPaymentMethod] = useState<"KHALTI" | "COD">("KHALTI");
   const [promoInput, setPromoInput] = useState<string>("");
   const [appliedPromoCode, setAppliedPromoCode] = useState<string>("");
   const [promoError, setPromoError] = useState<string | null>(null);
   const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false);
+  const [isPromoExpanded, setIsPromoExpanded] = useState<boolean>(false);
   const [quote, setQuote] = useState<CheckoutQuoteResponse | null>(null);
-  const [isSummaryOpen, setIsSummaryOpen] = useState<boolean>(false);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
 
@@ -152,7 +150,6 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
     };
   }, []);
 
-  // Handle switching among saved addresses
   const handleSelectSavedAddress = (addr: DeliveryAddressItem) => {
     setSelectedAddressId(addr.id);
     setIsEnteringNewAddress(false);
@@ -183,11 +180,11 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
         setQuote(res);
       })
       .catch(() => {
-        // Fallback to client estimated totals if network hiccup
+        // Fallback to client estimated totals
       });
   }, [items, district, store.slug, appliedPromoCode]);
 
-  // If store disabled COD, automatically switch off COD
+  // If store disabled COD, automatically switch to KHALTI
   useEffect(() => {
     if (isCodUnavailable && paymentMethod === "COD") {
       Promise.resolve().then(() => setPaymentMethod("KHALTI"));
@@ -215,7 +212,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
     } catch (err: unknown) {
       setAppliedPromoCode("");
       setPromoError(
-        err instanceof Error ? err.message : "Invalid or ineligible promo code."
+        err instanceof Error ? err.message : "Invalid promo code."
       );
     } finally {
       setIsApplyingPromo(false);
@@ -231,20 +228,19 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   if (items.length === 0) {
     return (
       <div className="max-w-md mx-auto py-16 px-4 text-center space-y-4">
-        <div className="w-16 h-16 rounded-full bg-sf-surface border border-sf-line mx-auto flex items-center justify-center text-sf-muted">
+        <div className="w-16 h-16 rounded-full bg-[var(--surface)] border border-[var(--border)] mx-auto flex items-center justify-center text-[var(--ink-2)]">
           <ShoppingBag className="w-8 h-8" aria-hidden="true" />
         </div>
-        <h2 className="font-sf-display text-lg font-bold text-sf-ink">
-          Your Cart is Empty
+        <h2 className="font-serif text-xl font-semibold text-[var(--ink)]">
+          Your Bag is Empty
         </h2>
-        <p className="text-xs text-sf-muted max-w-sm mx-auto leading-relaxed">
-          Looks like you haven&apos;t added any items to your cart yet. Explore our specialty
-          catalog to place an order.
+        <p className="text-xs text-[var(--ink-2)] max-w-sm mx-auto leading-relaxed">
+          Looks like you haven&apos;t added any items to your bag yet. Explore our catalog to place an order.
         </p>
         <div className="pt-2">
           <Link
             href={`/s/${encodeURIComponent(store.slug)}`}
-            className="inline-flex items-center px-4 py-2.5 rounded-sf bg-sf-cta text-sf-cta-ink font-sf-mono text-xs font-semibold hover:opacity-90 transition-opacity"
+            className="inline-flex items-center min-h-[44px] px-5 py-2.5 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-xs font-semibold transition-colors"
           >
             Browse Products
           </Link>
@@ -253,12 +249,15 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
     );
   }
 
+  const isValley =
+    district.toLowerCase() === "kathmandu" ||
+    district.toLowerCase() === "lalitpur" ||
+    district.toLowerCase() === "bhaktapur";
+
   const computedSubtotal = quote ? quote.subtotal_minor : subtotalMinor;
   const computedShipping = quote
     ? quote.shipping_minor
-    : district.toLowerCase() === "kathmandu" ||
-      district.toLowerCase() === "lalitpur" ||
-      district.toLowerCase() === "bhaktapur"
+    : isValley
     ? store.inside_valley_shipping_minor
     : store.outside_valley_shipping_minor;
   const computedDiscount = quote ? quote.discount_minor : 0;
@@ -270,7 +269,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
     e.preventDefault();
     setErrorMessage(null);
 
-    // Validation
+    // 1. Validation - Nepali Phone Number FIRST
     const cleanPhone = phone.trim();
     if (!/^9[78]\d{8}$/.test(cleanPhone)) {
       setErrorMessage("Enter a valid 10-digit Nepali mobile number starting with 98 or 97.");
@@ -278,7 +277,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
     }
 
     if (!recipientName.trim()) {
-      setErrorMessage("Recipient full name is required.");
+      setErrorMessage("Full name is required.");
       return;
     }
 
@@ -363,160 +362,39 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const activeSavedAddress = savedAddresses.find((a) => a.id === selectedAddressId);
 
   return (
-    <form onSubmit={handlePlaceOrder} className="space-y-6 pb-24">
-      {/* 1. Collapsible Order Summary Banner (DESIGN.md §5) */}
-      <div className="rounded-sf border border-sf-line bg-sf-surface overflow-hidden shadow-xs">
-        <button
-          type="button"
-          onClick={() => setIsSummaryOpen((prev) => !prev)}
-          className="w-full p-4 flex items-center justify-between text-left hover:bg-sf-canvas/50 transition-colors cursor-pointer"
-        >
-          <div className="flex items-center gap-2">
-            <Package className="w-4 h-4 text-sf-accent" aria-hidden="true" />
-            <span className="font-sf-display text-sm font-semibold text-sf-ink">
-              {itemCount} {itemCount === 1 ? "item" : "items"} in order
-            </span>
-            <span className="text-xs font-sf-mono text-sf-muted">▾</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            <span className="font-sf-mono text-sm font-bold text-sf-ink tabular-nums">
-              {formatNpr(computedTotal)}
-            </span>
-            {isSummaryOpen ? (
-              <ChevronUp className="w-4 h-4 text-sf-muted" aria-hidden="true" />
-            ) : (
-              <ChevronDown className="w-4 h-4 text-sf-muted" aria-hidden="true" />
-            )}
-          </div>
-        </button>
-
-        {isSummaryOpen && (
-          <div className="p-4 border-t border-sf-line bg-sf-canvas/40 space-y-3 animate-in fade-in duration-200">
-            <div className="divide-y divide-sf-line/60">
-              {items.map((it) => (
-                <div
-                  key={it.variantId}
-                  className="py-2 first:pt-0 last:pb-0 flex items-center justify-between text-xs font-sf-mono"
-                >
-                  <div className="space-y-0.5 min-w-0 pr-2">
-                    <p className="font-medium text-sf-ink truncate">{it.productName}</p>
-                    <p className="text-[11px] text-sf-muted">
-                      {it.variantLabel} × {it.quantity}
-                    </p>
-                  </div>
-                  <span className="font-semibold text-sf-ink tabular-nums whitespace-nowrap">
-                    {formatNpr(it.unitPriceMinor * it.quantity)}
-                  </span>
-                </div>
-              ))}
-            </div>
-
-            <div className="pt-2 border-t border-sf-line text-xs font-sf-mono space-y-1 text-sf-muted">
-              <div className="flex justify-between">
-                <span>Subtotal</span>
-                <span className="text-sf-ink tabular-nums">{formatNpr(computedSubtotal)}</span>
-              </div>
-              {computedDiscount > 0 && (
-                <div className="flex justify-between text-sf-accent font-semibold">
-                  <span>Promo ({appliedPromoCode})</span>
-                  <span className="tabular-nums">-{formatNpr(computedDiscount)}</span>
-                </div>
-              )}
-              <div className="flex justify-between">
-                <span>Delivery ({district})</span>
-                <span className="text-sf-ink tabular-nums">
-                  {computedShipping === 0 ? "FREE" : formatNpr(computedShipping)}
-                </span>
-              </div>
-            </div>
-          </div>
-        )}
-      </div>
-
-      {/* 1B. Promo Code Card */}
-      <div className="p-4 rounded-sf border border-sf-line bg-sf-surface space-y-2.5 shadow-xs">
-        <div className="flex flex-col sm:flex-row gap-2">
-          <div className="relative flex-1">
-            <Tag
-              className="w-3.5 h-3.5 text-sf-muted absolute left-3 top-1/2 -translate-y-1/2"
-              aria-hidden="true"
-            />
-            <input
-              type="text"
-              placeholder="Have a promo code? (e.g. DASHAIN15)"
-              value={promoInput}
-              disabled={Boolean(appliedPromoCode)}
-              onChange={(e) => {
-                setPromoInput(e.target.value.toUpperCase());
-                if (promoError) setPromoError(null);
-              }}
-              className="w-full h-10 pl-8 pr-3 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs uppercase focus:outline-none focus:ring-1 focus:ring-sf-ink/40 disabled:opacity-70"
-            />
-          </div>
-
-          {appliedPromoCode ? (
-            <button
-              type="button"
-              onClick={handleRemovePromo}
-              className="h-10 px-3.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs font-semibold inline-flex items-center justify-center gap-1.5 hover:bg-sf-surface transition-colors cursor-pointer shrink-0"
-            >
-              <span>{appliedPromoCode} Applied</span>
-              <X className="w-3.5 h-3.5 text-sf-muted" />
-            </button>
-          ) : (
-            <button
-              type="button"
-              disabled={!promoInput.trim() || isApplyingPromo}
-              onClick={handleApplyPromo}
-              className="h-10 px-4 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs font-semibold hover:border-sf-ink/40 transition-colors cursor-pointer disabled:opacity-50 shrink-0"
-            >
-              {isApplyingPromo ? "Checking..." : "Apply Code"}
-            </button>
-          )}
-        </div>
-
-        {appliedPromoCode && computedDiscount > 0 && (
-          <p className="text-[11px] font-sf-mono text-sf-accent">
-            Saved {formatNpr(computedDiscount)} with code {appliedPromoCode}.
-          </p>
-        )}
-        {promoError && (
-          <p className="text-[11px] font-sf-mono text-sf-cta">{promoError}</p>
-        )}
-      </div>
-
+    <form onSubmit={handlePlaceOrder} className="space-y-6 pb-28">
       {errorMessage && (
-        <div className="p-3.5 rounded-sf border border-sf-line bg-sf-surface text-sf-ink flex items-start gap-2.5 text-xs font-sf-mono">
-          <AlertCircle className="w-4 h-4 text-sf-cta shrink-0 mt-0.5" aria-hidden="true" />
+        <div className="p-4 rounded-xl border border-[var(--error-bd)] bg-[var(--error-bg)] text-[var(--error-fg)] flex items-start gap-2.5 text-xs font-medium">
+          <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
           <span>{errorMessage}</span>
         </div>
       )}
 
-      {/* 2. Customer Contact */}
-      <section className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-4 shadow-xs">
+      {/* 1. CONTACT DETAILS (Phone number FIRST as required) */}
+      <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-sf-display text-sm sm:text-base font-bold text-sf-ink">
+          <h2 className="font-serif text-base sm:text-lg font-semibold text-[var(--ink)]">
             1. Contact Details
-          </h3>
+          </h2>
           {!isAuthenticated && (
             <Link
               href={`/login?next=${encodeURIComponent(`/s/${store.slug}/checkout`)}`}
-              className="text-[11px] font-sf-mono text-sf-muted hover:text-sf-ink underline"
+              className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)] underline min-h-[44px] inline-flex items-center"
             >
-              Sign in for saved address →
+              Sign in for saved address
             </Link>
           )}
         </div>
 
-        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
-          <div className="space-y-1.5">
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+          {/* Phone number FIRST */}
+          <div className="space-y-1.5 sm:col-span-2">
             <label
               htmlFor="checkout-phone"
-              className="text-xs font-sf-mono font-medium text-sf-ink flex items-center justify-between"
+              className="text-xs font-medium text-[var(--ink)] flex items-center justify-between"
             >
-              <span>Nepali Mobile Number</span>
-              <span className="text-[11px] text-sf-muted">+977</span>
+              <span>Nepali Mobile Number *</span>
+              <span className="text-[11px] text-[var(--ink-2)]">+977 (10 digits)</span>
             </label>
             <input
               id="checkout-phone"
@@ -524,19 +402,40 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               inputMode="tel"
               autoComplete="tel"
               required
-              placeholder="98XXXXXXXX"
+              placeholder="98XXXXXXXX or 97XXXXXXXX"
               value={phone}
               onChange={(e) => setPhone(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
+              className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)] tabular-nums"
             />
           </div>
 
+          {/* Full Name */}
+          <div className="space-y-1.5">
+            <label
+              htmlFor="checkout-recipient"
+              className="text-xs font-medium text-[var(--ink)]"
+            >
+              Full Name *
+            </label>
+            <input
+              id="checkout-recipient"
+              type="text"
+              autoComplete="name"
+              required
+              placeholder="e.g. Nisha Shrestha"
+              value={recipientName}
+              onChange={(e) => setRecipientName(e.target.value)}
+              className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)]"
+            />
+          </div>
+
+          {/* Email Address */}
           <div className="space-y-1.5">
             <label
               htmlFor="checkout-email"
-              className="text-xs font-sf-body font-medium text-sf-ink"
+              className="text-xs font-medium text-[var(--ink)]"
             >
-              Email Address (Receipt &amp; Tracking)
+              Email Address (Receipt &amp; Tracking) *
             </label>
             <input
               id="checkout-email"
@@ -547,86 +446,58 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
-            />
-          </div>
-
-          <div className="space-y-1.5 sm:col-span-2">
-            <label
-              htmlFor="checkout-recipient"
-              className="text-xs font-sf-body font-medium text-sf-ink"
-            >
-              Recipient Full Name
-            </label>
-            <input
-              id="checkout-recipient"
-              type="text"
-              autoComplete="name"
-              required
-              placeholder="e.g. Nisha Shrestha"
-              value={recipientName}
-              onChange={(e) => setRecipientName(e.target.value)}
-              className="w-full px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
+              className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)]"
             />
           </div>
         </div>
       </section>
 
-      {/* 3. Delivery Address (Saved Address Card OR Cascading Selects) */}
-      <section className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-4 shadow-xs">
+      {/* 2. DELIVERY ADDRESS */}
+      <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
         <div className="flex items-center justify-between">
-          <h3 className="font-sf-display text-sm sm:text-base font-bold text-sf-ink">
+          <h2 className="font-serif text-base sm:text-lg font-semibold text-[var(--ink)]">
             2. Delivery Address
-          </h3>
-          <span className="text-[11px] font-sf-mono px-2 py-0.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-muted">
+          </h2>
+          <span className="text-xs px-2.5 py-1 rounded-full border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink-2)] tabular-nums">
             {computedShipping === 0
-              ? "Free Delivery Qualified"
+              ? "Free Delivery"
               : `Delivery: ${formatNpr(computedShipping)}`}
           </span>
         </div>
 
-        {/* CASE A: Saved Address Picker for Logged-In Shoppers */}
+        {/* Saved Address Picker for Logged-In Shoppers */}
         {savedAddresses.length > 0 && !isEnteringNewAddress ? (
           <div className="space-y-3">
-            {/* Active Selected Address Card */}
-            <div className="p-4 rounded-sf border border-sf-line bg-sf-canvas/60 space-y-2">
+            <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--canvas)] space-y-2">
               <div className="flex items-center justify-between gap-2">
-                <div className="flex items-center gap-2">
-                  <span className="text-[10px] px-2 py-0.5 rounded-sf font-sf-mono font-medium border border-sf-line bg-sf-surface text-sf-ink">
-                    {activeSavedAddress?.label || "Saved Address"}
-                  </span>
-                  {activeSavedAddress?.is_default && (
-                    <span className="text-[10px] px-2 py-0.5 rounded-sf font-sf-mono font-semibold bg-sf-surface border border-sf-line text-sf-accent">
-                      Default
-                    </span>
-                  )}
-                </div>
+                <span className="text-xs font-medium px-2 py-0.5 rounded-full border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)]">
+                  {activeSavedAddress?.label || "Saved Address"}
+                </span>
 
                 <button
                   type="button"
                   onClick={() => setIsEnteringNewAddress(true)}
-                  className="text-xs font-sf-mono text-sf-muted hover:text-sf-ink underline cursor-pointer"
+                  className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)] underline min-h-[44px] inline-flex items-center cursor-pointer"
                 >
                   + Use new address
                 </button>
               </div>
 
-              <div className="text-xs font-sf-mono space-y-0.5 text-sf-ink">
+              <div className="text-xs space-y-0.5 text-[var(--ink)]">
                 <p className="font-semibold">{recipientName}</p>
-                <p className="text-[11px] text-sf-muted">+977 {phone}</p>
-                <p className="text-[11px] pt-1">
+                <p className="text-[var(--ink-2)] tabular-nums">+977 {phone}</p>
+                <p className="pt-1">
                   Ward {ward}, {streetLandmark}
                 </p>
-                <p className="text-[11px] text-sf-muted">
+                <p className="text-[var(--ink-2)]">
                   {municipality}, {district}, {province} Province
                 </p>
               </div>
             </div>
 
-            {/* Quick Switch Among Multiple Saved Addresses */}
             {savedAddresses.length > 1 && (
               <div className="pt-1">
-                <p className="text-[11px] font-sf-mono text-sf-muted mb-2">Or select other saved location:</p>
+                <p className="text-xs text-[var(--ink-2)] mb-2">Or select other saved location:</p>
                 <div className="flex flex-wrap gap-2">
                   {savedAddresses.map((addr) => {
                     const isSelected = addr.id === selectedAddressId;
@@ -635,15 +506,15 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                         key={addr.id}
                         type="button"
                         onClick={() => handleSelectSavedAddress(addr)}
-                        className={`px-3 py-1.5 rounded-sf text-xs font-sf-mono transition-all cursor-pointer flex items-center gap-1.5 ${
+                        className={`min-h-[44px] px-3.5 py-2 rounded-lg text-xs font-medium transition-colors cursor-pointer flex items-center gap-1.5 ${
                           isSelected
-                            ? "bg-sf-surface border border-sf-cta text-sf-ink shadow-xs"
-                            : "bg-sf-canvas border border-sf-line text-sf-muted hover:text-sf-ink"
+                            ? "bg-[var(--surface)] border-2 border-[var(--ink)] text-[var(--ink)]"
+                            : "bg-[var(--canvas)] border border-[var(--border)] text-[var(--ink-2)] hover:text-[var(--ink)]"
                         }`}
                       >
-                        <MapPin className="w-3 h-3 text-sf-accent shrink-0" />
+                        <MapPin className="w-3.5 h-3.5 shrink-0" />
                         <span>{addr.label || `${addr.district} (Ward ${addr.ward})`}</span>
-                        {isSelected && <Check className="w-3 h-3 text-sf-accent ml-0.5" />}
+                        {isSelected && <Check className="w-3.5 h-3.5 ml-0.5" />}
                       </button>
                     );
                   })}
@@ -652,11 +523,11 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
             )}
           </div>
         ) : (
-          /* CASE B: Cascading Nepal Form (New Address or Guest) */
+          /* Cascading Nepal Form (New Address or Guest) */
           <div className="space-y-4">
             {savedAddresses.length > 0 && (
               <div className="flex items-center justify-between pb-1">
-                <span className="text-xs font-sf-mono text-sf-muted">Entering a custom address:</span>
+                <span className="text-xs text-[var(--ink-2)]">Entering custom address</span>
                 <button
                   type="button"
                   onClick={() => {
@@ -664,21 +535,21 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                     const defaultAddr = savedAddresses.find((a) => a.id === selectedAddressId) || savedAddresses[0];
                     handleSelectSavedAddress(defaultAddr);
                   }}
-                  className="text-xs font-sf-mono text-sf-muted hover:text-sf-ink underline cursor-pointer"
+                  className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)] underline min-h-[44px] inline-flex items-center cursor-pointer"
                 >
                   ← Back to saved address
                 </button>
               </div>
             )}
 
-            <div className="grid grid-cols-2 sm:grid-cols-3 gap-3.5">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               {/* Province */}
               <div className="space-y-1.5">
                 <label
                   htmlFor="checkout-province"
-                  className="text-xs font-sf-body font-medium text-sf-ink"
+                  className="text-xs font-medium text-[var(--ink)]"
                 >
-                  Province
+                  Province *
                 </label>
                 <div className="relative">
                   <select
@@ -692,15 +563,15 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                         setDistrict(availableDistricts[0]);
                       }
                     }}
-                    className="w-full h-10 pl-3 pr-8 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs appearance-none focus:outline-none focus:ring-2 focus:ring-sf-cta/30 focus:border-sf-cta transition-all cursor-pointer"
+                    className="w-full h-11 pl-3.5 pr-8 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm appearance-none focus:outline-none focus:border-[var(--ink)] cursor-pointer"
                   >
                     {NEPALI_PROVINCES.map((p) => (
                       <option key={p} value={p}>
-                        {p}
+                        {p} Province
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-sf-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-[var(--ink-2)] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
@@ -708,16 +579,16 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               <div className="space-y-1.5">
                 <label
                   htmlFor="checkout-district"
-                  className="text-xs font-sf-body font-medium text-sf-ink"
+                  className="text-xs font-medium text-[var(--ink)]"
                 >
-                  District
+                  District *
                 </label>
                 <div className="relative">
                   <select
                     id="checkout-district"
                     value={district}
                     onChange={(e) => setDistrict(e.target.value)}
-                    className="w-full h-10 pl-3 pr-8 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs appearance-none focus:outline-none focus:ring-2 focus:ring-sf-cta/30 focus:border-sf-cta transition-all cursor-pointer"
+                    className="w-full h-11 pl-3.5 pr-8 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm appearance-none focus:outline-none focus:border-[var(--ink)] cursor-pointer"
                   >
                     {(PROVINCE_DISTRICTS[province] || [district]).map((d) => (
                       <option key={d} value={d}>
@@ -725,17 +596,36 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                       </option>
                     ))}
                   </select>
-                  <ChevronDown className="w-3.5 h-3.5 text-sf-muted absolute right-2.5 top-1/2 -translate-y-1/2 pointer-events-none" />
+                  <ChevronDown className="w-4 h-4 text-[var(--ink-2)] absolute right-3 top-1/2 -translate-y-1/2 pointer-events-none" />
                 </div>
               </div>
 
+              {/* Municipality */}
+              <div className="space-y-1.5">
+                <label
+                  htmlFor="checkout-municipality"
+                  className="text-xs font-medium text-[var(--ink)]"
+                >
+                  Municipality / Palika *
+                </label>
+                <input
+                  id="checkout-municipality"
+                  type="text"
+                  required
+                  placeholder="e.g. Kathmandu Metropolitan City"
+                  value={municipality}
+                  onChange={(e) => setMunicipality(e.target.value)}
+                  className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)]"
+                />
+              </div>
+
               {/* Ward */}
-              <div className="space-y-1.5 col-span-2 sm:col-span-1">
+              <div className="space-y-1.5">
                 <label
                   htmlFor="checkout-ward"
-                  className="text-xs font-sf-body font-medium text-sf-ink"
+                  className="text-xs font-medium text-[var(--ink)]"
                 >
-                  Ward No.
+                  Ward No. *
                 </label>
                 <input
                   id="checkout-ward"
@@ -746,118 +636,122 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                   placeholder="e.g. 3"
                   value={ward}
                   onChange={(e) => setWard(e.target.value)}
-                  className="w-full h-10 px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-mono text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40 tabular-nums"
+                  className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)] tabular-nums"
                 />
               </div>
 
-              {/* Municipality */}
-              <div className="space-y-1.5 col-span-2">
-                <label
-                  htmlFor="checkout-municipality"
-                  className="text-xs font-sf-body font-medium text-sf-ink"
-                >
-                  Municipality / Palika
-                </label>
-                <input
-                  id="checkout-municipality"
-                  type="text"
-                  required
-                  placeholder="e.g. Kathmandu Metropolitan City"
-                  value={municipality}
-                  onChange={(e) => setMunicipality(e.target.value)}
-                  className="w-full h-10 px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
-                />
-              </div>
-
-              {/* Street / Landmark */}
-              <div className="space-y-1.5 col-span-2 sm:col-span-3">
+              {/* Nearest Chowk / Landmark */}
+              <div className="space-y-1.5 sm:col-span-2">
                 <label
                   htmlFor="checkout-landmark"
-                  className="text-xs font-sf-body font-medium text-sf-ink"
+                  className="text-xs font-medium text-[var(--ink)]"
                 >
-                  Nearest Chowk / Landmark / Tole
+                  Nearest Chowk / Landmark / Tole *
                 </label>
                 <input
                   id="checkout-landmark"
                   type="text"
                   required
-                  placeholder="e.g. Near Lazimpat Chowk, Opposite Standard Chartered"
+                  placeholder="e.g. Near New Road Gate, Opposite Pipalbot"
                   value={streetLandmark}
                   onChange={(e) => setStreetLandmark(e.target.value)}
-                  className="w-full h-10 px-3.5 py-2.5 rounded-sf border border-sf-line bg-sf-canvas text-sf-ink font-sf-body text-xs focus:outline-none focus:ring-1 focus:ring-sf-ink/40"
+                  className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)]"
                 />
               </div>
             </div>
 
             {isAuthenticated && (
-              <label className="flex items-center gap-2 pt-1 text-xs font-sf-body text-sf-ink cursor-pointer select-none">
+              <label className="flex items-center gap-2 pt-2 text-xs text-[var(--ink)] cursor-pointer select-none">
                 <input
                   type="checkbox"
                   checked={saveAddressToAccount}
                   onChange={(e) => setSaveAddressToAccount(e.target.checked)}
-                  className="rounded border-sf-line text-sf-accent focus:ring-0"
+                  className="rounded border-[var(--border)] text-[var(--ink)] focus:ring-0"
                 />
-                <span>Save this address to my account for 1-tap checkout</span>
+                <span>Save this address to my account for faster checkout</span>
               </label>
             )}
           </div>
         )}
       </section>
 
-      {/* 4. Payment Selection (76px tactile cards, DESIGN.md §5) */}
-      <section className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-4 shadow-xs">
-        <h3 className="font-sf-display text-sm sm:text-base font-bold text-sf-ink">
-          3. Payment Method
-        </h3>
+      {/* 3. DELIVERY OPTION */}
+      <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-3">
+        <h2 className="font-serif text-base sm:text-lg font-semibold text-[var(--ink)]">
+          3. Delivery Option
+        </h2>
+
+        <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--canvas)] flex items-start justify-between gap-3">
+          <div className="flex items-start gap-3">
+            <div className="w-9 h-9 rounded-lg border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center text-[var(--ink)] shrink-0 mt-0.5">
+              <Truck className="w-4 h-4" aria-hidden="true" />
+            </div>
+            <div>
+              <p className="text-sm font-semibold text-[var(--ink)]">
+                {isValley ? "Kathmandu Valley Express" : "Nationwide Courier"}
+              </p>
+              <p className="text-xs text-[var(--ink-2)] mt-0.5">
+                {isValley
+                  ? "Delivered within 1–2 business days to Kathmandu, Lalitpur, and Bhaktapur."
+                  : `Delivered within 2–4 business days across ${district} and all 7 provinces.`}
+              </p>
+            </div>
+          </div>
+
+          <div className="text-right shrink-0">
+            <span className="text-sm font-semibold text-[var(--ink)] tabular-nums">
+              {computedShipping === 0 ? "FREE" : formatNpr(computedShipping)}
+            </span>
+          </div>
+        </div>
+      </section>
+
+      {/* 4. PAYMENT CHOICE (Khalti | Cash on Delivery) */}
+      <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-3">
+        <h2 className="font-serif text-base sm:text-lg font-semibold text-[var(--ink)]">
+          4. Payment Choice
+        </h2>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
           {/* Khalti Card */}
           <div
             role="button"
             tabIndex={0}
-            onClick={() => {
-              setPaymentMethod("KHALTI");
-              if (typeof navigator !== "undefined" && navigator.vibrate) {
-                navigator.vibrate(10);
-              }
-            }}
+            onClick={() => setPaymentMethod("KHALTI")}
             onKeyDown={(e) => {
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 setPaymentMethod("KHALTI");
               }
             }}
-            className={`h-[76px] rounded-sf border p-3.5 flex items-center justify-between cursor-pointer transition-all ${
+            className={`min-h-[72px] rounded-xl border p-4 flex items-center justify-between cursor-pointer transition-colors ${
               paymentMethod === "KHALTI"
-                ? "border-sf-cta bg-sf-canvas/80 ring-2 ring-sf-cta/20 shadow-xs"
-                : "border-sf-line bg-sf-canvas hover:border-sf-ink/30"
+                ? "border-2 border-[var(--ink)] bg-[var(--canvas)]"
+                : "border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--ink)]"
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-sf border border-sf-line bg-sf-surface flex items-center justify-center text-sf-accent shrink-0">
+              <div className="w-10 h-10 rounded-lg border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center text-[var(--ink)] shrink-0">
                 <CreditCard className="w-5 h-5" aria-hidden="true" />
               </div>
               <div>
-                <p className="font-sf-display text-xs sm:text-sm font-bold text-sf-ink flex items-center gap-1.5">
-                  <span>Khalti Sandbox</span>
-                  <span className="text-[10px] font-sf-mono px-1.5 py-0.2 rounded-sf bg-sf-surface border border-sf-line text-sf-muted">
-                    Instant
-                  </span>
+                <p className="text-sm font-semibold text-[var(--ink)]">
+                  Khalti
                 </p>
-                <p className="text-[11px] font-sf-mono text-sf-muted">
+                <p className="text-xs text-[var(--ink-2)]">
                   Digital Wallet · eBanking · Mobile
                 </p>
               </div>
             </div>
 
             <div
-              className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+              className={`w-5 h-5 rounded-full border flex items-center justify-center ${
                 paymentMethod === "KHALTI"
-                  ? "border-sf-cta bg-sf-cta text-sf-cta-ink"
-                  : "border-sf-line bg-sf-surface"
+                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--surface)]"
+                  : "border-[var(--border)] bg-[var(--surface)]"
               }`}
             >
-              {paymentMethod === "KHALTI" && <Check className="w-3 h-3" />}
+              {paymentMethod === "KHALTI" && <Check className="w-3.5 h-3.5" />}
             </div>
           </div>
 
@@ -868,9 +762,6 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
             onClick={() => {
               if (isCodUnavailable) return;
               setPaymentMethod("COD");
-              if (typeof navigator !== "undefined" && navigator.vibrate) {
-                navigator.vibrate(10);
-              }
             }}
             onKeyDown={(e) => {
               if (isCodUnavailable) return;
@@ -879,54 +770,172 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                 setPaymentMethod("COD");
               }
             }}
-            className={`h-[76px] rounded-sf border p-3.5 flex items-center justify-between transition-all ${
+            className={`min-h-[72px] rounded-xl border p-4 flex items-center justify-between transition-colors ${
               isCodUnavailable
-                ? "border-sf-line/60 bg-sf-canvas/40 opacity-60 cursor-not-allowed"
+                ? "border border-[var(--border)] bg-[var(--canvas)] opacity-50 cursor-not-allowed"
                 : paymentMethod === "COD"
-                ? "border-sf-cta bg-sf-canvas/80 ring-2 ring-sf-cta/20 shadow-xs cursor-pointer"
-                : "border-sf-line bg-sf-canvas hover:border-sf-ink/30 cursor-pointer"
+                ? "border-2 border-[var(--ink)] bg-[var(--canvas)] cursor-pointer"
+                : "border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--ink)] cursor-pointer"
             }`}
           >
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-sf border border-sf-line bg-sf-surface flex items-center justify-center text-sf-muted shrink-0">
+              <div className="w-10 h-10 rounded-lg border border-[var(--border)] bg-[var(--surface)] flex items-center justify-center text-[var(--ink-2)] shrink-0">
                 <Banknote className="w-5 h-5" aria-hidden="true" />
               </div>
               <div>
-                <p className="font-sf-display text-xs sm:text-sm font-bold text-sf-ink flex items-center gap-1.5">
+                <p className="text-sm font-semibold text-[var(--ink)] flex items-center gap-1.5">
                   <span>Cash on Delivery</span>
                   {isCodUnavailable && (
-                    <span className="text-[9px] font-sf-mono px-1.5 py-0.2 rounded-sf bg-sf-surface border border-sf-line text-sf-cta">
-                      Unavailable
+                    <span className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-2)]">
+                      Disabled
                     </span>
                   )}
                 </p>
-                <p className="text-[11px] font-sf-mono text-sf-muted">
+                <p className="text-xs text-[var(--ink-2)]">
                   {isStoreCodDisabled
-                    ? "Digital Khalti payment only"
+                    ? "Store supports Khalti payment only"
                     : `Pay ${formatNpr(computedTotal)} cash to rider`}
                 </p>
               </div>
             </div>
 
             <div
-              className={`w-5 h-5 rounded-full border flex items-center justify-center transition-all ${
+              className={`w-5 h-5 rounded-full border flex items-center justify-center ${
                 paymentMethod === "COD"
-                  ? "border-sf-cta bg-sf-cta text-sf-cta-ink"
-                  : "border-sf-line bg-sf-surface"
+                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--surface)]"
+                  : "border-[var(--border)] bg-[var(--surface)]"
               }`}
             >
-              {paymentMethod === "COD" && <Check className="w-3 h-3" />}
+              {paymentMethod === "COD" && <Check className="w-3.5 h-3.5" />}
             </div>
           </div>
         </div>
       </section>
 
-      {/* 5. Sticky Bottom Action Bar (Safe-Area Aware, DESIGN.md §5) */}
-      <div className="fixed inset-x-0 bottom-0 z-40 p-4 border-t border-sf-line bg-sf-surface/95 backdrop-blur-xs pb-safe shadow-lg">
-        <div className="max-w-xl mx-auto flex items-center justify-between gap-4">
+      {/* 5. ORDER SUMMARY */}
+      <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
+        <div className="flex items-center justify-between">
+          <h2 className="font-serif text-base sm:text-lg font-semibold text-[var(--ink)] flex items-center gap-2">
+            <Package className="w-4 h-4 text-[var(--ink-2)]" aria-hidden="true" />
+            <span>Order Summary ({itemCount})</span>
+          </h2>
+        </div>
+
+        {/* Line Items */}
+        <div className="divide-y divide-[var(--border)]">
+          {items.map((it) => (
+            <div
+              key={it.variantId}
+              className="py-3 first:pt-0 last:pb-0 flex items-center justify-between text-xs"
+            >
+              <div className="space-y-0.5 min-w-0 pr-3">
+                <p className="font-medium text-[var(--ink)] truncate">{it.productName}</p>
+                <p className="text-[var(--ink-2)]">
+                  {it.variantLabel ? `${it.variantLabel} · ` : ""}Qty: {it.quantity}
+                </p>
+              </div>
+              <span className="font-semibold text-[var(--ink)] tabular-nums whitespace-nowrap">
+                {formatNpr(it.unitPriceMinor * it.quantity)}
+              </span>
+            </div>
+          ))}
+        </div>
+
+        {/* Promo Code Accordion */}
+        <div className="pt-2 border-t border-[var(--border)]">
+          {!isPromoExpanded && !appliedPromoCode ? (
+            <button
+              type="button"
+              onClick={() => setIsPromoExpanded(true)}
+              className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)] inline-flex items-center gap-1.5 min-h-[44px] cursor-pointer"
+            >
+              <Tag className="w-3.5 h-3.5" aria-hidden="true" />
+              <span>Have a promo code?</span>
+            </button>
+          ) : (
+            <div className="space-y-2 pt-1">
+              <div className="flex gap-2">
+                <div className="relative flex-1">
+                  <input
+                    type="text"
+                    placeholder="Enter promo code"
+                    value={promoInput}
+                    disabled={Boolean(appliedPromoCode)}
+                    onChange={(e) => {
+                      setPromoInput(e.target.value.toUpperCase());
+                      if (promoError) setPromoError(null);
+                    }}
+                    className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-xs uppercase focus:outline-none focus:border-[var(--ink)] disabled:opacity-60"
+                  />
+                </div>
+
+                {appliedPromoCode ? (
+                  <button
+                    type="button"
+                    onClick={handleRemovePromo}
+                    className="min-h-[44px] h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-xs font-medium inline-flex items-center gap-1.5 hover:bg-[var(--surface)] transition-colors cursor-pointer shrink-0"
+                  >
+                    <span>{appliedPromoCode}</span>
+                    <X className="w-3.5 h-3.5 text-[var(--ink-2)]" />
+                  </button>
+                ) : (
+                  <button
+                    type="button"
+                    disabled={!promoInput.trim() || isApplyingPromo}
+                    onClick={handleApplyPromo}
+                    className="min-h-[44px] h-11 px-4 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] text-xs font-medium hover:bg-[var(--canvas)] transition-colors cursor-pointer disabled:opacity-50 shrink-0"
+                  >
+                    {isApplyingPromo ? "Applying..." : "Apply"}
+                  </button>
+                )}
+              </div>
+
+              {appliedPromoCode && computedDiscount > 0 && (
+                <p className="text-xs text-[var(--success-fg)] font-medium">
+                  Promo code applied: -{formatNpr(computedDiscount)}
+                </p>
+              )}
+              {promoError && (
+                <p className="text-xs text-[var(--error-fg)] font-medium">{promoError}</p>
+              )}
+            </div>
+          )}
+        </div>
+
+        {/* Calculations */}
+        <div className="pt-3 border-t border-[var(--border)] text-xs space-y-1.5 text-[var(--ink-2)]">
+          <div className="flex justify-between">
+            <span>Subtotal</span>
+            <span className="text-[var(--ink)] tabular-nums">{formatNpr(computedSubtotal)}</span>
+          </div>
+
+          {computedDiscount > 0 && (
+            <div className="flex justify-between text-[var(--success-fg)] font-medium">
+              <span>Discount ({appliedPromoCode})</span>
+              <span className="tabular-nums">-{formatNpr(computedDiscount)}</span>
+            </div>
+          )}
+
+          <div className="flex justify-between">
+            <span>Delivery</span>
+            <span className="text-[var(--ink)] tabular-nums">
+              {computedShipping === 0 ? "FREE" : formatNpr(computedShipping)}
+            </span>
+          </div>
+
+          <div className="flex justify-between pt-2 border-t border-[var(--border)] text-sm font-semibold text-[var(--ink)]">
+            <span>Total Amount</span>
+            <span className="text-base tabular-nums">{formatNpr(computedTotal)}</span>
+          </div>
+        </div>
+      </section>
+
+      {/* 6. ONE PRIMARY "PLACE ORDER" ACTION (Sticky Bottom on mobile, in-flow on desktop) */}
+      <div className="fixed inset-x-0 bottom-0 z-40 p-4 border-t border-[var(--border)] bg-[var(--surface)]">
+        <div className="max-w-2xl mx-auto flex items-center justify-between gap-4">
           <div className="flex flex-col">
-            <span className="text-[11px] font-sf-mono text-sf-muted">Total Amount</span>
-            <span className="font-sf-mono text-base sm:text-lg font-bold text-sf-ink tabular-nums">
+            <span className="text-xs text-[var(--ink-2)]">Total</span>
+            <span className="text-base sm:text-lg font-semibold text-[var(--ink)] tabular-nums">
               {formatNpr(computedTotal)}
             </span>
           </div>
@@ -934,18 +943,18 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 max-w-xs h-12 rounded-sf bg-sf-cta text-sf-cta-ink font-sf-mono text-xs sm:text-sm font-bold tracking-wide hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-xs cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 max-w-sm min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
-              <span>Processing...</span>
+              <span>Processing Order...</span>
             ) : paymentMethod === "KHALTI" ? (
               <>
-                <Lock className="w-3.5 h-3.5" aria-hidden="true" />
+                <Lock className="w-4 h-4" aria-hidden="true" />
                 <span>Pay with Khalti · {formatNpr(computedTotal)}</span>
               </>
             ) : (
               <>
-                <Truck className="w-3.5 h-3.5" aria-hidden="true" />
+                <Truck className="w-4 h-4" aria-hidden="true" />
                 <span>Place Order · {formatNpr(computedTotal)}</span>
               </>
             )}
@@ -959,10 +968,10 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
 export function CheckoutSkeleton() {
   return (
     <div className="space-y-6 animate-pulse">
-      <div className="h-14 rounded-sf border border-sf-line bg-sf-surface" />
-      <div className="h-44 rounded-sf border border-sf-line bg-sf-surface" />
-      <div className="h-64 rounded-sf border border-sf-line bg-sf-surface" />
-      <div className="h-28 rounded-sf border border-sf-line bg-sf-surface" />
+      <div className="h-44 rounded-xl border border-[var(--border)] bg-[var(--surface)]" />
+      <div className="h-64 rounded-xl border border-[var(--border)] bg-[var(--surface)]" />
+      <div className="h-32 rounded-xl border border-[var(--border)] bg-[var(--surface)]" />
+      <div className="h-48 rounded-xl border border-[var(--border)] bg-[var(--surface)]" />
     </div>
   );
 }
