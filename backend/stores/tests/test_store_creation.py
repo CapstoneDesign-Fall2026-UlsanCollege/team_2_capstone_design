@@ -11,7 +11,7 @@ from rest_framework.test import APIClient
 from accounts.models import EmailOTPChallenge
 from accounts.otp import compute_salted_ip_hash
 from catalog.models import Product
-from core.tenant_context import BypassRLSContext, TenantDatabaseContext
+from core.tenant_context import TenantDatabaseContext, UserMembershipContext
 from stores.models import ActionRateLimit, Store, StoreMembership
 
 User = get_user_model()

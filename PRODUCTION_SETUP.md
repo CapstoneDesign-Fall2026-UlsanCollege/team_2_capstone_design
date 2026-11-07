@@ -103,37 +103,43 @@ Create the following records at your DNS provider for `<domain>`:
 
 ## 4. Ordered Deployment Runbook
 
-### Step 1: Create Neon Roles via SQL (NOT the Neon Web Console)
+### Step 1: Idempotent Neon PostgreSQL Role Setup & Execution Order
 
 > **CRITICAL**: Do **NOT** create the runtime application role using the Neon web console. Roles created in the Neon web console inherit from `neon_superuser`, which possesses the `BYPASSRLS` attribute, completely defeating Row-Level Security. You must create the runtime role via raw SQL executed through Neon's direct connection as the database owner (`<owner_role>`).
 
-1. Connect to your production Neon database via `psql` using the **DIRECT** connection string as `<owner_role>` (e.g. `neondb_owner`):
-   ```bash
-   psql "postgresql://<owner_role>:<owner-password>@ep-<endpoint>.us-east-1.aws.neon.tech/<dbname>?sslmode=require"
-   ```
-2. Execute the role setup script located at `backend/scripts/neon_roles.sql`:
-   ```sql
-   -- 1. Create runtime role with NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS
-   -- Executed by: <owner_role> (or superuser)
-   CREATE ROLE <runtime_role> LOGIN PASSWORD '<runtime-password>' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+The database provisioning lifecycle follows a strict, idempotent 4-phase order:
 
-   -- 2. Grant schema usage
-   -- Executed by: <owner_role> (or superuser)
-   GRANT USAGE ON SCHEMA public TO <runtime_role>;
+#### Phase 1: Pre-Migration Role & Default Privileges
+**Executed by**: Migration Owner Role (`<owner_role>`, e.g. `neondb_owner`) via **DIRECT** connection URL:
+```bash
+psql "postgresql://<owner_role>:<owner-password>@ep-<endpoint>.us-east-1.aws.neon.tech/<dbname>?sslmode=require"
+```
+Pass variables to `backend/scripts/neon_roles.sql` (variables are safely escaped via `format()` and executed via `\gexec` so passwords are never hardcoded):
+```sql
+\set owner_role 'neondb_owner'
+\set runtime_role 'shopcraft_app'
+\set runtime_password '<runtime-password>'
+\i backend/scripts/neon_roles.sql
+```
+This idempotently provisions `<runtime_role>` with `NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS`, grants schema usage, and sets `ALTER DEFAULT PRIVILEGES` for future tables.
 
-   -- 3. Grant DML privileges on existing tables and sequences
-   -- Executed by: <owner_role> (or superuser)
-   GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO <runtime_role>;
-   GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO <runtime_role>;
+#### Phase 2: Schema Migrations
+**Executed by**: Heroku release phase as `<owner_role>` via `DATABASE_URL_DIRECT`:
+```bash
+python manage.py migrate --noinput
+```
+Applies all table DDL, RLS policies (excluding `app.bypass_rls`), and composite indexes.
 
-   -- 4. Alter default privileges so future tables created by migrations are accessible
-   -- Executed by: <owner_role>
-   ALTER DEFAULT PRIVILEGES FOR ROLE <owner_role> IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO <runtime_role>;
-   ALTER DEFAULT PRIVILEGES FOR ROLE <owner_role> IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO <runtime_role>;
-   ```
-3. Prepare the two connection strings:
-   - `DATABASE_URL_DIRECT`: Direct unpooled endpoint connecting as `<owner_role>`.
-   - `DATABASE_URL`: Connection pooler endpoint (`-pooler`) connecting as `<runtime_role>`.
+#### Phase 3: Post-Migration Re-Grant
+**Executed by**: Migration Owner Role (`<owner_role>`) via **DIRECT** connection:
+```sql
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO shopcraft_app;
+GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO shopcraft_app;
+```
+Ensures all tables and sequences created during migrations are explicitly accessible to `<runtime_role>`.
+
+#### Phase 4: Post-Deploy Verification Queries
+**Executed by**: Runtime Application Role (`<runtime_role>`, e.g. `shopcraft_app`) via **POOLED** connection (`DATABASE_URL`). Detailed in Step 6.
 
 ### Step 2: Back Up Encryption Key in Password Manager
 
@@ -258,7 +264,21 @@ Connect via `psql` through the **POOLED** connection URL (`DATABASE_URL`) as the
 3. Attach custom domain `shop.<domain>` in Vercel → **Domains** and configure the `CNAME` record from Section 3.
 4. Trigger production deployment.
 
-### Step 8: Verify Client-IP Rate-Limit Resolution (Two-Device Check)
+### Step 8: Configure Rate Limit Cleanup (Heroku Scheduler)
+
+Add the Heroku Scheduler add-on to run daily purging of expired `ActionRateLimit` records:
+```bash
+heroku addons:create scheduler:standard -a <app-name>
+heroku addons:open scheduler -a <app-name>
+```
+In the Scheduler web UI, add a daily job:
+- **Command**: `python manage.py cleanup_rate_limits --hours 24`
+- **Schedule**: Daily at 02:00 UTC
+- **Dyno Size**: Basic (Free with standard tier)
+
+> Note: `ActionRateLimit` also performs opportunistic cleanup in the request path, so the table remains bounded even if the scheduler runs intermittently.
+
+### Step 9: Verify Client-IP Rate-Limit Resolution (Two-Device Check)
 
 1. Temporarily enable salted IP hash logging on Heroku:
    ```bash

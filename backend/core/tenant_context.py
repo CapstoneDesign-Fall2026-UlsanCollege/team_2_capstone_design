@@ -68,7 +68,7 @@ def set_current_tenant_id(store_id: int | str, is_local: bool = True):
         with connection.cursor() as cursor:
             role_clause = "SET LOCAL ROLE shopcraft_app; " if _check_shopcraft_role(cursor) else ""
             cursor.execute(
-                f"{role_clause}SET LOCAL app.bypass_rls = 'off'; SELECT set_config('app.current_store_id', %s, true);",
+                f"{role_clause}SELECT set_config('app.current_store_id', %s, true);",
                 [str(store_id)],
             )
 
@@ -93,8 +93,9 @@ def reset_current_tenant_id(database_cleanup: bool = True):
             ):
                 with connection.cursor() as cursor:
                     cursor.execute(
-                        "SET LOCAL ROLE NONE; SET LOCAL app.bypass_rls = 'off'; "
-                        "SELECT set_config('app.current_store_id', '', true);"
+                        "SET LOCAL ROLE NONE; "
+                        "SELECT set_config('app.current_store_id', '', true); "
+                        "SELECT set_config('app.current_user_id', '', true);"
                     )
         except Exception as conn_err:
             logger.debug("Connection cleanup in reset_current_tenant_id: %s", type(conn_err).__name__)
@@ -146,28 +147,31 @@ class TenantDatabaseContext:
                         cursor.execute("SET LOCAL ROLE NONE; SET LOCAL app.bypass_rls = 'on';")
 
 
-class BypassRLSContext:
+class UserMembershipContext:
     """
-    Context manager for system/admin operations that require bypassing RLS.
-    Guarantees transaction-local settings (SET LOCAL ROLE NONE and SET LOCAL app.bypass_rls = 'on')
-    inside transaction.atomic(), and restores any outer tenant context on exit.
+    Context manager for user-scoped membership operations (e.g. store listing and ownership counting).
+    Guarantees transaction-local setting (SET LOCAL app.current_user_id = '<user_id>')
+    inside transaction.atomic(). Enforces that current_user_id comes only from a valid positive integer user ID.
+    On exit or rollback, clears app.current_user_id.
     """
-    def __init__(self):
+    def __init__(self, user_id: int):
+        if not isinstance(user_id, int) or user_id <= 0:
+            raise ValueError(f"UserMembershipContext requires a valid positive integer user_id, got: {user_id!r}")
+        self.user_id = user_id
         self._atomic = None
-        self._prev = None
 
     def __enter__(self):
-        self._prev = getattr(_thread_locals, "store_id", None)
-        _thread_locals.store_id = "ALL"
         self._atomic = transaction.atomic()
         self._atomic.__enter__()
         if connection.vendor == "postgresql":
             with connection.cursor() as cursor:
-                cursor.execute("SET LOCAL ROLE NONE; SET LOCAL app.bypass_rls = 'on';")
+                cursor.execute(
+                    "SELECT set_config('app.current_user_id', %s, true);",
+                    [str(self.user_id)],
+                )
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        _thread_locals.store_id = self._prev
         try:
             return self._atomic.__exit__(exc_type, exc_val, exc_tb)
         finally:
@@ -177,11 +181,8 @@ class BypassRLSContext:
                 and connection.in_atomic_block
                 and not getattr(connection, "needs_rollback", False)
             ):
-                if self._prev not in (None, "ALL"):
-                    set_current_tenant_id(self._prev, is_local=True)
-                elif self._prev is None:
-                    with connection.cursor() as cursor:
-                        cursor.execute("SET LOCAL app.bypass_rls = 'off';")
+                with connection.cursor() as cursor:
+                    cursor.execute("SELECT set_config('app.current_user_id', '', true);")
 
 
 def apply_postgres_rls_policies(schema_editor=None):
@@ -219,22 +220,34 @@ def apply_postgres_rls_policies(schema_editor=None):
             cursor.execute(f"ALTER TABLE {tbl} ENABLE ROW LEVEL SECURITY;")
             cursor.execute(f"ALTER TABLE {tbl} FORCE ROW LEVEL SECURITY;")
             cursor.execute(f"DROP POLICY IF EXISTS tenant_isolation_policy ON {tbl};")
-            cursor.execute(f"""
-                CREATE POLICY tenant_isolation_policy ON {tbl}
-                AS PERMISSIVE
-                FOR ALL
-                TO PUBLIC
-                USING (
-                    current_setting('app.bypass_rls', true) = 'on'
-                    OR
-                    store_id = NULLIF(current_setting('app.current_store_id', true), '')::bigint
-                )
-                WITH CHECK (
-                    current_setting('app.bypass_rls', true) = 'on'
-                    OR
-                    store_id = NULLIF(current_setting('app.current_store_id', true), '')::bigint
-                );
-            """)
+            if tbl == "stores_storemembership":
+                cursor.execute(f"""
+                    CREATE POLICY tenant_isolation_policy ON {tbl}
+                    AS PERMISSIVE
+                    FOR ALL
+                    TO PUBLIC
+                    USING (
+                        store_id = NULLIF(current_setting('app.current_store_id', true), '')::bigint
+                        OR
+                        user_id = NULLIF(current_setting('app.current_user_id', true), '')::bigint
+                    )
+                    WITH CHECK (
+                        store_id = NULLIF(current_setting('app.current_store_id', true), '')::bigint
+                    );
+                """)
+            else:
+                cursor.execute(f"""
+                    CREATE POLICY tenant_isolation_policy ON {tbl}
+                    AS PERMISSIVE
+                    FOR ALL
+                    TO PUBLIC
+                    USING (
+                        store_id = NULLIF(current_setting('app.current_store_id', true), '')::bigint
+                    )
+                    WITH CHECK (
+                        store_id = NULLIF(current_setting('app.current_store_id', true), '')::bigint
+                    );
+                """)
             applied_tables.append(tbl)
 
     global _shopcraft_role_exists

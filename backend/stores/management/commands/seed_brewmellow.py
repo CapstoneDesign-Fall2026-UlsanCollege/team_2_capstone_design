@@ -5,7 +5,7 @@ from django.db import transaction
 from django.utils import timezone
 
 from catalog.models import Product, Variant
-from core.tenant_context import BypassRLSContext
+from core.tenant_context import set_current_tenant_id, reset_current_tenant_id
 from orders.models import Order, OrderEvent, OrderItem
 from stores.models import Customer, Store, StoreMembership
 
@@ -18,7 +18,7 @@ class Command(BaseCommand):
     def handle(self, *args, **options):
         self.stdout.write("Seeding BrewMellow Store #1...")
 
-        with BypassRLSContext(), transaction.atomic():
+        with transaction.atomic():
             # 1. Merchant Owner
             owner, _ = User.objects.get_or_create(
                 email="aarav.shrestha@brewmellow.com.np",
@@ -48,6 +48,7 @@ class Command(BaseCommand):
                 }
             )
 
+            set_current_tenant_id(store.id, is_local=True)
             # 3. Store Membership
             StoreMembership.objects.update_or_create(
                 store=store,

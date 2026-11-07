@@ -3,9 +3,7 @@ from django.db import migrations, transaction
 
 
 def normalize_and_merge_emails(apps, schema_editor):
-    from core.tenant_context import BypassRLSContext
-
-    with BypassRLSContext(), transaction.atomic():
+    with transaction.atomic():
         User = apps.get_model("accounts", "User")
         Customer = apps.get_model("stores", "Customer")
         Order = apps.get_model("orders", "Order")

@@ -11,7 +11,7 @@ from rest_framework.test import APITestCase
 
 from accounts.models import DeliveryAddress, EmailOTPChallenge
 from catalog.models import Discount, Product, Variant
-from core.tenant_context import TenantDatabaseContext, BypassRLSContext, get_current_tenant_id
+from core.tenant_context import TenantDatabaseContext, UserMembershipContext, get_current_tenant_id
 from django.core.files.uploadedfile import SimpleUploadedFile
 from orders.models import Order, OrderItem, OrderEvent
 from stores.models import Customer, MerchantAuditLog, Store, StoreMembership, provision_store_customer
@@ -26,19 +26,18 @@ class TenantIsolationTests(APITestCase):
         cls.store_a = Store.objects.get(slug="brewmellow")
         cls.owner_a = User.objects.get(email="aarav.shrestha@brewmellow.com.np")
 
-        # Provision Store B (competitor merchant) inside BypassRLSContext
-        with BypassRLSContext():
-            cls.owner_b = User.objects.create_user("roshani.gurung@pahadihoney.com.np", full_name="Roshani Gurung")
-            cls.store_b = Store.objects.create(
-                slug="pahadi-honey",
-                name="Pahadi Honey",
-                theme_preset="pahadi-sage",
-                inside_valley_shipping_minor=12000,
-                outside_valley_shipping_minor=25000,
-                is_active=True,
-            )
+        # Provision Store B (competitor merchant) inside TenantDatabaseContext
+        cls.owner_b = User.objects.create_user("roshani.gurung@pahadihoney.com.np", full_name="Roshani Gurung")
+        cls.store_b = Store.objects.create(
+            slug="pahadi-honey",
+            name="Pahadi Honey",
+            theme_preset="pahadi-sage",
+            inside_valley_shipping_minor=12000,
+            outside_valley_shipping_minor=25000,
+            is_active=True,
+        )
+        with TenantDatabaseContext(cls.store_b.id):
             StoreMembership.objects.create(store=cls.store_b, user=cls.owner_b, role="OWNER")
-
             cls.prod_b = Product.objects.create(
                 store=cls.store_b,
                 slug="wild-cliff-honey",
@@ -758,19 +757,17 @@ class TenantIsolationTests(APITestCase):
                 self.assertEqual(cursor.fetchone()[0], "shopcraft_app")
                 cursor.execute("SHOW app.current_store_id;")
                 self.assertEqual(cursor.fetchone()[0], str(self.store_a.id))
-                cursor.execute("SHOW app.bypass_rls;")
-                self.assertEqual(cursor.fetchone()[0], "off")
+
 
         self.assertIsNone(get_current_tenant_id())
         with connection.cursor() as cursor:
             cursor.execute("SHOW app.current_store_id;")
             self.assertEqual(cursor.fetchone()[0], "")
 
-        with BypassRLSContext():
-            self.assertEqual(get_current_tenant_id(), "ALL")
+        with UserMembershipContext(self.owner_b.id):
             with connection.cursor() as cursor:
-                cursor.execute("SHOW app.bypass_rls;")
-                self.assertEqual(cursor.fetchone()[0], "on")
+                cursor.execute("SHOW app.current_user_id;")
+                self.assertEqual(cursor.fetchone()[0], str(self.owner_b.id))
 
         self.assertIsNone(get_current_tenant_id())
 
@@ -780,7 +777,7 @@ class TenantIsolationTests(APITestCase):
         strict tenant isolation when querying tables as the unprivileged 'shopcraft_app' role.
         Querying under Store A returns Store A rows and blocks Store B rows at the engine level.
         Querying without a tenant ID returns 0 rows.
-        BypassRLSContext allows reading rows across all stores.
+        SET LOCAL app.bypass_rls is ignored by RLS policies.
         Fails loudly in CI if running on a non-PostgreSQL engine.
         """
         if connection.vendor != "postgresql":
@@ -810,12 +807,17 @@ class TenantIsolationTests(APITestCase):
                 self.assertEqual(len(prods), 0)
                 cursor.execute("SET LOCAL ROLE NONE;")
 
-        # 4. Under BypassRLSContext: all products across all stores are accessible
-        with BypassRLSContext():
-            all_prods = list(Product.objects.all())
-            all_names = [p.name for p in all_prods]
-            self.assertIn("Gulmi Reserve", all_names)
-            self.assertIn("Wild Cliff Honey", all_names)
+        # 4. Attempting SET LOCAL app.bypass_rls = 'on' must NOT reveal other tenants' rows on any tenant table
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL ROLE shopcraft_app; SET LOCAL app.bypass_rls = 'on'; SELECT set_config('app.current_store_id', '', true);")
+                for model in (Product, Variant, Discount, Order, OrderItem, OrderEvent):
+                    self.assertEqual(
+                        model.objects.count(),
+                        0,
+                        f"Table {model._meta.db_table} revealed rows when app.bypass_rls='on' was attempted!",
+                    )
+                cursor.execute("SET LOCAL ROLE NONE;")
 
     def test_postgres_row_locking_select_for_update(self):
         """
@@ -1145,7 +1147,7 @@ class TenantIsolationTests(APITestCase):
         """
         Proves Store B's unpaid order token cannot be paid through Store A's public endpoint.
         """
-        with BypassRLSContext():
+        with TenantDatabaseContext(self.store_b.id):
             unpaid_b = Order.objects.create(
                 store=self.store_b,
                 customer=self.cust_b,
@@ -1175,7 +1177,7 @@ class TenantIsolationTests(APITestCase):
         Slice 6: Proves Analytics reports strictly scope revenue, payment rail mix,
         and 7-province Nepal breakdowns to the authenticated merchant's store.
         """
-        with BypassRLSContext():
+        with TenantDatabaseContext(self.store_b.id):
             # Add a huge order on Store B in Gandaki Province (Pokhara)
             Order.objects.create(
                 store=self.store_b,
@@ -1221,7 +1223,7 @@ class TenantIsolationTests(APITestCase):
         Slice 6: Proves Discount promo codes enforce Postgres RLS, CRUD tenant isolation,
         integer Rs. calculation, max_uses caps, and cross-store checkout rejection.
         """
-        with BypassRLSContext():
+        with TenantDatabaseContext(self.store_b.id):
             disc_b = Discount.objects.create(
                 store=self.store_b,
                 code="HONEY50",

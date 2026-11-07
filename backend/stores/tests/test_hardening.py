@@ -6,7 +6,7 @@ from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.exceptions import ImproperlyConfigured
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.db import connection
+from django.db import connection, transaction
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient, APITransactionTestCase
 
@@ -19,6 +19,7 @@ from core.settings import (
 from core.tenant_context import (
     TENANT_TABLES,
     TenantDatabaseContext,
+    UserMembershipContext,
     set_current_tenant_id,
 )
 from orders.models import Order
@@ -567,3 +568,301 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
             self.assertEqual(res_ok.status_code, 201)
             self.assertTrue(res_ok.json()["url"].startswith("https://res.cloudinary.com/demo-cloud/"))
             mock_session.post.assert_called_once()
+
+
+class UserMembershipContextAndPoolerLeakageTests(APITransactionTestCase):
+    """
+    Verifies that UserMembershipContext scopes access strictly to request.user.id,
+    and proves that neither app.current_user_id nor app.bypass_rls leaks to subsequent
+    queries on pooled connections across commits, rollbacks, and nested atomic blocks.
+    """
+    def setUp(self):
+        self.user_a = User.objects.create_user("user.a@example.com", full_name="User A")
+        self.user_b = User.objects.create_user("user.b@example.com", full_name="User B")
+        self.store_a = Store.objects.create(name="Store A", slug="store-a-leakage", is_active=True)
+        self.store_b = Store.objects.create(name="Store B", slug="store-b-leakage", is_active=True)
+        with TenantDatabaseContext(self.store_a.id):
+            StoreMembership.objects.create(store=self.store_a, user=self.user_a, role="OWNER")
+        with TenantDatabaseContext(self.store_b.id):
+            StoreMembership.objects.create(store=self.store_b, user=self.user_b, role="OWNER")
+
+    def test_user_membership_context_requires_positive_integer_user_id(self):
+        with self.assertRaises(ValueError):
+            UserMembershipContext(0)
+        with self.assertRaises(ValueError):
+            UserMembershipContext(-5)
+        with self.assertRaises(ValueError):
+            UserMembershipContext("not-an-int")  # type: ignore
+
+    def test_user_membership_policy_allows_own_memberships_only(self):
+        """User A sees only Store A membership; User B sees only Store B membership."""
+        if connection.vendor != "postgresql":
+            self.skipTest("PostgreSQL-specific RLS check.")
+
+        with UserMembershipContext(self.user_a.id):
+            mems = list(StoreMembership.all_objects.filter(user=self.user_a))
+            self.assertEqual(len(mems), 1)
+            self.assertEqual(mems[0].store_id, self.store_a.id)
+
+            # Attempting to query User B's membership while User A context is active returns 0
+            mems_b = list(StoreMembership.all_objects.filter(user=self.user_b))
+            self.assertEqual(len(mems_b), 0)
+
+    def test_user_membership_context_cleans_up_on_commit_and_does_not_leak(self):
+        """After exiting UserMembershipContext, app.current_user_id is completely cleared."""
+        if connection.vendor != "postgresql":
+            self.skipTest("PostgreSQL-specific setting check.")
+
+        with UserMembershipContext(self.user_a.id):
+            with connection.cursor() as cursor:
+                cursor.execute("SELECT current_setting('app.current_user_id', true);")
+                self.assertEqual(cursor.fetchone()[0], str(self.user_a.id))
+
+        # Immediately check on the same connection after context exit: must be empty
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT current_setting('app.current_user_id', true);")
+            val = cursor.fetchone()[0]
+            self.assertIn(val, ("", None), "app.current_user_id leaked on connection after exit!")
+
+    def test_user_membership_context_nested_atomic_and_rollback_leakage(self):
+        """Verifies that an inner atomic block rollback clears app.current_user_id."""
+        if connection.vendor != "postgresql":
+            self.skipTest("PostgreSQL-specific setting check.")
+
+        try:
+            with transaction.atomic():
+                with UserMembershipContext(self.user_a.id):
+                    with connection.cursor() as cursor:
+                        cursor.execute("SELECT current_setting('app.current_user_id', true);")
+                        self.assertEqual(cursor.fetchone()[0], str(self.user_a.id))
+                    # Force an unexpected rollback
+                    raise RuntimeError("Forced rollback inside nested atomic block")
+        except RuntimeError:
+            pass
+
+        # Verify on same connection that setting is cleared and does not leak
+        with connection.cursor() as cursor:
+            cursor.execute("SELECT current_setting('app.current_user_id', true);")
+            val = cursor.fetchone()[0]
+            self.assertIn(val, ("", None), "app.current_user_id leaked on connection after rollback!")
+
+    def test_set_local_bypass_rls_on_does_not_reveal_other_tenants_data(self):
+        """
+        Critical test: executing SET LOCAL app.bypass_rls = 'on' must NOT reveal
+        any tenant rows, because app.bypass_rls has been completely removed from policies.
+        """
+        if connection.vendor != "postgresql":
+            self.skipTest("PostgreSQL-specific RLS check.")
+
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                # Malicious or legacy attempt to set app.bypass_rls = 'on'
+                cursor.execute(
+                    "SET LOCAL ROLE shopcraft_app; "
+                    "SET LOCAL app.bypass_rls = 'on'; "
+                    "SELECT set_config('app.current_store_id', '', true); "
+                    "SELECT set_config('app.current_user_id', '', true);"
+                )
+                # Verify across tenant models that 0 rows are returned
+                for model in (StoreMembership, Customer, Product, Variant, Order):
+                    count = model.objects.count()
+                    self.assertEqual(
+                        count,
+                        0,
+                        f"Model {model._meta.db_table} revealed rows when app.bypass_rls='on' was set!",
+                    )
+                cursor.execute("SET LOCAL ROLE NONE;")
+
+
+class StoreCreationConcurrencyTests(APITransactionTestCase):
+    """
+    Verifies that select_for_update() row locking in StoreCreateView serializes
+    concurrent requests for the same merchant, preventing any race condition
+    from exceeding the 3-store cap.
+    """
+    def test_concurrent_store_creations_serialize_under_select_for_update_cap(self):
+        if connection.vendor != "postgresql":
+            self.skipTest("Row locking select_for_update concurrency requires PostgreSQL.")
+        import concurrent.futures
+        from django.db import connections
+
+        user = User.objects.create_user("concurrent.merchant@example.com", full_name="Concurrent Merchant")
+        client_ip = "198.51.100.210"
+
+        def create_store(idx):
+            # Create a separate API client and run request
+            c = APIClient()
+            c.force_authenticate(user=user)
+            resp = c.post(
+                "/api/stores/create/",
+                {
+                    "name": f"Concurrent Store {idx}",
+                    "slug": f"concurrent-store-{idx}",
+                    "category": "Retail",
+                    "city": "Kathmandu",
+                    "province": "Bagmati",
+                },
+                format="json",
+                REMOTE_ADDR=f"198.51.100.{idx + 211}",
+            )
+            # Close thread connection cleanly
+            connections.close_all()
+            return resp.status_code, resp.json()
+
+        # Run 4 simultaneous store creations for this user (cap is 3)
+        with concurrent.futures.ThreadPoolExecutor(max_workers=4) as executor:
+            futures = [executor.submit(create_store, i) for i in range(1, 5)]
+            results = [f.result() for f in futures]
+
+        status_codes = [r[0] for r in results]
+        success_count = status_codes.count(201)
+        rejected_count = status_codes.count(400)
+
+        self.assertEqual(success_count, 3, f"Expected exactly 3 successes, got {success_count}. Statuses: {status_codes}")
+        self.assertEqual(rejected_count, 1, f"Expected 1 rejection, got {rejected_count}. Statuses: {status_codes}")
+
+        # Assert total stores owned by this user in database is exactly 3
+        with UserMembershipContext(user.id):
+            total_owned = StoreMembership.all_objects.filter(user=user, role="OWNER").count()
+            self.assertEqual(total_owned, 3)
+
+
+class GatewayKeyExposureAndFernetScannerTests(TestCase):
+    """
+    Ensures that gateway secrets and Fernet ciphertext (prefix 'gAAAA') never leak in
+    any public or merchant response body, and that staff roles never see gateway fields.
+    """
+    def setUp(self):
+        self.owner = User.objects.create_user("owner@secstore.com", full_name="Store Owner")
+        self.staff = User.objects.create_user("staff@secstore.com", full_name="Store Staff")
+        self.store = Store.objects.create(
+            name="Security Test Store",
+            slug="sec-test-store",
+            is_active=True,
+            khalti_mode="TEST",
+        )
+        self.store.set_khalti_secret_key("test_secret_key_khalti_super_secret_9988")
+        self.store.save()
+
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=self.owner, role="OWNER")
+            StoreMembership.objects.create(store=self.store, user=self.staff, role="STAFF")
+            Product.objects.create(store=self.store, name="Security Product", slug="sec-prod", is_active=True)
+
+    def test_scan_responses_for_fernet_ciphertext_prefix_gAAAA(self):
+        """Scans public and merchant responses to guarantee 'gAAAA' Fernet tokens never leak."""
+        client = APIClient()
+
+        # 1. Public Store Detail
+        res_detail = client.get(f"/api/stores/{self.store.slug}/")
+        self.assertEqual(res_detail.status_code, 200)
+        self.assertNotIn("gAAAA", res_detail.content.decode("utf-8"))
+        self.assertNotIn("khalti_secret_key", res_detail.json())
+        self.assertNotIn("khalti_mode", res_detail.json())
+
+        # 2. Public Store Catalog
+        res_cat = client.get(f"/api/stores/{self.store.slug}/catalog/")
+        self.assertEqual(res_cat.status_code, 200)
+        self.assertNotIn("gAAAA", res_cat.content.decode("utf-8"))
+
+        # 3. Store Creation Response
+        client.force_authenticate(user=self.owner)
+        res_create = client.post(
+            "/api/stores/create/",
+            {"name": "No Leak Store", "slug": "no-leak-store"},
+            format="json",
+            REMOTE_ADDR="198.51.100.188",
+        )
+        self.assertEqual(res_create.status_code, 201)
+        self.assertNotIn("gAAAA", res_create.content.decode("utf-8"))
+        self.assertNotIn("khalti_secret_key", res_create.json())
+
+    def test_merchant_settings_role_based_gateway_visibility(self):
+        """Owner receives masked gateway key; Staff role never sees any gateway fields."""
+        client = APIClient()
+
+        # As OWNER:
+        client.force_authenticate(user=self.owner)
+        res_owner = client.get(f"/api/merchant/stores/{self.store.slug}/settings/")
+        self.assertEqual(res_owner.status_code, 200)
+        owner_data = res_owner.json()
+        self.assertIn("has_custom_khalti_key", owner_data)
+        self.assertTrue(owner_data["has_custom_khalti_key"])
+        self.assertIn("khalti_key_masked", owner_data)
+        self.assertTrue(owner_data["khalti_key_masked"].endswith("9988"))
+        self.assertNotIn("test_secret_key", res_owner.content.decode("utf-8"))
+        self.assertNotIn("gAAAA", res_owner.content.decode("utf-8"))
+
+        # As STAFF:
+        client.force_authenticate(user=self.staff)
+        res_staff = client.get(f"/api/merchant/stores/{self.store.slug}/settings/")
+        self.assertEqual(res_staff.status_code, 200)
+        staff_data = res_staff.json()
+        # Staff MUST NOT see any gateway fields
+        self.assertNotIn("has_custom_khalti_key", staff_data)
+        self.assertNotIn("khalti_mode", staff_data)
+        self.assertNotIn("khalti_key_masked", staff_data)
+        self.assertNotIn("khalti_secret_key", staff_data)
+        self.assertNotIn("gAAAA", res_staff.content.decode("utf-8"))
+
+    def test_gateway_secrets_are_never_logged(self):
+        """Verifies that gateway secret keys and Fernet strings are never logged."""
+        import logging
+        from io import StringIO
+
+        log_stream = StringIO()
+        handler = logging.StreamHandler(log_stream)
+        handler.setLevel(logging.DEBUG)
+        root_logger = logging.getLogger()
+        root_logger.addHandler(handler)
+
+        try:
+            secret = "live_secret_key_strictly_confidential_776655"
+            client = APIClient()
+            client.force_authenticate(user=self.owner)
+            with override_settings(KHALTI_LIVE_ENABLED=True):
+                res = client.patch(
+                    f"/api/merchant/stores/{self.store.slug}/settings/",
+                    {"khalti_secret_key": secret, "khalti_mode": "LIVE"},
+                    format="json",
+                )
+                self.assertEqual(res.status_code, 200)
+
+            logged_output = log_stream.getvalue()
+            self.assertNotIn(secret, logged_output, "Raw gateway secret key was logged!")
+            self.assertNotIn("gAAAA", logged_output, "Fernet encrypted gateway ciphertext was logged!")
+        finally:
+            root_logger.removeHandler(handler)
+
+
+class ActionRateLimitCleanupTests(TestCase):
+    """Verifies that ActionRateLimit purge logic cleans up rows older than 24 hours."""
+    def test_cleanup_expired_and_management_command(self):
+        from datetime import timedelta
+        from django.core.management import call_command
+        from django.utils import timezone
+        from stores.models import ActionRateLimit
+        from io import StringIO
+
+        now = timezone.now()
+        # Create 3 expired rows (25h, 30h, 48h old)
+        r1 = ActionRateLimit.objects.create(action="check_slug", ip_hash="hash1")
+        r2 = ActionRateLimit.objects.create(action="check_slug", ip_hash="hash2")
+        r3 = ActionRateLimit.objects.create(action="store_create", ip_hash="hash3")
+        ActionRateLimit.objects.filter(id__in=[r1.id, r2.id, r3.id]).update(
+            created_at=now - timedelta(hours=26)
+        )
+
+        # Create 2 recent rows (10 minutes old)
+        ActionRateLimit.objects.create(action="check_slug", ip_hash="recent_hash1")
+        ActionRateLimit.objects.create(action="store_create", ip_hash="recent_hash2")
+
+        self.assertEqual(ActionRateLimit.objects.count(), 5)
+
+        # Execute management command
+        out = StringIO()
+        call_command("cleanup_rate_limits", "--hours", "24", stdout=out)
+        self.assertIn("Successfully purged 3 ActionRateLimit row(s)", out.getvalue())
+
+        # Assert only the 2 recent rows remain
+        self.assertEqual(ActionRateLimit.objects.count(), 2)

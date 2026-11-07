@@ -60,8 +60,19 @@ class ActionRateLimit(models.Model):
             return False, retry_after
 
         cls.objects.create(action=action, ip_hash=ip_hash)
-        cls.objects.filter(created_at__lt=now - timedelta(hours=24)).delete()
+        # Opportunistic cleanup of rows older than 24 hours
+        cls.cleanup_expired(cutoff_hours=24)
         return True, 0
+
+    @classmethod
+    def cleanup_expired(cls, cutoff_hours: int = 24) -> int:
+        """
+        Deletes rate limit entries older than cutoff_hours (default 24h).
+        Returns the number of deleted records.
+        """
+        cutoff = timezone.now() - timedelta(hours=cutoff_hours)
+        deleted, _ = cls.objects.filter(created_at__lt=cutoff).delete()
+        return deleted
 
 
 class StoreScopedQuerySet(models.QuerySet):

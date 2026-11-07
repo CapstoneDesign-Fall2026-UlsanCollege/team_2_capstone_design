@@ -10,7 +10,6 @@ from rest_framework.views import APIView
 
 from accounts.models import User
 from catalog.models import Discount
-from core.tenant_context import BypassRLSContext
 from orders.models import Order, OrderItem
 from stores.models import Customer, MerchantAuditLog, StoreMembership
 
@@ -547,14 +546,13 @@ def build_slice6_views(StoreMerchantMixin):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            with BypassRLSContext():
-                target_user, _ = User.objects.get_or_create(
-                    email=email,
-                    defaults={"full_name": full_name or email.split("@")[0]},
-                )
-                if full_name and not target_user.full_name:
-                    target_user.full_name = full_name
-                    target_user.save(update_fields=["full_name"])
+            target_user, _ = User.objects.get_or_create(
+                email=email,
+                defaults={"full_name": full_name or email.split("@")[0]},
+            )
+            if full_name and not target_user.full_name:
+                target_user.full_name = full_name
+                target_user.save(update_fields=["full_name"])
 
             if StoreMembership.objects.for_store(self.store).filter(user=target_user).exists():
                 return Response(
