@@ -2,7 +2,6 @@ import logging
 import re
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
-from django.core.mail import EmailMessage
 from django.db import models, transaction
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
@@ -10,6 +9,7 @@ from rest_framework.views import APIView
 
 from accounts.models import EmailOTPChallenge
 from accounts.otp import get_client_ip
+from core.email_transport import schedule_otp_email
 from core.tenant_context import TenantDatabaseContext
 from orders.models import Order
 from stores.api import StorePublicMixin
@@ -58,8 +58,8 @@ class StorefrontOTPRequestView(StorePublicMixin, APIView):
     """
     Store-scoped OTP request endpoint.
     Generates a 6-digit code, enforces 60s cooldown, 3/15min email limit, and 10/hr IP limit.
-    Sends store-branded email using Store.name and Store.contact_email.
-    Returns a generic response that never reveals whether an account exists.
+    Commits the OTP record first, then schedules store-branded email delivery via transaction.on_commit.
+    Returns a generic response that never reveals whether an account exists or leaks OTPs in production.
     """
     permission_classes = [permissions.AllowAny]
 
@@ -88,38 +88,28 @@ class StorefrontOTPRequestView(StorePublicMixin, APIView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
-        # 2. Issue challenge and generate code
-        challenge, raw_code = EmailOTPChallenge.issue_for_email(email, ip_address=client_ip)
-
-        # 3. Dispatch store-branded email
-        store_name = self.store.name or "Store"
-        subject = f"Your {store_name} sign-in code"
-        body = (
-            f"Your {store_name} sign-in code is: {raw_code}\n\n"
-            "This code will expire in 10 minutes. If you did not request this, you can safely ignore this email.\n"
-        )
-        from_email = f"{store_name} <{settings.DEFAULT_FROM_EMAIL}>"
-        reply_to = [self.store.contact_email] if getattr(self.store, "contact_email", None) else None
-
-        email_msg = EmailMessage(
-            subject=subject,
-            body=body,
-            from_email=from_email,
-            to=[email],
-            reply_to=reply_to,
+        store_name = (self.store.name or "Store").strip()
+        support_email = (
+            (getattr(self.store, "support_email", "") or "").strip()
+            or (getattr(self.store, "contact_email", "") or "").strip()
+            or None
         )
 
-        try:
-            email_msg.send(fail_silently=False)
-        except Exception:
-            # Catch and log without exposing raw code or email in production logs
-            logger.error("Failed to send storefront OTP email via mail backend.")
-            if settings.DEBUG:
-                print(f"\n[DEV STOREFRONT OTP] Store: {self.store.slug} | To: {email} | Code: {raw_code}\n")
+        # 2. Commit OTP record first, then dispatch asynchronously via transaction.on_commit
+        with transaction.atomic():
+            _, raw_code = EmailOTPChallenge.issue_for_email(email, ip_address=client_ip)
+            schedule_otp_email(
+                to_email=email,
+                raw_code=raw_code,
+                brand_name=store_name,
+                reply_to_email=support_email,
+                store_id=self.store.id,
+            )
 
         payload = {
             "ok": True,
             "detail": "If this email is valid, a verification code has been sent.",
+            "expires_in_seconds": 600,
             "resend_in_seconds": 60,
         }
         if settings.DEBUG:

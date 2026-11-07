@@ -1,5 +1,6 @@
 import hashlib
 import hmac
+import ipaddress
 import logging
 from django.conf import settings
 from django.contrib.auth.hashers import check_password
@@ -7,21 +8,36 @@ from django.contrib.auth.hashers import check_password
 logger = logging.getLogger(__name__)
 
 
+def _parse_valid_ip(candidate: str) -> str | None:
+    raw = (candidate or "").strip()
+    if not raw:
+        return None
+    try:
+        return str(ipaddress.ip_address(raw))
+    except ValueError:
+        return None
+
+
 def get_client_ip(request) -> str:
     """
     Extracts the client IP address.
-    To avoid IP spoofing, arbitrary X-Forwarded-For is NOT trusted.
-    Only if settings.TRUSTED_PROXY_HEADER is configured (e.g. 'HTTP_CF_CONNECTING_IP',
-    'HTTP_X_REAL_IP', or 'HTTP_X_FORWARDED_FOR') will that header be read.
-    Otherwise, strictly falls back to request.META.get('REMOTE_ADDR').
+    To avoid IP spoofing, arbitrary X-Forwarded-For is NOT trusted unless
+    settings.TRUSTED_PROXY_HEADER is configured.
+    On Heroku (TRUSTED_PROXY_HEADER='HTTP_X_FORWARDED_FOR'), the router appends
+    the connecting client IP to the RIGHTMOST position of X-Forwarded-For, so
+    the rightmost valid entry is selected.
     """
     header = getattr(settings, "TRUSTED_PROXY_HEADER", None)
     if header and header in request.META:
         val = str(request.META[header]).strip()
-        if "," in val:
-            return val.split(",")[0].strip()
-        return val
-    return request.META.get("REMOTE_ADDR") or "127.0.0.1"
+        if val:
+            parts = [p.strip() for p in val.split(",") if p.strip()]
+            for candidate in reversed(parts):
+                parsed = _parse_valid_ip(candidate)
+                if parsed:
+                    return parsed
+    remote = _parse_valid_ip(request.META.get("REMOTE_ADDR", ""))
+    return remote or "127.0.0.1"
 
 
 def get_otp_hmac_key() -> bytes:
@@ -30,7 +46,7 @@ def get_otp_hmac_key() -> bytes:
     return hmac.new(
         secret.encode("utf-8"),
         b"ShopCraft-Email-OTP-v1",
-        hashlib.sha256
+        hashlib.sha256,
     ).digest()
 
 

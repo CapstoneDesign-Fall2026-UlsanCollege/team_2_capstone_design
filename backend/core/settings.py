@@ -9,6 +9,8 @@ import dj_database_url
 from django.core.exceptions import ImproperlyConfigured
 from dotenv import load_dotenv
 
+from core.email_transport import validate_email_transport_settings
+
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
 
@@ -45,7 +47,6 @@ INSTALLED_APPS = [
     "django.contrib.staticfiles",
     "rest_framework",
     "corsheaders",
-    "anymail",
     "accounts",
     "stores",
     "catalog",
@@ -154,19 +155,52 @@ USE_TZ = True
 STATIC_URL = "/static/"
 STATIC_ROOT = BASE_DIR / "staticfiles"
 
-# Email Configuration
-DEFAULT_FROM_EMAIL = os.getenv("DEFAULT_FROM_EMAIL", "ShopCraft <noreply@shopcraft.com.np>")
+# Email Configuration (Resend API default | built-in SMTP)
+EMAIL_TRANSPORT = os.getenv("EMAIL_TRANSPORT", "resend_api").strip().lower()
 RESEND_API_KEY = os.getenv("RESEND_API_KEY", "").strip()
-EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
-TRUSTED_PROXY_HEADER = os.getenv("TRUSTED_PROXY_HEADER", "").strip() or None
+RESEND_TIMEOUT = float(os.getenv("RESEND_TIMEOUT", "4.5"))
+DEFAULT_FROM_EMAIL = os.getenv(
+    "DEFAULT_FROM_EMAIL",
+    "noreply@shopcraft.com.np" if DEBUG else "",
+).strip()
+EMAIL_SEND_ASYNC = os.getenv("EMAIL_SEND_ASYNC", "True").strip().lower() in ("1", "true", "yes")
 
-if RESEND_API_KEY and not DEBUG:
-    EMAIL_BACKEND = "anymail.backends.resend.EmailBackend"
-    ANYMAIL = {
-        "RESEND_API_KEY": RESEND_API_KEY,
-    }
+EMAIL_HOST = os.getenv("EMAIL_HOST", "").strip()
+EMAIL_PORT = int(os.getenv("EMAIL_PORT", "587"))
+EMAIL_USE_SSL = os.getenv("EMAIL_USE_SSL", "False").strip().lower() in ("1", "true", "yes")
+EMAIL_USE_TLS = os.getenv(
+    "EMAIL_USE_TLS",
+    "False" if EMAIL_USE_SSL else "True",
+).strip().lower() in ("1", "true", "yes")
+EMAIL_HOST_USER = os.getenv("EMAIL_HOST_USER", "").strip()
+EMAIL_HOST_PASSWORD = os.getenv("EMAIL_HOST_PASSWORD", "").strip()
+EMAIL_TIMEOUT = int(os.getenv("EMAIL_TIMEOUT", "10"))
+
+if EMAIL_TRANSPORT == "smtp" and (not DEBUG or EMAIL_HOST):
+    EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 else:
     EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
+
+if "collectstatic" not in sys.argv and "test" not in sys.argv:
+    validate_email_transport_settings(
+        debug=DEBUG,
+        email_transport=EMAIL_TRANSPORT,
+        default_from_email=DEFAULT_FROM_EMAIL,
+        resend_api_key=RESEND_API_KEY,
+        resend_timeout=RESEND_TIMEOUT,
+        email_host=EMAIL_HOST,
+        email_port=EMAIL_PORT,
+        email_use_ssl=EMAIL_USE_SSL,
+        email_use_tls=EMAIL_USE_TLS,
+        email_host_user=EMAIL_HOST_USER,
+        email_host_password=EMAIL_HOST_PASSWORD,
+        email_timeout=EMAIL_TIMEOUT,
+    )
+
+TRUSTED_PROXY_HEADER = (
+    os.getenv("TRUSTED_PROXY_HEADER", "HTTP_X_FORWARDED_FOR" if not DEBUG else "").strip()
+    or None
+)
 
 # Cache Configuration
 CACHES = {

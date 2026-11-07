@@ -78,7 +78,9 @@ export function SettingsForm({
 
   // 2. Contact & Socials
   const [contactPhone, setContactPhone] = useState(initialSettings.contact_phone || "");
-  const [contactEmail, setContactEmail] = useState(initialSettings.contact_email || "");
+  const [contactEmail, setContactEmail] = useState(
+    initialSettings.support_email || initialSettings.contact_email || ""
+  );
   const [address, setAddress] = useState(initialSettings.address || "");
   const [instagramUrl, setInstagramUrl] = useState(initialSettings.instagram_url || "");
   const [facebookUrl, setFacebookUrl] = useState(initialSettings.facebook_url || "");
@@ -168,6 +170,7 @@ export function SettingsForm({
       banner_url: bannerUrl.trim(),
       contact_phone: contactPhone.trim(),
       contact_email: contactEmail.trim(),
+      support_email: contactEmail.trim(),
       address: address.trim(),
       instagram_url: instagramUrl.trim(),
       facebook_url: facebookUrl.trim(),

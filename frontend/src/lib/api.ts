@@ -47,6 +47,7 @@ export interface StorePublicMetadata {
   accent_color: string;
   contact_phone: string;
   contact_email?: string;
+  support_email?: string;
   address?: string;
   story_headline?: string;
   about_text?: string;
@@ -239,7 +240,8 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 export async function requestEmailOtp(email: string) {
   return apiFetch<{
     detail: string;
-    email: string;
+    email?: string;
+    resend_in_seconds?: number;
     expires_in_seconds: number;
     dev_otp_hint?: string;
   }>("/api/auth/otp/request/", {
@@ -497,6 +499,7 @@ export interface MerchantSettingsUpdatePayload {
   province?: string;
   contact_phone?: string;
   contact_email?: string;
+  support_email?: string;
   address?: string;
   story_headline?: string;
   about_text?: string;

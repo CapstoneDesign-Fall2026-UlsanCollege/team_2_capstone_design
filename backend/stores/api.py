@@ -132,6 +132,7 @@ class StorePublicSerializer(serializers.ModelSerializer):
             "accent_color",
             "contact_phone",
             "contact_email",
+            "support_email",
             "address",
             "story_headline",
             "about_text",
@@ -1182,6 +1183,8 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
             store.banner_url = str(data["banner_url"]).strip()
         if "contact_email" in data:
             store.contact_email = str(data["contact_email"]).strip()
+        if "support_email" in data:
+            store.support_email = str(data["support_email"]).strip()
         if "address" in data:
             store.address = str(data["address"]).strip()
         if "story_headline" in data:
@@ -1851,6 +1854,7 @@ class StoreCreateView(APIView):
                 banner_url=banner_url,
                 contact_phone=contact_phone,
                 contact_email=contact_email,
+                support_email=str(request.data.get("support_email", "")).strip() or contact_email,
                 address=address,
                 story_headline=story_headline,
                 about_text=about_text,

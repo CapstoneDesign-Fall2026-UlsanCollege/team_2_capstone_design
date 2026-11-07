@@ -64,6 +64,7 @@ class Store(models.Model):
     accent_color = models.CharField(max_length=7, blank=True, default="")
     contact_phone = models.CharField(max_length=16, blank=True, default="")
     contact_email = models.EmailField(blank=True, default="")
+    support_email = models.EmailField(blank=True, default="")
     address = models.CharField(max_length=255, blank=True, default="")
     story_headline = models.CharField(max_length=240, blank=True, default="")
     about_text = models.TextField(blank=True, default="")

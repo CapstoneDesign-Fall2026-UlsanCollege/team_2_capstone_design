@@ -172,7 +172,7 @@ export function PasswordlessAuthCard({
         setDevOtpHint(res.dev_otp_hint);
       }
       setStep("otp");
-      setResendCooldown(30);
+      setResendCooldown(res.resend_in_seconds ?? 60);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Unable to send sign-in code. Try again.";
       setError(msg);

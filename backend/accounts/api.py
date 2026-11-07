@@ -2,7 +2,6 @@ import os
 import re
 from django.conf import settings
 from django.contrib.auth import get_user_model, login, logout
-from django.core.mail import send_mail
 from django.db import transaction
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
@@ -16,7 +15,9 @@ from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
-from accounts.models import DeliveryAddress, EmailOTPChallenge, NEPALI_MOBILE_VALIDATOR
+from accounts.models import DeliveryAddress, EmailOTPChallenge
+from accounts.otp import get_client_ip
+from core.email_transport import schedule_otp_email
 
 User = get_user_model()
 
@@ -126,30 +127,36 @@ class OTPRequestView(APIView):
         serializer = OTPRequestSerializer(data=request.data)
         serializer.is_valid(raise_exception=True)
         email = serializer.validated_data["email"].strip().lower()
+        client_ip = get_client_ip(request)
 
-        challenge, raw_code = EmailOTPChallenge.issue_for_email(email)
-
-        message = (
-            f"Your 6-digit ShopCraft sign-in code is: {raw_code}\n\n"
-            "This code expires in 10 minutes. If you did not request this, please ignore this email."
-        )
-
-        try:
-            send_mail(
-                subject="Your ShopCraft sign-in code",
-                message=message,
-                from_email=settings.DEFAULT_FROM_EMAIL,
-                recipient_list=[email],
-                fail_silently=False,
+        allowed, reason, retry_after = EmailOTPChallenge.check_rate_limits(email, client_ip)
+        if not allowed:
+            if reason == "COOLDOWN":
+                msg = f"Please wait {retry_after} seconds before requesting another code."
+            elif reason == "EMAIL_LIMIT":
+                msg = "Too many sign-in attempts for this email. Please try again in a few minutes."
+            else:
+                msg = "Too many sign-in attempts from this network. Please try again later."
+            return Response(
+                {"detail": msg, "resend_in_seconds": retry_after},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
-        except Exception:
-            if not settings.DEBUG:
-                raise
+
+        with transaction.atomic():
+            _, raw_code = EmailOTPChallenge.issue_for_email(email, ip_address=client_ip)
+            schedule_otp_email(
+                to_email=email,
+                raw_code=raw_code,
+                brand_name="ShopCraft",
+                reply_to_email=None,
+                store_id=None,
+            )
 
         payload = {
-            "detail": "6-digit code sent.",
-            "email": email,
+            "ok": True,
+            "detail": "If this email is valid, a verification code has been sent.",
             "expires_in_seconds": 600,
+            "resend_in_seconds": 60,
         }
         if settings.DEBUG:
             payload["dev_otp_hint"] = raw_code
