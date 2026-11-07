@@ -1,13 +1,17 @@
 "use client";
 
 import React, { useEffect, useState } from "react";
+import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { fetchMyStores, fetchSession } from "@/lib/api";
-import { Loader2, Store } from "lucide-react";
+import { fetchMyStores, fetchSession, logoutSession } from "@/lib/api";
+import { Loader2, LogOut, ShieldAlert, Store } from "lucide-react";
 
 export default function MerchantIndexRedirectPage() {
   const router = useRouter();
   const [statusMessage, setStatusMessage] = useState("Resolving merchant workspace...");
+  const [noAccessEmail, setNoAccessEmail] = useState<string | null>(null);
+  const [loadError, setLoadError] = useState<string | null>(null);
+  const [signingOut, setSigningOut] = useState(false);
 
   useEffect(() => {
     let mounted = true;
@@ -27,9 +31,10 @@ export default function MerchantIndexRedirectPage() {
         if (!mounted) return;
 
         if (res.stores && res.stores.length > 0) {
-          const lastActiveSlug = typeof window !== "undefined"
-            ? localStorage.getItem("shopcraft_active_store_slug")
-            : null;
+          const lastActiveSlug =
+            typeof window !== "undefined"
+              ? localStorage.getItem("shopcraft_active_store_slug")
+              : null;
 
           const matched = lastActiveSlug
             ? res.stores.find((s) => s.slug === lastActiveSlug)
@@ -38,11 +43,12 @@ export default function MerchantIndexRedirectPage() {
           const targetSlug = matched ? matched.slug : res.stores[0].slug;
           router.replace(`/merchant/${encodeURIComponent(targetSlug)}`);
         } else {
-          router.replace("/merchant/new");
+          // A customer sign-in or merchant login without StoreMembership grants nothing on /merchant
+          setNoAccessEmail(session.user?.email || "");
         }
-      } catch (err) {
+      } catch {
         if (!mounted) return;
-        router.replace("/merchant/new");
+        setLoadError("Unable to verify merchant store memberships. Please try again.");
       }
     }
 
@@ -52,6 +58,59 @@ export default function MerchantIndexRedirectPage() {
       mounted = false;
     };
   }, [router]);
+
+  const handleSignOut = async () => {
+    setSigningOut(true);
+    try {
+      await logoutSession();
+      router.replace("/login?next=/merchant");
+    } finally {
+      setSigningOut(false);
+    }
+  };
+
+  if (noAccessEmail !== null || loadError) {
+    return (
+      <div className="min-h-screen bg-[#09090B] text-zinc-100 flex flex-col items-center justify-center p-4">
+        <div className="w-full max-w-md p-8 rounded-xl border border-zinc-800 bg-zinc-900/90 text-center space-y-5 shadow-2xl">
+          <div className="w-12 h-12 rounded-xl bg-amber-500/10 border border-amber-500/20 text-amber-400 mx-auto flex items-center justify-center">
+            <ShieldAlert className="w-6 h-6" />
+          </div>
+          <div className="space-y-2">
+            <h1 className="text-base font-semibold text-zinc-100">
+              {loadError ? "Workspace Unavailable" : "No Merchant Store Access"}
+            </h1>
+            <p className="text-xs text-zinc-400 leading-relaxed">
+              {loadError
+                ? loadError
+                : `Your signed-in account${
+                    noAccessEmail ? ` (${noAccessEmail})` : ""
+                  } does not have a membership in any merchant store.`}
+            </p>
+          </div>
+
+          <div className="space-y-2 pt-2">
+            <button
+              type="button"
+              onClick={handleSignOut}
+              disabled={signingOut}
+              className="w-full h-11 rounded-lg bg-zinc-100 text-zinc-950 hover:bg-white disabled:opacity-50 text-xs font-semibold flex items-center justify-center gap-2 cursor-pointer transition-colors"
+            >
+              <LogOut className="w-4 h-4" />
+              <span>{signingOut ? "Signing out..." : "Sign out & switch account"}</span>
+            </button>
+
+            <Link
+              href="/"
+              className="w-full h-10 rounded-lg border border-zinc-800 text-zinc-400 hover:text-zinc-200 hover:bg-zinc-800/60 text-xs font-medium flex items-center justify-center transition-colors"
+            >
+              Return to ShopCraft Home
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#09090B] text-zinc-100 flex flex-col items-center justify-center p-4">

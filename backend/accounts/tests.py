@@ -2,6 +2,7 @@ from datetime import timedelta
 import io
 import json
 import os
+import time
 from unittest.mock import MagicMock, patch
 
 from django.contrib.auth import get_user_model
@@ -281,7 +282,9 @@ class GoogleOAuthTests(APITestCase):
     def test_valid_google_token_authenticates_user(self, mock_verify):
         mock_verify.return_value = {
             "iss": "accounts.google.com",
-            "email": "bikash.shrestha@example.com",
+            "aud": self.client_id,
+            "exp": int(time.time()) + 3600,
+            "email": "Bikash.Shrestha@Example.com",
             "email_verified": True,
             "name": "Bikash Shrestha",
         }
@@ -303,13 +306,18 @@ class GoogleOAuthTests(APITestCase):
     def test_unverified_email_rejected(self, mock_verify):
         mock_verify.return_value = {
             "iss": "accounts.google.com",
+            "aud": self.client_id,
+            "exp": int(time.time()) + 3600,
             "email": "unverified@example.com",
             "email_verified": False,
         }
 
         res = self.client.post("/api/auth/google/", {"credential": "fake-jwt"})
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(res.data["detail"], "Google email is unverified or missing.")
+        self.assertEqual(
+            res.data["detail"],
+            "Unable to sign in with Google. Please try again or use email code.",
+        )
 
     @patch.dict(os.environ, {"GOOGLE_OAUTH_CLIENT_ID": "test-google-client-id.apps.googleusercontent.com"})
     @patch("google.oauth2.id_token.verify_oauth2_token")
@@ -318,9 +326,13 @@ class GoogleOAuthTests(APITestCase):
 
         res = self.client.post("/api/auth/google/", {"credential": "invalid-token"})
         self.assertEqual(res.status_code, status.HTTP_401_UNAUTHORIZED)
-        self.assertEqual(res.data["detail"], "Invalid Google credential token.")
+        self.assertEqual(
+            res.data["detail"],
+            "Unable to sign in with Google. Please try again or use email code.",
+        )
 
-    @patch.dict(os.environ, {"GOOGLE_OAUTH_CLIENT_ID": ""})
+    @override_settings(GOOGLE_CLIENT_ID="")
+    @patch.dict(os.environ, {"GOOGLE_CLIENT_ID": "", "GOOGLE_OAUTH_CLIENT_ID": ""})
     def test_unconfigured_oauth_returns_503(self):
         res = self.client.post("/api/auth/google/", {"credential": "some-token"})
         self.assertEqual(res.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)

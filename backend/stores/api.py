@@ -2027,6 +2027,7 @@ MerchantStaffDetailView = _slice6_views["MerchantStaffDetailView"]
 from stores.storefront_account_api import (
     StorefrontAccountDetailView,
     StorefrontCustomerOrdersView,
+    StorefrontGoogleAuthView,
     StorefrontOTPRequestView,
     StorefrontOTPVerifyView,
 )
@@ -2045,6 +2046,7 @@ urlpatterns = [
     path("stores/<slug:store_slug>/account/orders/", StorefrontCustomerOrdersView.as_view(), name="storefront_customer_orders"),
     path("stores/<slug:store_slug>/account/otp/request/", StorefrontOTPRequestView.as_view(), name="storefront_otp_request"),
     path("stores/<slug:store_slug>/account/otp/verify/", StorefrontOTPVerifyView.as_view(), name="storefront_otp_verify"),
+    path("stores/<slug:store_slug>/account/google/", StorefrontGoogleAuthView.as_view(), name="storefront_google_auth"),
     path("stores/<slug:store_slug>/customer/bootstrap/", CustomerBootstrapView.as_view(), name="store_customer_bootstrap"),
     path("stores/<slug:store_slug>/checkout/quote/", StoreCheckoutQuoteView.as_view(), name="store_checkout_quote"),
     path("stores/<slug:store_slug>/checkout/place/", StoreCheckoutPlaceView.as_view(), name="store_checkout_place"),

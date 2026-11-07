@@ -1,4 +1,3 @@
-import os
 import re
 from django.conf import settings
 from django.contrib.auth import get_user_model, login, logout
@@ -8,13 +7,18 @@ from django.shortcuts import get_object_or_404
 from django.urls import path
 from django.utils.decorators import method_decorator
 from django.views.decorators.csrf import ensure_csrf_cookie
-from google.auth.transport import requests as google_requests
-from google.oauth2 import id_token
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
 from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from accounts.google_auth import (
+    GENERIC_GOOGLE_AUTH_ERROR,
+    GoogleTokenVerificationError,
+    check_google_ip_rate_limit,
+    get_configured_google_client_id,
+    verify_google_id_token,
+)
 from accounts.models import DeliveryAddress, EmailOTPChallenge
 from accounts.otp import get_client_ip
 from core.email_transport import schedule_otp_email
@@ -205,65 +209,69 @@ class OTPVerifyView(APIView):
 
 
 class GoogleAuthSerializer(serializers.Serializer):
-    credential = serializers.CharField()
+    credential = serializers.CharField(max_length=8192)
 
 
 class GoogleAuthView(APIView):
+    """
+    Merchant / platform Google Sign-In endpoint (POST /api/auth/google/).
+    Verifies ID token server-side against GOOGLE_CLIENT_ID with cached certs,
+    authenticates normalized User identity via session, and NEVER auto-creates
+    any Store or StoreMembership.
+    """
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth_google"
 
     def post(self, request):
-        client_id = os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip()
-        if not client_id:
+        if not get_configured_google_client_id():
             return Response(
-                {"detail": "Google OAuth is not configured on this server."},
+                {"detail": "Google sign-in is unavailable."},
                 status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
+        client_ip = get_client_ip(request)
+        if not check_google_ip_rate_limit(client_ip):
+            return Response(
+                {"detail": "Too many sign-in attempts. Please try again shortly."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
         serializer = GoogleAuthSerializer(data=request.data)
-        serializer.is_valid(raise_exception=True)
-        credential = serializer.validated_data["credential"]
+        if not serializer.is_valid():
+            return Response(
+                {"detail": GENERIC_GOOGLE_AUTH_ERROR},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         try:
-            idinfo = id_token.verify_oauth2_token(
-                credential,
-                google_requests.Request(),
-                audience=client_id,
+            verified = verify_google_id_token(
+                serializer.validated_data["credential"],
+                store_id=None,
             )
-        except ValueError:
+        except GoogleTokenVerificationError:
             return Response(
-                {"detail": "Invalid Google credential token."},
+                {"detail": GENERIC_GOOGLE_AUTH_ERROR},
                 status=status.HTTP_401_UNAUTHORIZED,
             )
 
-        if idinfo.get("iss") not in ("accounts.google.com", "https://accounts.google.com"):
-            return Response(
-                {"detail": "Untrusted Google token issuer."},
-                status=status.HTTP_401_UNAUTHORIZED,
+        email = verified["email"]
+        full_name = verified["full_name"]
+
+        with transaction.atomic():
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={"full_name": full_name},
             )
+            if created:
+                user.set_unusable_password()
+                user.save()
+            elif not user.full_name and full_name:
+                user.full_name = full_name
+                user.save(update_fields=["full_name"])
 
-        if not idinfo.get("email_verified") or not idinfo.get("email"):
-            return Response(
-                {"detail": "Google email is unverified or missing."},
-                status=status.HTTP_401_UNAUTHORIZED,
-            )
+            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
-        email = idinfo["email"].strip().lower()
-        full_name = idinfo.get("name", "").strip()
-
-        user, created = User.objects.get_or_create(
-            email=email,
-            defaults={"full_name": full_name}
-        )
-        if created:
-            user.set_unusable_password()
-            user.save()
-        elif not user.full_name and full_name:
-            user.full_name = full_name
-            user.save(update_fields=["full_name"])
-
-        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         return Response({"user": UserSerializer(user).data}, status=status.HTTP_200_OK)
 
 

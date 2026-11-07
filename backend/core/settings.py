@@ -202,6 +202,12 @@ TRUSTED_PROXY_HEADER = (
     or None
 )
 
+# Google Identity Services OAuth Client ID (shared web client ID for merchant & storefront)
+GOOGLE_CLIENT_ID = (
+    os.getenv("GOOGLE_CLIENT_ID", "").strip()
+    or os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip()
+)
+
 # Cache Configuration
 CACHES = {
     "default": {

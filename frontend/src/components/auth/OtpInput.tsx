@@ -7,26 +7,7 @@ import {
   sanitizeRedirectTarget,
   verifyEmailOtp,
 } from "@/lib/api";
-
-declare global {
-  interface Window {
-    google?: {
-      accounts: {
-        id: {
-          initialize: (config: {
-            client_id: string;
-            callback: (response: { credential: string }) => void;
-          }) => void;
-          renderButton: (
-            parent: HTMLElement,
-            options: { theme?: string; size?: string; width?: number; text?: string }
-          ) => void;
-          prompt: () => void;
-        };
-      };
-    };
-  }
-}
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 interface OtpInputProps {
   value: string;
@@ -100,7 +81,7 @@ export function OtpInput({ value, onChange, onComplete, disabled = false }: OtpI
           value={digits[i] || ""}
           onChange={(e) => handleChange(i, e)}
           onKeyDown={(e) => handleKeyDown(i, e)}
-          className="w-12 h-12 text-center text-lg font-mono font-medium rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] tabular-nums transition-colors focus:outline-none focus:border-[var(--sc-marigold,#F2A900)] focus:ring-1 focus:ring-[var(--sc-marigold,#F2A900)] disabled:opacity-50"
+          className="w-12 h-12 text-center text-lg font-mono font-medium rounded-lg border border-[var(--sc-line)] bg-[var(--sc-surface)] text-[var(--sc-ink)] tabular-nums transition-colors focus:outline-none focus:border-[var(--sc-marigold)] focus:ring-1 focus:ring-[var(--sc-marigold)] disabled:opacity-50"
         />
       ))}
     </div>
@@ -135,9 +116,6 @@ export function PasswordlessAuthCard({
   const [error, setError] = useState<string | null>(null);
   const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
-
-  const googleBtnRef = useRef<HTMLDivElement>(null);
-  const googleClientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID || "";
 
   useEffect(() => {
     if (resendCooldown <= 0) return;
@@ -200,69 +178,44 @@ export function PasswordlessAuthCard({
     }
   };
 
-  // Google OAuth setup
-  useEffect(() => {
-    if (step !== "email" || !googleClientId) return;
-
-    const loadGoogleScript = () => {
-      if (window.google?.accounts?.id) {
-        initializeGoogle();
-        return;
+  const handleGoogleCredential = React.useCallback(
+    async (credential: string) => {
+      setLoading(true);
+      setError(null);
+      try {
+        await authenticateWithGoogle(credential);
+        handleAuthSuccess();
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Unable to sign in with Google. Please try again or use email code.";
+        setError(msg);
+      } finally {
+        setLoading(false);
       }
-      const script = document.createElement("script");
-      script.src = "https://accounts.google.com/gsi/client";
-      script.async = true;
-      script.defer = true;
-      script.onload = initializeGoogle;
-      document.body.appendChild(script);
-    };
-
-    const initializeGoogle = () => {
-      if (!window.google?.accounts?.id || !googleBtnRef.current) return;
-      window.google.accounts.id.initialize({
-        client_id: googleClientId,
-        callback: async (response) => {
-          if (!response.credential) return;
-          setLoading(true);
-          setError(null);
-          try {
-            await authenticateWithGoogle(response.credential);
-            handleAuthSuccess();
-          } catch (err: unknown) {
-            const msg = err instanceof Error ? err.message : "Google sign-in failed.";
-            setError(msg);
-          } finally {
-            setLoading(false);
-          }
-        },
-      });
-
-      window.google.accounts.id.renderButton(googleBtnRef.current, {
-        theme: "outline",
-        size: "large",
-        text: "continue_with",
-        width: 320,
-      });
-    };
-
-    loadGoogleScript();
-  }, [step, googleClientId, handleAuthSuccess]);
+    },
+    [handleAuthSuccess]
+  );
 
   return (
-    <div className="w-full max-w-md p-6 sm:p-8 bg-[var(--sc-surface,#FFFFFF)] border border-[var(--sc-line,#E8E8E1)] rounded-xl text-[var(--sc-ink,#111318)]">
+    <div className="w-full max-w-md p-6 sm:p-8 bg-[var(--sc-surface)] border border-[var(--sc-line)] rounded-xl text-[var(--sc-ink)]">
       {step === "email" ? (
         <form onSubmit={handleRequestOtp} className="space-y-4">
           <div className="space-y-1">
             <h2 className="text-xl font-bold tracking-tight">
               {title || "Sign in to ShopCraft"}
             </h2>
-            <p className="text-sm text-[var(--sc-ink-2,#4B5060)]">
+            <p className="text-sm text-[var(--sc-ink-2)]">
               {subtitle || "Enter your email to receive a 6-digit sign-in code."}
             </p>
           </div>
 
           <div className="space-y-1 pt-2">
-            <label htmlFor="auth-email" className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)]">
+            <label
+              htmlFor="auth-email"
+              className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2)]"
+            >
               Email address
             </label>
             <input
@@ -277,53 +230,39 @@ export function PasswordlessAuthCard({
                 setEmail(e.target.value);
                 if (error) setError(null);
               }}
-              className="w-full h-12 px-3 text-sm rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-[var(--sc-marigold,#F2A900)] focus:ring-1 focus:ring-[var(--sc-marigold,#F2A900)]"
+              className="w-full h-12 px-3 text-sm rounded-lg border border-[var(--sc-line)] bg-[var(--sc-surface)] text-[var(--sc-ink)] focus:outline-none focus:border-[var(--sc-marigold)] focus:ring-1 focus:ring-[var(--sc-marigold)]"
             />
-            {error && (
-              <p className="text-xs text-[var(--sc-danger,#B42318)] mt-1">{error}</p>
-            )}
+            {error && <p className="text-xs text-[var(--sc-danger)] mt-1">{error}</p>}
           </div>
 
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] hover:opacity-95 disabled:opacity-50 transition-opacity"
+            className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-[var(--sc-ink)] text-[var(--sc-paper)] hover:opacity-95 disabled:opacity-50 transition-opacity cursor-pointer"
           >
             {loading ? "Sending code..." : submitButtonText}
           </button>
 
-          <div className="pt-2">
-            <div className="relative flex py-2 items-center">
-              <div className="flex-grow border-t border-[var(--sc-line,#E8E8E1)]"></div>
-              <span className="flex-shrink mx-3 text-xs text-[var(--sc-ink-3,#8B90A0)]">or</span>
-              <div className="flex-grow border-t border-[var(--sc-line,#E8E8E1)]"></div>
-            </div>
-
-            {googleClientId ? (
-              <div ref={googleBtnRef} className="flex justify-center pt-2 min-h-[44px]" />
-            ) : (
-              <button
-                type="button"
-                disabled
-                className="w-full h-12 flex items-center justify-center gap-2 text-xs font-mono rounded-lg border border-[var(--sc-line,#E8E8E1)] text-[var(--sc-ink-3,#8B90A0)] opacity-60 cursor-not-allowed"
-                title="Configure GOOGLE_OAUTH_CLIENT_ID to enable Google sign-in"
-              >
-                Continue with Google (Local Dev: configure OAuth)
-              </button>
-            )}
-          </div>
+          <GoogleSignInButton
+            enabled={step === "email"}
+            surface="platform"
+            disabled={loading}
+            onCredential={handleGoogleCredential}
+            onError={(msg) => setError(msg)}
+          />
         </form>
       ) : (
         <div className="space-y-5">
           <div className="space-y-1">
             <h2 className="text-xl font-bold tracking-tight">Check your email</h2>
-            <p className="text-sm text-[var(--sc-ink-2,#4B5060)]">
-              Enter the 6-digit code sent to <span className="font-mono text-[var(--sc-ink,#111318)]">{email}</span>.
+            <p className="text-sm text-[var(--sc-ink-2)]">
+              Enter the 6-digit code sent to{" "}
+              <span className="font-mono text-[var(--sc-ink)]">{email}</span>.
             </p>
           </div>
 
           {devOtpHint && (
-            <div className="p-3 text-xs font-mono rounded-lg bg-[var(--sc-marigold-soft,#FFF4D6)] border border-[var(--sc-marigold,#F2A900)] text-[var(--sc-ink,#111318)]">
+            <div className="p-3 text-xs font-mono rounded-lg bg-[var(--sc-marigold-soft)] border border-[var(--sc-marigold)] text-[var(--sc-ink)]">
               <strong>Dev OTP Code:</strong> {devOtpHint}
             </div>
           )}
@@ -338,16 +277,14 @@ export function PasswordlessAuthCard({
               onComplete={(fullCode) => handleVerifyOtp(fullCode)}
               disabled={loading}
             />
-            {error && (
-              <p className="text-xs text-[var(--sc-danger,#B42318)] pt-1">{error}</p>
-            )}
+            {error && <p className="text-xs text-[var(--sc-danger)] pt-1">{error}</p>}
           </div>
 
           <button
             type="button"
             onClick={() => handleVerifyOtp()}
             disabled={loading || otpCode.length !== 6}
-            className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] hover:opacity-95 disabled:opacity-50 transition-opacity"
+            className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-[var(--sc-ink)] text-[var(--sc-paper)] hover:opacity-95 disabled:opacity-50 transition-opacity cursor-pointer"
           >
             {loading ? "Verifying..." : "Verify & continue"}
           </button>
@@ -360,7 +297,7 @@ export function PasswordlessAuthCard({
                 setOtpCode("");
                 setError(null);
               }}
-              className="text-[var(--sc-ink-2,#4B5060)] hover:text-[var(--sc-ink,#111318)] underline transition-colors"
+              className="text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)] underline transition-colors cursor-pointer"
             >
               Use a different email
             </button>
@@ -369,7 +306,7 @@ export function PasswordlessAuthCard({
               type="button"
               disabled={loading || resendCooldown > 0}
               onClick={() => handleRequestOtp()}
-              className="text-[var(--sc-ink-2,#4B5060)] hover:text-[var(--sc-ink,#111318)] disabled:opacity-50 underline transition-colors"
+              className="text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)] disabled:opacity-50 underline transition-colors cursor-pointer"
             >
               {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : "Resend code"}
             </button>
@@ -378,7 +315,7 @@ export function PasswordlessAuthCard({
       )}
 
       {footerContent && (
-        <div className="pt-4 border-t border-[var(--sc-line,#E8E8E1)] text-center text-xs">
+        <div className="pt-4 mt-4 border-t border-[var(--sc-line)] text-center text-xs">
           {footerContent}
         </div>
       )}

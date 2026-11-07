@@ -354,6 +354,17 @@ export async function verifyStorefrontOTP(storeSlug: string, email: string, code
   });
 }
 
+export async function verifyStorefrontGoogleAuth(storeSlug: string, credential: string) {
+  return apiFetch<{
+    ok: boolean;
+    user: UserProfile;
+    customer: StorefrontCustomerProfile;
+  }>(`/api/stores/${encodeURIComponent(storeSlug)}/account/google/`, {
+    method: "POST",
+    body: JSON.stringify({ credential }),
+  });
+}
+
 export async function fetchStorefrontAccount(storeSlug: string) {
   return apiFetch<StorefrontAccountResponse>(
     `/api/stores/${encodeURIComponent(storeSlug)}/account/`

@@ -19,8 +19,10 @@ import {
 } from "lucide-react";
 import {
   requestStorefrontOTP,
+  verifyStorefrontGoogleAuth,
   verifyStorefrontOTP,
 } from "@/lib/api";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { emitAuthChange, useStorefrontAuth } from "@/lib/auth";
 import { useAccount } from "./AccountContext";
 
@@ -170,6 +172,28 @@ export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: Acco
     }
   };
 
+  const handleGoogleCredential = useCallback(
+    async (credential: string) => {
+      setLoading(true);
+      setErrorMsg(null);
+      try {
+        await verifyStorefrontGoogleAuth(storeSlug, credential);
+        emitAuthChange();
+        await refresh();
+        setStep("LOGGED_IN");
+      } catch (err: unknown) {
+        const msg =
+          err instanceof Error
+            ? err.message
+            : "Unable to sign in with Google. Please try again or use email code.";
+        setErrorMsg(msg);
+      } finally {
+        setLoading(false);
+      }
+    },
+    [storeSlug, refresh]
+  );
+
   const handleSignOut = async () => {
     await signOut();
     setStep("EMAIL");
@@ -267,6 +291,14 @@ export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: Acco
                     </>
                   )}
                 </button>
+
+                <GoogleSignInButton
+                  enabled={isAccountOpen && step === "EMAIL"}
+                  surface="storefront"
+                  disabled={loading}
+                  onCredential={handleGoogleCredential}
+                  onError={(msg) => setErrorMsg(msg)}
+                />
 
                 <div className="pt-2 text-[11px] text-[var(--ink-2)] leading-normal flex items-center gap-1.5 justify-center">
                   <ShieldCheck className="w-3.5 h-3.5 text-[var(--status-success-fg)] shrink-0" />

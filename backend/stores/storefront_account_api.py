@@ -5,8 +5,16 @@ from django.contrib.auth import get_user_model, login
 from django.db import models, transaction
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
 
+from accounts.google_auth import (
+    GENERIC_GOOGLE_AUTH_ERROR,
+    GoogleTokenVerificationError,
+    check_google_ip_rate_limit,
+    get_configured_google_client_id,
+    verify_google_id_token,
+)
 from accounts.models import EmailOTPChallenge
 from accounts.otp import get_client_ip
 from core.email_transport import schedule_otp_email
@@ -46,8 +54,22 @@ def format_order_items_summary(order: Order) -> str:
     return ", ".join(parts) if parts else "1 item"
 
 
+def _serialize_safe_customer_for_user(customer: Customer | None, user) -> dict[str, str]:
+    if customer is not None and customer.user_id == user.id:
+        return {
+            "full_name": customer.full_name,
+            "phone": customer.phone,
+            "email": customer.email,
+        }
+    return {
+        "full_name": user.full_name or "",
+        "phone": user.phone or "",
+        "email": user.email,
+    }
+
+
 # -----------------------------------------------------------------------------
-# Storefront OTP Endpoints
+# Storefront OTP & Google Sign-In Endpoints
 # -----------------------------------------------------------------------------
 
 class StorefrontOTPRequestSerializer(serializers.Serializer):
@@ -151,10 +173,13 @@ class StorefrontOTPVerifyView(StorePublicMixin, APIView):
             )
 
         with TenantDatabaseContext(self.store.id), transaction.atomic():
-            user, _ = User.objects.get_or_create(
+            user, created = User.objects.get_or_create(
                 email=email,
                 defaults={"full_name": ""}
             )
+            if created:
+                user.set_unusable_password()
+                user.save()
             login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
             # Link customer for the current store ONLY:
@@ -170,11 +195,89 @@ class StorefrontOTPVerifyView(StorePublicMixin, APIView):
                     "full_name": user.full_name,
                     "phone": user.phone,
                 },
-                "customer": {
-                    "full_name": customer.full_name,
-                    "phone": customer.phone,
-                    "email": customer.email,
+                "customer": _serialize_safe_customer_for_user(customer, user),
+            },
+            status=status.HTTP_200_OK,
+        )
+
+
+class StorefrontGoogleAuthSerializer(serializers.Serializer):
+    credential = serializers.CharField(max_length=8192)
+
+
+class StorefrontGoogleAuthView(StorePublicMixin, APIView):
+    """
+    Store-scoped Google Sign-In endpoint (POST /api/stores/<slug>/account/google/).
+    Verifies the Google ID token server-side (signature, issuer, audience == GOOGLE_CLIENT_ID,
+    expiry, email_verified is True), takes email/name strictly from the verified token,
+    creates/reuses the single normalized Django User, logs in the session, and links
+    the store Customer ONLY when customer.user is null or already this user.
+    Never links across stores and never grants merchant access.
+    """
+    permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "auth_google"
+
+    def post(self, request, store_slug):
+        if not get_configured_google_client_id():
+            return Response(
+                {"error": "Google sign-in is unavailable."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        client_ip = get_client_ip(request)
+        if not check_google_ip_rate_limit(client_ip):
+            return Response(
+                {"error": "Too many sign-in attempts. Please try again shortly."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
+        serializer = StorefrontGoogleAuthSerializer(data=request.data)
+        if not serializer.is_valid():
+            return Response(
+                {"error": GENERIC_GOOGLE_AUTH_ERROR},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            verified = verify_google_id_token(
+                serializer.validated_data["credential"],
+                store_id=self.store.id,
+            )
+        except GoogleTokenVerificationError:
+            return Response(
+                {"error": GENERIC_GOOGLE_AUTH_ERROR},
+                status=status.HTTP_401_UNAUTHORIZED,
+            )
+
+        email = verified["email"]
+        full_name = verified["full_name"]
+
+        with TenantDatabaseContext(self.store.id), transaction.atomic():
+            user, created = User.objects.get_or_create(
+                email=email,
+                defaults={"full_name": full_name},
+            )
+            if created:
+                user.set_unusable_password()
+                user.save()
+            elif not user.full_name and full_name:
+                user.full_name = full_name
+                user.save(update_fields=["full_name"])
+
+            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+            customer = provision_store_customer(self.store, user, full_name=full_name)
+
+        return Response(
+            {
+                "ok": True,
+                "user": {
+                    "id": user.id,
+                    "email": user.email,
+                    "full_name": user.full_name,
+                    "phone": user.phone,
                 },
+                "customer": _serialize_safe_customer_for_user(customer, user),
             },
             status=status.HTTP_200_OK,
         )
@@ -211,13 +314,33 @@ class StorefrontAccountDetailView(StorePublicMixin, APIView):
             if not customer:
                 customer = provision_store_customer(self.store, request.user)
 
-            orders_qs = Order.objects.for_store(self.store).filter(customer=customer)
-            orders_count = orders_qs.count()
-            total_spent = (
-                orders_qs.filter(payment_status="PAID")
-                .aggregate(total=models.Sum("total_minor"))["total"]
-                or 0
-            )
+            if customer.user_id != request.user.id:
+                orders_count = 0
+                total_spent = 0
+                cust_payload = {
+                    "id": None,
+                    "email": request.user.email,
+                    "full_name": request.user.full_name,
+                    "phone": request.user.phone,
+                    "orders_count": 0,
+                    "total_spent_minor": 0,
+                }
+            else:
+                orders_qs = Order.objects.for_store(self.store).filter(customer=customer)
+                orders_count = orders_qs.count()
+                total_spent = (
+                    orders_qs.filter(payment_status="PAID")
+                    .aggregate(total=models.Sum("total_minor"))["total"]
+                    or 0
+                )
+                cust_payload = {
+                    "id": customer.id,
+                    "email": customer.email,
+                    "full_name": customer.full_name,
+                    "phone": customer.phone,
+                    "orders_count": orders_count,
+                    "total_spent_minor": total_spent,
+                }
 
         return Response(
             {
@@ -227,14 +350,7 @@ class StorefrontAccountDetailView(StorePublicMixin, APIView):
                     "full_name": request.user.full_name,
                     "phone": request.user.phone,
                 },
-                "customer": {
-                    "id": customer.id,
-                    "email": customer.email,
-                    "full_name": customer.full_name,
-                    "phone": customer.phone,
-                    "orders_count": orders_count,
-                    "total_spent_minor": total_spent,
-                },
+                "customer": cust_payload,
             },
             status=status.HTTP_200_OK,
         )
@@ -250,6 +366,12 @@ class StorefrontAccountDetailView(StorePublicMixin, APIView):
             customer = Customer.objects.for_store(self.store).filter(user=request.user).first()
             if not customer:
                 customer = provision_store_customer(self.store, request.user)
+
+            if customer.user_id != request.user.id:
+                return Response(
+                    {"error": "Unable to update customer profile for this store."},
+                    status=status.HTTP_409_CONFLICT,
+                )
 
             update_fields = []
             if full_name is not None:

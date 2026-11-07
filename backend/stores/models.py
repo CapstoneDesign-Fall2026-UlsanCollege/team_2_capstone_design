@@ -175,7 +175,8 @@ def provision_store_customer(store: Store, user, full_name: str = "", phone: str
                 customer.user = user
                 update_fields.append("user")
             elif customer.user != user:
-                # Security rule: Never overwrite another user's customer record!
+                # Security rule: Never overwrite or mutate another user's customer record!
+                return customer
                 pass
             if full_name and not customer.full_name:
                 customer.full_name = full_name

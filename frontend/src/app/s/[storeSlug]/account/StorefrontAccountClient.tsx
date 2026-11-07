@@ -32,8 +32,10 @@ import {
   StorefrontOrderSummary,
   StorePublicMetadata,
   updateStorefrontAccount,
+  verifyStorefrontGoogleAuth,
 } from "@/lib/api";
-import { useStorefrontAuth } from "@/lib/auth";
+import { emitAuthChange, useStorefrontAuth } from "@/lib/auth";
+import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAccount } from "@/components/storefront/AccountContext";
 import { Chip, ChipTone } from "@/components/ui/chip";
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader";
@@ -160,6 +162,8 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
 
   // Unauthenticated input
   const [guestEmailInput, setGuestEmailInput] = useState<string>("");
+  const [googleAuthError, setGoogleAuthError] = useState<string | null>(null);
+  const [googleAuthLoading, setGoogleAuthLoading] = useState<boolean>(false);
 
   // Sync profile fields from customer (adjust state during render, not in an effect)
   const [syncedCustomer, setSyncedCustomer] = useState(customer);
@@ -421,6 +425,37 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
                 </button>
               </div>
             </form>
+
+            {googleAuthError && (
+              <div className="p-3 rounded-lg border border-[var(--status-error-border)] bg-[var(--status-error-bg)] text-[var(--status-error-fg)] text-xs flex items-start gap-2 text-left">
+                <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" />
+                <span>{googleAuthError}</span>
+              </div>
+            )}
+
+            <GoogleSignInButton
+              enabled={!authLoading && !isAuthenticated}
+              surface="storefront"
+              disabled={googleAuthLoading}
+              onCredential={async (credential) => {
+                setGoogleAuthLoading(true);
+                setGoogleAuthError(null);
+                try {
+                  await verifyStorefrontGoogleAuth(store.slug, credential);
+                  emitAuthChange();
+                  await refresh();
+                } catch (err: unknown) {
+                  setGoogleAuthError(
+                    err instanceof Error
+                      ? err.message
+                      : "Unable to sign in with Google. Please try again or use email code."
+                  );
+                } finally {
+                  setGoogleAuthLoading(false);
+                }
+              }}
+              onError={(msg) => setGoogleAuthError(msg)}
+            />
 
             <div className="pt-4 border-t border-[var(--border)] flex items-center justify-center gap-2 text-xs text-[var(--ink-2)]">
               <ShieldCheck className="w-4 h-4 text-[var(--status-success-fg)] shrink-0" />
