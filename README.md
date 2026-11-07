@@ -137,6 +137,43 @@ npm run dev
 
 ---
 
+## 🚢 Production Deployment & Email Transport Configuration
+
+For the complete production runbook (**Vercel** `shop.<domain>` + **Heroku Basic** `api.<domain>` + **Neon Postgres** `FORCE ROW LEVEL SECURITY`, DNS records, iPhone Safari smoke tests, and rollback procedures), see [**PRODUCTION_SETUP.md**](PRODUCTION_SETUP.md).
+
+### Transactional Email OTP (`EMAIL_TRANSPORT`)
+
+ShopCraft dispatches store-branded 6-digit OTP emails asynchronously after `transaction.on_commit` via either **Resend HTTP API** (`resend_api`, default) or Django's standard **SMTP** backend (`smtp`):
+
+#### Option A: Resend HTTP API (Default)
+```env
+EMAIL_TRANSPORT=resend_api
+DEFAULT_FROM_EMAIL=auth@send.<domain>
+RESEND_API_KEY=<your-resend-api-key>
+RESEND_TIMEOUT=4.5
+```
+
+#### Option B: Alternate SMTP Relay (e.g., Brevo SMTP)
+No provider-specific code changes are needed—set `EMAIL_TRANSPORT=smtp` with standard Django SMTP variables:
+```env
+EMAIL_TRANSPORT=smtp
+DEFAULT_FROM_EMAIL=auth@send.<domain>
+EMAIL_HOST=smtp-relay.brevo.com
+EMAIL_PORT=587
+EMAIL_USE_TLS=True
+EMAIL_USE_SSL=False
+EMAIL_HOST_USER=<brevo-smtp-login>
+EMAIL_HOST_PASSWORD=<brevo-smtp-key>
+EMAIL_TIMEOUT=10
+```
+
+Verify live delivery synchronously at any time with:
+```bash
+python manage.py send_test_email <recipient-address>
+```
+
+---
+
 ## 🧪 Verification & Repeatable Smoke Tests
 
 Any evaluator or teammate can independently verify the core system by executing the following commands:
