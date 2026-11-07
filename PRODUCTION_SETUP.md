@@ -9,17 +9,17 @@ Target production topology:
 
 ---
 
-## 1. Region Co-Location Requirement
+## 1. Cloud Region Topology
 
-Provision **all three compute/data tiers in the same cloud region** so SSR fetches, API calls, and RLS transaction blocks avoid cross-region round-trip latency:
+Provision **all three compute and data tiers in the same cloud region** to eliminate cross-region network latency on SSR fetches, API calls, and pooled database transactions:
 
-| Service | Recommended Region (US East) | Recommended Region (Asia-Pacific Alt) |
+| Service | Validated Region (US East - Default) | Notes |
 |---|---|---|
-| **Neon Postgres Project** | `aws-us-east-1` (N. Virginia) | `aws-ap-southeast-1` (Singapore) |
-| **Heroku App** | `us` (Virginia) | `us` (Heroku Common Runtime nearest) |
-| **Vercel Functions (`iad1` / Project Function Region)** | `iad1` (Washington, D.C.) | Match Neon/Heroku region |
+| **Neon Postgres Project** | `aws-us-east-1` (N. Virginia) | Serverless Postgres compute + pooled endpoint |
+| **Heroku App** | `us` (Virginia) | Heroku Common Runtime US |
+| **Vercel Functions** | `iad1` (Washington, D.C.) | Set in Vercel Project Settings → Functions → Function Region |
 
-> Keep Heroku and Neon in the **exact same AWS region** (`us` ↔ `aws-us-east-1`) because every tenant API request executes `SET LOCAL` + SQL queries inside an atomic transaction block.
+> **Why Europe is omitted**: Heroku Common Runtime `eu` is located strictly in Dublin, Ireland (`eu-west-1`), whereas Neon's European regions are in Frankfurt (`aws-eu-central-1`) and London (`aws-eu-west-2`). Neon has no Dublin region. Cross-region network routing between Heroku (Dublin) and Neon (Frankfurt/London) introduces latency on every atomic `SET LOCAL` round-trip. Therefore, the single validated production pairing is **US East** (`us` ↔ `aws-us-east-1` ↔ `iad1`).
 
 ---
 
@@ -37,7 +37,7 @@ Never commit secret values, API keys, OTPs, tokens, real email addresses, or con
 | `DJANGO_ALLOWED_HOSTS` | Yes | Comma-separated host allowlist (e.g., `api.<domain>`) |
 | `DATABASE_URL` | Yes | Neon **POOLED** (`-pooler`) connection string using `NOSUPERUSER NOBYPASSRLS` runtime role |
 | `DATABASE_URL_DIRECT` | Yes | Neon **DIRECT** (unpooled) connection string used **only** by `Procfile` `release` phase for `migrate` |
-| `DB_CONN_MAX_AGE` | Optional | Persistent DB connection lifetime in seconds (default `60`; set `0` if your pooler mode requires transaction-level release) |
+| `DB_CONN_MAX_AGE` | Optional | Persistent DB connection lifetime in seconds (default `60`) |
 | `SESSION_COOKIE_DOMAIN` | Yes | Shared parent domain with leading dot: `.<domain>` |
 | `CSRF_COOKIE_DOMAIN` | Yes | Shared parent domain with leading dot: `.<domain>` |
 | `SESSION_COOKIE_SAMESITE` | Optional | Defaults to `Lax` |
@@ -72,89 +72,201 @@ Never commit secret values, API keys, OTPs, tokens, real email addresses, or con
 
 ### 2.2 Vercel (`shop.<domain>`)
 
+All frontend variables must be scoped to **Production only**:
+
 | Variable Name | Scope | Required | Purpose |
 |---|---|---|---|
-| `NEXT_PUBLIC_API_BASE_URL` | Production / Preview | Yes | Browser API origin: `https://api.<domain>` (no trailing slash) |
-| `DJANGO_API_ORIGIN` | Production / Preview | Yes | Server-side SSR/ISR fetch origin: `https://api.<domain>` |
-| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Production / Preview | Yes | Same Google OAuth 2.0 Web Client ID as Heroku `GOOGLE_CLIENT_ID` |
+| `NEXT_PUBLIC_API_BASE_URL` | Production | Yes | Browser API origin: `https://api.<domain>` (no trailing slash) |
+| `DJANGO_API_ORIGIN` | Production | Yes | Server-side SSR/ISR fetch origin: `https://api.<domain>` |
+| `NEXT_PUBLIC_GOOGLE_CLIENT_ID` | Production | Yes | Same Google OAuth 2.0 Web Client ID as Heroku `GOOGLE_CLIENT_ID` |
+
+> **Preview branches notice**: Vercel preview branch deployments (`*.vercel.app`) cannot log in because session cookies (`SESSION_COOKIE_DOMAIN`) and CORS/CSRF headers are strictly bound to `.<domain>` and `https://shop.<domain>`. Previews are used for visual UI inspection; full authentication and checkout workflows run on production `shop.<domain>`.
 
 ---
 
 ## 3. DNS Records to Create
 
-Create the following records at your DNS provider for `<domain>` (values shown are record types/targets only — copy exact provider targets from Heroku, Vercel, and Resend dashboards):
+Create the following records at your DNS provider for `<domain>`:
 
 | Purpose | Host / Name | Type | Target / Value Pattern |
 |---|---|---|---|
 | **Backend API (Heroku)** | `api.<domain>` | `CNAME` | `<heroku-generated-dns-target>.herokudns.com` |
 | **Frontend App (Vercel)** | `shop.<domain>` | `CNAME` | `cname.vercel-dns.com` |
-| **Resend Bounce / Feedback MX** | `send.<domain>` | `MX` | Resend regional feedback MX host (priority `10`, from Resend Domain dashboard) |
-| **Resend SPF** | `send.<domain>` | `TXT` | `v=spf1 include:amazonses.com ~all` (exact string shown in Resend Domain dashboard) |
+| **Resend Bounce / Feedback MX** | `send.<domain>` | `MX` | Resend regional feedback MX host (priority `10`) |
+| **Resend SPF** | `send.<domain>` | `TXT` | `v=spf1 include:amazonses.com ~all` |
 | **Resend DKIM** | `resend._domainkey.<domain>` | `TXT` | Resend-generated DKIM public key (`p=...`) |
-| **DMARC Policy (Initial)** | `_dmarc.<domain>` | `TXT` | `v=DMARC1; p=none; rua=mailto:dmarc@<domain>; adkim=r; aspf=r;` |
+| **DMARC Policy (Initial)** | `_dmarc.<domain>` | `TXT` | `v=DMARC1; p=none;` |
 
-> Start DMARC with `p=none` while monitoring aggregate reports (`rua`), then tighten to `p=quarantine` / `p=reject` once SPF and DKIM alignment is confirmed.
+> The initial DMARC record uses `v=DMARC1; p=none;` without a `rua` mailbox until a dedicated DMARC monitoring mailbox is established.
 
 ---
 
 ## 4. Ordered Deployment Runbook
 
-### Step 1: Prepare Neon Postgres Roles & Connection URLs
-1. Create your production Neon project in the same region as Heroku (`aws-us-east-1`). **Do NOT attach the Heroku Postgres add-on.**
-2. Create two roles on the production database:
-   - **Migration owner role** (used in `DATABASE_URL_DIRECT` via Neon's unpooled endpoint) with schema DDL privileges.
-   - **Runtime application role** (used in `DATABASE_URL` via Neon's `-pooler` endpoint) explicitly configured with `NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS` and `SELECT, INSERT, UPDATE, DELETE` table privileges + sequence `USAGE, SELECT` privileges (`ALTER DEFAULT PRIVILEGES` for tables created by the migration owner).
-3. Verify that `DATABASE_URL` uses the `-pooler` hostname with `?sslmode=require` and `DATABASE_URL_DIRECT` uses the direct (non-pooler) hostname with `?sslmode=require`.
+### Step 1: Create Neon Roles via SQL (NOT the Neon Web Console)
 
-### Step 2: Verify Sending Subdomain in Resend
+> **CRITICAL**: Do **NOT** create the runtime application role using the Neon web console. Roles created in the Neon web console inherit from `neon_superuser`, which possesses the `BYPASSRLS` attribute, completely defeating Row-Level Security. You must create the runtime role via raw SQL executed through Neon's direct connection as the database owner (`<owner_role>`).
+
+1. Connect to your production Neon database via `psql` using the **DIRECT** connection string as `<owner_role>` (e.g. `neondb_owner`):
+   ```bash
+   psql "postgresql://<owner_role>:<owner-password>@ep-<endpoint>.us-east-1.aws.neon.tech/<dbname>?sslmode=require"
+   ```
+2. Execute the role setup script located at `backend/scripts/neon_roles.sql`:
+   ```sql
+   -- 1. Create runtime role with NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS
+   -- Executed by: <owner_role> (or superuser)
+   CREATE ROLE <runtime_role> LOGIN PASSWORD '<runtime-password>' NOSUPERUSER NOCREATEDB NOCREATEROLE NOBYPASSRLS;
+
+   -- 2. Grant schema usage
+   -- Executed by: <owner_role> (or superuser)
+   GRANT USAGE ON SCHEMA public TO <runtime_role>;
+
+   -- 3. Grant DML privileges on existing tables and sequences
+   -- Executed by: <owner_role> (or superuser)
+   GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO <runtime_role>;
+   GRANT USAGE, SELECT ON ALL SEQUENCES IN SCHEMA public TO <runtime_role>;
+
+   -- 4. Alter default privileges so future tables created by migrations are accessible
+   -- Executed by: <owner_role>
+   ALTER DEFAULT PRIVILEGES FOR ROLE <owner_role> IN SCHEMA public GRANT SELECT, INSERT, UPDATE, DELETE ON TABLES TO <runtime_role>;
+   ALTER DEFAULT PRIVILEGES FOR ROLE <owner_role> IN SCHEMA public GRANT USAGE, SELECT ON SEQUENCES TO <runtime_role>;
+   ```
+3. Prepare the two connection strings:
+   - `DATABASE_URL_DIRECT`: Direct unpooled endpoint connecting as `<owner_role>`.
+   - `DATABASE_URL`: Connection pooler endpoint (`-pooler`) connecting as `<runtime_role>`.
+
+### Step 2: Back Up Encryption Key in Password Manager
+
+Generate the Fernet encryption key and immediately store it in your team password manager (e.g. 1Password / Bitwarden):
+```bash
+python -c "from cryptography.fernet import Fernet; print(Fernet.generate_key().decode())"
+```
+> **CAUTION**: If `FIELD_ENCRYPTION_KEY` is lost, all encrypted credentials stored on the `Store` model (such as Khalti keys) become permanently unrecoverable.
+
+### Step 3: Verify Sending Subdomain in Resend
+
 1. Add `send.<domain>` in Resend → **Domains**.
 2. Publish the `MX`, `TXT` (`send.<domain>`), `TXT` (`resend._domainkey.<domain>`), and `_dmarc.<domain>` DNS records from Section 3.
 3. Wait until Resend marks `send.<domain>` **Verified**, then create a sending-restricted API key for `RESEND_API_KEY` and set `DEFAULT_FROM_EMAIL=auth@send.<domain>`.
 
-### Step 3: Configure Google Cloud OAuth 2.0 Web Client
-1. In Google Cloud Console → **APIs & Services → OAuth consent screen**, configure your external consent screen and brand details.
+### Step 4: Configure Google Cloud OAuth 2.0 Web Client
+
+1. In Google Cloud Console → **APIs & Services → OAuth consent screen**:
+   - Configure external user type and brand information.
+   - **Publishing status**: Set publishing status to **In production**. (*If left in "Testing" mode, only explicitly whitelisted test accounts can sign in, causing generic authentication failures for all other users*).
 2. Under **Credentials → Create Credentials → OAuth client ID (Web application)**:
    - **Authorized JavaScript origins**: `https://shop.<domain>`
-   - **Authorized redirect URIs**: Leave empty unless needed later (Google Identity Services popup/button verify flow posts the ID token directly to `/api/stores/<slug>/account/google/` and `/api/auth/google/`).
-3. Copy the Client ID into both Heroku `GOOGLE_CLIENT_ID` and Vercel `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
+   - **Authorized redirect URIs**: Leave empty (GIS popup/button verifies ID tokens server-side via REST API).
+3. Copy the Client ID into Heroku `GOOGLE_CLIENT_ID` and Vercel `NEXT_PUBLIC_GOOGLE_CLIENT_ID`.
 
-### Step 4: Provision & Deploy Backend on Heroku Basic
-1. Create the Heroku app (Basic dyno) **without** adding Heroku Postgres:
+### Step 5: Provision Backend on Heroku Basic & First Migration
+
+1. Create the Heroku app (Basic dyno) **without** Heroku Postgres:
    ```bash
    heroku create <app-name> --region us
    heroku stack:set heroku-24 -a <app-name>
+   heroku git:remote -a <app-name>
    heroku domains:add api.<domain> -a <app-name>
    heroku certs:auto:enable -a <app-name>
    ```
 2. Point your DNS `CNAME` for `api.<domain>` to the target output by `heroku domains -a <app-name>`.
-3. Set all required Heroku config vars from Section 2.1 (`heroku config:set ... -a <app-name>`). Keep `KHALTI_LIVE_ENABLED=False` until live Khalti credentials are approved.
-4. Push the `backend/` subdirectory to Heroku so `Procfile`, `runtime.txt`, `requirements.txt`, and `manage.py` sit at the slug root:
-   ```bash
-   git subtree push --prefix backend heroku prod/hardening-launch:main
-   ```
-   During release, Heroku automatically executes:
+3. Set all required Heroku config vars from Section 2.1 (`heroku config:set ... -a <app-name>`).
+4. Push backend to Heroku:
+   - If deploying from `prod/hardening-launch`:
+     ```bash
+     git subtree push --prefix backend heroku prod/hardening-launch:main
+     ```
+   - After merging to `main`:
+     ```bash
+     git subtree push --prefix backend heroku main:main
+     ```
+   During the release phase, Heroku executes:
    `release: DATABASE_URL=$DATABASE_URL_DIRECT python manage.py migrate --noinput`
-   which applies all migrations (including `0008_force_rls_policies` `ENABLE` + `FORCE ROW LEVEL SECURITY` and Section 4 composite indexes) over the direct Neon connection.
-5. Verify health and real email transport:
+
+### Step 6: Verify Database After First Migrate
+
+Connect via `psql` through the **POOLED** connection URL (`DATABASE_URL`) as the `<runtime_role>` to verify:
+
+1. **Verify Role Attributes**:
+   ```sql
+   SELECT rolname, rolsuper, rolbypassrls FROM pg_roles WHERE rolname = current_user;
+   ```
+   **Expected output**:
+   ```
+        rolname     | rolsuper | rolbypassrls 
+   -----------------+----------+--------------
+    <runtime_role>  | f        | f
+   ```
+   Both `rolsuper` and `rolbypassrls` **must be `f`** (false).
+
+2. **Verify FORCE ROW LEVEL SECURITY on all Tenant Tables**:
+   ```sql
+   SELECT relname, relrowsecurity, relforcerowsecurity
+   FROM pg_class
+   WHERE relkind = 'r' AND relnamespace = 'public'::regnamespace
+     AND relname IN (
+       'stores_storemembership',
+       'stores_customer',
+       'stores_merchantauditlog',
+       'catalog_product',
+       'catalog_variant',
+       'catalog_discount',
+       'orders_order',
+       'orders_orderitem',
+       'orders_orderevent'
+     )
+   ORDER BY relname;
+   ```
+   **Expected output**: Every tenant table must show `t | t`:
+   ```
+            relname          | relrowsecurity | relforcerowsecurity 
+   --------------------------+----------------+---------------------
+    catalog_discount         | t              | t
+    catalog_product          | t              | t
+    catalog_variant          | t              | t
+    orders_order             | t              | t
+    orders_orderevent        | t              | t
+    orders_orderitem         | t              | t
+    stores_customer          | t              | t
+    stores_merchantauditlog  | t              | t
+    stores_storemembership   | t              | t
+   (9 rows)
+   ```
+   > **Note on Tenant Tables**: There are **exactly 9 tenant tables** referencing `stores_store(id)`. The table `stores_storepaymentgateway` does not exist because payment gateway configurations (including Khalti API keys) are encrypted directly on the `Store` model. Furthermore, all data migrations in the codebase run safely under `TenantDatabaseContext` or `BypassRLSContext`.
+
+3. **Verify Two-Store RLS Isolation via Pooled Connection**:
+   Execute within an explicit transaction block:
+   ```sql
+   BEGIN;
+   SELECT set_config('app.current_store_id', '1', true);
+   SELECT count(*) FROM catalog_product; -- Sees only Store 1 products
+   SELECT set_config('app.current_store_id', '2', true);
+   SELECT count(*) FROM catalog_product; -- Sees only Store 2 products
+   COMMIT;
+   ```
+
+4. **Verify Health Check & Email Transport**:
    ```bash
    curl -i https://api.<domain>/api/health/
    heroku run python manage.py send_test_email <your-inbox-address> -a <app-name>
    ```
 
-### Step 5: Deploy Frontend on Vercel
-1. Import the repository into Vercel with **Root Directory** set to `frontend`.
-2. Set `NEXT_PUBLIC_API_BASE_URL`, `DJANGO_API_ORIGIN`, and `NEXT_PUBLIC_GOOGLE_CLIENT_ID` from Section 2.2.
-3. Attach custom domain `shop.<domain>` in Vercel → **Domains** and configure the `CNAME` record from Section 3.
-4. Trigger a production deployment.
+### Step 7: Deploy Frontend on Vercel
 
-### Step 6: Verify Client-IP Rate-Limit Resolution (Two-Device Check)
+1. Import the repository into Vercel with **Root Directory** set to `frontend`.
+2. Set `NEXT_PUBLIC_API_BASE_URL`, `DJANGO_API_ORIGIN`, and `NEXT_PUBLIC_GOOGLE_CLIENT_ID` scoped to **Production** only.
+3. Attach custom domain `shop.<domain>` in Vercel → **Domains** and configure the `CNAME` record from Section 3.
+4. Trigger production deployment.
+
+### Step 8: Verify Client-IP Rate-Limit Resolution (Two-Device Check)
+
 1. Temporarily enable salted IP hash logging on Heroku:
    ```bash
    heroku config:set LOG_HASHED_CLIENT_IP=True -a <app-name>
    ```
-2. Load `https://shop.<domain>` from **Device A** (e.g., Wi-Fi) and **Device B** (e.g., cellular LTE/5G) and watch `heroku logs --tail -a <app-name>`.
+2. Load `https://shop.<domain>` from **Device A** (Wi-Fi) and **Device B** (cellular LTE/5G) and watch `heroku logs --tail -a <app-name>`.
 3. Confirm the two requests log **different** 12-char `client_ip_hash=` values (proving `HTTP_X_FORWARDED_FOR` rightmost router IP resolution is distinguishing clients).
-4. Immediately turn the flag back off:
+4. Turn the flag back off:
    ```bash
    heroku config:set LOG_HASHED_CLIENT_IP=False -a <app-name>
    ```
@@ -163,32 +275,39 @@ Create the following records at your DNS provider for `<domain>` (values shown a
 
 ## 5. Post-Deploy Smoke-Test Checklist (iPhone Safari)
 
-Run all checks in **iPhone Safari** (non-private and private tabs) over cellular/Wi-Fi against `https://shop.<domain>` to validate Apple ITP, `SameSite=Lax` parent-domain cookies (`.<domain>`), and mobile ergonomics:
+Run all checks in **iPhone Safari** (both regular and private tabs) over cellular / Wi-Fi against `https://shop.<domain>`:
 
-- [ ] **1. Guest Checkout (Default Path)**: Open `/s/<store-slug>`, add an item to the bag, open checkout without signing in, enter a valid Nepali province/district/10-digit mobile number, and confirm quote calculation succeeds without account prompts blocking checkout.
-- [ ] **2. Email OTP Sign-In & Refresh Persistence**: Open the Account sheet, request a 6-digit OTP, confirm the email arrives from `<Store Name> <auth@send.<domain>>` with no OTP leaked in browser network responses, verify the 6-digit code, **perform a full Safari page reload**, and confirm you remain signed in (`sessionid` cookie persisted on `.<domain>`).
-- [ ] **3. Google Sign-In**: Sign out, reopen the Account sheet, tap **Continue with Google** (confirm GIS script loads lazily on sheet open), complete Google sign-in, and verify customer session creation. Also test `/login` with a non-merchant Google account and verify `/merchant` grants **zero** store access.
-- [ ] **4. Logout**: Trigger Sign Out from the storefront Account sheet / `/s/<store-slug>/account`, refresh the page, and confirm `/s/<store-slug>/account` no longer shows authenticated profile/order history.
-- [ ] **5. Cash on Delivery (COD) Order**: Place a COD order, confirm redirection to the UUID-token order tracking page (`/s/<store-slug>/orders/<token>`), and verify the order appears in the merchant fulfillment queue (`/merchant/<store-slug>/orders`).
-- [ ] **6. Khalti Sandbox Order**: Place an order selecting **Khalti**, complete payment on Khalti Sandbox (`test-pay.khalti.com`), verify callback lookup transitions the order to `PAID`, and confirm status updates on the order tracking page.
+- [ ] **0. Merchant Signup & Shop Creation**:
+  - Visit `https://shop.<domain>/merchant` with a new email.
+  - Sign in via Email OTP (and separately via Google Sign-In) with an account having no existing store.
+  - Tap **Create your shop →** (or visit `/merchant/new`).
+  - Enter shop name and custom slug (validated for length 3-60, valid characters, and reserved system routes).
+  - Submit creation. Confirm the shop is created, the user is assigned the `OWNER` role, and the merchant dashboard opens.
+  - Verify strict cross-store isolation: attempt to navigate to any other store's merchant endpoints and confirm immediate 404 / access denial.
+  - Verify that attempting to create more than 3 stores is rejected by the per-user ownership cap.
+- [ ] **1. Guest Checkout (Default Path)**: Open `/s/<store-slug>`, add an item to the bag, open checkout without signing in, enter Nepali province/district/10-digit mobile number, and confirm quote calculation succeeds without account prompts blocking checkout.
+- [ ] **2. Email OTP Sign-In & Refresh Persistence**: Open Account sheet, request a 6-digit OTP, confirm email arrives from `<Store Name> <auth@send.<domain>>` with zero code in responses, verify the 6-digit code, **perform a full Safari page reload**, and confirm you remain signed in (`sessionid` cookie persisted on `.<domain>`).
+- [ ] **3. Google Sign-In**: Sign out, reopen Account sheet, tap **Continue with Google** (confirm GIS script loads lazily on sheet open), complete sign-in, and verify customer session creation. Also test `/login` with a non-merchant Google account and verify `/merchant` grants **zero** store access.
+- [ ] **4. Logout**: Trigger Sign Out from the storefront Account sheet / `/s/<store-slug>/account`, refresh, and confirm profile/orders are cleared.
+- [ ] **5. Cash on Delivery (COD) Order**: Place a COD order, confirm redirection to the UUID-token tracking page (`/s/<store-slug>/orders/<token>`), and verify order appears in merchant fulfillment queue (`/merchant/<store-slug>/orders`).
+- [ ] **6. Khalti Sandbox Order**: Place an order selecting **Khalti**, complete payment on Khalti Sandbox (`test-pay.khalti.com`), verify callback transitions the order to `PAID`, and confirm status updates on the tracking page.
 
 ---
 
 ## 6. Rollback Plan
 
 ### 6.1 Backend Rollback (Heroku)
-- Inspect recent releases and roll back immediately to the last known-good slug + config:
-  ```bash
-  heroku releases -a <app-name>
-  heroku releases:rollback v<PREVIOUS_VERSION> -a <app-name>
-  ```
+```bash
+heroku releases -a <app-name>
+heroku releases:rollback v<PREVIOUS_VERSION> -a <app-name>
+```
 
 ### 6.2 Frontend Rollback (Vercel)
-- In Vercel Dashboard → **Deployments**, click **⋯ → Instant Rollback** on the previous production deployment (or run `vercel rollback` via CLI). Static/ISR assets and serverless bundles switch atomically within seconds.
+In Vercel Dashboard → **Deployments**, click **⋯ → Instant Rollback** on the previous production deployment (or run `vercel rollback`).
 
 ### 6.3 Database Migration Caution (`DATABASE_URL_DIRECT`)
-- **Critical**: `heroku releases:rollback` rolls back application code and config vars, **NOT** PostgreSQL schema changes applied during the `release` phase.
-- Always author **additive / expand-contract migrations** (nullable columns, new indexes, non-destructive RLS policy updates) so version `N-1` code continues running safely against version `N` schema during a rollback.
+- `heroku releases:rollback` rolls back application code and config vars, **NOT** PostgreSQL schema changes applied during the release phase.
+- Always author additive / expand-contract migrations so version `N-1` code continues running safely against version `N` schema.
 - If a schema migration itself must be reversed, run the explicit reverse migration over the **direct** Neon connection *before* rolling back the Heroku release:
   ```bash
   heroku run "DATABASE_URL=\$DATABASE_URL_DIRECT python manage.py migrate <app_label> <previous_migration_name>" -a <app-name>
