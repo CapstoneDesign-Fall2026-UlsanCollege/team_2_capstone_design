@@ -4,6 +4,7 @@ on:
   push:
     branches:
       - "saas/**"
+      - "prod/**"
       - "main"
   pull_request:
     branches:
@@ -11,13 +12,13 @@ on:
 
 jobs:
   backend:
-    name: Backend (Django)
+    name: Backend (Django + Postgres FORCE RLS)
     runs-on: ubuntu-latest
     services:
       postgres:
         image: postgres:16-alpine
         env:
-          POSTGRES_DB: shopcraft_test
+          POSTGRES_DB: shopcraft_ci
           POSTGRES_USER: postgres
           POSTGRES_PASSWORD: postgres
         ports:
@@ -29,15 +30,32 @@ jobs:
           --health-retries 5
 
     env:
-      DJANGO_DEBUG: "True"
-      DJANGO_SECRET_KEY: "ci-insecure-test-secret-key"
-      FIELD_ENCRYPTION_KEY: "MDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDAwMDA="
-      SHOPCRAFT_DATABASE_URL: "postgresql://postgres:postgres@localhost:5432/shopcraft_test"
-      SHOPCRAFT_ALLOW_DATABASE_URL: "1"
+      CI: "true"
+      DJANGO_DEBUG: "False"
+      DJANGO_SECRET_KEY: "ci-ephemeral-strong-secret-key-for-testing-only-0123456789"
+      FIELD_ENCRYPTION_KEY: "MTIzNDU2Nzg5MDEyMzQ1Njc4OTAxMjM0NTY3ODkwMTI="
+      DJANGO_ALLOWED_HOSTS: "localhost,127.0.0.1,testserver"
+      EMAIL_TRANSPORT: "smtp"
+      EMAIL_HOST: "localhost"
+      EMAIL_PORT: "2525"
+      DEFAULT_FROM_EMAIL: "auth@send.example.com"
+      DATABASE_URL: "postgresql://shopcraft_test:shopcraft_test_pw@localhost:5432/shopcraft_ci"
+      DATABASE_URL_DIRECT: "postgresql://shopcraft_test:shopcraft_test_pw@localhost:5432/shopcraft_ci"
+      TEST_DATABASE_URL: "postgresql://shopcraft_test:shopcraft_test_pw@localhost:5432/shopcraft_ci"
 
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
+
+      - name: Provision Non-Superuser NOBYPASSRLS Postgres Test Role
+        run: |
+          PGPASSWORD=postgres psql -h localhost -U postgres -d shopcraft_ci <<'SQL'
+          CREATE ROLE shopcraft_app WITH LOGIN NOSUPERUSER NOBYPASSRLS;
+          CREATE ROLE shopcraft_test WITH LOGIN PASSWORD 'shopcraft_test_pw' NOSUPERUSER NOBYPASSRLS CREATEDB CREATEROLE;
+          GRANT shopcraft_app TO shopcraft_test WITH ADMIN OPTION;
+          GRANT ALL PRIVILEGES ON DATABASE shopcraft_ci TO shopcraft_test;
+          GRANT ALL ON SCHEMA public TO shopcraft_test;
+          SQL
 
       - name: Set up Python 3.13
         uses: actions/setup-python@v5
@@ -59,20 +77,25 @@ jobs:
         run: |
           python backend/manage.py makemigrations --check --dry-run
 
+      - name: Collect Static Files (WhiteNoise Manifest)
+        run: |
+          python backend/manage.py collectstatic --noinput
+
       - name: Run Migrations
         run: |
           python backend/manage.py migrate --noinput
 
-      - name: Run Tests
+      - name: Run Full PostgreSQL RLS Test Suite (NOSUPERUSER NOBYPASSRLS)
         run: |
-          python backend/manage.py test --verbosity 2
+          python backend/manage.py test accounts stores catalog orders --verbosity 2
 
   frontend:
     name: Frontend (Next.js)
     runs-on: ubuntu-latest
 
     env:
-      DJANGO_API_ORIGIN: "http://127.0.0.1:8000"
+      DJANGO_API_ORIGIN: "https://api.example.com"
+      NEXT_PUBLIC_API_BASE_URL: "https://api.example.com"
 
     steps:
       - name: Checkout code

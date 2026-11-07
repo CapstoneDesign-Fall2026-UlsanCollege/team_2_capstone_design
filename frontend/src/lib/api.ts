@@ -1,3 +1,5 @@
+import { resolveApiUrl } from "@/lib/env";
+
 export interface UserProfile {
   id: number;
   email: string;
@@ -111,7 +113,7 @@ export async function ensureCsrfToken(): Promise<string> {
   if (token) return token;
 
   try {
-    const res = await fetch("/api/auth/csrf/", {
+    const res = await fetch(resolveApiUrl("/api/auth/csrf/"), {
       credentials: "include",
     });
     if (res.ok) {
@@ -173,7 +175,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
 
     let res: Response;
     try {
-      res = await fetch(path, {
+      res = await fetch(resolveApiUrl(path), {
         ...init,
         method,
         headers,

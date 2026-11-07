@@ -12,6 +12,7 @@ import {
   Check,
 } from "lucide-react";
 import {
+  apiFetch,
   createMerchantProduct,
   ProductItem,
   ProductPayload,
@@ -156,17 +157,10 @@ function ProductForm({
     formData.append("file", file);
 
     try {
-      const res = await fetch(`/api/merchant/stores/${encodeURIComponent(storeSlug)}/media/upload/`, {
-        credentials: "include",
-        method: "POST",
-        body: formData,
-      });
-
-      const data = await res.json();
-      if (!res.ok) {
-        throw new Error(data.error || "Failed to upload image");
-      }
-
+      const data = await apiFetch<{ url: string }>(
+        `/api/merchant/stores/${encodeURIComponent(storeSlug)}/media/upload/`,
+        { method: "POST", body: formData }
+      );
       setImageUrl(data.url);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Upload failed";

@@ -1,11 +1,11 @@
 import random
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from django.conf import settings
-from django.db import connection, connections
+from django.db import connection
 from rest_framework import status
 from rest_framework.test import APITransactionTestCase, APIClient
 
 from catalog.models import Product, Variant
+from core.tenant_context import TenantDatabaseContext
 from stores.models import Store
 
 
@@ -30,36 +30,39 @@ class TenantRLSConcurrencyTests(APITransactionTestCase):
             is_active=True,
             currency="NPR",
         )
-        self.prod_a1 = Product.objects.create(
-            store=self.store_a,
-            name="Alpha Himalayan Honey",
-            slug="alpha-honey",
-            is_active=True,
-            sort_order=1,
-        )
-        Variant.objects.create(
-            product=self.prod_a1,
-            sku="alpha-500g",
-            label="500g",
-            price_minor=50000,
-            in_stock=True,
-            is_active=True,
-        )
-        self.prod_a2 = Product.objects.create(
-            store=self.store_a,
-            name="Alpha Mountain Tea",
-            slug="alpha-tea",
-            is_active=True,
-            sort_order=2,
-        )
-        Variant.objects.create(
-            product=self.prod_a2,
-            sku="alpha-100g",
-            label="100g",
-            price_minor=30000,
-            in_stock=True,
-            is_active=True,
-        )
+        with TenantDatabaseContext(self.store_a.id):
+            self.prod_a1 = Product.objects.create(
+                store=self.store_a,
+                name="Alpha Himalayan Honey",
+                slug="alpha-honey",
+                is_active=True,
+                sort_order=1,
+            )
+            Variant.objects.create(
+                store=self.store_a,
+                product=self.prod_a1,
+                sku="alpha-500g",
+                label="500g",
+                price_minor=50000,
+                in_stock=True,
+                is_active=True,
+            )
+            self.prod_a2 = Product.objects.create(
+                store=self.store_a,
+                name="Alpha Mountain Tea",
+                slug="alpha-tea",
+                is_active=True,
+                sort_order=2,
+            )
+            Variant.objects.create(
+                store=self.store_a,
+                product=self.prod_a2,
+                sku="alpha-100g",
+                label="100g",
+                price_minor=30000,
+                in_stock=True,
+                is_active=True,
+            )
 
         # Create Store Beta
         self.store_b = Store.objects.create(
@@ -68,36 +71,39 @@ class TenantRLSConcurrencyTests(APITransactionTestCase):
             is_active=True,
             currency="NPR",
         )
-        self.prod_b1 = Product.objects.create(
-            store=self.store_b,
-            name="Beta Yak Cheese",
-            slug="beta-cheese",
-            is_active=True,
-            sort_order=1,
-        )
-        Variant.objects.create(
-            product=self.prod_b1,
-            sku="beta-250g",
-            label="250g",
-            price_minor=60000,
-            in_stock=True,
-            is_active=True,
-        )
-        self.prod_b2 = Product.objects.create(
-            store=self.store_b,
-            name="Beta Cardamom Pods",
-            slug="beta-cardamom",
-            is_active=True,
-            sort_order=2,
-        )
-        Variant.objects.create(
-            product=self.prod_b2,
-            sku="beta-50g",
-            label="50g",
-            price_minor=40000,
-            in_stock=True,
-            is_active=True,
-        )
+        with TenantDatabaseContext(self.store_b.id):
+            self.prod_b1 = Product.objects.create(
+                store=self.store_b,
+                name="Beta Yak Cheese",
+                slug="beta-cheese",
+                is_active=True,
+                sort_order=1,
+            )
+            Variant.objects.create(
+                store=self.store_b,
+                product=self.prod_b1,
+                sku="beta-250g",
+                label="250g",
+                price_minor=60000,
+                in_stock=True,
+                is_active=True,
+            )
+            self.prod_b2 = Product.objects.create(
+                store=self.store_b,
+                name="Beta Cardamom Pods",
+                slug="beta-cardamom",
+                is_active=True,
+                sort_order=2,
+            )
+            Variant.objects.create(
+                store=self.store_b,
+                product=self.prod_b2,
+                sku="beta-50g",
+                label="50g",
+                price_minor=40000,
+                in_stock=True,
+                is_active=True,
+            )
 
     def tearDown(self):
         connection.settings_dict["CONN_MAX_AGE"] = self._orig_conn_max_age
@@ -116,7 +122,7 @@ class TenantRLSConcurrencyTests(APITransactionTestCase):
 
         # Build task list: 40% store-alpha, 40% store-beta, 20% error-path
         tasks = []
-        for i in range(total_requests):
+        for _ in range(total_requests):
             choice = random.random()
             if choice < 0.40:
                 tasks.append(("store-alpha", "ALPHA"))

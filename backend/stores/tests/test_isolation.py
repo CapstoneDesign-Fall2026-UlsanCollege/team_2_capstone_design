@@ -4,6 +4,7 @@ import unittest.mock
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.db import connection, transaction
+from django.test import override_settings
 from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APITestCase
@@ -20,23 +21,15 @@ User = get_user_model()
 
 class TenantIsolationTests(APITestCase):
     @classmethod
-    def setUpClass(cls):
-        super().setUpClass()
-        if connection.vendor == "postgresql":
-            from core.tenant_context import apply_postgres_rls_policies
-            apply_postgres_rls_policies()
-
-    def setUp(self):
-        from core.tenant_context import reset_current_tenant_id
-        reset_current_tenant_id()
+    def setUpTestData(cls):
         call_command("seed_brewmellow")
-        self.store_a = Store.objects.get(slug="brewmellow")
-        self.owner_a = User.objects.get(email="aarav.shrestha@brewmellow.com.np")
+        cls.store_a = Store.objects.get(slug="brewmellow")
+        cls.owner_a = User.objects.get(email="aarav.shrestha@brewmellow.com.np")
 
         # Provision Store B (competitor merchant) inside BypassRLSContext
         with BypassRLSContext():
-            self.owner_b = User.objects.create_user("roshani.gurung@pahadihoney.com.np", full_name="Roshani Gurung")
-            self.store_b = Store.objects.create(
+            cls.owner_b = User.objects.create_user("roshani.gurung@pahadihoney.com.np", full_name="Roshani Gurung")
+            cls.store_b = Store.objects.create(
                 slug="pahadi-honey",
                 name="Pahadi Honey",
                 theme_preset="pahadi-sage",
@@ -44,34 +37,38 @@ class TenantIsolationTests(APITestCase):
                 outside_valley_shipping_minor=25000,
                 is_active=True,
             )
-            StoreMembership.objects.create(store=self.store_b, user=self.owner_b, role="OWNER")
+            StoreMembership.objects.create(store=cls.store_b, user=cls.owner_b, role="OWNER")
 
-            self.prod_b = Product.objects.create(
-                store=self.store_b,
+            cls.prod_b = Product.objects.create(
+                store=cls.store_b,
                 slug="wild-cliff-honey",
                 name="Wild Cliff Honey",
                 allow_one_time=True,
             )
-            self.var_b = Variant.objects.create(
-                store=self.store_b,
-                product=self.prod_b,
+            cls.var_b = Variant.objects.create(
+                store=cls.store_b,
+                product=cls.prod_b,
                 sku="ph-cliff-500g",
                 label="500g",
                 price_minor=85000,
                 allow_one_time=True,
             )
-            self.cust_b = Customer.objects.create(
-                store=self.store_b,
+            cls.cust_b = Customer.objects.create(
+                store=cls.store_b,
                 email="shopper.b@example.com",
                 full_name="Shopper B",
             )
-            self.order_b = Order.objects.create(
-                store=self.store_b,
-                customer=self.cust_b,
+            cls.order_b = Order.objects.create(
+                store=cls.store_b,
+                customer=cls.cust_b,
                 order_number="PH-2026-0001",
                 subtotal_minor=85000,
                 total_minor=97000,
             )
+
+    def setUp(self):
+        from core.tenant_context import reset_current_tenant_id
+        reset_current_tenant_id()
 
     def tearDown(self):
         from core.tenant_context import reset_current_tenant_id
@@ -125,9 +122,11 @@ class TenantIsolationTests(APITestCase):
             "name": "Palpa Dark Roast",
         })
         self.assertEqual(res.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(Product.objects.for_store(self.store_b).filter(slug="palpa-dark").count(), 0)
-        created_prod = Product.objects.for_store(self.store_a).get(slug="palpa-dark")
-        self.assertEqual(created_prod.store, self.store_a)
+        with TenantDatabaseContext(self.store_b.id):
+            self.assertEqual(Product.objects.for_store(self.store_b).filter(slug="palpa-dark").count(), 0)
+        with TenantDatabaseContext(self.store_a.id):
+            created_prod = Product.objects.for_store(self.store_a).get(slug="palpa-dark")
+            self.assertEqual(created_prod.store, self.store_a)
 
     def test_global_user_provisions_isolated_per_store_customers(self):
         shopper = User.objects.create_user("anita.kc@example.com.np", full_name="Anita KC")
@@ -140,8 +139,10 @@ class TenantIsolationTests(APITestCase):
         self.assertEqual(res_b.status_code, status.HTTP_200_OK)
 
         self.assertNotEqual(res_a.data["id"], res_b.data["id"])
-        self.assertEqual(Customer.objects.for_store(self.store_a).filter(email=shopper.email).count(), 1)
-        self.assertEqual(Customer.objects.for_store(self.store_b).filter(email=shopper.email).count(), 1)
+        with TenantDatabaseContext(self.store_a.id):
+            self.assertEqual(Customer.objects.for_store(self.store_a).filter(email=shopper.email).count(), 1)
+        with TenantDatabaseContext(self.store_b.id):
+            self.assertEqual(Customer.objects.for_store(self.store_b).filter(email=shopper.email).count(), 1)
 
         # Owner B checking customer list must not see Store A's orders/customers
         self.client.force_login(self.owner_b)
@@ -153,14 +154,15 @@ class TenantIsolationTests(APITestCase):
 
     def test_shopper_cross_user_order_and_address_return_404(self):
         shopper_y = User.objects.create_user("shopper.y@example.com", full_name="Shopper Y")
-        cust_y = Customer.objects.create(store=self.store_a, user=shopper_y, email=shopper_y.email)
-        order_y = Order.objects.create(
-            store=self.store_a,
-            customer=cust_y,
-            order_number="BM-2026-Y001",
-            subtotal_minor=65000,
-            total_minor=75000,
-        )
+        with TenantDatabaseContext(self.store_a.id):
+            cust_y = Customer.objects.create(store=self.store_a, user=shopper_y, email=shopper_y.email)
+            order_y = Order.objects.create(
+                store=self.store_a,
+                customer=cust_y,
+                order_number="BM-2026-Y001",
+                subtotal_minor=65000,
+                total_minor=75000,
+            )
         addr_y = DeliveryAddress.objects.create(
             user=shopper_y,
             recipient_name="Shopper Y",
@@ -193,14 +195,15 @@ class TenantIsolationTests(APITestCase):
         call_command("seed_brewmellow")
 
         s = Store.objects.get(slug="brewmellow")
-        self.assertEqual(Product.objects.for_store(s).count(), 3)
-        self.assertEqual(Variant.objects.for_store(s).count(), 12)
-        self.assertEqual(Order.objects.for_store(s).count(), 3)
+        with TenantDatabaseContext(s.id):
+            self.assertEqual(Product.objects.for_store(s).count(), 3)
+            self.assertEqual(Variant.objects.for_store(s).count(), 12)
+            self.assertEqual(Order.objects.for_store(s).count(), 3)
 
-        # Check exact integer paisa range
-        prices = Variant.objects.for_store(s).values_list("price_minor", flat=True)
-        self.assertEqual(min(prices), 40000)
-        self.assertEqual(max(prices), 260000)
+            # Check exact integer paisa range
+            prices = list(Variant.objects.for_store(s).values_list("price_minor", flat=True))
+            self.assertEqual(min(prices), 40000)
+            self.assertEqual(max(prices), 260000)
 
         # Fernet round-trip test on store key
         s.set_khalti_secret_key("test_secret_key_12345")
@@ -209,6 +212,7 @@ class TenantIsolationTests(APITestCase):
         self.assertNotEqual(reloaded.khalti_secret_key_encrypted, "test_secret_key_12345")
         self.assertEqual(reloaded.get_khalti_secret_key(), "test_secret_key_12345")
 
+    @override_settings(KHALTI_LIVE_ENABLED=True)
     def test_merchant_settings_isolation_and_encryption(self):
         # Owner A can read Store A settings
         self.client.force_login(self.owner_a)
@@ -291,7 +295,8 @@ class TenantIsolationTests(APITestCase):
         self.client.force_login(self.owner_a)
 
         # Get first product of Store A
-        prod = Product.objects.for_store(self.store_a).first()
+        with TenantDatabaseContext(self.store_a.id):
+            prod = Product.objects.for_store(self.store_a).first()
         self.assertIsNotNone(prod)
 
         # Create new variant on Store A
@@ -327,8 +332,9 @@ class TenantIsolationTests(APITestCase):
     def test_store_checkout_quote_and_placement_isolation(self):
         """Verify server-authoritative checkout quote, COD placement, and Khalti verify with strict multi-tenant isolation."""
         self.client.logout()
-        prod = Product.objects.for_store(self.store_a).first()
-        variant = prod.variants.first()
+        with TenantDatabaseContext(self.store_a.id):
+            prod = Product.objects.for_store(self.store_a).first()
+            variant = prod.variants.first()
 
         # 1. Checkout Quote: Inside Valley Kathmandu
         res_quote = self.client.post(
@@ -443,10 +449,11 @@ class TenantIsolationTests(APITestCase):
         and no rows (Order, OrderItem) are persisted.
         """
         self.client.logout()
-        prod = Product.objects.for_store(self.store_a).first()
-        variant = prod.variants.first()
-        initial_order_count = Order.objects.for_store(self.store_a).count()
-        initial_item_count = OrderItem.objects.filter(order__store=self.store_a).count()
+        with TenantDatabaseContext(self.store_a.id):
+            prod = Product.objects.for_store(self.store_a).first()
+            variant = prod.variants.first()
+            initial_order_count = Order.objects.for_store(self.store_a).count()
+            initial_item_count = OrderItem.objects.filter(order__store=self.store_a).count()
 
         payload = {
             "customer_email": "rollback.test@example.com",
@@ -469,8 +476,9 @@ class TenantIsolationTests(APITestCase):
                 self.client.post("/api/stores/brewmellow/checkout/place/", payload, format="json")
 
         # Assert zero rows were persisted: order count and item count unchanged
-        self.assertEqual(Order.objects.for_store(self.store_a).count(), initial_order_count)
-        self.assertEqual(OrderItem.objects.filter(order__store=self.store_a).count(), initial_item_count)
+        with TenantDatabaseContext(self.store_a.id):
+            self.assertEqual(Order.objects.for_store(self.store_a).count(), initial_order_count)
+            self.assertEqual(OrderItem.objects.filter(order__store=self.store_a).count(), initial_item_count)
 
         # 2. Test explicit DRF error response (>= 400) where an exception is handled by DRF
         # StoreTenantMixin explicitly calls transaction.set_rollback(True) when status_code >= 400
@@ -480,8 +488,9 @@ class TenantIsolationTests(APITestCase):
             self.assertEqual(res.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 
         # Assert zero rows were persisted after DRF converted exception to HTTP 500 response
-        self.assertEqual(Order.objects.for_store(self.store_a).count(), initial_order_count)
-        self.assertEqual(OrderItem.objects.filter(order__store=self.store_a).count(), initial_item_count)
+        with TenantDatabaseContext(self.store_a.id):
+            self.assertEqual(Order.objects.for_store(self.store_a).count(), initial_order_count)
+            self.assertEqual(OrderItem.objects.filter(order__store=self.store_a).count(), initial_item_count)
 
     def test_catalog_num_queries_and_no_n_plus_one(self):
         """
@@ -490,7 +499,8 @@ class TenantIsolationTests(APITestCase):
         The asserted query count reflects the PostgreSQL path including the 1-round-trip tenant setup query.
         """
         self.client.logout()
-        initial_prods = Product.objects.for_store(self.store_a).count()
+        with TenantDatabaseContext(self.store_a.id):
+            initial_prods = Product.objects.for_store(self.store_a).count()
         self.assertGreaterEqual(initial_prods, 2)
 
         # Warm up role check cache if on PostgreSQL
@@ -528,18 +538,19 @@ class TenantIsolationTests(APITestCase):
         self.assertIn("orders", res_list.data)
 
         # Create a new test order for Store A
-        customer = provision_store_customer(self.store_a, self.owner_a)
-        order = Order.objects.create(
-            store=self.store_a,
-            customer=customer,
-            order_number="#BM-TEST-0099",
-            status="CONFIRMED",
-            payment_method="COD",
-            payment_status="COD_PENDING",
-            subtotal_minor=85000,
-            shipping_minor=10000,
-            total_minor=95000,
-        )
+        with TenantDatabaseContext(self.store_a.id):
+            customer = provision_store_customer(self.store_a, self.owner_a)
+            order = Order.objects.create(
+                store=self.store_a,
+                customer=customer,
+                order_number="#BM-TEST-0099",
+                status="CONFIRMED",
+                payment_method="COD",
+                payment_status="COD_PENDING",
+                subtotal_minor=85000,
+                shipping_minor=10000,
+                total_minor=95000,
+            )
 
         # 2. Advance CONFIRMED -> PROCESSING (Packed)
         res_pack = self.client.post(
@@ -608,24 +619,27 @@ class TenantIsolationTests(APITestCase):
         res_b = self.client.get(f"/api/merchant/stores/{self.store_b.slug}/overview/")
         self.assertEqual(res_b.status_code, status.HTTP_404_NOT_FOUND)
 
+    @override_settings(KHALTI_LIVE_ENABLED=True)
     def test_khalti_sandbox_rejected_in_live_mode(self):
         """
         Verifies that sandbox pidx payments are strictly rejected when store is in LIVE khalti mode.
         """
         self.store_a.khalti_mode = "LIVE"
-        self.store_a.save(update_fields=["khalti_mode"])
+        self.store_a.set_khalti_secret_key("live_secret_key_fixture_only_0001")
+        self.store_a.save(update_fields=["khalti_mode", "khalti_secret_key_encrypted"])
 
-        cust_a = Customer.objects.filter(store=self.store_a).first()
-        order = Order.objects.create(
-            store=self.store_a,
-            customer=cust_a,
-            order_number="BM-TEST-LIVE-KHALTI",
-            subtotal_minor=50000,
-            total_minor=50000,
-            status="PENDING_PAYMENT",
-            payment_status="PENDING",
-            payment_method="KHALTI",
-        )
+        with TenantDatabaseContext(self.store_a.id):
+            cust_a = Customer.objects.filter(store=self.store_a).first()
+            order = Order.objects.create(
+                store=self.store_a,
+                customer=cust_a,
+                order_number="BM-TEST-LIVE-KHALTI",
+                subtotal_minor=50000,
+                total_minor=50000,
+                status="PENDING_PAYMENT",
+                payment_status="PENDING",
+                payment_method="KHALTI",
+            )
 
         res = self.client.post(
             f"/api/stores/{self.store_a.slug}/checkout/khalti-verify/",
@@ -633,14 +647,15 @@ class TenantIsolationTests(APITestCase):
             format="json",
         )
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
-        order.refresh_from_db()
-        self.assertEqual(order.status, "PAYMENT_FAILED")
-        self.assertEqual(order.payment_status, "FAILED")
+        with TenantDatabaseContext(self.store_a.id):
+            order.refresh_from_db()
+            self.assertEqual(order.status, "PAYMENT_FAILED")
+            self.assertEqual(order.payment_status, "FAILED")
 
-        # Verify that explicit 400 response still commits intended status write and OrderEvent
-        event = OrderEvent.objects.filter(order=order, to_status="PAYMENT_FAILED").first()
-        self.assertIsNotNone(event)
-        self.assertIn("Khalti payment verification failed", event.note)
+            # Verify that explicit 400 response still commits intended status write and OrderEvent
+            event = OrderEvent.objects.filter(order=order, to_status="PAYMENT_FAILED").first()
+            self.assertIsNotNone(event)
+            self.assertIn("Khalti payment verification failed", event.note)
 
     def test_media_upload_scoping_and_audit_logging(self):
         """
@@ -680,11 +695,12 @@ class TenantIsolationTests(APITestCase):
         self.assertTrue(auth_res.data["url"].startswith(f"/uploads/stores/{self.store_a.slug}/products/"))
 
         # Verify audit log entry was created
-        log_entry = MerchantAuditLog.objects.filter(
-            store=self.store_a,
-            action="MEDIA_UPLOAD",
-            actor=self.owner_a,
-        ).first()
+        with TenantDatabaseContext(self.store_a.id):
+            log_entry = MerchantAuditLog.objects.filter(
+                store=self.store_a,
+                action="MEDIA_UPLOAD",
+                actor=self.owner_a,
+            ).first()
         self.assertIsNotNone(log_entry)
         self.assertEqual(log_entry.entity_type, "MediaAsset")
 
@@ -692,22 +708,24 @@ class TenantIsolationTests(APITestCase):
         """
         Verifies that merchant audit logs are strictly isolated per store.
         """
-        MerchantAuditLog.objects.create(
-            store=self.store_a,
-            actor=self.owner_a,
-            action="SETTINGS_UPDATE",
-            entity_type="Store",
-            entity_id=str(self.store_a.id),
-            details={"test": "a"},
-        )
-        MerchantAuditLog.objects.create(
-            store=self.store_b,
-            actor=self.owner_b,
-            action="SETTINGS_UPDATE",
-            entity_type="Store",
-            entity_id=str(self.store_b.id),
-            details={"test": "b"},
-        )
+        with TenantDatabaseContext(self.store_a.id):
+            MerchantAuditLog.objects.create(
+                store=self.store_a,
+                actor=self.owner_a,
+                action="SETTINGS_UPDATE",
+                entity_type="Store",
+                entity_id=str(self.store_a.id),
+                details={"test": "a"},
+            )
+        with TenantDatabaseContext(self.store_b.id):
+            MerchantAuditLog.objects.create(
+                store=self.store_b,
+                actor=self.owner_b,
+                action="SETTINGS_UPDATE",
+                entity_type="Store",
+                entity_id=str(self.store_b.id),
+                details={"test": "b"},
+            )
 
         # Owner A sees only Store A logs
         self.client.force_login(self.owner_a)
@@ -785,10 +803,12 @@ class TenantIsolationTests(APITestCase):
             self.assertNotIn("Gulmi Reserve", prod_names_b)
 
         # 3. Without any tenant context as shopcraft_app: RLS returns 0 rows
-        with connection.cursor() as cursor:
-            cursor.execute("SET LOCAL ROLE shopcraft_app; SET LOCAL app.bypass_rls = 'off'; SELECT set_config('app.current_store_id', '', true);")
-            prods = list(Product.objects.all())
-            self.assertEqual(len(prods), 0)
+        with transaction.atomic():
+            with connection.cursor() as cursor:
+                cursor.execute("SET LOCAL ROLE shopcraft_app; SET LOCAL app.bypass_rls = 'off'; SELECT set_config('app.current_store_id', '', true);")
+                prods = list(Product.objects.all())
+                self.assertEqual(len(prods), 0)
+                cursor.execute("SET LOCAL ROLE NONE;")
 
         # 4. Under BypassRLSContext: all products across all stores are accessible
         with BypassRLSContext():
@@ -851,20 +871,21 @@ class TenantIsolationTests(APITestCase):
         self.assertEqual(created_store.category, "Organic Honey, Herbs & Spices")
         self.assertEqual(created_store.city, "Bidur")
 
-        # Verify StoreMembership with role OWNER
-        membership = StoreMembership.all_objects.filter(store=created_store, user=merchant_user).first()
-        self.assertIsNotNone(membership)
-        self.assertEqual(membership.role, "OWNER")
+        with TenantDatabaseContext(created_store.id):
+            # Verify StoreMembership with role OWNER
+            membership = StoreMembership.all_objects.filter(store=created_store, user=merchant_user).first()
+            self.assertIsNotNone(membership)
+            self.assertEqual(membership.role, "OWNER")
 
-        # Verify starter product seeded
-        starter_prod = Product.objects.for_store(created_store).first()
-        self.assertIsNotNone(starter_prod)
-        self.assertGreaterEqual(starter_prod.variants.count(), 1)
+            # Verify starter product seeded
+            starter_prod = Product.objects.for_store(created_store).first()
+            self.assertIsNotNone(starter_prod)
+            self.assertGreaterEqual(starter_prod.variants.count(), 1)
 
-        # Verify MerchantAuditLog created
-        audit_log = MerchantAuditLog.objects.filter(store=created_store, action="STORE_CREATE").first()
-        self.assertIsNotNone(audit_log)
-        self.assertEqual(audit_log.actor, merchant_user)
+            # Verify MerchantAuditLog created
+            audit_log = MerchantAuditLog.objects.filter(store=created_store, action="STORE_CREATE").first()
+            self.assertIsNotNone(audit_log)
+            self.assertEqual(audit_log.actor, merchant_user)
 
     def test_merchant_my_stores_listing_and_isolation(self):
         """
@@ -930,13 +951,15 @@ class TenantIsolationTests(APITestCase):
 
         # Create Store 1
         s1 = Store.objects.create(slug="store-one", name="Store One", theme_preset="editorial-warm")
-        StoreMembership.objects.create(store=s1, user=multi_owner, role="OWNER")
-        p1 = Product.objects.create(store=s1, slug="product-one", name="Product One")
+        with TenantDatabaseContext(s1.id):
+            StoreMembership.objects.create(store=s1, user=multi_owner, role="OWNER")
+            Product.objects.create(store=s1, slug="product-one", name="Product One")
 
         # Create Store 2
         s2 = Store.objects.create(slug="store-two", name="Store Two", theme_preset="midnight-obsidian")
-        StoreMembership.objects.create(store=s2, user=multi_owner, role="OWNER")
-        p2 = Product.objects.create(store=s2, slug="product-two", name="Product Two")
+        with TenantDatabaseContext(s2.id):
+            StoreMembership.objects.create(store=s2, user=multi_owner, role="OWNER")
+            Product.objects.create(store=s2, slug="product-two", name="Product Two")
 
         self.client.force_login(multi_owner)
 
@@ -988,7 +1011,8 @@ class TenantIsolationTests(APITestCase):
         Attempting to read Merchant B's customer detail under Store A returns 404.
         """
         self.client.force_login(self.owner_a)
-        cust_a = Customer.objects.filter(store=self.store_a).first()
+        with TenantDatabaseContext(self.store_a.id):
+            cust_a = Customer.objects.filter(store=self.store_a).first()
         self.assertIsNotNone(cust_a)
 
         # Legitimate access to Store A's customer
@@ -1013,30 +1037,31 @@ class TenantIsolationTests(APITestCase):
         self.client.force_login(self.owner_a)
 
         # Provision a unique customer with known orders
-        unique_cust = Customer.objects.create(
-            store=self.store_a,
-            full_name="Prashant Acharya",
-            email="prashant.unique@test.np",
-            phone="9801122334",
-        )
-        # Order 1: PAID NPR 1,200 (120000 minor)
-        Order.objects.create(
-            store=self.store_a,
-            customer=unique_cust,
-            order_number="BM-TEST-PAID",
-            subtotal_minor=120000,
-            total_minor=120000,
-            payment_status="PAID",
-        )
-        # Order 2: PENDING NPR 800 (80000 minor) - should NOT count towards total_spent_minor
-        Order.objects.create(
-            store=self.store_a,
-            customer=unique_cust,
-            order_number="BM-TEST-PEND",
-            subtotal_minor=80000,
-            total_minor=80000,
-            payment_status="PENDING",
-        )
+        with TenantDatabaseContext(self.store_a.id):
+            unique_cust = Customer.objects.create(
+                store=self.store_a,
+                full_name="Prashant Acharya",
+                email="prashant.unique@test.np",
+                phone="9801122334",
+            )
+            # Order 1: PAID NPR 1,200 (120000 minor)
+            Order.objects.create(
+                store=self.store_a,
+                customer=unique_cust,
+                order_number="BM-TEST-PAID",
+                subtotal_minor=120000,
+                total_minor=120000,
+                payment_status="PAID",
+            )
+            # Order 2: PENDING NPR 800 (80000 minor) - should NOT count towards total_spent_minor
+            Order.objects.create(
+                store=self.store_a,
+                customer=unique_cust,
+                order_number="BM-TEST-PEND",
+                subtotal_minor=80000,
+                total_minor=80000,
+                payment_status="PENDING",
+            )
 
         # 1. Search by name
         res_search_name = self.client.get("/api/merchant/stores/brewmellow/customers/?q=Prashant")
@@ -1256,7 +1281,8 @@ class TenantIsolationTests(APITestCase):
         self.assertEqual(cross_quote.status_code, status.HTTP_400_BAD_REQUEST)
 
         # 5. Shopper on Store A quotes & redeems DASHAIN15 (max_uses=1)
-        var_a = Variant.objects.for_store(self.store_a).filter(is_active=True).first()
+        with TenantDatabaseContext(self.store_a.id):
+            var_a = Variant.objects.for_store(self.store_a).filter(is_active=True).first()
         quote_a = self.client.post(
             "/api/stores/brewmellow/checkout/quote/",
             {
@@ -1318,7 +1344,8 @@ class TenantIsolationTests(APITestCase):
         self.assertFalse(patch_res.data["cod_enabled"])
         self.assertEqual(patch_res.data["custom_domain"], "shop.brewmellow.com.np")
 
-        var_a = Variant.objects.for_store(self.store_a).filter(is_active=True).first()
+        with TenantDatabaseContext(self.store_a.id):
+            var_a = Variant.objects.for_store(self.store_a).filter(is_active=True).first()
         cod_attempt = self.client.post(
             "/api/stores/brewmellow/checkout/place/",
             {

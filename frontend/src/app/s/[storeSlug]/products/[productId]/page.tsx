@@ -1,6 +1,7 @@
 import React from "react";
 import { notFound } from "next/navigation";
 import { ProductItem, StorePublicMetadata } from "@/lib/api";
+import { getServerApiOrigin } from "@/lib/env";
 import { ProductDetailView } from "@/components/storefront/ProductDetailView";
 
 interface StoreCatalogData {
@@ -15,7 +16,7 @@ async function fetchStoreAndProduct(
   product: ProductItem | null;
   relatedProducts: ProductItem[];
 }> {
-  const origin = process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000";
+  const origin = getServerApiOrigin();
   const cleanTarget = decodeURIComponent(productIdOrSlug).trim().toLowerCase();
 
   try {
@@ -36,15 +37,6 @@ async function fetchStoreAndProduct(
       ? await catalogRes.json()
       : { products: [] };
 
-    console.log("[PDP debug]", {
-      storeSlug,
-      cleanTarget,
-      storeResOk: storeRes.ok,
-      catalogResOk: catalogRes.ok,
-      catalogCount: catalog.products?.length,
-      productSlugs: catalog.products?.map((p) => p.slug),
-    });
-
     // Find product strictly from backend catalog by id or slug
     const product: ProductItem | null =
       catalog.products?.find(
@@ -62,8 +54,7 @@ async function fetchStoreAndProduct(
       product,
       relatedProducts,
     };
-  } catch (err) {
-    console.error("[PDP debug error]", err);
+  } catch {
     return {
       store: null,
       product: null,

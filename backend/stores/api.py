@@ -1,4 +1,3 @@
-import requests
 from datetime import timedelta
 from django.conf import settings
 from django.db import transaction
@@ -14,6 +13,17 @@ from accounts.models import User
 from catalog.models import Discount, Product, Variant
 from orders.models import Order, OrderItem, OrderEvent
 from core.tenant_context import set_current_tenant_id, reset_current_tenant_id, BypassRLSContext
+from stores.cloudinary_upload import (
+    CloudinaryUploadError,
+    is_cloudinary_configured,
+    upload_store_image_to_cloudinary,
+)
+from stores.khalti import (
+    initiate_khalti_epayment,
+    resolve_khalti_initiation_config,
+    validate_khalti_settings_update,
+    verify_khalti_epayment,
+)
 from stores.models import (
     MerchantAuditLog,
     Customer,
@@ -455,6 +465,11 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if payment_method == "KHALTI":
+            _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
+            if khalti_cfg_err:
+                return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
+
         if payment_method == "COD":
             with transaction.atomic():
                 old_status = order.status
@@ -483,20 +498,13 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
             })
 
         # Khalti initiation for renewal / retry payment
+        _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
+        if khalti_cfg_err:
+            return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
+
         return_url = request.data.get("return_url") or request.build_absolute_uri(
             f"/s/{self.store.slug}/checkout/khalti-return/"
         )
-        custom_key = self.store.get_khalti_secret_key()
-        secret_key = custom_key or getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "Key 0817c7689ee24db18df67142aa7fef1c")
-        if not secret_key.startswith("Key ") and not secret_key.startswith("test_secret_key"):
-            secret_key = f"Key {secret_key}"
-
-        initiate_url = (
-            "https://khalti.com/api/v2/epayment/initiate/"
-            if self.store.khalti_mode == "LIVE"
-            else "https://dev.khalti.com/api/v2/epayment/initiate/"
-        )
-
         snap = order.shipping_address_snapshot or {}
         recipient_name = snap.get("recipient_name") or order.customer.full_name or "Shopper"
         phone = snap.get("phone") or order.customer.phone or "9800000000"
@@ -514,54 +522,32 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
             },
         }
 
-        try:
-            resp = requests.post(
-                initiate_url,
-                json=khalti_body,
-                headers={"Authorization": secret_key, "Content-Type": "application/json"},
-                timeout=5,
-            )
-            data = resp.json()
-            if resp.status_code == 200 and "pidx" in data and "payment_url" in data:
-                order.payment_method = "KHALTI"
-                order.payment_ref = data["pidx"]
-                order.save(update_fields=["payment_method", "payment_ref", "updated_at"])
-                return Response({
-                    "order_id": order.id,
-                    "token": str(order.token),
-                    "order_number": order.order_number,
-                    "pidx": data["pidx"],
-                    "payment_url": data["payment_url"],
-                    "status": order.status,
-                })
-        except Exception:
-            pass
-
-        if self.store.khalti_mode != "TEST":
+        pidx, payment_url, is_sandbox, gw_err = initiate_khalti_epayment(
+            store=self.store,
+            order=order,
+            khalti_body=khalti_body,
+        )
+        if gw_err or not pidx or not payment_url:
             return Response(
-                {"error": "Unable to reach Khalti payment gateway. Please try again shortly."},
+                {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        import secrets as pysecrets
-        sandbox_pidx = f"sandbox_{order.id}_{pysecrets.token_hex(4)}"
-        sandbox_payment_url = (
-            f"/s/{self.store.slug}/checkout/khalti-return/"
-            f"?pidx={sandbox_pidx}&purchase_order_id={order.id}&amount={order.total_minor}"
-        )
         order.payment_method = "KHALTI"
-        order.payment_ref = sandbox_pidx
+        order.payment_ref = pidx
         order.save(update_fields=["payment_method", "payment_ref", "updated_at"])
 
-        return Response({
+        payload = {
             "order_id": order.id,
             "token": str(order.token),
             "order_number": order.order_number,
-            "pidx": sandbox_pidx,
-            "payment_url": sandbox_payment_url,
+            "pidx": pidx,
+            "payment_url": payment_url,
             "status": order.status,
-            "is_sandbox": True,
-        })
+        }
+        if is_sandbox:
+            payload["is_sandbox"] = True
+        return Response(payload)
 
 
 class StoreCheckoutQuoteView(StorePublicMixin, APIView):
@@ -725,6 +711,11 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if payment_method == "KHALTI":
+            _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
+            if khalti_cfg_err:
+                return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
+
         variant_ids = [it.get("variant_id") for it in items_data if it.get("variant_id")]
         variants = {
             v.id: v for v in Variant.objects.for_store(self.store).filter(id__in=variant_ids, is_active=True)
@@ -819,7 +810,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 total_minor=total_minor,
                 currency=self.store.currency,
                 shipping_address_snapshot=shipping_address,
-                is_test=True,
+                is_test=(self.store.khalti_mode != "LIVE"),
             )
 
             for item_info in order_items_to_create:
@@ -857,17 +848,6 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
         return_url = request.data.get("return_url") or request.build_absolute_uri(
             f"/s/{self.store.slug}/checkout/khalti-return/"
         )
-        custom_key = self.store.get_khalti_secret_key()
-        secret_key = custom_key or getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "Key 0817c7689ee24db18df67142aa7fef1c")
-        if not secret_key.startswith("Key ") and not secret_key.startswith("test_secret_key"):
-            secret_key = f"Key {secret_key}"
-
-        initiate_url = (
-            "https://khalti.com/api/v2/epayment/initiate/"
-            if self.store.khalti_mode == "LIVE"
-            else "https://dev.khalti.com/api/v2/epayment/initiate/"
-        )
-
         khalti_body = {
             "return_url": return_url,
             "website_url": request.build_absolute_uri(f"/s/{self.store.slug}/"),
@@ -881,43 +861,31 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             },
         }
 
-        try:
-            resp = requests.post(
-                initiate_url,
-                json=khalti_body,
-                headers={"Authorization": secret_key, "Content-Type": "application/json"},
-                timeout=5,
+        pidx, payment_url, is_sandbox, gw_err = initiate_khalti_epayment(
+            store=self.store,
+            order=order,
+            khalti_body=khalti_body,
+        )
+        if gw_err or not pidx or not payment_url:
+            return Response(
+                {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
+                status=status.HTTP_502_BAD_GATEWAY,
             )
-            data = resp.json()
-            if resp.status_code == 200 and "pidx" in data and "payment_url" in data:
-                order.payment_ref = data["pidx"]
-                order.save(update_fields=["payment_ref"])
-                return Response({
-                    "order_id": order.id,
-                    "token": str(order.token),
-                    "order_number": order.order_number,
-                    "pidx": data["pidx"],
-                    "payment_url": data["payment_url"],
-                    "status": order.status,
-                }, status=status.HTTP_201_CREATED)
-        except Exception:
-            pass
 
-        import secrets as pysecrets
-        sandbox_pidx = f"sandbox_{order.id}_{pysecrets.token_hex(4)}"
-        sandbox_payment_url = f"/s/{self.store.slug}/checkout/khalti-return/?pidx={sandbox_pidx}&purchase_order_id={order.id}&amount={order.total_minor}"
-        order.payment_ref = sandbox_pidx
+        order.payment_ref = pidx
         order.save(update_fields=["payment_ref"])
 
-        return Response({
+        payload = {
             "order_id": order.id,
             "token": str(order.token),
             "order_number": order.order_number,
-            "pidx": sandbox_pidx,
-            "payment_url": sandbox_payment_url,
+            "pidx": pidx,
+            "payment_url": payment_url,
             "status": order.status,
-            "is_sandbox": True,
-        }, status=status.HTTP_201_CREATED)
+        }
+        if is_sandbox:
+            payload["is_sandbox"] = True
+        return Response(payload, status=status.HTTP_201_CREATED)
 
 
 class StoreKhaltiVerifyView(StorePublicMixin, APIView):
@@ -946,39 +914,10 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
                 "status": order.status,
             })
 
-        verified = False
-        if pidx.startswith("sandbox_") or "sandbox" in pidx:
-            if self.store.khalti_mode == "TEST":
-                verified = True
-            else:
-                verified = False
-        else:
-            custom_key = self.store.get_khalti_secret_key()
-            secret_key = custom_key or getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "Key 0817c7689ee24db18df67142aa7fef1c")
-            if not secret_key.startswith("Key "):
-                secret_key = f"Key {secret_key}"
-
-            lookup_url = (
-                "https://khalti.com/api/v2/epayment/lookup/"
-                if self.store.khalti_mode == "LIVE"
-                else "https://dev.khalti.com/api/v2/epayment/lookup/"
-            )
-
-            try:
-                resp = requests.post(
-                    lookup_url,
-                    json={"pidx": pidx},
-                    headers={"Authorization": secret_key, "Content-Type": "application/json"},
-                    timeout=5,
-                )
-                if resp.status_code == 200:
-                    data = resp.json()
-                    if data.get("status") == "Completed":
-                        verified = True
-            except Exception:
-                verified = False
+        verified, rejection_reason = verify_khalti_epayment(store=self.store, pidx=pidx)
 
         if verified:
+            mode_label = "Khalti Live" if self.store.khalti_mode == "LIVE" else "Khalti Sandbox"
             with transaction.atomic():
                 order.status = "PAID"
                 order.payment_status = "PAID"
@@ -990,7 +929,7 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
                     order=order,
                     from_status="PENDING_PAYMENT",
                     to_status="PAID",
-                    note=f"Payment verified via Khalti Sandbox (pidx: {pidx})",
+                    note=f"Payment verified via {mode_label}.",
                     actor=request.user if request.user.is_authenticated else None,
                 )
 
@@ -1002,6 +941,11 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
                 "status": order.status,
             })
         else:
+            failure_note = (
+                f"Khalti payment verification failed ({rejection_reason})"
+                if rejection_reason
+                else "Khalti payment verification failed."
+            )
             with transaction.atomic():
                 order.status = "PAYMENT_FAILED"
                 order.payment_status = "FAILED"
@@ -1012,12 +956,12 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
                     order=order,
                     from_status="PENDING_PAYMENT",
                     to_status="PAYMENT_FAILED",
-                    note=f"Khalti payment verification failed for pidx: {pidx}",
+                    note=failure_note,
                     actor=request.user if request.user.is_authenticated else None,
                 )
 
             return Response(
-                {"error": "Payment verification failed or was cancelled."},
+                {"error": rejection_reason or "Payment verification failed or was cancelled."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
@@ -1235,17 +1179,34 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                 except (ValueError, TypeError):
                     pass
 
-        if "khalti_mode" in data:
-            mode = str(data["khalti_mode"]).strip().upper()
-            if mode in ["TEST", "LIVE"]:
-                store.khalti_mode = mode
+        khalti_fields_touched = any(
+            k in data for k in ("khalti_mode", "khalti_secret_key", "clear_khalti_secret_key")
+        )
+        if khalti_fields_touched:
+            candidate_mode = (
+                str(data["khalti_mode"]).strip().upper()
+                if "khalti_mode" in data
+                else store.khalti_mode
+            )
+            if data.get("clear_khalti_secret_key"):
+                candidate_key = ""
+            elif "khalti_secret_key" in data and str(data["khalti_secret_key"]).strip():
+                candidate_key = str(data["khalti_secret_key"]).strip()
+            else:
+                candidate_key = store.get_khalti_secret_key()
 
-        if data.get("clear_khalti_secret_key"):
-            store.set_khalti_secret_key("")
-        elif "khalti_secret_key" in data:
-            raw_key = str(data["khalti_secret_key"]).strip()
-            if raw_key:
-                store.set_khalti_secret_key(raw_key)
+            khalti_err = validate_khalti_settings_update(
+                target_mode=candidate_mode,
+                effective_secret_key=candidate_key,
+            )
+            if khalti_err:
+                return Response({"error": khalti_err}, status=status.HTTP_400_BAD_REQUEST)
+
+            store.khalti_mode = candidate_mode
+            if data.get("clear_khalti_secret_key"):
+                store.set_khalti_secret_key("")
+            elif "khalti_secret_key" in data and str(data["khalti_secret_key"]).strip():
+                store.set_khalti_secret_key(str(data["khalti_secret_key"]).strip())
 
         store.save()
         MerchantAuditLog.objects.create(
@@ -1879,8 +1840,11 @@ class StoreCreateView(APIView):
                 },
                 ip_address=request.META.get("REMOTE_ADDR"),
             )
-            # Create rich starter catalog with curated category photography & variants
-            seed_starter_catalog(store)
+            try:
+                # Create rich starter catalog with curated category photography & variants
+                seed_starter_catalog(store)
+            finally:
+                reset_current_tenant_id(database_cleanup=True)
 
         return Response(StorePublicSerializer(store).data, status=status.HTTP_201_CREATED)
 
@@ -1978,21 +1942,39 @@ class MerchantMediaUploadView(StoreMerchantMixin, APIView):
         raw_ext = Path(uploaded_file.name).suffix.lower()
         ext = raw_ext if raw_ext in allowed_exts else ".jpg"
 
-        filename = f"prod_{int(timezone.now().timestamp())}_{secrets.token_hex(8)}{ext}"
-        base_dir = (settings.BASE_DIR.parent / "frontend" / "public" / "uploads" / "stores" / clean_slug / "products").resolve()
-        trusted_root = (settings.BASE_DIR.parent / "frontend" / "public" / "uploads").resolve()
+        stem = f"prod_{int(timezone.now().timestamp())}_{secrets.token_hex(8)}"
+        filename = f"{stem}{ext}"
 
-        if not str(base_dir).startswith(str(trusted_root)):
-            return Response({"error": "Invalid upload destination."}, status=status.HTTP_400_BAD_REQUEST)
+        if is_cloudinary_configured():
+            try:
+                url = upload_store_image_to_cloudinary(
+                    uploaded_file=uploaded_file,
+                    clean_store_slug=clean_slug,
+                    public_id=stem,
+                    store_id=self.store.id,
+                )
+            except CloudinaryUploadError as exc:
+                return Response({"error": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        elif getattr(settings, "ALLOW_LOCAL_MEDIA_UPLOADS", False):
+            base_dir = (settings.BASE_DIR.parent / "frontend" / "public" / "uploads" / "stores" / clean_slug / "products").resolve()
+            trusted_root = (settings.BASE_DIR.parent / "frontend" / "public" / "uploads").resolve()
 
-        base_dir.mkdir(parents=True, exist_ok=True)
-        file_path = base_dir / filename
+            if not str(base_dir).startswith(str(trusted_root)):
+                return Response({"error": "Invalid upload destination."}, status=status.HTTP_400_BAD_REQUEST)
 
-        with open(file_path, "wb+") as dest:
-            for chunk in uploaded_file.chunks():
-                dest.write(chunk)
+            base_dir.mkdir(parents=True, exist_ok=True)
+            file_path = base_dir / filename
 
-        url = f"/uploads/stores/{clean_slug}/products/{filename}"
+            with open(file_path, "wb+") as dest:
+                for chunk in uploaded_file.chunks():
+                    dest.write(chunk)
+
+            url = f"/uploads/stores/{clean_slug}/products/{filename}"
+        else:
+            return Response(
+                {"error": "Cloud media storage is not configured."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
 
         MerchantAuditLog.objects.create(
             store=self.store,

@@ -1,2 +1,2 @@
-release: python manage.py migrate --noinput
-web: gunicorn core.wsgi:application --log-file -
+web: gunicorn core.wsgi --preload --worker-class gthread --workers ${WEB_CONCURRENCY:-2} --threads 4 --timeout 30 --keep-alive 5 --max-requests 1000 --max-requests-jitter 100 --access-logfile -
+release: DATABASE_URL=$DATABASE_URL_DIRECT python manage.py migrate --noinput

@@ -46,32 +46,39 @@ def set_current_tenant_id(store_id: int | str, is_local: bool = True):
     Switches to the restricted non-bypass role 'shopcraft_app' and sets
     app.current_store_id to the active store ID in a single round-trip command.
 
-    When is_local=True (default), settings are transaction-local (SET LOCAL / set_config(..., true)),
-    guaranteeing they automatically revert on COMMIT or ROLLBACK.
+    Strictly requires is_local=True and an active transaction.atomic() block on PostgreSQL
+    because SET LOCAL is a no-op outside a transaction block and session-level SET leaks
+    across Neon's pooled connections.
     """
+    if not is_local:
+        raise RuntimeError(
+            "Session-level tenant context (is_local=False) is forbidden on pooled connections; "
+            "use is_local=True inside transaction.atomic()."
+        )
+
+    if connection.vendor == "postgresql" and not connection.in_atomic_block:
+        raise RuntimeError(
+            "set_current_tenant_id(is_local=True) requires an active transaction.atomic() block; "
+            "SET LOCAL is a no-op outside a transaction."
+        )
+
     _thread_locals.store_id = store_id
-    _thread_locals.is_local = is_local
+    _thread_locals.is_local = True
     if connection.vendor == "postgresql":
         with connection.cursor() as cursor:
-            if is_local:
-                role_clause = "SET LOCAL ROLE shopcraft_app; " if _check_shopcraft_role(cursor) else ""
-                cursor.execute(
-                    f"{role_clause}SET LOCAL app.bypass_rls = 'off'; SELECT set_config('app.current_store_id', %s, true);",
-                    [str(store_id)],
-                )
-            else:
-                role_clause = "SET ROLE shopcraft_app; " if _check_shopcraft_role(cursor) else ""
-                cursor.execute(
-                    f"{role_clause}SET app.bypass_rls = 'off'; SELECT set_config('app.current_store_id', %s, false);",
-                    [str(store_id)],
-                )
+            role_clause = "SET LOCAL ROLE shopcraft_app; " if _check_shopcraft_role(cursor) else ""
+            cursor.execute(
+                f"{role_clause}SET LOCAL app.bypass_rls = 'off'; SELECT set_config('app.current_store_id', %s, true);",
+                [str(store_id)],
+            )
 
 
 def reset_current_tenant_id(database_cleanup: bool = True):
     """
-    Resets the tenant context back to None on thread locals and optionally clears
-    PostgreSQL session/local settings in a single transaction-local round trip.
-    Only fires database cleanup if a tenant context was active and database_cleanup is True.
+    Resets the tenant context back to None on thread locals and clears
+    PostgreSQL transaction-local settings when still inside an active atomic block
+    (e.g., savepoints or nested contexts). Post-commit connections automatically
+    clear SET LOCAL settings at COMMIT/ROLLBACK.
     """
     had_store = getattr(_thread_locals, "store_id", None) is not None
     _thread_locals.store_id = None
@@ -79,19 +86,23 @@ def reset_current_tenant_id(database_cleanup: bool = True):
 
     if database_cleanup and had_store and connection.vendor == "postgresql":
         try:
-            if connection.connection is not None and not getattr(connection, "needs_rollback", False):
+            if (
+                connection.connection is not None
+                and connection.in_atomic_block
+                and not getattr(connection, "needs_rollback", False)
+            ):
                 with connection.cursor() as cursor:
                     cursor.execute(
                         "SET LOCAL ROLE NONE; SET LOCAL app.bypass_rls = 'off'; "
                         "SELECT set_config('app.current_store_id', '', true);"
                     )
         except Exception as conn_err:
-            logger.debug(f"Connection cleanup in reset_current_tenant_id: {conn_err}")
+            logger.debug("Connection cleanup in reset_current_tenant_id: %s", type(conn_err).__name__)
 
 
 @receiver(request_finished)
 def on_request_finished_cleanup(sender, **kwargs):
-    """Guarantees tenant session role and parameters are reset after every HTTP request."""
+    """Guarantees thread-local tenant state is reset after every HTTP request."""
     reset_current_tenant_id()
 
 
@@ -103,9 +114,10 @@ class TenantDatabaseContext:
     def __init__(self, store_id: int | str):
         self.store_id = store_id
         self._atomic = None
+        self._prev = None
 
     def __enter__(self):
-        _thread_locals.store_id = self.store_id
+        self._prev = getattr(_thread_locals, "store_id", None)
         self._atomic = transaction.atomic()
         self._atomic.__enter__()
         set_current_tenant_id(self.store_id, is_local=True)
@@ -117,13 +129,28 @@ class TenantDatabaseContext:
             return self._atomic.__exit__(exc_type, exc_val, exc_tb)
         finally:
             self._atomic = None
+            if self._prev not in (None, "ALL"):
+                if (
+                    connection.vendor != "postgresql"
+                    or (connection.in_atomic_block and not getattr(connection, "needs_rollback", False))
+                ):
+                    set_current_tenant_id(self._prev, is_local=True)
+            elif self._prev == "ALL":
+                _thread_locals.store_id = "ALL"
+                if (
+                    connection.vendor == "postgresql"
+                    and connection.in_atomic_block
+                    and not getattr(connection, "needs_rollback", False)
+                ):
+                    with connection.cursor() as cursor:
+                        cursor.execute("SET LOCAL ROLE NONE; SET LOCAL app.bypass_rls = 'on';")
 
 
 class BypassRLSContext:
     """
     Context manager for system/admin operations that require bypassing RLS.
     Guarantees transaction-local settings (SET LOCAL ROLE NONE and SET LOCAL app.bypass_rls = 'on')
-    inside transaction.atomic(), preventing any session-level SET/RESET ROLE leaks.
+    inside transaction.atomic(), and restores any outer tenant context on exit.
     """
     def __init__(self):
         self._atomic = None
@@ -145,20 +172,30 @@ class BypassRLSContext:
             return self._atomic.__exit__(exc_type, exc_val, exc_tb)
         finally:
             self._atomic = None
+            if (
+                connection.vendor == "postgresql"
+                and connection.in_atomic_block
+                and not getattr(connection, "needs_rollback", False)
+            ):
+                if self._prev not in (None, "ALL"):
+                    set_current_tenant_id(self._prev, is_local=True)
+                elif self._prev is None:
+                    with connection.cursor() as cursor:
+                        cursor.execute("SET LOCAL app.bypass_rls = 'off';")
 
 
-def apply_postgres_rls_policies():
+def apply_postgres_rls_policies(schema_editor=None):
     """
-    Applies PostgreSQL Row-Level Security (RLS) and tenant isolation policies
-    to all tenant-owned tables in PostgreSQL.
+    Applies PostgreSQL Row-Level Security (RLS), FORCE ROW LEVEL SECURITY,
+    and tenant isolation policies to all tenant-owned tables in PostgreSQL.
     """
-    if connection.vendor != "postgresql":
+    db_conn = schema_editor.connection if schema_editor is not None else connection
+    if db_conn.vendor != "postgresql":
         logger.info("Database is not PostgreSQL; skipping Postgres RLS application.")
         return {"status": "skipped", "reason": "non-postgres"}
 
     applied_tables = []
-    with connection.cursor() as cursor:
-        # Ensure role shopcraft_app exists dynamically across Neon, CI, or self-hosted Postgres
+    with db_conn.cursor() as cursor:
         cursor.execute("""
             DO $$
             BEGIN
@@ -166,7 +203,9 @@ def apply_postgres_rls_policies():
                     CREATE ROLE shopcraft_app WITH LOGIN NOBYPASSRLS;
                 END IF;
                 EXECUTE format('GRANT CONNECT ON DATABASE %I TO shopcraft_app', current_database());
-                EXECUTE format('GRANT shopcraft_app TO %I', current_user);
+                IF NOT pg_has_role(current_user, 'shopcraft_app', 'MEMBER') THEN
+                    EXECUTE format('GRANT shopcraft_app TO %I', current_user);
+                END IF;
             END
             $$;
             GRANT USAGE ON SCHEMA public TO shopcraft_app;
@@ -198,5 +237,7 @@ def apply_postgres_rls_policies():
             """)
             applied_tables.append(tbl)
 
-    logger.info(f"Applied PostgreSQL RLS to {len(applied_tables)} tables: {applied_tables}")
+    global _shopcraft_role_exists
+    _shopcraft_role_exists = True
+    logger.info("Applied PostgreSQL FORCE RLS to %d tables.", len(applied_tables))
     return {"status": "applied", "tables": applied_tables}

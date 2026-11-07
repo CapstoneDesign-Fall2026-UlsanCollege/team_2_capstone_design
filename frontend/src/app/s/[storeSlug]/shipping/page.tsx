@@ -3,9 +3,10 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Banknote, CreditCard, HelpCircle, MapPin, Phone, ShieldCheck, Truck } from "lucide-react";
 import { formatNpr, StorePublicMetadata } from "@/lib/api";
+import { getServerApiOrigin } from "@/lib/env";
 
 async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null> {
-  const origin = process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000";
+  const origin = getServerApiOrigin();
   try {
     const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
       cache: "no-store",

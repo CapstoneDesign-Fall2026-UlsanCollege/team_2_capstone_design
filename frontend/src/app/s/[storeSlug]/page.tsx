@@ -1,6 +1,7 @@
 import { notFound } from "next/navigation";
 import { StorefrontCatalogView } from "@/components/storefront/StorefrontCatalogView";
 import { ProductItem, StorePublicMetadata } from "@/lib/api";
+import { getServerApiOrigin } from "@/lib/env";
 
 interface StoreCatalogData {
   products: ProductItem[];
@@ -10,7 +11,7 @@ async function fetchStoreData(storeSlug: string): Promise<{
   store: StorePublicMetadata | null;
   catalog: StoreCatalogData;
 }> {
-  const origin = process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000";
+  const origin = getServerApiOrigin();
   const storeRes = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
     cache: "no-store",
   });

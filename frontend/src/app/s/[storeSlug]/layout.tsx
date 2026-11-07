@@ -7,6 +7,7 @@ import { CartProvider } from "@/components/storefront/CartContext";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { ThemePreviewWatcher } from "@/components/storefront/ThemePreviewWatcher";
 import { resolveSafeTenantTokens } from "@/lib/theme-contrast";
+import { getServerApiOrigin } from "@/lib/env";
 
 // Uniform typography across all tenants: Fraunces (headlines) + Inter (UI)
 const fraunces = Fraunces({
@@ -35,7 +36,7 @@ interface StorePublicData {
 }
 
 async function fetchStore(storeSlug: string): Promise<StorePublicData | null> {
-  const origin = process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000";
+  const origin = getServerApiOrigin();
   const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
     cache: "no-store",
   });

@@ -13,6 +13,7 @@ import {
   ShoppingBag,
 } from "lucide-react";
 import { formatNpr, OrderDetail, StorePublicMetadata } from "@/lib/api";
+import { getServerApiOrigin } from "@/lib/env";
 import { Chip, ChipTone } from "@/components/ui/chip";
 import { OrderAccountBanner, OrderHeaderNav } from "@/components/storefront/OrderAccountBanner";
 
@@ -21,7 +22,7 @@ async function fetchOrderData(
   orderId: string,
   token?: string
 ): Promise<{ order: OrderDetail | null; store: StorePublicMetadata | null }> {
-  const origin = process.env.DJANGO_API_ORIGIN || "http://127.0.0.1:8000";
+  const origin = getServerApiOrigin();
   try {
     const orderUrl = token
       ? `${origin}/api/stores/${encodeURIComponent(storeSlug)}/public-orders/${encodeURIComponent(orderId)}/?token=${encodeURIComponent(token)}`
