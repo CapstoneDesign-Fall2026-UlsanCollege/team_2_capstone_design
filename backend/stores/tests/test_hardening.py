@@ -127,6 +127,55 @@ class PostgresForceRLSAndPooledTransactionTests(APITransactionTestCase):
                     f"Missing tenant_isolation_policy on {table_name}",
                 )
 
+    def test_all_store_fk_tables_in_database_enforce_rls(self):
+        """
+        Dynamically inspects PostgreSQL information_schema to find every single table in
+        the database that has a Foreign Key referencing stores_store(id).
+        Guarantees:
+        1. Every discovered table is registered in TENANT_TABLES.
+        2. Every discovered table has both relrowsecurity=True and relforcerowsecurity=True in pg_class.
+        3. Fails immediately if any future migration adds a table with a store FK without FORCE RLS.
+        """
+        if connection.vendor != "postgresql":
+            self.skipTest("PostgreSQL-specific dynamic schema check.")
+
+        with connection.cursor() as cursor:
+            cursor.execute("""
+                SELECT tc.table_name
+                FROM information_schema.table_constraints AS tc
+                JOIN information_schema.key_column_usage AS kcu
+                  ON tc.constraint_name = kcu.constraint_name
+                  AND tc.table_schema = kcu.table_schema
+                JOIN information_schema.constraint_column_usage AS ccu
+                  ON ccu.constraint_name = tc.constraint_name
+                  AND ccu.table_schema = tc.table_schema
+                WHERE tc.constraint_type = 'FOREIGN KEY'
+                  AND ccu.table_name = 'stores_store'
+                  AND tc.table_schema = 'public'
+                GROUP BY tc.table_name
+                ORDER BY tc.table_name;
+            """)
+            db_fk_tables = sorted([r[0] for r in cursor.fetchall()])
+            self.assertGreater(len(db_fk_tables), 0, "Expected at least 1 table with FK to stores_store.")
+
+            for tbl in db_fk_tables:
+                self.assertIn(
+                    tbl,
+                    TENANT_TABLES,
+                    f"Table '{tbl}' has a Foreign Key to stores_store but is missing from TENANT_TABLES!",
+                )
+
+            for tbl in db_fk_tables:
+                cursor.execute(
+                    "SELECT relrowsecurity, relforcerowsecurity FROM pg_catalog.pg_class WHERE relname = %s;",
+                    [tbl],
+                )
+                row = cursor.fetchone()
+                self.assertIsNotNone(row, f"Table '{tbl}' missing from pg_class")
+                relrowsecurity, relforcerowsecurity = row
+                self.assertTrue(relrowsecurity, f"Table '{tbl}' lacks ENABLE ROW LEVEL SECURITY!")
+                self.assertTrue(relforcerowsecurity, f"Table '{tbl}' lacks FORCE ROW LEVEL SECURITY!")
+
     def test_set_local_atomic_guard_and_two_tenant_pooled_connection_isolation(self):
         with self.assertRaises(RuntimeError):
             set_current_tenant_id(self.store_a.id, is_local=False)

@@ -1,6 +1,6 @@
 from datetime import timedelta
 from django.conf import settings
-from django.db import transaction
+from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Prefetch, Q, Sum
 from django.http import Http404
 from django.urls import path
@@ -24,7 +24,9 @@ from stores.khalti import (
     validate_khalti_settings_update,
     verify_khalti_epayment,
 )
+from accounts.otp import compute_salted_ip_hash, get_client_ip
 from stores.models import (
+    ActionRateLimit,
     MerchantAuditLog,
     Customer,
     Store,
@@ -1621,9 +1623,29 @@ class StoreSlugCheckView(APIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
+        # 1. Multi-worker shared rate limiting per IP (max 30 slug checks per minute)
+        client_ip = get_client_ip(request)
+        ip_hash = compute_salted_ip_hash(client_ip, "check_slug")
+        allowed, retry_after = ActionRateLimit.check_and_record("check_slug", ip_hash, limit=30, window_seconds=60)
+        if not allowed:
+            res = Response(
+                {"available": False, "reason": "Too many slug checks. Please try again shortly.", "retry_after": retry_after},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+            res["Cache-Control"] = "private, no-store"
+            return res
+
         raw_slug = request.query_params.get("slug", "").strip().lower()
         if not raw_slug:
             res = Response({"available": False, "reason": "Slug cannot be empty."})
+            res["Cache-Control"] = "public, max-age=15"
+            return res
+        if len(raw_slug) < 3:
+            res = Response({"available": False, "reason": "Slug must be at least 3 characters long."})
+            res["Cache-Control"] = "public, max-age=15"
+            return res
+        if len(raw_slug) > 60:
+            res = Response({"available": False, "reason": "Slug cannot exceed 60 characters."})
             res["Cache-Control"] = "public, max-age=15"
             return res
         if raw_slug in RESERVED_STORE_SLUGS or not SLUG_REGEX.match(raw_slug):
@@ -1864,6 +1886,38 @@ class StoreCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        # 1. Per-User Store Cap: max 3 owned stores per merchant account
+        with BypassRLSContext():
+            owned_count = StoreMembership.all_objects.filter(user=request.user, role="OWNER").count()
+            if owned_count >= 3:
+                return Response(
+                    {"error": "You have reached the maximum limit of 3 stores per merchant account."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            # 2. Per-User Creation Rate Limit: max 5 stores created per user in 24 hours
+            now = timezone.now()
+            recent_creations = StoreMembership.all_objects.filter(
+                user=request.user,
+                role="OWNER",
+                store__created_at__gte=now - timedelta(hours=24),
+            ).count()
+            if recent_creations >= 5:
+                return Response(
+                    {"error": "Too many stores created recently. Please try again tomorrow."},
+                    status=status.HTTP_429_TOO_MANY_REQUESTS,
+                )
+
+        # 3. Multi-worker shared rate limiting per IP (max 10 store creations per IP in 24 hours)
+        client_ip = get_client_ip(request)
+        ip_hash = compute_salted_ip_hash(client_ip, "store_create")
+        allowed, retry_after = ActionRateLimit.check_and_record("store_create", ip_hash, limit=10, window_seconds=86400)
+        if not allowed:
+            return Response(
+                {"error": "Too many store creations from this network. Please try again later."},
+                status=status.HTTP_429_TOO_MANY_REQUESTS,
+            )
+
         name = request.data.get("name", "").strip()
         slug = request.data.get("slug", "").strip().lower()
         theme_preset = request.data.get("theme_preset", "editorial-warm")
@@ -1881,14 +1935,15 @@ class StoreCreateView(APIView):
             f"We prioritize customer satisfaction, reliable express courier delivery, and honest service."
         )
 
-        if not name:
-            return Response({"name": ["Store name is required."]}, status=status.HTTP_400_BAD_REQUEST)
-        if not slug:
-            return Response({"slug": ["Store slug is required."]}, status=status.HTTP_400_BAD_REQUEST)
+        # 4. Comprehensive slug and name validation
+        if not name or len(name) > 120:
+            return Response({"error": "Store name is required and cannot exceed 120 characters."}, status=status.HTTP_400_BAD_REQUEST)
+        if not slug or len(slug) < 3 or len(slug) > 60:
+            return Response({"error": "Store slug must be between 3 and 60 characters long."}, status=status.HTTP_400_BAD_REQUEST)
         if slug in RESERVED_STORE_SLUGS or not SLUG_REGEX.match(slug):
-            return Response({"slug": ["Invalid or reserved store slug."]}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "Store slug contains invalid characters or is a reserved system route."}, status=status.HTTP_400_BAD_REQUEST)
         if Store.objects.filter(slug=slug).exists():
-            return Response({"slug": ["This URL slug is already taken."]}, status=status.HTTP_400_BAD_REQUEST)
+            return Response({"error": "This store URL is already taken. Please choose another."}, status=status.HTTP_400_BAD_REQUEST)
 
         valid_presets = [c[0] for c in Store.THEME_PRESET_CHOICES]
         if theme_preset not in valid_presets:
@@ -1905,48 +1960,55 @@ class StoreCreateView(APIView):
                 banner_url = "/images/products/placeholder.svg"
                 banner_url = "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1200&q=80"
 
-        with transaction.atomic():
-            store = Store.objects.create(
-                name=name,
-                slug=slug,
-                category=category,
-                city=city,
-                province=province,
-                theme_preset=theme_preset,
-                tagline=tagline,
-                banner_url=banner_url,
-                contact_phone=contact_phone,
-                contact_email=contact_email,
-                support_email=str(request.data.get("support_email", "")).strip() or contact_email,
-                address=address,
-                story_headline=story_headline,
-                about_text=about_text,
+        # 5. Atomic store creation with DB unique constraint enforcement and IntegrityError handling
+        try:
+            with transaction.atomic():
+                store = Store.objects.create(
+                    name=name,
+                    slug=slug,
+                    category=category,
+                    city=city,
+                    province=province,
+                    theme_preset=theme_preset,
+                    tagline=tagline,
+                    banner_url=banner_url,
+                    contact_phone=contact_phone,
+                    contact_email=contact_email,
+                    support_email=str(request.data.get("support_email", "")).strip() or contact_email,
+                    address=address,
+                    story_headline=story_headline,
+                    about_text=about_text,
+                )
+                set_current_tenant_id(store.id, is_local=True)
+                StoreMembership.objects.create(
+                    store=store,
+                    user=request.user,
+                    role="OWNER",
+                )
+                MerchantAuditLog.objects.create(
+                    store=store,
+                    actor=request.user,
+                    action="STORE_CREATE",
+                    entity_type="Store",
+                    entity_id=str(store.id),
+                    details={
+                        "name": store.name,
+                        "slug": store.slug,
+                        "category": category,
+                        "theme_preset": store.theme_preset,
+                    },
+                    ip_address=None,
+                )
+                try:
+                    # Create rich starter catalog with curated category photography & variants
+                    seed_starter_catalog(store)
+                finally:
+                    reset_current_tenant_id(database_cleanup=True)
+        except IntegrityError:
+            return Response(
+                {"error": "This store URL is already taken. Please choose another."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-            set_current_tenant_id(store.id, is_local=True)
-            StoreMembership.objects.create(
-                store=store,
-                user=request.user,
-                role="OWNER",
-            )
-            MerchantAuditLog.objects.create(
-                store=store,
-                actor=request.user,
-                action="STORE_CREATE",
-                entity_type="Store",
-                entity_id=str(store.id),
-                details={
-                    "name": store.name,
-                    "slug": store.slug,
-                    "category": category,
-                    "theme_preset": store.theme_preset,
-                },
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
-            try:
-                # Create rich starter catalog with curated category photography & variants
-                seed_starter_catalog(store)
-            finally:
-                reset_current_tenant_id(database_cleanup=True)
 
         return Response(StorePublicSerializer(store).data, status=status.HTTP_201_CREATED)
 

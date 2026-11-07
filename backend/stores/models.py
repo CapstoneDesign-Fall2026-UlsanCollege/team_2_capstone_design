@@ -1,23 +1,67 @@
 import re
 from contextlib import nullcontext
+from datetime import timedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.db import connection, models, transaction
+from django.utils import timezone
 
 RESERVED_STORE_SLUGS = frozenset({
-    "admin", "api", "merchant", "s", "login", "signup", "account",
-    "static", "media", "health", "new", "settings", "checkout", "create", "check-slug"
+    "admin", "api", "merchant", "s", "login", "signup", "register", "registration", "account",
+    "static", "media", "health", "new", "settings", "checkout", "create", "check-slug",
+    "auth", "cart", "order", "orders", "terms", "privacy", "about", "contact",
+    "shipping", "coming-soon", "origins", "offline", "favicon", "robots", "sitemap"
 })
 
 SLUG_REGEX = re.compile(r"^[a-z0-9]+(?:-[a-z0-9]+)*$")
 
 
 def validate_store_slug(value: str):
-    slug = value.lower().strip()
+    slug = (value or "").lower().strip()
+    if len(slug) < 3:
+        raise ValidationError("Store slug must be at least 3 characters long.")
+    if len(slug) > 60:
+        raise ValidationError("Store slug cannot exceed 60 characters.")
     if slug in RESERVED_STORE_SLUGS:
         raise ValidationError(f"'{slug}' is a reserved system route.")
     if not SLUG_REGEX.match(slug):
-        raise ValidationError("Store slug must use lowercase letters, numbers, and single hyphens.")
+        raise ValidationError("Store slug must use lowercase letters, numbers, and single hyphens without consecutive hyphens.")
+
+
+class ActionRateLimit(models.Model):
+    """
+    Platform-level, multi-worker shared rate limiting table.
+    Tracks action attempts using salted SHA256 hashes of client IPs.
+    Raw IP addresses are NEVER persisted in this table.
+    """
+    action = models.CharField(max_length=32, db_index=True)
+    ip_hash = models.CharField(max_length=64, db_index=True)
+    created_at = models.DateTimeField(auto_now_add=True, db_index=True)
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["action", "ip_hash", "-created_at"], name="rate_act_ip_created_idx"),
+        ]
+
+    @classmethod
+    def check_and_record(cls, action: str, ip_hash: str, limit: int, window_seconds: int) -> tuple[bool, int]:
+        now = timezone.now()
+        window_start = now - timedelta(seconds=window_seconds)
+
+        recent_hits = list(
+            cls.objects.filter(action=action, ip_hash=ip_hash, created_at__gte=window_start)
+            .order_by("-created_at")
+            .values_list("created_at", flat=True)[:limit]
+        )
+        if len(recent_hits) >= limit:
+            oldest_hit = recent_hits[-1]
+            elapsed = (now - oldest_hit).total_seconds()
+            retry_after = max(1, int(window_seconds - elapsed))
+            return False, retry_after
+
+        cls.objects.create(action=action, ip_hash=ip_hash)
+        cls.objects.filter(created_at__lt=now - timedelta(hours=24)).delete()
+        return True, 0
 
 
 class StoreScopedQuerySet(models.QuerySet):

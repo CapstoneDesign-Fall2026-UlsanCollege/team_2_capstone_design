@@ -40,6 +40,16 @@ def get_client_ip(request) -> str:
     return remote or "127.0.0.1"
 
 
+def compute_salted_ip_hash(ip_address: str, action: str = "") -> str:
+    """
+    Computes an HMAC-SHA256 salted hash of an IP address using DJANGO_SECRET_KEY.
+    Guarantees that raw IP addresses are never stored in rate limit tracking tables.
+    """
+    secret = getattr(settings, "SECRET_KEY", "django-insecure-default-dev-key")
+    message = f"{action}:{ip_address}".encode("utf-8")
+    return hmac.new(secret.encode("utf-8"), message, hashlib.sha256).hexdigest()
+
+
 def get_otp_hmac_key() -> bytes:
     """Derives a domain-separated cryptographic key from DJANGO_SECRET_KEY for OTP hashing."""
     secret = getattr(settings, "SECRET_KEY", "django-insecure-default-dev-key")

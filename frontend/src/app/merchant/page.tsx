@@ -90,6 +90,16 @@ export default function MerchantIndexRedirectPage() {
           </div>
 
           <div className="space-y-2 pt-2">
+            {noAccessEmail !== null && (
+              <Link
+                href="/merchant/new"
+                className="w-full h-11 rounded-lg bg-emerald-500 hover:bg-emerald-400 text-zinc-950 font-semibold text-xs flex items-center justify-center gap-2 transition-colors shadow-md"
+              >
+                <Store className="w-4 h-4" />
+                <span>Create your shop →</span>
+              </Link>
+            )}
+
             <button
               type="button"
               onClick={handleSignOut}
