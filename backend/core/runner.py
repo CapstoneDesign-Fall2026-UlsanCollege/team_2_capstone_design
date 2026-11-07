@@ -26,3 +26,15 @@ class PostgresRLSDiscoverRunner(DiscoverRunner):
             from core.tenant_context import apply_postgres_rls_policies
             apply_postgres_rls_policies()
         return config
+
+    def teardown_databases(self, old_config, **kwargs):
+        if not self.keepdb and connection.vendor == "postgresql":
+            try:
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SELECT pg_terminate_backend(pid) FROM pg_stat_activity "
+                        "WHERE datname = current_database() AND pid <> pg_backend_pid();"
+                    )
+            except Exception:
+                pass
+        return super().teardown_databases(old_config, **kwargs)

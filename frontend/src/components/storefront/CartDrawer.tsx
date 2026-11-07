@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { formatNpr } from "@/lib/api";
 import { useCart } from "./CartContext";
+import { StoreImage } from "./StoreImage";
 
 export function CartDrawer() {
   const router = useRouter();
@@ -163,25 +164,19 @@ export function CartDrawer() {
                   >
                     {/* Thumbnail with neutral placeholder */}
                     <div className="w-16 h-16 rounded-xl border border-[var(--border)] bg-[var(--canvas)] overflow-hidden shrink-0 flex items-center justify-center relative">
-                      {item.imageUrl ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={item.imageUrl}
-                          alt={item.productName}
-                          className="w-full h-full object-cover"
-                          onError={(e) => {
-                            e.currentTarget.style.display = "none";
-                            const fallback = e.currentTarget.parentElement?.querySelector(".img-fallback");
-                            if (fallback) fallback.classList.remove("hidden");
-                          }}
-                        />
-                      ) : null}
-                      <div
-                        className={`img-fallback w-full h-full flex items-center justify-center bg-[var(--canvas)] text-[var(--ink-2)] ${item.imageUrl ? "hidden" : "flex"}`}
-                        aria-hidden="true"
-                      >
-                        <Package className="w-6 h-6 stroke-[1.25] text-[var(--ink-2)] opacity-60" />
-                      </div>
+                      <StoreImage
+                        src={item.imageUrl || ""}
+                        alt={item.productName}
+                        sizes="64px"
+                        fallback={
+                          <div
+                            className="w-full h-full flex items-center justify-center bg-[var(--canvas)] text-[var(--ink-2)]"
+                            aria-hidden="true"
+                          >
+                            <Package className="w-6 h-6 stroke-[1.25] text-[var(--ink-2)] opacity-60" />
+                          </div>
+                        }
+                      />
                     </div>
 
                     {/* Details */}

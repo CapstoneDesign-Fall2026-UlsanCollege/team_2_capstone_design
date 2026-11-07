@@ -4,8 +4,9 @@ import { ProductItem, StorePublicMetadata } from "@/lib/api";
 import { getServerApiOrigin } from "@/lib/env";
 import { ProductDetailView } from "@/components/storefront/ProductDetailView";
 
-interface StoreCatalogData {
-  products: ProductItem[];
+interface StoreProductDetailData {
+  product: ProductItem;
+  related_products: ProductItem[];
 }
 
 async function fetchStoreAndProduct(
@@ -17,42 +18,36 @@ async function fetchStoreAndProduct(
   relatedProducts: ProductItem[];
 }> {
   const origin = getServerApiOrigin();
-  const cleanTarget = decodeURIComponent(productIdOrSlug).trim().toLowerCase();
+  const encodedSlug = encodeURIComponent(storeSlug);
+  const cleanRef = encodeURIComponent(decodeURIComponent(productIdOrSlug).trim());
 
   try {
-    const [storeRes, catalogRes] = await Promise.all([
-      fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-        cache: "no-store",
+    const [storeRes, pdpRes] = await Promise.all([
+      fetch(`${origin}/api/stores/${encodedSlug}/`, {
+        next: { revalidate: 60 },
       }),
-      fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/catalog/`, {
-        cache: "no-store",
+      fetch(`${origin}/api/stores/${encodedSlug}/products/${cleanRef}/`, {
+        next: { revalidate: 60 },
       }),
     ]);
 
-    const store: StorePublicMetadata | null = storeRes.ok
-      ? await storeRes.json()
-      : null;
+    if (!storeRes.ok || !pdpRes.ok) {
+      return {
+        store: storeRes.ok ? await storeRes.json() : null,
+        product: null,
+        relatedProducts: [],
+      };
+    }
 
-    const catalog: StoreCatalogData = catalogRes.ok
-      ? await catalogRes.json()
-      : { products: [] };
-
-    // Find product strictly from backend catalog by id or slug
-    const product: ProductItem | null =
-      catalog.products?.find(
-        (p) =>
-          String(p.id) === cleanTarget ||
-          (p.slug && p.slug.toLowerCase() === cleanTarget)
-      ) || null;
-
-    const relatedProducts = (
-      catalog.products?.length > 0 ? catalog.products : []
-    ).filter((p) => p.id !== product?.id).slice(0, 3);
+    const [store, pdpData]: [StorePublicMetadata, StoreProductDetailData] = await Promise.all([
+      storeRes.json(),
+      pdpRes.json(),
+    ]);
 
     return {
       store,
-      product,
-      relatedProducts,
+      product: pdpData.product || null,
+      relatedProducts: pdpData.related_products || [],
     };
   } catch {
     return {

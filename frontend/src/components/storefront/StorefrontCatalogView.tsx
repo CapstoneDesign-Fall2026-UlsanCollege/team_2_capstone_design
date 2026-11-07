@@ -15,6 +15,7 @@ import {
 } from "lucide-react";
 import { formatNpr, ProductItem, StorePublicMetadata } from "@/lib/api";
 import { StorefrontHeader } from "./StorefrontHeader";
+import { StoreImage } from "./StoreImage";
 import { ProductGrid } from "./ProductGrid";
 import { ProductDetailSheet, SelectedCartItem } from "./ProductDetailSheet";
 import { useCart } from "./CartContext";
@@ -387,27 +388,21 @@ export function StorefrontCatalogView({
             {/* Right Column: Real product photo with caption row below */}
             <div>
               <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
-                {heroImageUrl ? (
-                  // eslint-disable-next-line @next/next/no-img-element
-                  <img
-                    src={heroImageUrl}
-                    alt={featuredProduct?.name || store.name}
-                    loading="eager"
-                    onError={(e) => {
-                      e.currentTarget.style.display = "none";
-                      const fallback = e.currentTarget.parentElement?.querySelector(".hero-img-fallback");
-                      if (fallback) fallback.classList.remove("hidden");
-                    }}
-                    className="w-full h-full object-cover"
-                  />
-                ) : null}
-                <div
-                  className={`hero-img-fallback w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)] ${heroImageUrl ? "hidden" : "flex"}`}
-                  aria-hidden="true"
-                >
-                  <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
-                  <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
-                </div>
+                <StoreImage
+                  src={heroImageUrl || ""}
+                  alt={featuredProduct?.name || store.name}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                  fallback={
+                    <div
+                      className="w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)]"
+                      aria-hidden="true"
+                    >
+                      <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
+                      <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
+                    </div>
+                  }
+                />
               </div>
 
               {featuredProduct && (
@@ -452,27 +447,21 @@ export function StorefrontCatalogView({
             )}
 
             <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
-              {heroImageUrl ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={heroImageUrl}
-                  alt={featuredProduct?.name || store.name}
-                  loading="eager"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                    const fallback = e.currentTarget.parentElement?.querySelector(".mobile-hero-fallback");
-                    if (fallback) fallback.classList.remove("hidden");
-                  }}
-                  className="w-full h-full object-cover"
-                />
-              ) : null}
-              <div
-                className={`mobile-hero-fallback w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)] ${heroImageUrl ? "hidden" : "flex"}`}
-                aria-hidden="true"
-              >
-                <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
-                <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
-              </div>
+              <StoreImage
+                src={heroImageUrl || ""}
+                alt={featuredProduct?.name || store.name}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                priority
+                fallback={
+                  <div
+                    className="w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)]"
+                    aria-hidden="true"
+                  >
+                    <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
+                    <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
+                  </div>
+                }
+              />
             </div>
 
             {featuredProduct && (

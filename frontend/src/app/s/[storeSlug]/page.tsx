@@ -12,9 +12,15 @@ async function fetchStoreData(storeSlug: string): Promise<{
   catalog: StoreCatalogData;
 }> {
   const origin = getServerApiOrigin();
-  const storeRes = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-    cache: "no-store",
-  });
+  const encodedSlug = encodeURIComponent(storeSlug);
+  const [storeRes, catalogRes] = await Promise.all([
+    fetch(`${origin}/api/stores/${encodedSlug}/`, {
+      next: { revalidate: 60 },
+    }),
+    fetch(`${origin}/api/stores/${encodedSlug}/catalog/`, {
+      next: { revalidate: 60 },
+    }),
+  ]);
 
   if (storeRes.status === 404) {
     return { store: null, catalog: { products: [] } };
@@ -24,15 +30,10 @@ async function fetchStoreData(storeSlug: string): Promise<{
     throw new Error(`Failed to load store metadata: ${storeRes.status}`);
   }
 
-  const store: StorePublicMetadata = await storeRes.json();
-
-  const catalogRes = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/catalog/`, {
-    cache: "no-store",
-  });
-
-  const catalog: StoreCatalogData = catalogRes.ok
-    ? await catalogRes.json()
-    : { products: [] };
+  const [store, catalog]: [StorePublicMetadata, StoreCatalogData] = await Promise.all([
+    storeRes.json(),
+    catalogRes.ok ? catalogRes.json() : Promise.resolve({ products: [] }),
+  ]);
 
   return { store, catalog };
 }

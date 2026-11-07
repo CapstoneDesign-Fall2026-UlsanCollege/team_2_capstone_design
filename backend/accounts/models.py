@@ -1,10 +1,11 @@
 import secrets
+from contextlib import nullcontext
 from datetime import timedelta
 from django.conf import settings
 from django.contrib.auth.base_user import BaseUserManager
 from django.contrib.auth.models import AbstractUser
 from django.core.validators import RegexValidator
-from django.db import models, transaction
+from django.db import connection, models, transaction
 from django.utils import timezone
 from accounts.otp import check_otp_hash, compute_otp_hash
 
@@ -69,6 +70,11 @@ class EmailOTPChallenge(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["email", "-created_at"], name="otp_email_created_idx"),
+            models.Index(fields=["ip_address", "created_at"], name="otp_ip_created_idx"),
+            models.Index(fields=["created_at"], name="otp_created_idx"),
+        ]
 
     @classmethod
     def check_rate_limits(cls, email: str, ip_address: str | None = None) -> tuple[bool, str | None, int]:
@@ -81,28 +87,22 @@ class EmailOTPChallenge(models.Model):
         """
         email = email.strip().lower()
         now = timezone.now()
+        fifteen_min_ago = now - timedelta(minutes=15)
 
-        # 1. 60s cooldown
-        last_challenge = cls.objects.filter(email=email).order_by("-created_at").first()
-        if last_challenge:
-            elapsed = (now - last_challenge.created_at).total_seconds()
+        # Single indexed query covers both 60s cooldown and 3/15min window
+        recent_timestamps = list(
+            cls.objects.filter(email=email, created_at__gte=fifteen_min_ago)
+            .order_by("-created_at")
+            .values_list("created_at", flat=True)[:3]
+        )
+        if recent_timestamps:
+            elapsed = (now - recent_timestamps[0]).total_seconds()
             if elapsed < 60:
                 return False, "COOLDOWN", max(1, int(60 - elapsed))
-
-        # 2. Max 3 per 15 min per email
-        fifteen_min_ago = now - timedelta(minutes=15)
-        recent_email_count = cls.objects.filter(email=email, created_at__gte=fifteen_min_ago).count()
-        if recent_email_count >= 3:
-            oldest_in_window = (
-                cls.objects.filter(email=email, created_at__gte=fifteen_min_ago)
-                .order_by("created_at")
-                .first()
-            )
-            if oldest_in_window:
-                retry_after = int(15 * 60 - (now - oldest_in_window.created_at).total_seconds())
-            else:
-                retry_after = 900
-            return False, "EMAIL_LIMIT", max(1, retry_after)
+            if len(recent_timestamps) >= 3:
+                oldest_ts = recent_timestamps[-1]
+                retry_after = int(15 * 60 - (now - oldest_ts).total_seconds())
+                return False, "EMAIL_LIMIT", max(1, retry_after)
 
         # 3. Max 10 per hour per IP
         if ip_address:
@@ -117,7 +117,8 @@ class EmailOTPChallenge(models.Model):
     def issue_for_email(cls, email: str, ip_address: str | None = None) -> tuple["EmailOTPChallenge", str]:
         email = email.strip().lower()
         now = timezone.now()
-        with transaction.atomic():
+        atomic_ctx = nullcontext() if connection.in_atomic_block else transaction.atomic()
+        with atomic_ctx:
             # Invalidate prior unconsumed challenges for this email
             cls.objects.filter(email=email, consumed_at__isnull=True).update(consumed_at=now)
 
@@ -143,7 +144,8 @@ class EmailOTPChallenge(models.Model):
     def verify_code(cls, email: str, raw_code: str) -> bool:
         email = email.strip().lower()
         now = timezone.now()
-        with transaction.atomic():
+        atomic_ctx = nullcontext() if connection.in_atomic_block else transaction.atomic()
+        with atomic_ctx:
             challenge = (
                 cls.objects.select_for_update()
                 .filter(email=email, consumed_at__isnull=True)
@@ -186,6 +188,9 @@ class DeliveryAddress(models.Model):
 
     class Meta:
         ordering = ["-is_default", "-created_at"]
+        indexes = [
+            models.Index(fields=["user", "-is_default", "-updated_at"], name="addr_user_def_upd_idx"),
+        ]
 
     def save(self, *args, **kwargs):
         with transaction.atomic():

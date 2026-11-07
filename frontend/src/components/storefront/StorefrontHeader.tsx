@@ -1,9 +1,14 @@
 "use client";
 
 import React from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { Search, ShoppingBag, User } from "lucide-react";
 import { formatNpr } from "@/lib/api";
+import {
+  optimizeCloudinaryUrl,
+  shouldBypassNextImageOptimization,
+} from "@/lib/cloudinary";
 
 export interface StorefrontHeaderProps {
   storeSlug: string;
@@ -100,11 +105,14 @@ export function StorefrontHeader({
             className="flex items-center gap-3 min-w-0 group shrink-0"
           >
             {logoUrl ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={logoUrl}
+              <Image
+                src={optimizeCloudinaryUrl(logoUrl)}
                 alt={storeName}
-                className="h-8 sm:h-9 max-w-[150px] object-contain rounded"
+                width={150}
+                height={36}
+                sizes="150px"
+                unoptimized={shouldBypassNextImageOptimization(optimizeCloudinaryUrl(logoUrl))}
+                className="h-8 sm:h-9 w-auto max-w-[150px] object-contain rounded"
               />
             ) : (
               <div className="flex flex-col text-left">

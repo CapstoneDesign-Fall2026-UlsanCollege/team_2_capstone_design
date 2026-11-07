@@ -64,6 +64,12 @@ class Order(models.Model):
     class Meta:
         unique_together = [("store", "order_number")]
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["store", "-created_at"], name="ord_store_created_idx"),
+            models.Index(fields=["store", "status", "-created_at"], name="ord_store_status_created_idx"),
+            models.Index(fields=["store", "customer", "-created_at"], name="ord_store_cust_created_idx"),
+            models.Index(fields=["store", "token"], name="ord_store_token_idx"),
+        ]
 
     def save(self, *args, **kwargs):
         if not self.token:
@@ -98,6 +104,11 @@ class OrderItem(models.Model):
     line_total_minor = models.PositiveIntegerField()
 
     objects = StoreScopedManager()
+
+    class Meta:
+        indexes = [
+            models.Index(fields=["store", "order"], name="orditem_store_order_idx"),
+        ]
 
     def save(self, *args, **kwargs):
         if self.order_id and not self.store_id:
@@ -134,6 +145,9 @@ class OrderEvent(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["order", "-created_at"], name="ordevt_order_created_idx"),
+        ]
 
     def save(self, *args, **kwargs):
         if self.order_id and not self.store_id:

@@ -25,6 +25,7 @@ import { useStorefrontAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { StorefrontHeader } from "./StorefrontHeader";
+import { StoreImage } from "./StoreImage";
 
 export interface ProductDetailViewProps {
   store: StorePublicMetadata;
@@ -271,20 +272,18 @@ export function ProductDetailView({
           <div className="lg:col-span-6 space-y-3">
             {/* Main Large Image (12px radius, 1px border, no overlay text) */}
             <div className="relative aspect-square sm:aspect-[4/5] w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
-              {images.length > 0 ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={images[activeImageIndex] || images[0]}
-                  alt={product.name}
-                  loading="eager"
-                  className="w-full h-full object-cover"
-                />
-              ) : (
-                <div className="w-full h-full flex flex-col items-center justify-center p-8 text-[var(--ink-2)] bg-[var(--surface)]">
-                  <Package className="w-12 h-12 mb-2 stroke-[1.25] text-[var(--ink-2)] opacity-50" />
-                  <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
-                </div>
-              )}
+              <StoreImage
+                src={images[activeImageIndex] || images[0] || ""}
+                alt={product.name}
+                sizes="(max-width: 1024px) 100vw, 50vw"
+                priority
+                fallback={
+                  <div className="w-full h-full flex flex-col items-center justify-center p-8 text-[var(--ink-2)] bg-[var(--surface)]">
+                    <Package className="w-12 h-12 mb-2 stroke-[1.25] text-[var(--ink-2)] opacity-50" />
+                    <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
+                  </div>
+                }
+              />
             </div>
 
             {/* Thumbnails Row (8px radius, 1px border) */}
@@ -302,8 +301,7 @@ export function ProductDetailView({
                     }`}
                     aria-label={`View image ${idx + 1}`}
                   >
-                    {/* eslint-disable-next-line @next/next/no-img-element */}
-                    <img src={img} alt="" className="w-full h-full object-cover" />
+                    <StoreImage src={img} alt="" sizes="64px" />
                   </button>
                 ))}
               </div>
@@ -600,20 +598,18 @@ export function ProductDetailView({
                     href={`/s/${encodeURIComponent(store.slug)}/products/${encodeURIComponent(relSlug)}`}
                     className="group rounded-xl border border-[var(--border)] bg-[var(--surface)] p-3 hover:border-[var(--ink)] transition-colors block"
                   >
-                    <div className="aspect-[4/3] rounded-lg bg-[var(--canvas)] overflow-hidden border border-[var(--border)] mb-2.5">
-                      {rel.image_url ? (
-                        // eslint-disable-next-line @next/next/no-img-element
-                        <img
-                          src={rel.image_url}
-                          alt={rel.name}
-                          loading="lazy"
-                          className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center text-[var(--ink-2)]">
-                          <Package className="w-6 h-6 opacity-40" />
-                        </div>
-                      )}
+                    <div className="relative aspect-[4/3] rounded-lg bg-[var(--canvas)] overflow-hidden border border-[var(--border)] mb-2.5">
+                      <StoreImage
+                        src={rel.image_url || ""}
+                        alt={rel.name}
+                        sizes="(max-width: 640px) 50vw, 33vw"
+                        className="object-cover transition-transform duration-300 group-hover:scale-102"
+                        fallback={
+                          <div className="w-full h-full flex items-center justify-center text-[var(--ink-2)]">
+                            <Package className="w-6 h-6 opacity-40" />
+                          </div>
+                        }
+                      />
                     </div>
                     <h3 className="text-xs font-semibold text-[var(--ink)] truncate group-hover:underline">
                       {rel.name}

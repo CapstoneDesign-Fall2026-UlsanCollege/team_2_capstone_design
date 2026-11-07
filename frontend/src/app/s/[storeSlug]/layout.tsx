@@ -1,6 +1,5 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
-import { Fraunces, Inter } from "next/font/google";
 import { AccountProvider } from "@/components/storefront/AccountContext";
 import { AccountSheet } from "@/components/storefront/AccountSheet";
 import { CartProvider } from "@/components/storefront/CartContext";
@@ -8,20 +7,6 @@ import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { ThemePreviewWatcher } from "@/components/storefront/ThemePreviewWatcher";
 import { resolveSafeTenantTokens } from "@/lib/theme-contrast";
 import { getServerApiOrigin } from "@/lib/env";
-
-// Uniform typography across all tenants: Fraunces (headlines) + Inter (UI)
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  display: "swap",
-  weight: ["600", "700"],
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
 
 interface StorePublicData {
   slug: string;
@@ -38,7 +23,7 @@ interface StorePublicData {
 async function fetchStore(storeSlug: string): Promise<StorePublicData | null> {
   const origin = getServerApiOrigin();
   const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-    cache: "no-store",
+    next: { revalidate: 60 },
   });
   if (res.status === 404) {
     return null;
@@ -63,13 +48,6 @@ export async function generateMetadata({
   };
 }
 
-/**
- * Load ONLY the fonts required by the active tenant
- */
-function getActiveTenantFontClasses(_preset?: string): string {
-  return `${fraunces.variable} ${inter.variable}`;
-}
-
 export default async function StorefrontLayout({
   children,
   params,
@@ -85,7 +63,6 @@ export default async function StorefrontLayout({
   }
 
   const themePreset = store.theme_preset || "editorial-warm";
-  const fontClasses = getActiveTenantFontClasses(themePreset);
 
   // Validate tenant overrides against WCAG AA contrast and prohibited status hues
   const safeTokens = resolveSafeTenantTokens({
@@ -106,7 +83,7 @@ export default async function StorefrontLayout({
     <div
       data-store-theme={themePreset}
       style={customStyle}
-      className={`${fontClasses} storefront min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans flex flex-col`}
+      className="storefront min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans flex flex-col"
     >
       <ThemePreviewWatcher initialPreset={themePreset} />
       <AccountProvider>

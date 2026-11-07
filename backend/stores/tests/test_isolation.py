@@ -471,7 +471,7 @@ class TenantIsolationTests(APITestCase):
         }
 
         # 1. Test unhandled runtime failure midway through order placement
-        with unittest.mock.patch("orders.models.OrderItem.objects.create", side_effect=RuntimeError("Forced midway failure")):
+        with unittest.mock.patch("orders.models.OrderItem.objects.bulk_create", side_effect=RuntimeError("Forced midway failure")):
             with self.assertRaises(RuntimeError):
                 self.client.post("/api/stores/brewmellow/checkout/place/", payload, format="json")
 
@@ -483,7 +483,7 @@ class TenantIsolationTests(APITestCase):
         # 2. Test explicit DRF error response (>= 400) where an exception is handled by DRF
         # StoreTenantMixin explicitly calls transaction.set_rollback(True) when status_code >= 400
         from rest_framework.exceptions import APIException
-        with unittest.mock.patch("orders.models.OrderItem.objects.create", side_effect=APIException("DRF handled failure")):
+        with unittest.mock.patch("orders.models.OrderItem.objects.bulk_create", side_effect=APIException("DRF handled failure")):
             res = self.client.post("/api/stores/brewmellow/checkout/place/", payload, format="json")
             self.assertEqual(res.status_code, status.HTTP_500_INTERNAL_SERVER_ERROR)
 

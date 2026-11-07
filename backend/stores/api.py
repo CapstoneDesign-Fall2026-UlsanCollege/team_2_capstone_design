@@ -39,6 +39,10 @@ from stores.models import (
 # Mixins
 # -----------------------------------------------------------------------------
 
+PUBLIC_STOREFRONT_CACHE_CONTROL = "public, max-age=30, s-maxage=60, stale-while-revalidate=300"
+PRIVATE_NO_STORE_CACHE_CONTROL = "private, no-store"
+
+
 class StoreTenantMixin:
     """
     Enforces transaction-local PostgreSQL RLS context inside transaction.atomic()
@@ -53,6 +57,8 @@ class StoreTenantMixin:
             response = super().dispatch(request, *args, **kwargs)
             if getattr(response, "exception", False) or (hasattr(response, "status_code") and response.status_code >= 500):
                 transaction.set_rollback(True)
+            if hasattr(response, "headers") and "Cache-Control" not in response:
+                response["Cache-Control"] = PRIVATE_NO_STORE_CACHE_CONTROL
             return response
 
 
@@ -181,8 +187,15 @@ class CustomerSerializer(serializers.ModelSerializer):
     def get_has_account(self, obj):
         return obj.user_id is not None
 
+    def _get_last_order(self, obj):
+        if hasattr(obj, "prefetched_orders"):
+            return obj.prefetched_orders[0] if obj.prefetched_orders else None
+        if not hasattr(obj, "_cached_last_order"):
+            obj._cached_last_order = obj.orders.order_by("-created_at").first()
+        return obj._cached_last_order
+
     def get_city(self, obj):
-        last_order = obj.orders.order_by("-created_at").first()
+        last_order = self._get_last_order(obj)
         if last_order and isinstance(last_order.shipping_address_snapshot, dict):
             return (
                 last_order.shipping_address_snapshot.get("district")
@@ -193,7 +206,7 @@ class CustomerSerializer(serializers.ModelSerializer):
 
     def to_representation(self, instance):
         data = super().to_representation(instance)
-        last_order = instance.orders.order_by("-created_at").first()
+        last_order = self._get_last_order(instance)
         if not data.get("phone") and last_order:
             snap = getattr(last_order, "shipping_address_snapshot", None)
             if isinstance(snap, dict) and snap.get("phone"):
@@ -316,13 +329,17 @@ class OrderSerializer(serializers.ModelSerializer):
 # -----------------------------------------------------------------------------
 
 class StoreDetailView(StorePublicMixin, APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, store_slug):
-        return Response(StorePublicSerializer(self.store).data)
+        response = Response(StorePublicSerializer(self.store).data)
+        response["Cache-Control"] = PUBLIC_STOREFRONT_CACHE_CONTROL
+        return response
 
 
 class StoreCatalogView(StorePublicMixin, APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, store_slug):
@@ -335,9 +352,40 @@ class StoreCatalogView(StorePublicMixin, APIView):
             )
             .order_by("sort_order", "id")
         )
-        return Response({
+        response = Response({
             "products": ProductSerializer(products, many=True).data,
         })
+        response["Cache-Control"] = PUBLIC_STOREFRONT_CACHE_CONTROL
+        return response
+
+
+class StorePublicProductDetailView(StorePublicMixin, APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request, store_slug, product_ref):
+        active_variants_qs = Variant.objects.filter(is_active=True).order_by("sort_order", "price_minor")
+        base_qs = (
+            Product.objects.for_store(self.store)
+            .filter(is_active=True)
+            .prefetch_related(
+                Prefetch("variants", queryset=active_variants_qs, to_attr="prefetched_active_variants")
+            )
+        )
+        clean_ref = str(product_ref).strip()
+        if clean_ref.isdigit():
+            product = base_qs.filter(Q(id=int(clean_ref)) | Q(slug__iexact=clean_ref)).first()
+        else:
+            product = base_qs.filter(slug__iexact=clean_ref).first()
+        if not product:
+            raise Http404("Product not found.")
+        related = list(base_qs.exclude(id=product.id).order_by("sort_order", "id")[:3])
+        response = Response({
+            "product": ProductSerializer(product).data,
+            "related_products": ProductSerializer(related, many=True).data,
+        })
+        response["Cache-Control"] = PUBLIC_STOREFRONT_CACHE_CONTROL
+        return response
 
 
 class CustomerBootstrapView(StorePublicMixin, APIView):
@@ -355,6 +403,8 @@ class ShopperOrderListView(StorePublicMixin, APIView):
         orders = (
             Order.objects.for_store(self.store)
             .filter(customer__user=request.user)
+            .select_related("customer")
+            .prefetch_related("items", "events")
             .order_by("-created_at")
         )
         return Response(OrderSerializer(orders, many=True).data)
@@ -367,6 +417,8 @@ class ShopperOrderDetailView(StorePublicMixin, APIView):
         order = (
             Order.objects.for_store(self.store)
             .filter(customer__user=request.user, id=order_id)
+            .select_related("customer")
+            .prefetch_related("items", "events")
             .first()
         )
         if not order:
@@ -381,33 +433,34 @@ class StorePublicOrderDetailView(StorePublicMixin, APIView):
 
     def get(self, request, store_slug, order_id):
         import uuid
-        from core.tenant_context import TenantDatabaseContext
-        from django.db import transaction
         token_param = request.query_params.get('token', '').strip()
         order = None
+        base_qs = (
+            Order.objects.for_store(self.store)
+            .select_related("customer")
+            .prefetch_related("items", "events")
+        )
 
-        with TenantDatabaseContext(self.store.id), transaction.atomic():
+        try:
+            uuid_token = uuid.UUID(str(order_id))
+            order = base_qs.filter(token=uuid_token).first()
+        except ValueError:
             try:
-                uuid_token = uuid.UUID(str(order_id))
-                order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
+                oid = int(order_id)
+                if token_param:
+                    try:
+                        param_uuid = uuid.UUID(token_param)
+                        order = base_qs.filter(id=oid, token=param_uuid).first()
+                    except ValueError:
+                        pass
+                elif request.user.is_authenticated:
+                    order = base_qs.filter(id=oid, customer__user=request.user).first()
             except ValueError:
-                try:
-                    oid = int(order_id)
-                    if token_param:
-                        try:
-                            param_uuid = uuid.UUID(token_param)
-                            order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
-                        except ValueError:
-                            pass
-                    elif request.user.is_authenticated:
-                        order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
-                except ValueError:
-                    pass
+                pass
 
-            if not order:
-                raise Http404('Order not found.')
-            data = OrderSerializer(order).data
-
+        if not order:
+            raise Http404('Order not found.')
+        data = OrderSerializer(order).data
         response = Response(data)
         response['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
         return response
@@ -560,7 +613,10 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
 
         variant_ids = [it.get("variant_id") for it in items_data if it.get("variant_id")]
         variants = {
-            v.id: v for v in Variant.objects.for_store(self.store).filter(id__in=variant_ids, is_active=True)
+            v.id: v
+            for v in Variant.objects.for_store(self.store)
+            .select_related("product")
+            .filter(id__in=variant_ids, is_active=True)
         }
 
         subtotal_minor = 0
@@ -718,7 +774,10 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
 
         variant_ids = [it.get("variant_id") for it in items_data if it.get("variant_id")]
         variants = {
-            v.id: v for v in Variant.objects.for_store(self.store).filter(id__in=variant_ids, is_active=True)
+            v.id: v
+            for v in Variant.objects.for_store(self.store)
+            .select_related("product")
+            .filter(id__in=variant_ids, is_active=True)
         }
 
         subtotal_minor = 0
@@ -813,8 +872,8 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 is_test=(self.store.khalti_mode != "LIVE"),
             )
 
-            for item_info in order_items_to_create:
-                OrderItem.objects.create(
+            OrderItem.objects.bulk_create([
+                OrderItem(
                     store=self.store,
                     order=order,
                     variant=item_info["variant"],
@@ -824,6 +883,8 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                     quantity=item_info["quantity"],
                     line_total_minor=item_info["line_total_minor"],
                 )
+                for item_info in order_items_to_create
+            ])
 
             OrderEvent.objects.create(
                 store=self.store,
@@ -1280,7 +1341,15 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
 
 class MerchantProductDetailView(StoreMerchantMixin, APIView):
     def get_product(self, product_id):
-        product = Product.objects.for_store(self.store).filter(id=product_id).first()
+        active_variants_qs = Variant.objects.filter(is_active=True).order_by("sort_order", "price_minor")
+        product = (
+            Product.objects.for_store(self.store)
+            .prefetch_related(
+                Prefetch("variants", queryset=active_variants_qs, to_attr="prefetched_active_variants")
+            )
+            .filter(id=product_id)
+            .first()
+        )
         if not product:
             raise Http404("Product not found.")
         return product
@@ -1364,14 +1433,22 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
 
 class MerchantOrderListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
-        qs = Order.objects.for_store(self.store).order_by("-created_at")
+        base_qs = Order.objects.for_store(self.store)
 
-        # Counts across all status categories
-        all_count = qs.count()
-        new_count = qs.filter(status__in=["CONFIRMED", "PAID"]).count()
-        packed_count = qs.filter(status__in=["PROCESSING", "PACKED"]).count()
-        shipped_count = qs.filter(status="SHIPPED").count()
-        delivered_count = qs.filter(status="DELIVERED").count()
+        # Single conditional aggregation replaces 5 separate COUNT(*) round-trips
+        counts_agg = base_qs.aggregate(
+            all_count=Count("id"),
+            new_count=Count("id", filter=Q(status__in=["CONFIRMED", "PAID"])),
+            packed_count=Count("id", filter=Q(status__in=["PROCESSING", "PACKED"])),
+            shipped_count=Count("id", filter=Q(status="SHIPPED")),
+            delivered_count=Count("id", filter=Q(status="DELIVERED")),
+        )
+
+        qs = (
+            base_qs.select_related("customer")
+            .prefetch_related("items", "events")
+            .order_by("-created_at")
+        )
 
         status_filter = request.query_params.get("status", "").strip().lower()
         if status_filter == "new":
@@ -1385,7 +1462,6 @@ class MerchantOrderListView(StoreMerchantMixin, APIView):
 
         search = request.query_params.get("search", "").strip()
         if search:
-            from django.db.models import Q
             qs = qs.filter(
                 Q(order_number__icontains=search)
                 | Q(customer__full_name__icontains=search)
@@ -1396,18 +1472,24 @@ class MerchantOrderListView(StoreMerchantMixin, APIView):
         return Response({
             "orders": OrderSerializer(qs, many=True).data,
             "counts": {
-                "all": all_count,
-                "new": new_count,
-                "packed": packed_count,
-                "shipped": shipped_count,
-                "delivered": delivered_count,
+                "all": counts_agg["all_count"] or 0,
+                "new": counts_agg["new_count"] or 0,
+                "packed": counts_agg["packed_count"] or 0,
+                "shipped": counts_agg["shipped_count"] or 0,
+                "delivered": counts_agg["delivered_count"] or 0,
             },
         })
 
 
 class MerchantOrderDetailView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug, order_id):
-        order = Order.objects.for_store(self.store).filter(id=order_id).first()
+        order = (
+            Order.objects.for_store(self.store)
+            .select_related("customer")
+            .prefetch_related("items", "events")
+            .filter(id=order_id)
+            .first()
+        )
         if not order:
             raise Http404("Order not found.")
         response = Response(OrderSerializer(order).data)
@@ -1476,8 +1558,14 @@ class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
 class MerchantCustomerListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
         q = request.query_params.get("q", "").strip()
+        orders_prefetch = Prefetch(
+            "orders",
+            queryset=Order.objects.order_by("-created_at").only("id", "customer_id", "shipping_address_snapshot", "created_at"),
+            to_attr="prefetched_orders",
+        )
         customers = (
             Customer.objects.for_store(self.store)
+            .prefetch_related(orders_prefetch)
             .annotate(
                 orders_count=Count("orders", distinct=True),
                 total_spent_minor=Sum(
@@ -1513,7 +1601,14 @@ class MerchantCustomerDetailView(StoreMerchantMixin, APIView):
         if not customer:
             raise Http404("Customer not found.")
 
-        orders = Order.objects.for_store(self.store).filter(customer=customer).order_by("-created_at")[:20]
+        orders = list(
+            Order.objects.for_store(self.store)
+            .filter(customer=customer)
+            .select_related("customer")
+            .prefetch_related("items", "events")
+            .order_by("-created_at")[:20]
+        )
+        customer.prefetched_orders = orders
 
         return Response({
             "customer": CustomerSerializer(customer).data,
@@ -1522,16 +1617,23 @@ class MerchantCustomerDetailView(StoreMerchantMixin, APIView):
 
 
 class StoreSlugCheckView(APIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
         raw_slug = request.query_params.get("slug", "").strip().lower()
         if not raw_slug:
-            return Response({"available": False, "reason": "Slug cannot be empty."})
+            res = Response({"available": False, "reason": "Slug cannot be empty."})
+            res["Cache-Control"] = "public, max-age=15"
+            return res
         if raw_slug in RESERVED_STORE_SLUGS or not SLUG_REGEX.match(raw_slug):
-            return Response({"available": False, "reason": "Invalid or reserved slug."})
+            res = Response({"available": False, "reason": "Invalid or reserved slug."})
+            res["Cache-Control"] = "public, max-age=15"
+            return res
         exists = Store.objects.filter(slug=raw_slug).exists()
-        return Response({"available": not exists, "slug": raw_slug})
+        res = Response({"available": not exists, "slug": raw_slug})
+        res["Cache-Control"] = "public, max-age=15"
+        return res
 
 
 def seed_starter_catalog(store):
@@ -1905,7 +2007,11 @@ class MerchantAuditLogSerializer(serializers.ModelSerializer):
 
 class MerchantAuditLogListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
-        logs = MerchantAuditLog.objects.for_store(self.store).order_by("-created_at")[:100]
+        logs = (
+            MerchantAuditLog.objects.for_store(self.store)
+            .select_related("actor")
+            .order_by("-created_at")[:100]
+        )
         return Response(MerchantAuditLogSerializer(logs, many=True).data)
 
 
@@ -2024,6 +2130,7 @@ urlpatterns = [
     # Public Storefront
     path("stores/<slug:store_slug>/", StoreDetailView.as_view(), name="store_public_detail"),
     path("stores/<slug:store_slug>/catalog/", StoreCatalogView.as_view(), name="store_public_catalog"),
+    path("stores/<slug:store_slug>/products/<str:product_ref>/", StorePublicProductDetailView.as_view(), name="store_public_product_detail"),
     path("stores/<slug:store_slug>/account/", StorefrontAccountDetailView.as_view(), name="storefront_account_detail"),
     path("stores/<slug:store_slug>/account/orders/", StorefrontCustomerOrdersView.as_view(), name="storefront_customer_orders"),
     path("stores/<slug:store_slug>/account/otp/request/", StorefrontOTPRequestView.as_view(), name="storefront_otp_request"),

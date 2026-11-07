@@ -10,7 +10,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null
   const origin = getServerApiOrigin();
   try {
     const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
     if (res.status === 404) return null;
     if (!res.ok) {

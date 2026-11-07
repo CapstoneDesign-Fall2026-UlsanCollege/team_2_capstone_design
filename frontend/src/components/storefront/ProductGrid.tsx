@@ -5,6 +5,7 @@ import Link from "next/link";
 import { Package } from "lucide-react";
 import { formatNpr, ProductItem } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { StoreImage } from "./StoreImage";
 
 export interface ProductGridProps {
   storeSlug?: string;
@@ -85,27 +86,21 @@ export function ProductGrid({
           <div className="flex flex-col h-full bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden transition-colors hover:border-[var(--ink)]">
             {/* 1. Product Image Frame (12px rounded container, 1px border, no overlay text) */}
             <div className="relative aspect-square sm:aspect-[4/5] w-full bg-[var(--canvas)] border-b border-[var(--border)] overflow-hidden flex items-center justify-center">
-              {product.image_url ? (
-                // eslint-disable-next-line @next/next/no-img-element
-                <img
-                  src={product.image_url}
-                  alt={product.name}
-                  loading="lazy"
-                  onError={(e) => {
-                    e.currentTarget.style.display = "none";
-                    const fallback = e.currentTarget.parentElement?.querySelector(".img-fallback");
-                    if (fallback) fallback.classList.remove("hidden");
-                  }}
-                  className="w-full h-full object-cover transition-transform duration-300 group-hover:scale-102"
-                />
-              ) : null}
-              <div
-                className={`img-fallback w-full h-full flex flex-col items-center justify-center p-4 text-[var(--ink-2)] ${product.image_url ? "hidden" : "flex"}`}
-                aria-hidden="true"
-              >
-                <Package className="w-8 h-8 stroke-[1.25] text-[var(--ink-2)] mb-1 opacity-50" />
-                <span className="text-[11px] text-[var(--ink-2)]">No image</span>
-              </div>
+              <StoreImage
+                src={product.image_url || ""}
+                alt={product.name}
+                sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
+                className="object-cover transition-transform duration-300 group-hover:scale-102"
+                fallback={
+                  <div
+                    className="w-full h-full flex flex-col items-center justify-center p-4 text-[var(--ink-2)]"
+                    aria-hidden="true"
+                  >
+                    <Package className="w-8 h-8 stroke-[1.25] text-[var(--ink-2)] mb-1 opacity-50" />
+                    <span className="text-[11px] text-[var(--ink-2)]">No image</span>
+                  </div>
+                }
+              />
 
               {/* Clean out-of-stock overlay only when actually sold out */}
               {!hasStock && variants.length > 0 && (

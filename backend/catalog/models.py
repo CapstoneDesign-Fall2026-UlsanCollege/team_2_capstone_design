@@ -26,6 +26,9 @@ class Product(models.Model):
     class Meta:
         unique_together = [("store", "slug")]
         ordering = ["sort_order", "id"]
+        indexes = [
+            models.Index(fields=["store", "is_active", "sort_order", "id"], name="prod_store_act_sort_idx"),
+        ]
 
     def __str__(self):
         return f"{self.name} ({self.store.slug})"
@@ -58,6 +61,10 @@ class Variant(models.Model):
     class Meta:
         unique_together = [("store", "sku")]
         ordering = ["sort_order", "price_minor", "id"]
+        indexes = [
+            models.Index(fields=["product", "is_active", "sort_order", "price_minor"], name="var_prod_act_sort_idx"),
+            models.Index(fields=["store", "is_active"], name="var_store_act_idx"),
+        ]
 
     def clean(self):
         if self.product_id and self.store_id and self.product.store_id != self.store_id:
@@ -107,6 +114,9 @@ class Discount(models.Model):
     class Meta:
         unique_together = [("store", "code")]
         ordering = ["-created_at", "-id"]
+        indexes = [
+            models.Index(fields=["store", "is_active", "-created_at"], name="disc_store_act_created_idx"),
+        ]
 
     def save(self, *args, **kwargs):
         if self.code:

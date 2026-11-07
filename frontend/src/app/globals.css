@@ -114,7 +114,7 @@
   --st-delivered: var(--success-fg);
   --st-cancelled: var(--error-fg);
 
-  font-family: var(--font-inter-console), "Inter", system-ui, sans-serif;
+  font-family: var(--font-inter), "Inter", system-ui, sans-serif;
   font-variant-numeric: tabular-nums;
 }
 

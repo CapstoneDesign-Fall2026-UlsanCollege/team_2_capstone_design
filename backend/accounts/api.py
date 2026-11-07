@@ -1,6 +1,7 @@
 import re
 from django.conf import settings
 from django.contrib.auth import get_user_model, login, logout
+from django.contrib.auth.hashers import make_password
 from django.db import transaction
 from django.middleware.csrf import get_token
 from django.shortcuts import get_object_or_404
@@ -110,7 +111,15 @@ class DeliveryAddressSerializer(serializers.ModelSerializer):
         return val
 
 
-class CSRFTokenView(APIView):
+class NoStoreAuthAPIView(APIView):
+    def finalize_response(self, request, response, *args, **kwargs):
+        response = super().finalize_response(request, response, *args, **kwargs)
+        response["Cache-Control"] = "private, no-store"
+        return response
+
+
+class CSRFTokenView(NoStoreAuthAPIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     @method_decorator(ensure_csrf_cookie)
@@ -122,7 +131,8 @@ class OTPRequestSerializer(serializers.Serializer):
     email = serializers.EmailField()
 
 
-class OTPRequestView(APIView):
+class OTPRequestView(NoStoreAuthAPIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "otp_request"
@@ -173,7 +183,8 @@ class OTPVerifySerializer(serializers.Serializer):
     code = serializers.RegexField(regex=r"^\d{6}$")
 
 
-class OTPVerifyView(APIView):
+class OTPVerifyView(NoStoreAuthAPIView):
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "otp_verify"
@@ -196,13 +207,10 @@ class OTPVerifyView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user, created = User.objects.get_or_create(
+        user, _ = User.objects.get_or_create(
             email=email,
-            defaults={"full_name": ""}
+            defaults={"full_name": "", "password": make_password(None)},
         )
-        if created:
-            user.set_unusable_password()
-            user.save()
 
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         return Response({"user": UserSerializer(user).data}, status=status.HTTP_200_OK)
@@ -212,13 +220,14 @@ class GoogleAuthSerializer(serializers.Serializer):
     credential = serializers.CharField(max_length=8192)
 
 
-class GoogleAuthView(APIView):
+class GoogleAuthView(NoStoreAuthAPIView):
     """
     Merchant / platform Google Sign-In endpoint (POST /api/auth/google/).
     Verifies ID token server-side against GOOGLE_CLIENT_ID with cached certs,
     authenticates normalized User identity via session, and NEVER auto-creates
     any Store or StoreMembership.
     """
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth_google"
@@ -261,12 +270,9 @@ class GoogleAuthView(APIView):
         with transaction.atomic():
             user, created = User.objects.get_or_create(
                 email=email,
-                defaults={"full_name": full_name},
+                defaults={"full_name": full_name, "password": make_password(None)},
             )
-            if created:
-                user.set_unusable_password()
-                user.save()
-            elif not user.full_name and full_name:
+            if not created and not user.full_name and full_name:
                 user.full_name = full_name
                 user.save(update_fields=["full_name"])
 
@@ -275,7 +281,7 @@ class GoogleAuthView(APIView):
         return Response({"user": UserSerializer(user).data}, status=status.HTTP_200_OK)
 
 
-class MeView(APIView):
+class MeView(NoStoreAuthAPIView):
     permission_classes = [permissions.AllowAny]
 
     def get(self, request):
@@ -295,7 +301,7 @@ class MeView(APIView):
         return Response({"authenticated": True, "user": serializer.data})
 
 
-class LogoutView(APIView):
+class LogoutView(NoStoreAuthAPIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request):
@@ -303,7 +309,7 @@ class LogoutView(APIView):
         return Response({"detail": "Signed out."}, status=status.HTTP_200_OK)
 
 
-class DeliveryAddressListCreateView(APIView):
+class DeliveryAddressListCreateView(NoStoreAuthAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
@@ -318,7 +324,7 @@ class DeliveryAddressListCreateView(APIView):
         return Response(DeliveryAddressSerializer(address).data, status=status.HTTP_201_CREATED)
 
 
-class DeliveryAddressDetailView(APIView):
+class DeliveryAddressDetailView(NoStoreAuthAPIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get_object(self, pk, user):

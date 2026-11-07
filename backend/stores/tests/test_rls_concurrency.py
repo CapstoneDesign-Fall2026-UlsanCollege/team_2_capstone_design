@@ -1,6 +1,7 @@
 import random
+import threading
 from concurrent.futures import ThreadPoolExecutor, as_completed
-from django.db import connection
+from django.db import connection, connections
 from rest_framework import status
 from rest_framework.test import APITransactionTestCase, APIClient
 
@@ -151,6 +152,20 @@ class TenantRLSConcurrencyTests(APITransactionTestCase):
             ]
             for future in as_completed(futures):
                 results.append(future.result())
+
+            # Release persistent worker-thread DB connections before pool teardown
+            barrier = threading.Barrier(num_workers)
+
+            def _close_worker_conn():
+                try:
+                    barrier.wait(timeout=5)
+                except threading.BrokenBarrierError:
+                    pass
+                connections.close_all()
+
+            cleanup_futures = [executor.submit(_close_worker_conn) for _ in range(num_workers)]
+            for cf in cleanup_futures:
+                cf.result()
 
         self.assertEqual(len(results), total_requests)
 

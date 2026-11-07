@@ -2,6 +2,7 @@ import logging
 import re
 from django.conf import settings
 from django.contrib.auth import get_user_model, login
+from django.contrib.auth.hashers import make_password
 from django.db import models, transaction
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
@@ -83,6 +84,7 @@ class StorefrontOTPRequestView(StorePublicMixin, APIView):
     Commits the OTP record first, then schedules store-branded email delivery via transaction.on_commit.
     Returns a generic response that never reveals whether an account exists or leaks OTPs in production.
     """
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, store_slug):
@@ -117,16 +119,16 @@ class StorefrontOTPRequestView(StorePublicMixin, APIView):
             or None
         )
 
-        # 2. Commit OTP record first, then dispatch asynchronously via transaction.on_commit
-        with transaction.atomic():
-            _, raw_code = EmailOTPChallenge.issue_for_email(email, ip_address=client_ip)
-            schedule_otp_email(
-                to_email=email,
-                raw_code=raw_code,
-                brand_name=store_name,
-                reply_to_email=support_email,
-                store_id=self.store.id,
-            )
+        # 2. StorePublicMixin already runs inside TenantDatabaseContext(transaction.atomic());
+        # schedule_otp_email registers on_commit on that outer transaction.
+        _, raw_code = EmailOTPChallenge.issue_for_email(email, ip_address=client_ip)
+        schedule_otp_email(
+            to_email=email,
+            raw_code=raw_code,
+            brand_name=store_name,
+            reply_to_email=support_email,
+            store_id=self.store.id,
+        )
 
         payload = {
             "ok": True,
@@ -152,6 +154,7 @@ class StorefrontOTPVerifyView(StorePublicMixin, APIView):
     On success: signs in user, safely links Customer for this store (never across stores).
     Returns user and customer profile data only.
     """
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, store_slug):
@@ -172,19 +175,15 @@ class StorefrontOTPVerifyView(StorePublicMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        with TenantDatabaseContext(self.store.id), transaction.atomic():
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={"full_name": ""}
-            )
-            if created:
-                user.set_unusable_password()
-                user.save()
-            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        user, _ = User.objects.get_or_create(
+            email=email,
+            defaults={"full_name": "", "password": make_password(None)},
+        )
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
 
-            # Link customer for the current store ONLY:
-            # provision_store_customer links user only if customer.user is null or already this user
-            customer = provision_store_customer(self.store, user)
+        # Link customer for the current store ONLY:
+        # provision_store_customer links user only if customer.user is null or already this user
+        customer = provision_store_customer(self.store, user)
 
         return Response(
             {
@@ -214,6 +213,7 @@ class StorefrontGoogleAuthView(StorePublicMixin, APIView):
     the store Customer ONLY when customer.user is null or already this user.
     Never links across stores and never grants merchant access.
     """
+    authentication_classes = []
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "auth_google"
@@ -253,20 +253,16 @@ class StorefrontGoogleAuthView(StorePublicMixin, APIView):
         email = verified["email"]
         full_name = verified["full_name"]
 
-        with TenantDatabaseContext(self.store.id), transaction.atomic():
-            user, created = User.objects.get_or_create(
-                email=email,
-                defaults={"full_name": full_name},
-            )
-            if created:
-                user.set_unusable_password()
-                user.save()
-            elif not user.full_name and full_name:
-                user.full_name = full_name
-                user.save(update_fields=["full_name"])
+        user, created = User.objects.get_or_create(
+            email=email,
+            defaults={"full_name": full_name, "password": make_password(None)},
+        )
+        if not created and not user.full_name and full_name:
+            user.full_name = full_name
+            user.save(update_fields=["full_name"])
 
-            login(request, user, backend="django.contrib.auth.backends.ModelBackend")
-            customer = provision_store_customer(self.store, user, full_name=full_name)
+        login(request, user, backend="django.contrib.auth.backends.ModelBackend")
+        customer = provision_store_customer(self.store, user, full_name=full_name)
 
         return Response(
             {
@@ -309,38 +305,32 @@ class StorefrontAccountDetailView(StorePublicMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, store_slug):
-        with TenantDatabaseContext(self.store.id):
-            customer = Customer.objects.for_store(self.store).filter(user=request.user).first()
-            if not customer:
-                customer = provision_store_customer(self.store, request.user)
+        customer = Customer.objects.for_store(self.store).filter(user=request.user).first()
+        if not customer:
+            customer = provision_store_customer(self.store, request.user)
 
-            if customer.user_id != request.user.id:
-                orders_count = 0
-                total_spent = 0
-                cust_payload = {
-                    "id": None,
-                    "email": request.user.email,
-                    "full_name": request.user.full_name,
-                    "phone": request.user.phone,
-                    "orders_count": 0,
-                    "total_spent_minor": 0,
-                }
-            else:
-                orders_qs = Order.objects.for_store(self.store).filter(customer=customer)
-                orders_count = orders_qs.count()
-                total_spent = (
-                    orders_qs.filter(payment_status="PAID")
-                    .aggregate(total=models.Sum("total_minor"))["total"]
-                    or 0
-                )
-                cust_payload = {
-                    "id": customer.id,
-                    "email": customer.email,
-                    "full_name": customer.full_name,
-                    "phone": customer.phone,
-                    "orders_count": orders_count,
-                    "total_spent_minor": total_spent,
-                }
+        if customer.user_id != request.user.id:
+            cust_payload = {
+                "id": None,
+                "email": request.user.email,
+                "full_name": request.user.full_name,
+                "phone": request.user.phone,
+                "orders_count": 0,
+                "total_spent_minor": 0,
+            }
+        else:
+            agg = Order.objects.for_store(self.store).filter(customer=customer).aggregate(
+                orders_count=models.Count("id"),
+                total_spent=models.Sum("total_minor", filter=models.Q(payment_status="PAID")),
+            )
+            cust_payload = {
+                "id": customer.id,
+                "email": customer.email,
+                "full_name": customer.full_name,
+                "phone": customer.phone,
+                "orders_count": agg["orders_count"] or 0,
+                "total_spent_minor": agg["total_spent"] or 0,
+            }
 
         return Response(
             {
@@ -362,42 +352,40 @@ class StorefrontAccountDetailView(StorePublicMixin, APIView):
         full_name = serializer.validated_data.get("full_name")
         phone = serializer.validated_data.get("phone")
 
-        with TenantDatabaseContext(self.store.id), transaction.atomic():
-            customer = Customer.objects.for_store(self.store).filter(user=request.user).first()
-            if not customer:
-                customer = provision_store_customer(self.store, request.user)
+        customer = Customer.objects.for_store(self.store).filter(user=request.user).first()
+        if not customer:
+            customer = provision_store_customer(self.store, request.user)
 
-            if customer.user_id != request.user.id:
-                return Response(
-                    {"error": "Unable to update customer profile for this store."},
-                    status=status.HTTP_409_CONFLICT,
-                )
-
-            update_fields = []
-            if full_name is not None:
-                customer.full_name = full_name
-                update_fields.append("full_name")
-                if not request.user.full_name:
-                    request.user.full_name = full_name
-                    request.user.save(update_fields=["full_name"])
-
-            if phone is not None:
-                customer.phone = phone
-                update_fields.append("phone")
-                if not request.user.phone:
-                    request.user.phone = phone
-                    request.user.save(update_fields=["phone"])
-
-            if update_fields:
-                customer.save(update_fields=update_fields)
-
-            orders_qs = Order.objects.for_store(self.store).filter(customer=customer)
-            orders_count = orders_qs.count()
-            total_spent = (
-                orders_qs.filter(payment_status="PAID")
-                .aggregate(total=models.Sum("total_minor"))["total"]
-                or 0
+        if customer.user_id != request.user.id:
+            return Response(
+                {"error": "Unable to update customer profile for this store."},
+                status=status.HTTP_409_CONFLICT,
             )
+
+        update_fields = []
+        if full_name is not None:
+            customer.full_name = full_name
+            update_fields.append("full_name")
+            if not request.user.full_name:
+                request.user.full_name = full_name
+                request.user.save(update_fields=["full_name"])
+
+        if phone is not None:
+            customer.phone = phone
+            update_fields.append("phone")
+            if not request.user.phone:
+                request.user.phone = phone
+                request.user.save(update_fields=["phone"])
+
+        if update_fields:
+            customer.save(update_fields=update_fields)
+
+        agg = Order.objects.for_store(self.store).filter(customer=customer).aggregate(
+            orders_count=models.Count("id"),
+            total_spent=models.Sum("total_minor", filter=models.Q(payment_status="PAID")),
+        )
+        orders_count = agg["orders_count"] or 0
+        total_spent = agg["total_spent"] or 0
 
         return Response(
             {
@@ -430,27 +418,24 @@ class StorefrontCustomerOrdersView(StorePublicMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, store_slug):
-        with TenantDatabaseContext(self.store.id):
-            orders = (
-                Order.objects.for_store(self.store)
-                .filter(customer__user=request.user)
-                .prefetch_related("items")
-                .order_by("-created_at")
-            )
+        orders = (
+            Order.objects.for_store(self.store)
+            .filter(customer__user=request.user)
+            .prefetch_related("items")
+            .order_by("-created_at")
+        )
 
-            data = []
-            for o in orders:
-                data.append(
-                    {
-                        "id": o.id,
-                        "order_number": o.order_number,
-                        "status": o.status,
-                        "payment_status": o.payment_status,
-                        "total_minor": o.total_minor,
-                        "created_at": o.created_at.isoformat(),
-                        "items_summary": format_order_items_summary(o),
-                        "token": str(o.token),
-                    }
-                )
-
+        data = [
+            {
+                "id": o.id,
+                "order_number": o.order_number,
+                "status": o.status,
+                "payment_status": o.payment_status,
+                "total_minor": o.total_minor,
+                "created_at": o.created_at.isoformat(),
+                "items_summary": format_order_items_summary(o),
+                "token": str(o.token),
+            }
+            for o in orders
+        ]
         return Response(data, status=status.HTTP_200_OK)

@@ -15,6 +15,7 @@ import {
   Sparkles,
   Truck,
 } from "lucide-react";
+import { StoreImage } from "@/components/storefront/StoreImage";
 import { StorePublicMetadata } from "@/lib/api";
 import { getServerApiOrigin } from "@/lib/env";
 
@@ -22,7 +23,7 @@ async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null
   const origin = getServerApiOrigin();
   try {
     const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-      cache: "no-store",
+      next: { revalidate: 60 },
     });
     if (res.status === 404) return null;
     if (!res.ok) {
@@ -112,12 +113,12 @@ export default async function StorefrontAboutPage({
         
         {/* Banner if available */}
         {store.banner_url && (
-          <div className="w-full aspect-[21/9] max-h-72 rounded-sf overflow-hidden border border-sf-line shadow-2xs">
-            {/* eslint-disable-next-line @next/next/no-img-element */}
-            <img
+          <div className="relative w-full aspect-[21/9] max-h-72 rounded-sf overflow-hidden border border-sf-line shadow-2xs">
+            <StoreImage
               src={store.banner_url}
               alt={`${store.name} storefront cover`}
-              className="w-full h-full object-cover"
+              sizes="(max-width: 896px) 100vw, 896px"
+              priority
             />
           </div>
         )}

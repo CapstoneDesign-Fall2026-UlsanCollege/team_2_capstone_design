@@ -1,7 +1,8 @@
 import re
+from contextlib import nullcontext
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.db import models, transaction
+from django.db import connection, models, transaction
 
 RESERVED_STORE_SLUGS = frozenset({
     "admin", "api", "merchant", "s", "login", "signup", "account",
@@ -82,6 +83,11 @@ class Store(models.Model):
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
 
+    class Meta:
+        indexes = [
+            models.Index(fields=["slug", "is_active"], name="store_slug_active_idx"),
+        ]
+
     def set_khalti_secret_key(self, raw_key: str):
         if not raw_key:
             self.khalti_secret_key_encrypted = ""
@@ -142,6 +148,10 @@ class Customer(models.Model):
 
     class Meta:
         unique_together = [("store", "email")]
+        indexes = [
+            models.Index(fields=["store", "user"], name="cust_store_user_idx"),
+            models.Index(fields=["store", "-created_at"], name="cust_store_created_idx"),
+        ]
 
     def save(self, *args, **kwargs):
         if self.email:
@@ -159,7 +169,8 @@ def provision_store_customer(store: Store, user, full_name: str = "", phone: str
     and NEVER overwrites an existing customer.user that belongs to another user.
     """
     email = user.email.strip().lower()
-    with transaction.atomic():
+    atomic_ctx = nullcontext() if connection.in_atomic_block else transaction.atomic()
+    with atomic_ctx:
         customer, created = Customer.objects.for_store(store).get_or_create(
             store=store,
             email=email,
@@ -177,7 +188,6 @@ def provision_store_customer(store: Store, user, full_name: str = "", phone: str
             elif customer.user != user:
                 # Security rule: Never overwrite or mutate another user's customer record!
                 return customer
-                pass
             if full_name and not customer.full_name:
                 customer.full_name = full_name
                 update_fields.append("full_name")
@@ -210,6 +220,9 @@ class MerchantAuditLog(models.Model):
 
     class Meta:
         ordering = ["-created_at"]
+        indexes = [
+            models.Index(fields=["store", "-created_at"], name="audit_store_created_idx"),
+        ]
 
     def __str__(self):
         return f"[{self.store.slug}] {self.action} on {self.entity_type} ({self.created_at})"

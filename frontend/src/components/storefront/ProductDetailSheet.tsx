@@ -5,6 +5,7 @@ import Link from "next/link";
 import { ArrowUpRight, Check, Minus, Package, Plus, X } from "lucide-react";
 import { formatNpr, ProductItem, ProductVariant } from "@/lib/api";
 import { Button } from "@/components/ui/button";
+import { StoreImage } from "./StoreImage";
 
 export interface SelectedCartItem {
   productId: number;
@@ -166,16 +167,12 @@ function ProductDetailSheetContent({
         {/* Product Media & Price Header */}
         <div className="flex items-center gap-3">
           <div className="relative w-16 h-16 rounded-xl border border-[var(--border)] bg-[var(--canvas)] overflow-hidden shrink-0 flex items-center justify-center">
-            {product.image_url ? (
-              // eslint-disable-next-line @next/next/no-img-element
-              <img
-                src={product.image_url}
-                alt={product.name}
-                className="w-full h-full object-cover"
-              />
-            ) : (
-              <Package className="w-6 h-6 text-[var(--ink-2)] opacity-50" />
-            )}
+            <StoreImage
+              src={product.image_url || ""}
+              alt={product.name}
+              sizes="64px"
+              fallback={<Package className="w-6 h-6 text-[var(--ink-2)] opacity-50" />}
+            />
           </div>
 
           <div className="space-y-0.5 min-w-0 flex-1">
