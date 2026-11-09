@@ -4,7 +4,11 @@
  */
 
 export function getBrowserApiBaseUrl(): string {
-  const raw = (process.env.NEXT_PUBLIC_API_BASE_URL || "").trim();
+  const raw = (
+    process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
+    ""
+  ).trim();
   return raw.replace(/\/+$/, "");
 }
 
@@ -21,6 +25,7 @@ export function getServerApiOrigin(): string {
   const configured = (
     process.env.DJANGO_API_ORIGIN ||
     process.env.NEXT_PUBLIC_API_BASE_URL ||
+    process.env.NEXT_PUBLIC_API_URL ||
     ""
   )
     .trim()
