@@ -38,6 +38,8 @@ jobs:
       EMAIL_TRANSPORT: "smtp"
       EMAIL_HOST: "localhost"
       EMAIL_PORT: "2525"
+      EMAIL_HOST_USER: "ci-smtp-user"
+      EMAIL_HOST_PASSWORD: "ci-smtp-password"
       DEFAULT_FROM_EMAIL: "auth@send.example.com"
       DATABASE_URL: "postgresql://shopcraft_test:shopcraft_test_pw@localhost:5432/shopcraft_ci"
       DATABASE_URL_DIRECT: "postgresql://shopcraft_test:shopcraft_test_pw@localhost:5432/shopcraft_ci"
