@@ -37,7 +37,7 @@ $$\text{Storefront } (/s/\text{brewmellow}) \longrightarrow \text{Product Select
 
 ### Transparent Boundaries — What the Final Demo Will NOT Claim
 - **Sandbox Currency:** Khalti transactions run in the official Khalti Sandbox environment (`epayment/lookup/` with `pidx`). **No real fiat currency is transferred.**
-- **No Automatic Bank Auto-Debit:** Subscriptions operate via prepaid commitment cycles rather than automatic card rebilling (which is unsupported by Nepali sandbox gateways).
+- **Subscriptions Formally Cut (PR #45):** Shopper recurring subscriptions were formally removed from the MVP scope in PR #45. All purchases across ShopCraft operate strictly as direct one-time retail purchases with Khalti Sandbox v2 and Cash on Delivery fallback.
 - **No Third-Party Courier Fleet Dispatch:** Logistics tracking is managed internally through merchant dispatch status transitions rather than live third-party courier GPS APIs.
 - **Explicit Scope Cuts:** Recommendation questionnaires, multi-currency conversions, and public marketplace directories are formally dropped per [`mvp-contract.md`](mvp-contract.md).
 
@@ -45,11 +45,11 @@ $$\text{Storefront } (/s/\text{brewmellow}) \longrightarrow \text{Product Select
 
 ## 2. Current Project Status & Evidence Matrix
 
-**MVP Progress:** Ahead of schedule — Core vertical slice verified in runtime code; 51/51 backend tests pass; frontend zero type errors.
+**MVP Progress:** Ahead of schedule — Core vertical slice verified in runtime code; 113 backend tests pass across active apps; frontend zero type errors.
 
 | Feature or Behavior | Current Status | Verifiable Evidence | Remaining Work (to Week 11 Freeze) |
 |---|---|---|---|
-| **Multi-Tenant Isolation (RLS)** | **PASS** | 51/51 Django tests pass (`test_isolation.py`); HTTP 404 cross-tenant guard | Retest during Week 11 feature freeze |
+| **Multi-Tenant Isolation (RLS)** | **PASS** | 113 Django tests pass (`test_isolation.py`); HTTP 404 cross-tenant guard | Retest during Week 11 feature freeze |
 | **Storefront Discovery (`/s/brewmellow`)** | **PASS** | Deployed live on Vercel over HTTPS; SSR catalog hydration | Polish mobile hero banner contrast |
 | **Product Customization & Cart Drawer** | **PASS** | Store-scoped local persistence; variant price recalculation | Add quantity stepper micro-animations |
 | **Single-Screen Checkout** | **PASS** | Nepali address validation (10-digit regex, province enum) | Edge-case validation testing |

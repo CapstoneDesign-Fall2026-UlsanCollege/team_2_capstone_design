@@ -15,7 +15,9 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **Roadmap slice / behavior (if relevant):** Khalti Sandbox v2 & Server Verification Slice (`backend/orders/api.py`).
 - **Area I helped steward or hand off (if relevant):** Area 1: Core Multi-Tenant Backend, RLS & Payments (Backup: Rohit Chhantyal).
 - **Evidence link:** [Commit `1374b23`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/1374b23) · [Slice Note](../slices/slice-aditya-khalti-backend.md) · [Handoff Document](../evidence/aditya-backend-rls-handoff.md).
-- **How I checked it:** Executed checkout on live Vercel deployment using Khalti test phone `9800000000` / OTP `987654`; verified server lookup transitioned order status to `PAID` with token `ORD-2026-SC-001`. Kushan Sunuwar independently reproduced this test without author coaching.
+- **How I checked it:** Executed checkout on live Vercel deployment using official Khalti test phone `9800000000` / OTP `987654`; verified server lookup transitioned order status to `PAID` with token `ORD-2026-SC-001`. Kushan Sunuwar independently reproduced this test without author coaching.
+  - *Explicit Sandbox Boundary:* Tested strictly in official Khalti Sandbox mode (Test Phone: `9800000000`, Test PIN: `1111`, Test OTP: `987654`); strictly simulated credits, **no real fiat currency moves**.
+  - *Scope Alignment:* Reconciled Phase 4 subscription roadmap with PR #45; shopper recurring subscriptions were formally cut from the active MVP to guarantee single-order checkout stability.
 - **What I learned or changed:** Payment state must never be trusted from the browser client. Moving signature verification server-side eliminates client tampering, and keeping an immediate Cash on Delivery fallback protects conversions during gateway latency spikes.
 
 ---

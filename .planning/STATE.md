@@ -37,7 +37,7 @@ Progress: [==========] 100%
 - **Dual-Layer Tenant Isolation:** Enforced at both PostgreSQL Row-Level Security (`TENANT_TABLES` = 11 tables under `shopcraft_app` role) AND Django ORM `StoreScopedManager` (`get_current_tenant_id()` auto-scoping + `.for_store(store)`).
 - **Security Hardening:** Removed `admin@` backdoor; store-prefixed authenticated media uploads; unguessable UUID `order.token` on public tracking & 1-click renewal payment links; Fernet AES-256 encrypted Khalti keys never sent to client; `OWNER` vs. `STAFF` RBAC with sole-owner protection and `MerchantAuditLog`.
 - **Three-Surface CSS Token Isolation:** Verified via `npm run check:surfaces` (`SURFACE_ISOLATION_OK`). Merchant console stays strictly neutral zinc (`#18181B`); storefronts render 100% via `--sf-*` CSS tokens.
-- **Nepal-Adapted Commerce Rails:** Integer `Rs.` NPR formatting with tabular numerals; 7-province ward delivery & province analytics; Khalti ePayment v2 + Cash on Delivery toggle; store-scoped Promo Codes (`DASHAIN15`, `WELCOME100`); non-recurring prepaid 3/6/12-cycle subscriptions + WhatsApp renewal links.
+- **Nepal-Adapted Commerce Rails:** Integer `Rs.` NPR formatting with tabular numerals; 7-province ward delivery & province analytics; Khalti ePayment v2 + Cash on Delivery toggle; store-scoped Promo Codes (`DASHAIN15`, `WELCOME100`); direct one-time retail purchases with Khalti Sandbox v2 + COD fallback (subscriptions cut in PR #45).
 
 ## The 6 Slices
 1. `Slice 1`: Fix data model + Postgres RLS + isolation tests (COMPLETED)

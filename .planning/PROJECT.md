@@ -62,7 +62,7 @@ Strict multi-tenant isolation and end-to-end checkout integrity — any merchant
 | Shared Postgres schema with `store_id` FK + `StoreScopedManager` | Compatible with Neon serverless & simple migrations; `django-tenants` schema-per-tenant adds weeks of infra overhead | — Pending |
 | Same-origin Next.js `/api/*` rewrite + Django `HttpOnly` session & CSRF cookies | Eliminates cross-domain cookie headaches and `localStorage` token XSS exposure | — Pending |
 | Per-store encrypted Khalti secret key with platform sandbox fallback + COD | Mirrors real Nepali commerce (COD dominance) and routes live funds directly to merchants | — Pending |
-| Prepaid commitments + scheduled `PENDING_PAYMENT` renewal orders instead of auto-charging | Respects Nepal payment gateway constraints while delivering genuine subscription operations | — Pending |
+| Formally Cut Subscriptions in PR #45 | Focus strictly on one-time direct purchases with Khalti Sandbox v2 + COD fallback to guarantee demo stability | Cut in PR #45 |
 
 ---
 *Last updated: 2026-10-29 after ShopCraft GSD project initialization*

@@ -23,8 +23,8 @@ This roadmap guides Sprint 2 (Weeks 9–11: October 29 – November 12, 2026), m
 - [x] **Phase 3: Multi-Tenant Storefront, Checkout & Khalti Sandbox Payments** (Completed: Nov 2, 2026)  
   Themed `/s/[storeSlug]` storefronts (`/s/brewmellow`), store-namespaced cart drawer, single-screen checkout with Nepali addresses, official Khalti ePayment v2 sandbox (`pidx` server-side verification) + Cash on Delivery (COD) fallback, immutable order snapshots, and merchant fulfillment queue.
 
-- [ ] **Phase 4: Subscriptions, Multi-Store Demo & MVP Freeze Hardening** (Active / In Progress: Nov 3 – Nov 12, 2026; Freeze Gate: Nov 12)  
-  Prepaid (3/6/12 cycles) and pay-per-delivery subscription runner, customer self-service controls (pause, skip, modify), second demo tenant (`/s/himalayan-artisans`), platform landing showcase (`/`), and end-to-end regression freeze ahead of the Week 11 MVP Gate.
+- [ ] **Phase 4: Multi-Store Demo, Production Hardening & MVP Freeze (Subscriptions Cut in PR #45)** (Active / In Progress: Nov 3 – Nov 12, 2026; Freeze Gate: Nov 12)  
+  *(Scope Note: Following PR #45 and Week 9 Scope Cut, recurring shopper subscriptions were formally removed from the MVP. All purchases are direct one-time retail).* Second demo tenant (`/s/pahadi-honey` / `himalayan-artisans`) proving PostgreSQL RLS isolation, platform landing showcase (`/`), Khalti Sandbox v2 + COD fallback verification, and end-to-end regression freeze (113 active tests) ahead of the Week 11 MVP Gate.
 
 ---
 
@@ -88,32 +88,33 @@ This roadmap guides Sprint 2 (Weeks 9–11: October 29 – November 12, 2026), m
 
 ---
 
-### Phase 4: Subscriptions, Multi-Store Demo & MVP Freeze Hardening
-**Goal:** Complete prepaid and pay-per-delivery subscription lifecycles, public platform showcase, a second non-coffee demo tenant (`himalayan-artisans`), legacy BrewMellow URL redirects, and production cutover ahead of the Week 11 MVP Freeze Gate (Nov 12).  
+### Phase 4: Multi-Store Demo, Production Hardening & MVP Freeze (Subscriptions Cut in PR #45)
+**Goal:** Deliver a rock-solid multi-tenant demo with two distinct stores, public platform showcase, legacy URL redirects, and 100% regression freeze ahead of the Week 11 MVP Gate (Nov 12).  
 **Mode:** MVP Hardening & Freeze  
 **Depends on:** Phase 3  
-**Requirements**: [SUBS-01, SUBS-02, SUBS-03, SUBS-04]  
+**Requirements**: [SHOP-01, SHOP-02, SHOP-03, SHOP-04, SHOP-05, MERCH-05, LAUNCH-01, LAUNCH-02]  
+*(Note: SUBS-01, SUBS-02, SUBS-03, SUBS-04 were formally cut from MVP in PR #45. All purchases operate as direct one-time transactions with Khalti Sandbox v2 and Cash on Delivery).*  
 **Target Completion:** November 12, 2026 (Week 11 MVP Gate)  
 **Success Criteria:**
-1. Shopper purchases both a prepaid commitment subscription (3/6/12 cycles) and a pay-per-delivery subscription on eligible variants.
-2. Running `manage.py run_subscription_cycles` (or clicking "Run Cycle Now" in the merchant console) idempotently creates fulfillment orders for prepaid subscriptions and `PENDING_PAYMENT` renewal orders with working "Pay Now" links for pay-per-delivery subscriptions.
-3. Shopper and merchant can pause, resume, skip next cycle, or cancel a subscription from their respective consoles.
-4. Public landing page at `/` showcases the platform with live links to two demo stores (`BrewMellow` + `Himalayan Artisans`), legacy BrewMellow URLs redirect cleanly to `/s/brewmellow/...`, and full end-to-end regression suite is locked for the Week 11 Freeze.
+1. Shopper completes direct one-time purchase on Store #1 (`/s/brewmellow`) and Store #2 (`/s/pahadi-honey`) with localized Nepali addresses.
+2. Official Khalti Sandbox ePayment v2 completes via test credentials (`9800000000` / OTP `987654`) with server-authoritative `epayment/lookup/` verification, paired with instant zero-network Cash on Delivery (COD) fallback.
+3. PostgreSQL Row-Level Security (RLS) isolation prevents Store B merchant from probing Store A data (HTTP 404).
+4. Public landing page at `/` showcases the platform with live links to demo stores, legacy URLs redirect cleanly, and all 113 backend tests across active apps (`accounts catalog orders stores`) pass cleanly.
 
-**Active Plans:**
-- [x] `04-01-PLAN.md` — Subscription Checkout & Idempotent Recurring Cycle Runner
-- [x] `04-02-PLAN.md` — Merchant Subscriptions Workspace & Shopper Lifecycle Controls
-- [x] `04-03-PLAN.md` — Second Demo Store (`Himalayan Artisans`) & Legacy Next.js Redirects
+**Phase 4 Plan Status:**
+- [x] `04-01-PLAN.md` — [CUT / RETIRED in PR #45] (Shopper Subscriptions formally removed per scope rules)
+- [x] `04-02-PLAN.md` — [CUT / RETIRED in PR #45] (Merchant Subscriptions Workspace removed per scope rules)
+- [x] `04-03-PLAN.md` — Second Demo Store (`Himalayan Artisans` / `Pahadi Honey`) & Multi-Tenant Isolation
 - [x] `04-04-PLAN.md` — Public Platform Landing Page & Production Launch Readiness
 - [ ] `04-05-PLAN.md` — Independent Teammate Regression Verification & MVP Freeze Sign-off (Target: Nov 10–12, 2026)
 
 ---
 
-## Progress Summary (Current Snapshot: Week 9 / Nov 3, 2026)
+## Progress Summary (Current Snapshot: Week 10 / Nov 9, 2026)
 
 | Phase | Plans Complete | Current Status | Completion / Target Date |
 |---|---|---|---|
 | **1. Foundation, Auth & Tenant Core** | 5/5 | Verified (47 Tests Pass) | Completed Oct 30, 2026 |
 | **2. Merchant Onboarding & Catalog** | 4/4 | Verified | Completed Oct 30, 2026 |
 | **3. Storefront, Checkout & Khalti Sandbox** | 4/4 | Verified (Sandbox + COD) | Completed Nov 2, 2026 |
-| **4. Subscriptions & MVP Freeze Hardening** | 4/5 | Active / Verification | Target Nov 12, 2026 (Freeze Gate) |
+| **4. Multi-Store Demo & MVP Freeze (Subscriptions Cut)** | Active | 113 Tests Pass; Subscriptions Cut in PR #45 | Target Nov 12, 2026 (Freeze Gate) |
