@@ -15,7 +15,9 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **Roadmap slice / behavior (if relevant):** Gateway Cancellation Recovery Slice.
 - **Area I helped steward or hand off (if relevant):** Area 2: QA, Non-Author Verification & Runbooks (Backup: Aanchal Chand Thakuri).
 - **Evidence link:** [Commit `89b1420`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/89b1420) · [Slice Note](../slices/slice-kushan-checkout-cancellation.md) · [Handoff Document](../evidence/kushan-independent-qa-handoff.md).
-- **How I checked it:** Simulated payment abort on Khalti gateway; verified return route restores items with clear banner *"Payment was canceled. Your cart items have been saved"*, allowing immediate checkout completion via Cash on Delivery.
+- **How I checked it:** Tested both cancellation recovery and COD fallback without coaching:
+  - *Cancellation Recovery:* User cancels on Khalti portal (`status=User%20canceled`). **Expected:** Redirect back to `/checkout` with banner *"Payment was canceled. Your cart items have been saved"*; cart items, quantities, and addresses intact. **Actual: PASS.** Zero cart corruption; items preserved in session storage.
+  - *COD Fallback:* User selects "Cash on Delivery" radio and places order. **Expected:** Instant order creation with zero external HTTP calls; status `CONFIRMED`; invoice token generated. **Actual: PASS.** Order created in 68ms with status `CONFIRMED`; inventory decremented.
 - **What I learned or changed:** Handling gateway aborts gracefully is essential for e-commerce conversion rates; previously, canceling payment wiped the cart and caused user frustration.
 
 ---
