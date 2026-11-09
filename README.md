@@ -223,15 +223,21 @@ All deliverables and evidence packages are maintained in the repository:
 
 | Week / Milestone | Document | Summary |
 |---|---|---|
-| **Week 9 (Current)** | [**Weekly Report**](docs/week-09/weekly-report.md) | Shared report with ShopCraft pivot, Look Back quadrants, and individual student rows |
-| **Week 9 (Current)** | [**MVP Contract**](docs/week-09/mvp-contract.md) | Official scope cut contract, finish list, cut list, and Week 11 freeze gates |
-| **Week 9 (Current)** | [**Final Demo Roadmap**](docs/week-09/final-demo-roadmap.md) | Core journey, tenant hierarchy, and boundaries |
-| **Week 9 (Current)** | [**Core Evidence Matrix**](docs/week-09/core-demo-evidence-matrix.md) | Granular PASS / FAIL / NOT TESTED matrix |
-| **Week 9 (Current)** | [**Sprint Quality Checks**](docs/week-09/sprint-quality-quick-checks.md) | 51 passing tests, clean typecheck, and surface checks |
-| **Week 9 (Current)** | [**Aditya Kumar Gupta Receipt**](docs/week-09/receipts/receipt-aditya.md) | Full-stack, Khalti Sandbox v2, and tenant models |
-| **Week 9 (Current)** | [**Kushan Sunuwar Receipt**](docs/week-09/receipts/receipt-kushan.md) | Independent non-author sandbox testing & edge cases |
-| **Week 9 (Current)** | [**Aanchal Chand Thakuri Receipt**](docs/week-09/receipts/receipt-aanchal.md) | Mobile viewports (360px/390px) & WCAG AA accessibility |
-| **Week 9 (Current)** | [**Rohit Chhantyal Receipt**](docs/week-09/receipts/receipt-rohit.md) | Identity confirmation, backend health probe, and resilience |
+| **Week 10 (Current)** | [**Code Ownership & AI Audit**](docs/week-10/ai-use-and-code-ownership-audit.md) | Official 4-area codebase map, AI-use notes, and non-author peer verification |
+| **Week 10 (Current)** | [**Weekly Report**](docs/week-10/weekly-report.md) | Shared report with individual rows for all 4 students and peer check matrix |
+| **Week 10 (Current)** | [**Aditya Backend Handoff**](docs/week-10/evidence/aditya-backend-rls-handoff.md) | Core multi-tenant backend, RLS policies, and Khalti Sandbox gateway |
+| **Week 10 (Current)** | [**Kushan QA Handoff**](docs/week-10/evidence/kushan-independent-qa-handoff.md) | Non-author independent checkout testing & gateway cancellation recovery |
+| **Week 10 (Current)** | [**Aanchal UI Handoff**](docs/week-10/evidence/aanchal-storefront-a11y-handoff.md) | Localized Nepali mobile checkout, touch ergonomics, and WCAG AA contrast |
+| **Week 10 (Current)** | [**Rohit Resilience Handoff**](docs/week-10/evidence/rohit-resilience-health-handoff.md) | Order state machine, 5s undo toast, and /api/health/ uptime probe |
+| **Week 9** | [**Weekly Report**](docs/week-09/weekly-report.md) | Shared report with ShopCraft pivot, Look Back quadrants, and individual student rows |
+| **Week 9** | [**MVP Contract**](docs/week-09/mvp-contract.md) | Official scope cut contract, finish list, cut list, and Week 11 freeze gates |
+| **Week 9** | [**Final Demo Roadmap**](docs/week-09/final-demo-roadmap.md) | Core journey, tenant hierarchy, and boundaries |
+| **Week 9** | [**Core Evidence Matrix**](docs/week-09/core-demo-evidence-matrix.md) | Granular PASS / FAIL / NOT TESTED matrix |
+| **Week 9** | [**Sprint Quality Checks**](docs/week-09/sprint-quality-quick-checks.md) | 51 passing tests, clean typecheck, and surface checks |
+| **Week 9** | [**Aditya Kumar Gupta Receipt**](docs/week-09/receipts/receipt-aditya.md) | Full-stack, Khalti Sandbox v2, and tenant models |
+| **Week 9** | [**Kushan Sunuwar Receipt**](docs/week-09/receipts/receipt-kushan.md) | Independent non-author sandbox testing & edge cases |
+| **Week 9** | [**Aanchal Chand Thakuri Receipt**](docs/week-09/receipts/receipt-aanchal.md) | Mobile viewports (360px/390px) & WCAG AA accessibility |
+| **Week 9** | [**Rohit Chhantyal Receipt**](docs/week-09/receipts/receipt-rohit.md) | Identity confirmation, backend health probe, and resilience |
 | **Sprint Planning** | [**Sprint 2 Roadmap**](.planning/ROADMAP.md) | Updated GSD milestone roadmap with accurate dates |
 | **Architecture** | [**Design Document**](DESIGN.md) | Architectural specification and multi-tenant schema |
 
