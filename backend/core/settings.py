@@ -69,10 +69,18 @@ if IS_TEST_COMMAND or IS_COLLECTSTATIC:
         "DJANGO_SECRET_KEY",
         "test-only-ephemeral-secret-key-not-for-prod-0123456789",
     )
-    FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", EPHEMERAL_TEST_FERNET_KEY)
+    FIELD_ENCRYPTION_KEY = (
+        os.getenv("FIELD_ENCRYPTION_KEY", "").strip()
+        or os.getenv("FERNET_KEY", "").strip()
+        or EPHEMERAL_TEST_FERNET_KEY
+    )
 else:
     SECRET_KEY = os.getenv("DJANGO_SECRET_KEY", DEFAULT_DEV_SECRET_KEY if DEBUG else "")
-    FIELD_ENCRYPTION_KEY = os.getenv("FIELD_ENCRYPTION_KEY", DEFAULT_DEV_FERNET_KEY if DEBUG else "")
+    FIELD_ENCRYPTION_KEY = (
+        os.getenv("FIELD_ENCRYPTION_KEY", "").strip()
+        or os.getenv("FERNET_KEY", "").strip()
+        or (DEFAULT_DEV_FERNET_KEY if DEBUG else "")
+    )
 
 allowed_hosts_env = (
     os.getenv("DJANGO_ALLOWED_HOSTS", "").strip()
