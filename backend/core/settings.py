@@ -315,27 +315,48 @@ CORS_ALLOW_CREDENTIALS = os.getenv("CORS_ALLOW_CREDENTIALS", "True").strip().low
     "yes",
 )
 
-cors_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
-if cors_origins_env:
-    CORS_ALLOWED_ORIGINS = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
-elif DEBUG:
-    CORS_ALLOWED_ORIGINS = [
+default_cors = [
+    "https://shopcraft.me",
+    "https://shop.shopcraft.me",
+    "https://api.shopcraft.me",
+]
+if DEBUG:
+    default_cors.extend([
         "http://localhost:3000",
         "http://127.0.0.1:3000",
-    ]
+    ])
+
+cors_origins_env = os.getenv("CORS_ALLOWED_ORIGINS", "").strip()
+if cors_origins_env:
+    env_cors = [o.strip() for o in cors_origins_env.split(",") if o.strip()]
+    CORS_ALLOWED_ORIGINS = list(dict.fromkeys(default_cors + env_cors))
 else:
-    CORS_ALLOWED_ORIGINS = []
+    CORS_ALLOWED_ORIGINS = default_cors
+
+CORS_ALLOWED_ORIGIN_REGEXES = [
+    r"^https://([a-zA-Z0-9-]+\.)*shopcraft\.me$",
+    r"^https://([a-zA-Z0-9-]+\.)*vercel\.app$",
+]
+
+default_csrf = [
+    "https://shopcraft.me",
+    "https://*.shopcraft.me",
+    "https://shop.shopcraft.me",
+    "https://api.shopcraft.me",
+    "https://*.vercel.app",
+]
+if DEBUG:
+    default_csrf.extend([
+        "http://localhost:3000",
+        "http://127.0.0.1:3000",
+    ])
 
 csrf_origins_env = os.getenv("CSRF_TRUSTED_ORIGINS", "").strip()
 if csrf_origins_env:
-    CSRF_TRUSTED_ORIGINS = [o.strip() for o in csrf_origins_env.split(",") if o.strip()]
-elif DEBUG:
-    CSRF_TRUSTED_ORIGINS = [
-        "http://localhost:3000",
-        "http://127.0.0.1:3000",
-    ]
+    env_csrf = [o.strip() for o in csrf_origins_env.split(",") if o.strip()]
+    CSRF_TRUSTED_ORIGINS = list(dict.fromkeys(default_csrf + env_csrf))
 else:
-    CSRF_TRUSTED_ORIGINS = []
+    CSRF_TRUSTED_ORIGINS = default_csrf
 
 # HTTPS, Proxy SSL, HSTS (short 1-day max-age initially, no subdomains, no preload), & Security Headers
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
