@@ -225,6 +225,9 @@ All deliverables and evidence packages are maintained in the repository:
 |---|---|---|
 | **Week 10 (Current)** | [**Code Ownership & AI Audit**](docs/week-10/ai-use-and-code-ownership-audit.md) | Official 4-area codebase map, AI-use notes, and non-author peer verification |
 | **Week 10 (Current)** | [**Weekly Report**](docs/week-10/weekly-report.md) | Shared report with individual rows for all 4 students and peer check matrix |
+| **Week 10 (Current)** | [**Work Checklist**](docs/week-10/work-checklist.md) | Official Week 10 checklist mapping codebase areas, slices, and checks |
+| **Week 10 (Current)** | [**Delivery Slices**](docs/week-10/slices/) | 4 individual roadmap slices with transparent AI use disclosures |
+| **Week 10 (Current)** | [**Individual Receipts**](docs/week-10/receipts/) | Official individual evidence receipts for all 4 enrolled students |
 | **Week 10 (Current)** | [**Aditya Backend Handoff**](docs/week-10/evidence/aditya-backend-rls-handoff.md) | Core multi-tenant backend, RLS policies, and Khalti Sandbox gateway |
 | **Week 10 (Current)** | [**Kushan QA Handoff**](docs/week-10/evidence/kushan-independent-qa-handoff.md) | Non-author independent checkout testing & gateway cancellation recovery |
 | **Week 10 (Current)** | [**Aanchal UI Handoff**](docs/week-10/evidence/aanchal-storefront-a11y-handoff.md) | Localized Nepali mobile checkout, touch ergonomics, and WCAG AA contrast |
