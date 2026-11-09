@@ -169,7 +169,10 @@ if IS_TEST_COMMAND:
 else:
     shopcraft_db = os.getenv("SHOPCRAFT_DATABASE_URL", "").strip()
     runtime_db_url = os.getenv("DATABASE_URL", "").strip()
-    direct_db_url = os.getenv("DATABASE_URL_DIRECT", "").strip()
+    direct_db_url = (
+        os.getenv("DIRECT_DATABASE_URL", "").strip()
+        or os.getenv("DATABASE_URL_DIRECT", "").strip()
+    )
     is_migration = any(cmd in sys.argv for cmd in ["migrate", "makemigrations", "showmigrations"])
 
     # Release-phase schema migrations: use unpooled direct connection when DATABASE_URL_DIRECT is set
