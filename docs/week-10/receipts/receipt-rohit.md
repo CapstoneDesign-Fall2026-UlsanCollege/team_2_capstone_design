@@ -1,6 +1,7 @@
 # Individual Evidence Receipt — Week 10
 
 **Student:** Rohit Chhantyal ([`@Rohit-coder201`](https://github.com/Rohit-coder201))  
+*(Canonical GitHub identifier: `@Rohit-coder201`; display name standardized as Rohit Chhantyal, harmonizing with earlier Week 8 draft spelling "Chhantiyal")*  
 **Team:** Team 2 — ShopCraft  
 **Week:** Week 10 (Sprint 2: MVP and Freeze)  
 **Date:** Monday, November 9, 2026 (Submitted for Wednesday, November 11, 2026 EOD KST Deadline)  
@@ -22,12 +23,14 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 
 ## Receipt 2
 
-- **What I did:** Implemented the `/api/health/` database uptime probe in [`backend/core/views.py`](../../../backend/core/views.py) testing Neon PostgreSQL connectivity and connection pool status.
-- **Roadmap slice / behavior (if relevant):** Database Health & Uptime Probe.
+- **What I did:** Implemented the `/api/health/` database uptime probe in [`backend/core/views.py`](../../../backend/core/views.py) testing local PostgreSQL connectivity and connection pool status.
+- **Roadmap slice / behavior (if relevant):** Database Health & Uptime Probe (Local Development Environment).
 - **Area I helped steward or hand off (if relevant):** Area 4: DevOps, Backend Health & State Machine.
 - **Evidence link:** [Commit `5406c14`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/5406c14) · [Health Check Response](../evidence/rohit-resilience-health-handoff.md#health-probe-response).
-- **How I checked it:** Curled `http://localhost:8000/api/health/` and verified HTTP 200 with JSON `{ "status": "ok", "database": "connected", "latency_ms": 42 }`. Verified simulated DB drop yields HTTP 503.
-- **What I learned or changed:** Having an explicit health probe is vital when running serverless PostgreSQL (Neon) to monitor and mitigate cold-start latency before the midterm demo.
+- **How I checked it:** 
+  - *Local Development Scope:* Curled `http://127.0.0.1:8000/api/health/` in local terminal and verified HTTP 200 with JSON `{ "status": "ok", "database": "connected", "latency_ms": 42 }`. Verified simulated local DB drop yields HTTP 503.
+  - *Scope Distinction:* This health probe is strictly a **Local Development Environment** verification check of database engine connectivity; kept distinct from the deployed production frontend on Vercel.
+- **What I learned or changed:** Having an explicit health probe is vital when running serverless PostgreSQL (Neon) to monitor and mitigate cold-start latency before the midterm demo. Local health testing must remain distinct from live multi-region production metrics.
 
 ---
 
