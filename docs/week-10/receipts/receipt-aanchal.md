@@ -15,8 +15,11 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **Roadmap slice / behavior (if relevant):** Localized Nepali Mobile Checkout Slice.
 - **Area I helped steward or hand off (if relevant):** Area 3: Storefront UI/UX, Mobile & Accessibility (Backup: Kushan Sunuwar).
 - **Evidence link:** [Commit `7a72592`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/7a72592) · [Slice Note](../slices/slice-aanchal-mobile-checkout.md) · [Handoff Document](../evidence/aanchal-storefront-a11y-handoff.md).
-- **How I checked it:** Tested form input validation with invalid phone numbers (`984123456`); verified inline alert appears and submission is halted. Verified all 7 provinces render correctly in dropdown.
-- **What I learned or changed:** Standardizing address fields to Nepal's administrative divisions prevents incorrect deliveries for craft merchants and speeds up checkout completion.
+- **How I checked it:** 
+  - *Exact Test Environment:* Chrome 130 DevTools mobile device emulation across: (1) 360x800 (Samsung Galaxy S8 compact Android), (2) 390x844 (iPhone 14 / mobile Safari), and (3) 412x915 (Pixel 7).
+  - *Failure-Path Result:* Submitting with an invalid 8-digit phone (`98412345`) or invalid prefix halts submission before POST; renders inline accessible error *"Please enter a valid 10-digit Nepali mobile number starting with 98 or 97"*; submit button disabled (`cursor-not-allowed`). Verified all 7 provinces render cleanly in dropdown.
+  - *Demo Promise Alignment:* Confirmed frozen checkout path strictly executes direct one-time purchases (`Storefront -> Cart -> Checkout -> Khalti Sandbox / COD -> Confirmation`), matching final demo promise with zero subscription dependencies.
+- **What I learned or changed:** Standardizing address fields to Nepal's administrative divisions prevents incorrect deliveries for craft merchants and speeds up checkout completion. Explicit failure-path handling prevents invalid payloads from ever reaching backend APIs.
 
 ---
 
