@@ -111,6 +111,64 @@ class TenantIsolationTests(APITestCase):
                 r = self.client.post(url, {"name": "Spy Product", "slug": "spy-product"})
             self.assertEqual(r.status_code, status.HTTP_404_NOT_FOUND, f"Failed on {method.upper()} {url}")
 
+    def test_merchant_endpoints_access_matrix(self):
+        """
+        Verify the authorization matrix across merchant endpoints:
+        - Owner -> 200 OK
+        - Other user's store -> 404 Not Found (no tenant enumeration)
+        - Nonexistent store -> 404 Not Found
+        - Anonymous user -> 401 Unauthorized
+        Tested across overview (detail), settings (detail), orders, and products.
+        """
+        endpoints = [
+            "/api/merchant/stores/{slug}/overview/",
+            "/api/merchant/stores/{slug}/settings/",
+            "/api/merchant/stores/{slug}/orders/",
+            "/api/merchant/stores/{slug}/products/",
+        ]
+
+        # 1. Anonymous user -> 401 Unauthorized
+        self.client.logout()
+        for ep_template in endpoints:
+            url = ep_template.format(slug=self.store_a.slug)
+            res = self.client.get(url)
+            self.assertEqual(
+                res.status_code,
+                status.HTTP_401_UNAUTHORIZED,
+                f"Anonymous request to {url} should return 401, got {res.status_code}",
+            )
+
+        # 2. Owner of Store A -> 200 OK for Store A
+        self.client.force_login(self.owner_a)
+        for ep_template in endpoints:
+            url = ep_template.format(slug=self.store_a.slug)
+            res = self.client.get(url)
+            self.assertEqual(
+                res.status_code,
+                status.HTTP_200_OK,
+                f"Owner request to {url} should return 200, got {res.status_code}",
+            )
+
+        # 3. Owner of Store A accessing Store B (other user's store) -> 404 Not Found
+        for ep_template in endpoints:
+            url = ep_template.format(slug=self.store_b.slug)
+            res = self.client.get(url)
+            self.assertEqual(
+                res.status_code,
+                status.HTTP_404_NOT_FOUND,
+                f"Cross-tenant request to {url} should return 404, got {res.status_code}",
+            )
+
+        # 4. Nonexistent slug -> 404 Not Found
+        for ep_template in endpoints:
+            url = ep_template.format(slug="non-existent-store-slug-xyz")
+            res = self.client.get(url)
+            self.assertEqual(
+                res.status_code,
+                status.HTTP_404_NOT_FOUND,
+                f"Nonexistent store request to {url} should return 404, got {res.status_code}",
+            )
+
     def test_store_field_never_writable_from_payload(self):
         self.client.force_login(self.owner_a)
         # Attempt to inject store and store_id in payload targeting store_b
