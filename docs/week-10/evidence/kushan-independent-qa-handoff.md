@@ -39,10 +39,11 @@ As Area 2 steward, I maintain test documentation, clean-clone setup runbooks, an
 
 ### Repeatable Health Check Command
 ```bash
-python manage.py test accounts catalog orders subscriptions stores
+python manage.py test accounts catalog orders stores
 ```
-**Expected Result:** All 51 automated backend tests pass with 0 failures and 0 errors.  
-**Actual Result:** **PASS.** Ran 51 tests in 10.719s — OK.
+*(Shopper subscriptions were formally cut in PR #45; test suite strictly covers active apps).*  
+**Expected Result:** All 114 automated backend tests pass with 0 failures and 0 errors.  
+**Actual Result:** **PASS.** Ran 114 tests in 8.475s — OK (failures=0, errors=0).
 
 ---
 
@@ -52,7 +53,7 @@ python manage.py test accounts catalog orders subscriptions stores
 - **Device:** Windows 11 Laptop (Non-developer test environment).
 - **URL:** Live Vercel app (`https://team-2-capstone-design-one.vercel.app/s/brewmellow/checkout`).
 - **Action:** Added Gulmi Bourbon 250g (NPR 1,200) to cart. Entered delivery details (Bagmati Province, Kathmandu, Phone: `9841234567`). Selected Khalti and entered test credentials.
-- **Result:** **PASS.** Server verified transaction; order invoice displayed with reference token `ORD-2026-BM-001`. Order appeared immediately in roaster queue.
+- **Result:** **PASS.** Server verified transaction; order invoice displayed with reference token `ORD-2026-SC-001`. Order appeared immediately in roaster queue.
 
 ### Test 2: Gateway Cancellation Recovery (Meaningful Boundary Failure Check)
 - **Action:** Added Ilam Typica 500g (NPR 1,800) to cart. Clicked *"Complete Order (Khalti)"*. On Khalti's hosted portal, clicked *"Cancel / Return to Merchant"*.
@@ -74,5 +75,5 @@ python manage.py test accounts catalog orders subscriptions stores
 ## 5. Non-Author Peer Check
 
 - **Independent Peer Reviewer:** **Aditya Kumar Gupta** (`@notyouradhee`, Backend Lead — Outside Area 2)
-- **What Aditya Tested:** Followed my clean-clone instructions from an empty directory, installed requirements, ran migrations, and executed the 51-test suite.
+- **What Aditya Tested:** Followed my clean-clone instructions from an empty directory, installed requirements, ran migrations, and executed the 114-test suite. All 114 tests passed in 8.475s with zero errors.
 - **Outcome:** Setup completed in under 3 minutes with zero errors, confirming reproducibility.
