@@ -35,9 +35,9 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 
 ## Receipt 3, optional
 
-- **What I did:** Audited and verified all 113 automated backend tests across active apps (`accounts catalog orders stores`) ensuring zero broken tests following the removal of subscriptions.
+- **What I did:** Audited and verified all 114 automated backend tests across active apps (`accounts catalog orders stores`) ensuring zero broken tests following the removal of subscriptions and addition of authorization matrix tests.
 - **Roadmap slice / behavior (if relevant):** Automated test suite health verification.
 - **Area I helped steward or hand off (if relevant):** Area 2: QA, Non-Author Verification & Runbooks.
 - **Evidence link:** [Audit Test Matrix](../ai-use-and-code-ownership-audit.md#2-codebase-area-map).
-- **How I checked it:** Executed `python manage.py test accounts catalog orders stores` in 13.236s (113 passing, 0 failures, 0 errors).
+- **How I checked it:** Executed `python manage.py test accounts catalog orders stores` in 8.475s (114 passing, 0 failures, 0 errors).
 - **What I learned or changed:** Maintaining a clean test suite without dead code from cut features keeps continuous integration fast and trustworthy.
