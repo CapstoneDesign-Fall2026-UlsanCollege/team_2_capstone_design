@@ -24,11 +24,11 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 
 ## Receipt 2
 
-- **What I did:** Configured and validated PostgreSQL Row-Level Security (RLS) policies on 11 tables and verified backend test suite integrity across 113 automated tests.
+- **What I did:** Configured and validated PostgreSQL Row-Level Security (RLS) policies on 11 tables and verified backend test suite integrity across 114 automated tests (including new merchant authorization matrix tests).
 - **Roadmap slice / behavior (if relevant):** Multi-tenant RLS isolation policies (`backend/core/tenant_context.py` and `backend/stores/models.py`).
 - **Area I helped steward or hand off (if relevant):** Area 1: Core Multi-Tenant Backend, RLS & Payments.
-- **Evidence link:** [Commit `cdb1c0e`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/cdb1c0e) · [Audit Document](../ai-use-and-code-ownership-audit.md#2-codebase-area-map).
-- **How I checked it:** Ran `python manage.py test accounts catalog orders stores`; all 113 tests passed in 13.236s with 0 failures and 0 errors (subscriptions cleanly excluded).
+- **Evidence link:** [Commit `cdb1c0e`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/cdb1c0e) · [Commit `7abc09c`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/7abc09c) · [Audit Document](../ai-use-and-code-ownership-audit.md#2-codebase-area-map).
+- **How I checked it:** Ran `python manage.py test accounts catalog orders stores`; all 114 tests passed in 8.475s with 0 failures and 0 errors (subscriptions cleanly excluded).
 - **What I learned or changed:** Tenant scoping must be enforced at both the database query layer (thread-local tenant filter) and the database engine layer (Postgres RLS) to ensure Store Owner A cannot access Store Owner B's catalog or orders even if application code contains a bug.
 
 ---

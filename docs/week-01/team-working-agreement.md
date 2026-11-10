@@ -23,6 +23,19 @@
 | Evidence / documentation lead | Aanchal | Keep reports, receipts, and docs linked. |
 | Build / quality lead | Kushan & Rohit | Keep the demo path and testing checks visible. |
 
+## Codebase Area Stewardship Map (Week 10 Update)
+
+During Sprint 2 (Week 10 Code Ownership and Responsible AI Audit), the team established a 4-area codebase stewardship model based on individual strengths and learning partnerships to eliminate single-author bottlenecks:
+
+| Area | Repository Boundary & Responsibility | Primary Steward | Backup / Learning Partner | Health Check |
+|---|---|---|---|---|
+| **Area 1: Core Multi-Tenant Backend, RLS & Payments** | `backend/core/`, `backend/stores/`, `backend/orders/`, `backend/catalog/` | Aditya Kumar Gupta ([`@notyouradhee`](https://github.com/notyouradhee)) | Rohit Chhantyal ([`@Rohit-coder201`](https://github.com/Rohit-coder201)) | `python manage.py test stores.tests.test_isolation` |
+| **Area 2: QA, Non-Author Verification & Runbooks** | `backend/stores/tests/`, `scripts/`, root runbooks | Kushan Sunuwar ([`@Kushan2191`](https://github.com/Kushan2191)) | Aanchal Chand Thakuri ([`@jaasly07`](https://github.com/jaasly07)) | `python manage.py test accounts catalog orders stores` |
+| **Area 3: Storefront UI/UX, Mobile & Accessibility** | `frontend/src/app/s/`, `frontend/src/components/storefront/` | Aanchal Chand Thakuri ([`@jaasly07`](https://github.com/jaasly07)) | Kushan Sunuwar ([`@Kushan2191`](https://github.com/Kushan2191)) | `npx tsc --noEmit && node scripts/check-surfaces.mjs` |
+| **Area 4: DevOps, Backend Health & State Machine** | `backend/orders/models.py`, `backend/core/views.py`, merchant UI | Rohit Chhantyal ([`@Rohit-coder201`](https://github.com/Rohit-coder201)) | Aditya Kumar Gupta ([`@notyouradhee`](https://github.com/notyouradhee)) | `curl http://localhost:8000/api/health/` |
+
+The canonical area map, repository boundaries, and verification procedures are maintained in the [Week 10 AI Use and Code Ownership Audit](../week-10/ai-use-and-code-ownership-audit.md#2-codebase-area-map).
+
 ## Communication and meetings
 
 - Main communication channel: Messenger group chat

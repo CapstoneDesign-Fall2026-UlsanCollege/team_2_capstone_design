@@ -1,7 +1,7 @@
 # 🛍️ ShopCraft: Multi-Tenant E-Commerce Platform for Nepal's Craft Economy
 
 [![Live Deployed App](https://img.shields.io/badge/Production-Live%20on%20Vercel-success?style=for-the-badge&logo=vercel)](https://team-2-capstone-design-one.vercel.app)
-[![Backend Tests](https://img.shields.io/badge/Django%20Tests-51%2F51%20Passing-brightgreen?style=for-the-badge&logo=django)](backend/stores/tests/test_isolation.py)
+[![Backend Tests](https://img.shields.io/badge/Django%20Tests-114%2F114%20Passing-brightgreen?style=for-the-badge&logo=django)](backend/stores/tests/test_isolation.py)
 [![TypeScript](https://img.shields.io/badge/TypeScript-0%20Errors-blue?style=for-the-badge&logo=typescript)](frontend/)
 [![Payment Gateway](https://img.shields.io/badge/Khalti-Sandbox%20v2%20Verified-purple?style=for-the-badge)](docs/week-09/core-demo-evidence-matrix.md)
 [![Course](https://img.shields.io/badge/Capstone%20Design-Fall%202026-orange?style=for-the-badge)](https://github.com/CapstoneDesign-Fall2026-UlsanCollege)
@@ -82,7 +82,7 @@ ShopCraft operates a unified Next.js + Django full-stack architecture divided in
   - **Cash on Delivery (COD):** Zero-network instant offline checkout providing an unbreakable demo fallback.
 - **Localized Nepali Address Validation:** Enforces Nepal's 7 Provinces (Bagmati, Gandaki, Koshi, Lumbini, Madhesh, Karnali, Sudurpashchim) with 10-digit mobile number validation.
 - **Merchant Operations Console (`/merchant/[storeSlug]`):** Real-time order fulfillment queue, product variant editor, and delivery packing slip generation with 5-second undo toast actions.
-- **Automated Test Quality:** 51 Django tests passing (0 failures), 0 TypeScript compilation errors, and zero cross-surface state leakage (`check-surfaces.mjs`).
+- **Automated Test Quality:** 114 Django tests passing (0 failures), 0 TypeScript compilation errors, and zero cross-surface state leakage (`check-surfaces.mjs`).
 
 ---
 
@@ -178,11 +178,11 @@ python manage.py send_test_email <recipient-address>
 
 Any evaluator or teammate can independently verify the core system by executing the following commands:
 
-### Test 1: Full Backend Test Suite (51 Passing Tests)
+### Test 1: Full Backend Test Suite (114 Passing Tests)
 ```bash
 cd backend
 python manage.py test accounts catalog orders stores
-# Output: Ran 51 tests in 12.525s — OK (failures=0, errors=0)
+# Output: Ran 114 tests in 8.475s — OK (failures=0, errors=0)
 ```
 
 ### Test 2: Multi-Tenant Data Isolation Test (HTTP 404 Security Guards)
