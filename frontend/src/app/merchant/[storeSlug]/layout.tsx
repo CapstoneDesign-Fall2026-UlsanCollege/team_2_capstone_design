@@ -1,5 +1,5 @@
 import type { Metadata } from "next";
-import { ConsoleShell } from "@/components/merchant/ConsoleShell";
+import { MerchantStoreGuard } from "@/components/merchant/MerchantStoreGuard";
 import { PlatformThemeProvider } from "@/context/PlatformThemeContext";
 
 export const metadata: Metadata = {
@@ -21,7 +21,7 @@ export default async function MerchantLayout({
       <div
         className="console min-h-dvh bg-[var(--background)] text-[var(--foreground)] text-[13px] antialiased"
       >
-        <ConsoleShell storeSlug={storeSlug}>{children}</ConsoleShell>
+        <MerchantStoreGuard storeSlug={storeSlug}>{children}</MerchantStoreGuard>
       </div>
     </PlatformThemeProvider>
   );

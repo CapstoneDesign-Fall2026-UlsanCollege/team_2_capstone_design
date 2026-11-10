@@ -3,17 +3,19 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { ExternalLink, Plus, Search } from "lucide-react";
+import { AlertTriangle, ExternalLink, Plus, Search, X } from "lucide-react";
 import { MerchantSidebar } from "@/components/merchant/MerchantSidebar";
 import { MerchantBottomNav } from "@/components/merchant/MerchantBottomNav";
 import { CommandPalette } from "@/components/merchant/CommandPalette";
 import { ProductSheet } from "@/components/merchant/ProductSheet";
 import { useMyStores, useOrdersToDispatch } from "@/components/merchant/useConsoleData";
 import { Button } from "@/components/ui/button";
-import { ProductItem } from "@/lib/api";
+import { ProductItem, MerchantStoreMembership } from "@/lib/api";
 
 interface ConsoleShellProps {
   storeSlug: string;
+  currentStore?: MerchantStoreMembership | null;
+  stores?: MerchantStoreMembership[];
   children: React.ReactNode;
 }
 
@@ -40,20 +42,38 @@ function resolveSectionLabel(pathname: string, baseHref: string): string {
   }
 }
 
-export function ConsoleShell({ storeSlug, children }: ConsoleShellProps) {
+export function ConsoleShell({
+  storeSlug,
+  currentStore: initialCurrentStore,
+  stores: initialStores,
+  children,
+}: ConsoleShellProps) {
   const pathname = usePathname();
   const [commandPaletteOpen, setCommandPaletteOpen] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [quickProductOpen, setQuickProductOpen] = useState(false);
   const [shortcutLabel, setShortcutLabel] = useState("Ctrl K");
+  const [notice, setNotice] = useState<string | null>(null);
 
-  const stores = useMyStores(storeSlug);
+  const fallbackStores = useMyStores(storeSlug);
+  const stores = initialStores ?? (fallbackStores.length > 0 ? fallbackStores : []);
+  const currentStore = initialCurrentStore ?? stores.find((s) => s.slug === storeSlug) ?? null;
   const ordersCount = useOrdersToDispatch(storeSlug, pathname);
 
   const baseHref = `/merchant/${encodeURIComponent(storeSlug)}`;
   const isOverviewRoute = pathname === baseHref;
   const sectionLabel = resolveSectionLabel(pathname, baseHref);
-  const storeName = stores.find((s) => s.slug === storeSlug)?.name || storeSlug;
+  const storeName = currentStore?.name || "";
+
+  useEffect(() => {
+    if (typeof window !== "undefined") {
+      const stored = sessionStorage.getItem("shopcraft_merchant_notice");
+      if (stored) {
+        setNotice(stored);
+        sessionStorage.removeItem("shopcraft_merchant_notice");
+      }
+    }
+  }, []);
 
   useEffect(() => {
     if (/Mac|iPhone|iPad/.test(navigator.platform)) setShortcutLabel("⌘K");
@@ -76,6 +96,7 @@ export function ConsoleShell({ storeSlug, children }: ConsoleShellProps) {
       <MerchantSidebar
         storeSlug={storeSlug}
         stores={stores}
+        currentStore={currentStore}
         ordersCount={ordersCount}
         drawerOpen={drawerOpen}
         onDrawerOpenChange={setDrawerOpen}
@@ -90,7 +111,7 @@ export function ConsoleShell({ storeSlug, children }: ConsoleShellProps) {
                   href={baseHref}
                   className="block max-w-[180px] truncate text-[var(--ink-2)] hover:text-[var(--ink)]"
                 >
-                  {storeName}
+                  {storeName || "Store"}
                 </Link>
               </li>
               <li aria-hidden="true" className="hidden text-[var(--ink-2)] sm:block">
@@ -152,6 +173,26 @@ export function ConsoleShell({ storeSlug, children }: ConsoleShellProps) {
             </Button>
           </div>
         </header>
+
+        {notice && (
+          <div
+            role="status"
+            className="flex items-center justify-between gap-3 border-b border-[var(--border)] bg-[var(--surface-2)] px-4 py-2.5 text-xs text-[var(--ink)]"
+          >
+            <div className="flex items-center gap-2">
+              <AlertTriangle className="size-3.5 shrink-0 text-amber-500" />
+              <span>{notice}</span>
+            </div>
+            <button
+              type="button"
+              onClick={() => setNotice(null)}
+              aria-label="Dismiss notice"
+              className="rounded p-1 text-[var(--ink-2)] hover:text-[var(--ink)] cursor-pointer"
+            >
+              <X className="size-3.5" />
+            </button>
+          </div>
+        )}
 
         {isOverviewRoute ? (
           <main className="flex flex-1 flex-col pb-24 md:pb-0">{children}</main>

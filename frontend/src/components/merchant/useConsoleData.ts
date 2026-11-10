@@ -7,14 +7,11 @@ import { fetchMerchantStoreOverview, fetchMyStores, MerchantStoreMembership } fr
  * Stores the signed-in user belongs to. Presentation only: uses the existing
  * authenticated endpoint; tenant resolution happens server-side.
  */
-export function useMyStores(storeSlug: string) {
+export function useMyStores(storeSlug?: string) {
   const [stores, setStores] = useState<MerchantStoreMembership[]>([]);
 
   useEffect(() => {
     let active = true;
-    if (typeof window !== "undefined" && storeSlug) {
-      localStorage.setItem("shopcraft_active_store_slug", storeSlug);
-    }
     fetchMyStores()
       .then((res) => active && setStores(res.stores ?? []))
       .catch(() => active && setStores([]));

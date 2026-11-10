@@ -12,6 +12,7 @@ import { buildMerchantNav, isNavActive, type NavItem } from "./merchant-nav";
 interface MerchantSidebarProps {
   storeSlug: string;
   stores: MerchantStoreMembership[];
+  currentStore?: MerchantStoreMembership | null;
   /** Orders waiting to be dispatched; shown as a count badge on Orders. */
   ordersCount: number;
   drawerOpen: boolean;
@@ -75,17 +76,20 @@ function NavLink({
 function StoreSwitcher({
   storeSlug,
   stores,
+  currentStore,
   onNavigate,
 }: {
   storeSlug: string;
   stores: MerchantStoreMembership[];
+  currentStore?: MerchantStoreMembership | null;
   onNavigate?: () => void;
 }) {
   const router = useRouter();
   const [open, setOpen] = React.useState(false);
   const ref = React.useRef<HTMLDivElement>(null);
-  const current = (stores || []).find((s) => s.slug === storeSlug);
-  const name = current?.name || storeSlug;
+  const current = currentStore || (stores || []).find((s) => s.slug === storeSlug);
+  const name = current?.name || "";
+  const canSwitch = (stores || []).length > 1;
 
   React.useEffect(() => {
     if (!open) return;
@@ -110,30 +114,35 @@ function StoreSwitcher({
     <div ref={ref} className="relative px-3 pt-4 pb-2">
       <button
         type="button"
-        onClick={() => setOpen((v) => !v)}
-        aria-haspopup="listbox"
-        aria-expanded={open}
-        aria-label={`Store: ${name}. Switch store`}
-        className="flex min-h-11 md:min-h-10 w-full cursor-pointer items-center gap-2.5 rounded-lg px-2 text-left transition-colors hover:bg-[var(--nav-active)]"
+        onClick={() => canSwitch && setOpen((v) => !v)}
+        aria-haspopup={canSwitch ? "listbox" : undefined}
+        aria-expanded={canSwitch ? open : undefined}
+        aria-label={canSwitch ? `Store: ${name}. Switch store` : `Store: ${name}`}
+        disabled={!canSwitch}
+        className={`flex min-h-11 md:min-h-10 w-full items-center gap-2.5 rounded-lg px-2 text-left transition-colors ${
+          canSwitch ? "cursor-pointer hover:bg-[var(--nav-active)]" : "cursor-default"
+        }`}
       >
         <span
           aria-hidden="true"
           className="flex size-7 shrink-0 items-center justify-center rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs font-semibold text-[var(--ink)]"
         >
-          {name.slice(0, 1).toUpperCase()}
+          {name ? name.slice(0, 1).toUpperCase() : ""}
         </span>
         <span className="truncate text-[13px] font-semibold text-[var(--ink)]">{name}</span>
-        <ChevronsUpDown className="ml-auto size-4 shrink-0 text-[var(--ink-2)]" aria-hidden="true" />
+        {canSwitch && (
+          <ChevronsUpDown className="ml-auto size-4 shrink-0 text-[var(--ink-2)]" aria-hidden="true" />
+        )}
       </button>
 
-      {open && (
+      {open && canSwitch && (
         <div
           role="listbox"
           aria-label="Your stores"
           className="absolute left-3 right-3 top-full z-50 mt-1 space-y-1 rounded-xl border border-[var(--border)] bg-[var(--surface)] p-1.5 text-[13px]"
         >
           <div className="max-h-52 space-y-0.5 overflow-y-auto">
-            {((stores || []).length ? stores : current ? [current] : []).map((st) => {
+            {(stores || []).map((st) => {
               const isCurrent = st.slug === storeSlug;
               return (
                 <button
@@ -180,6 +189,7 @@ function StoreSwitcher({
 function SidebarBody({
   storeSlug,
   stores,
+  currentStore,
   ordersCount,
   onNavigate,
   onClose,
@@ -187,6 +197,7 @@ function SidebarBody({
 }: {
   storeSlug: string;
   stores: MerchantStoreMembership[];
+  currentStore?: MerchantStoreMembership | null;
   ordersCount: number;
   onNavigate?: () => void;
   onClose?: () => void;
@@ -200,7 +211,12 @@ function SidebarBody({
     <div className="flex h-full w-60 flex-col border-r border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)]">
       <div className="flex items-start">
         <div className="min-w-0 flex-1">
-          <StoreSwitcher storeSlug={storeSlug} stores={stores} onNavigate={onNavigate} />
+          <StoreSwitcher
+            storeSlug={storeSlug}
+            stores={stores}
+            currentStore={currentStore}
+            onNavigate={onNavigate}
+          />
         </div>
         {onClose && (
           <button
@@ -292,6 +308,7 @@ function Rail({
 export function MerchantSidebar({
   storeSlug,
   stores,
+  currentStore,
   ordersCount,
   drawerOpen,
   onDrawerOpenChange,
@@ -301,7 +318,12 @@ export function MerchantSidebar({
     <>
       {/* Desktop (>=1024px): full 240px sidebar */}
       <aside className="sticky top-0 hidden h-dvh shrink-0 lg:block">
-        <SidebarBody storeSlug={storeSlug} stores={stores} ordersCount={ordersCount} />
+        <SidebarBody
+          storeSlug={storeSlug}
+          stores={stores}
+          currentStore={currentStore}
+          ordersCount={ordersCount}
+        />
       </aside>
 
       {/* Tablet (768-1023px): collapsed icon rail, expands into the drawer */}
@@ -321,6 +343,7 @@ export function MerchantSidebar({
             <SidebarBody
               storeSlug={storeSlug}
               stores={stores}
+              currentStore={currentStore}
               ordersCount={ordersCount}
               onNavigate={close}
               onClose={close}

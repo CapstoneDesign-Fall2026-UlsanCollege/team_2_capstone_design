@@ -100,20 +100,26 @@ export default function MerchantOverviewPage({ params }: PageProps) {
       .catch((err: unknown) => {
         if (!active) return;
         const msg = err instanceof Error ? err.message : "Failed to load store overview";
-        const isAuth =
-          (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
-          msg.includes("401") ||
-          msg.includes("403") ||
-          msg.toLowerCase().includes("unauthorized") ||
-          msg.toLowerCase().includes("credentials");
 
-        if (isAuth) {
+        if (err instanceof ApiError && err.status === 401) {
           setTimeout(
             () => router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}`),
             0
           );
           return;
         }
+
+        if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem(
+              "shopcraft_merchant_notice",
+              "That store isn't available on your account."
+            );
+          }
+          setTimeout(() => router.replace("/merchant"), 0);
+          return;
+        }
+
         setError(msg);
         setLoading(false);
       });
@@ -223,7 +229,7 @@ export default function MerchantOverviewPage({ params }: PageProps) {
             {error || "Unable to load store workspace"}
           </p>
           <p className="text-xs text-[var(--ink-2)]">
-            Please verify your network connection or account permissions.
+            Please verify your network connection or try again.
           </p>
         </div>
         <div className="pt-2 flex justify-center gap-2">
