@@ -165,8 +165,9 @@ class UserMembershipContext:
         self._atomic.__enter__()
         if connection.vendor == "postgresql":
             with connection.cursor() as cursor:
+                role_clause = "SET LOCAL ROLE shopcraft_app; " if _check_shopcraft_role(cursor) else ""
                 cursor.execute(
-                    "SELECT set_config('app.current_user_id', %s, true);",
+                    f"{role_clause}SELECT set_config('app.current_user_id', %s, true);",
                     [str(self.user_id)],
                 )
         return self

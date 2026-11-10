@@ -96,7 +96,14 @@ export function sanitizeRedirectTarget(
     return "/merchant";
   }
   const clean = nextParam.trim();
-  if (clean.startsWith("/") && !clean.startsWith("//") && !clean.startsWith("/\\")) {
+  // Strictly allow only relative paths starting with a single '/'
+  // Reject protocol-relative '//', backslashes '/\', URL schemes, control chars
+  if (
+    (/^\/[^\/\\]/.test(clean) || clean === "/") &&
+    !clean.includes("\\") &&
+    !/[\r\n\t]/.test(clean) &&
+    !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(clean)
+  ) {
     return clean;
   }
   return "/merchant";

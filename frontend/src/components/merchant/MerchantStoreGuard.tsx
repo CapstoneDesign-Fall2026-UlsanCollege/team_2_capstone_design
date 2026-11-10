@@ -57,6 +57,9 @@ export function MerchantStoreGuard({ storeSlug, children }: MerchantStoreGuardPr
       // access.status === "unauthorized"
       if (typeof window !== "undefined") {
         sessionStorage.setItem("shopcraft_merchant_notice", access.notice);
+        if (localStorage.getItem("shopcraft_active_store_slug") === storeSlug) {
+          localStorage.removeItem("shopcraft_active_store_slug");
+        }
       }
       router.replace(access.redirectTo);
     } catch (err: unknown) {
@@ -66,8 +69,13 @@ export function MerchantStoreGuard({ storeSlug, children }: MerchantStoreGuardPr
         return;
       }
       if (classified.type === "unauthorized" && classified.redirectTo) {
-        if (typeof window !== "undefined" && classified.notice) {
-          sessionStorage.setItem("shopcraft_merchant_notice", classified.notice);
+        if (typeof window !== "undefined") {
+          if (classified.notice) {
+            sessionStorage.setItem("shopcraft_merchant_notice", classified.notice);
+          }
+          if (localStorage.getItem("shopcraft_active_store_slug") === storeSlug) {
+            localStorage.removeItem("shopcraft_active_store_slug");
+          }
         }
         router.replace(classified.redirectTo);
         return;

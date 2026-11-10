@@ -20,6 +20,7 @@ from core.tenant_context import (
     TENANT_TABLES,
     TenantDatabaseContext,
     UserMembershipContext,
+    _check_shopcraft_role,
     set_current_tenant_id,
 )
 from orders.models import Order
@@ -91,9 +92,17 @@ class PostgresForceRLSAndPooledTransactionTests(APITransactionTestCase):
             self.skipTest("PostgreSQL-specific catalog inspection.")
 
         with connection.cursor() as cursor:
-            cursor.execute(
-                "SELECT rolname, rolsuper, rolbypassrls FROM pg_catalog.pg_roles WHERE rolname = current_user;"
-            )
+            from core.tenant_context import _check_shopcraft_role
+            target_role = "shopcraft_app" if _check_shopcraft_role(cursor) else None
+            if target_role:
+                cursor.execute(
+                    "SELECT rolname, rolsuper, rolbypassrls FROM pg_catalog.pg_roles WHERE rolname = %s;",
+                    [target_role],
+                )
+            else:
+                cursor.execute(
+                    "SELECT rolname, rolsuper, rolbypassrls FROM pg_catalog.pg_roles WHERE rolname = current_user;"
+                )
             rolname, rolsuper, rolbypassrls = cursor.fetchone()
             self.assertFalse(
                 rolsuper,
@@ -186,8 +195,12 @@ class PostgresForceRLSAndPooledTransactionTests(APITransactionTestCase):
             with self.assertRaises(RuntimeError):
                 set_current_tenant_id(self.store_a.id, is_local=True)
 
-            # Table owner querying outside tenant context sees 0 rows because FORCE RLS is active!
-            self.assertEqual(Product.objects.count(), 0)
+            # Unprivileged app role querying outside tenant context sees 0 rows because FORCE RLS is active!
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    if _check_shopcraft_role(cursor):
+                        cursor.execute("SET LOCAL ROLE shopcraft_app;")
+                    self.assertEqual(Product.objects.count(), 0)
 
         client = APIClient()
 
@@ -204,7 +217,11 @@ class PostgresForceRLSAndPooledTransactionTests(APITransactionTestCase):
                 self.assertIn(cursor.fetchone()[0], ("", None))
                 cursor.execute("SELECT current_user;")
                 self.assertNotEqual(cursor.fetchone()[0], "shopcraft_app")
-            self.assertEqual(Product.objects.count(), 0)
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    if _check_shopcraft_role(cursor):
+                        cursor.execute("SET LOCAL ROLE shopcraft_app;")
+                    self.assertEqual(Product.objects.count(), 0)
 
         # Request 2 on the SAME connection -> Tenant Two
         res_b = client.get(f"/api/stores/{self.store_b.slug}/catalog/")

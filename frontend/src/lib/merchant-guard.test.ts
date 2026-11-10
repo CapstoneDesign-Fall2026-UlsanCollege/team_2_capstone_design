@@ -1,6 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { resolveMerchantStoreAccess, classifyStoreError } from "./merchant-guard";
-import { ApiError, MerchantStoreMembership } from "./api";
+import { ApiError, MerchantStoreMembership, sanitizeRedirectTarget } from "./api";
 
 const mockStore = (slug: string, name: string): MerchantStoreMembership => ({
   id: 1,
@@ -14,6 +14,50 @@ const mockStore = (slug: string, name: string): MerchantStoreMembership => ({
   accent_color: "#18181b",
   role: "OWNER",
   created_at: "2026-11-09T00:00:00Z",
+});
+
+describe("sanitizeRedirectTarget (?next= open-redirect defense)", () => {
+  it("allows clean relative merchant routes", () => {
+    expect(sanitizeRedirectTarget("/merchant/aayushman-shop")).toBe("/merchant/aayushman-shop");
+    expect(sanitizeRedirectTarget("/merchant")).toBe("/merchant");
+    expect(sanitizeRedirectTarget("/")).toBe("/");
+  });
+
+  it("handles storeNameParam priority", () => {
+    expect(sanitizeRedirectTarget(null, "My Himalayan Shop")).toBe(
+      "/merchant/new?name=My%20Himalayan%20Shop"
+    );
+  });
+
+  it("blocks protocol-relative URLs (//evil.com)", () => {
+    expect(sanitizeRedirectTarget("//evil.com")).toBe("/merchant");
+    expect(sanitizeRedirectTarget("///evil.com")).toBe("/merchant");
+    expect(sanitizeRedirectTarget("//merchant/evil")).toBe("/merchant");
+  });
+
+  it("blocks backslash bypass attempts (/\\evil.com, \\evil.com)", () => {
+    expect(sanitizeRedirectTarget("/\\evil.com")).toBe("/merchant");
+    expect(sanitizeRedirectTarget("\\evil.com")).toBe("/merchant");
+    expect(sanitizeRedirectTarget("/merchant\\something")).toBe("/merchant");
+  });
+
+  it("blocks external schemes (https:, http:, javascript:, data:)", () => {
+    expect(sanitizeRedirectTarget("https://evil.com")).toBe("/merchant");
+    expect(sanitizeRedirectTarget("http://evil.com/merchant")).toBe("/merchant");
+    expect(sanitizeRedirectTarget("javascript:alert(1)")).toBe("/merchant");
+    expect(sanitizeRedirectTarget("data:text/html,malicious")).toBe("/merchant");
+  });
+
+  it("blocks CRLF / newline injection", () => {
+    expect(sanitizeRedirectTarget("/merchant\r\nattacker.com")).toBe("/merchant");
+    expect(sanitizeRedirectTarget("/merchant\tevil.com")).toBe("/merchant");
+  });
+
+  it("falls back safely on null, undefined, or empty values", () => {
+    expect(sanitizeRedirectTarget(null)).toBe("/merchant");
+    expect(sanitizeRedirectTarget(undefined)).toBe("/merchant");
+    expect(sanitizeRedirectTarget("   ")).toBe("/merchant");
+  });
 });
 
 describe("resolveMerchantStoreAccess", () => {

@@ -43,11 +43,29 @@ export default function MerchantIndexRedirectPage() {
         if (!mounted) return;
 
         const stores = res.stores || [];
+        const lastActiveSlug =
+          typeof window !== "undefined"
+            ? localStorage.getItem("shopcraft_active_store_slug")
+            : null;
+        const validLastActive = lastActiveSlug
+          ? stores.find((s) => s.slug === lastActiveSlug)
+          : null;
+
+        // If stale or invalid slug is stored (e.g. from visiting an unowned store like 'aadi'), clear it immediately
+        if (lastActiveSlug && !validLastActive && typeof window !== "undefined") {
+          localStorage.removeItem("shopcraft_active_store_slug");
+        }
+
         if (stores.length === 1) {
           // Exactly 1 store: auto-route directly to it
           router.replace(`/merchant/${encodeURIComponent(stores[0].slug)}`);
         } else if (stores.length > 1) {
-          // Multiple stores: display the store picker
+          // Multiple stores: if user previously worked in one of their valid stores, route to it
+          if (validLastActive) {
+            router.replace(`/merchant/${encodeURIComponent(validLastActive.slug)}`);
+            return;
+          }
+          // Otherwise display the store picker
           setUserStores(stores);
         } else {
           // 0 stores: render the "No Merchant Store Access" with "Create your shop" CTA
