@@ -39,10 +39,11 @@ Merchant operations require strict order tracking and error recovery. A roaster 
 ### Repository Responsibility
 As Area 4 steward, I maintain backend operational resilience, health monitoring probes, database connection pooling configurations (`CONN_MAX_AGE = 600`), and order audit trails.
 
-### Repeatable Health Check Command
+### Repeatable Health Check Command (Local Development Scope)
 ```bash
 curl http://localhost:8000/api/health/
 ```
+*(Scope Note: This probe is executed on the **Local Development Environment** testing local PostgreSQL engine connectivity and connection pool health; kept explicitly distinct from the deployed production frontend on Vercel).*  
 **Expected Response:** `HTTP 200 OK` with JSON `{ "status": "ok", "database": "connected" }`.
 
 ### Live Verification Response
@@ -70,5 +71,5 @@ Content-Type: application/json
 ## 4. Non-Author Peer Check
 
 - **Independent Peer Reviewer:** **Aanchal Chand Thakuri** (`@jaasly07`, UI Lead — Outside Area 4)
-- **What Aanchal Tested:** Tested order status transitions on `/merchant/brewmellow/orders`. Tested illegal state transition boundary by sending a payload attempting to set a `DELIVERED` order back to `PENDING`.
+- **What Aanchal Tested:** Tested order status transitions on `/merchant/craftnepal/orders`. Tested illegal state transition boundary by sending a payload attempting to set a `DELIVERED` order back to `PENDING`.
 - **Outcome:** **PASS.** Backend returned `HTTP 400 Bad Request` with message *"Invalid state transition from DELIVERED to PENDING"*. Aanchal verified that valid transitions (`PAID → PROCESSING`) rendered immediately with a working 5-second undo toast action.
