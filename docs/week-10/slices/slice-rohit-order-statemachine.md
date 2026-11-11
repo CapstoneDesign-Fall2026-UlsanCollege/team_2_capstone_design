@@ -30,9 +30,10 @@
 
 ## 3. How Did We Check It?
 
-> We checked this by attempting an illegal state transition (`DELIVERED → PENDING`) via the API and merchant dashboard, and curling the health probe.  
+> We checked this by attempting an illegal state transition (`DELIVERED → PENDING`) via the API and merchant dashboard, and curling the health probe on the local development environment.  
+> • **Local Health Probe Scope:** Curled `http://127.0.0.1:8000/api/health/` strictly within the **Local Development Environment** to verify database engine connectivity and connection pool status (kept explicitly distinct from the deployed production frontend on Vercel).  
 > **Expected result:** Backend rejects illegal transition with HTTP 400; `/api/health/` returns HTTP 200 with `{ "status": "ok", "database": "connected" }`.  
-> **Actual result:** Illegal transition returned HTTP 400 *"Invalid state transition from DELIVERED to PENDING"*; health probe returned HTTP 200 in 42ms.  
+> **Actual result:** Illegal transition returned HTTP 400 *"Invalid state transition from DELIVERED to PENDING"*; local health probe returned HTTP 200 in 42ms with active database connection.  
 > **Non-Author Peer Check:** Aanchal Chand Thakuri tested the merchant interface transitions and verified error handling ([Evidence Receipt](../../week-10/evidence/aanchal-storefront-a11y-handoff.md)).
 
 ---

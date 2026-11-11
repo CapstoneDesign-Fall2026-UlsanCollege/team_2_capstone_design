@@ -72,7 +72,7 @@ To protect the delivery of a rock-solid MVP by the Week 11 Freeze Gate (November
 ### Overview
 - **Milestone Title:** Milestone 1 &mdash; Khalti Sandbox E-Payment Gateway Integration
 - **Target Sprint:** Sprint 2 (Weeks 9–11)
-- **Primary Technical Leads:** `notyouradhee` (Aditya Kumar Gupta) & `Rohit-coder201` (Rohit Chhantiyal)
+- **Primary Technical Leads:** `notyouradhee` (Aditya Kumar Gupta) & `Rohit-coder201` (Rohit Chhantyal)
 - **QA & Independent Tester:** `Kushan2191` (Kushan Sunuwar)
 - **Mobile & UX Auditor:** `jaasly07` (Aanchal Chand Thakuri)
 
