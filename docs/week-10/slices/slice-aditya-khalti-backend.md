@@ -68,5 +68,5 @@ Choose one:
 
 - **Issue:** Issue #48 (Payment Boundary & Khalti Gateway Integration)
 - **Commits:** [`1374b23`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/1374b23), [`cdb1c0e`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/cdb1c0e)
-- **Automated Tests:** 113 backend tests passing (`python manage.py test accounts catalog orders stores`)
+- **Automated Tests:** 114 backend tests passing (`python manage.py test accounts catalog orders stores`)
 - **Non-Author QA Handoff:** [`docs/week-10/evidence/aditya-backend-rls-handoff.md`](../evidence/aditya-backend-rls-handoff.md)

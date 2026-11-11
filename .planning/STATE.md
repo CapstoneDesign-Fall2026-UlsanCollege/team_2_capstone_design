@@ -44,5 +44,5 @@ Progress: [==========] 100%
 2. `Slice 2`: Auth + onboarding ("What you sell", City, "Your store is ready") + store creation & switcher (COMPLETED)
 3. `Slice 3`: Merchant shell + Customers directory + Products + Orders (Polaris standard with shadcn/ui primitives) (COMPLETED)
 4. `Slice 4`: Theme system + Story page + storefront + cart drawer + checkout (COMPLETED)
-5. `Slice 5`: Subscriptions (prepaid cycles + renewal links + runner) (COMPLETED)
+5. `Slice 5`: Subscriptions [FORMALLY CUT IN PR #45 — OUT OF MVP SCOPE]
 6. `Slice 6`: Dashboard home, analytics, discounts, settings, staff RBAC & polish (COMPLETED)

@@ -31,7 +31,7 @@
 6. **Payments:**
    - COD with 10-digit phone validation and order lifecycle transitions is operational.
    - Khalti ePayment v2 initiates and verifies server-side, but has an unrestricted sandbox bypass.
-   - Non-recurring subscriptions handle prepaid 3/6/12 cycles ($0 order generation) and pay-per-delivery renewal orders.
+   - Direct one-time retail purchases with Khalti Sandbox v2 and Cash on Delivery fallback. (Shopper recurring subscriptions formally cut in PR #45).
 7. **Security Gaps Identified:**
    - Absence of database-level Postgres RLS.
    - Unauthenticated, unscoped `/api/upload` route writing to local `public/uploads/`.
@@ -56,7 +56,7 @@
 | Merchant | Courier Packing Slip | Shopify Shipping | **Adapted** | Pathao/Upaya/bike courier thermal & A4 slip with Chowk/Landmark | P1 |
 | Merchant | Products & Variants | Polaris Products | **Done** | Grind & size variant matrix, integer paisa | P1 |
 | Merchant | Customers Directory | Polaris Customers | **Missing** | Dedicated customer directory & order history | P2 |
-| Merchant | Subscriptions Hub | Shopify Subscriptions | **Adapted** | Non-recurring prepaid 3/6/12 cycles & pay-per-delivery renewal links | P1 |
+| Merchant | Subscriptions Hub | Shopify Subscriptions | **CUT (PR #45)** | Formally removed from MVP scope in PR #45; one-time retail purchases only | N/A |
 | Merchant | Theme Editor | Polaris Online Store | **Missing** | Side-by-side theme customizer with live preview | P2 |
 | Merchant | Analytics | Polaris Analytics | **Missing** | Conversion rate, AOV, revenue chart, province breakdown | P3 |
 | Merchant | Discounts Engine | Polaris Discounts | **Missing** | Promo codes, percentage/fixed discounts | P3 |
@@ -116,12 +116,9 @@
    - Mobile-first 375px audit: 44px tap targets, thumb-zone CTAs, zero horizontal overflow.
    - Single-screen checkout polish with validation feedback.
 
-### Slice 5: Subscriptions
-1. **Subscription Engine Polish:**
-   - Non-recurring prepaid 3/6/12 cycle countdown and $0 cycle generation.
-   - Pay-per-delivery renewal payment link generation and WhatsApp notification preview.
-2. **Merchant Subscription Controls:**
-   - 1-click Pause, Resume, Skip Cycle, and Cancel with confirmation modals.
+### Slice 5: Subscriptions [FORMALLY CUT IN PR #45 — OUT OF SCOPE]
+- Shopper recurring subscriptions and merchant subscriptions workspace were formally removed from the MVP scope in PR #45.
+- All purchases across ShopCraft operate strictly as direct one-time retail transactions with Khalti Sandbox v2 and Cash on Delivery fallback. This slice is not a requirement for Week 11 freeze or final demo.
 
 ### Slice 6: Dashboard Home, Analytics, Settings & Polish
 1. **Dashboard Home Polish:**

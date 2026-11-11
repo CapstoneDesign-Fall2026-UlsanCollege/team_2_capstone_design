@@ -45,11 +45,11 @@ $$\text{Storefront } (/s/\text{brewmellow}) \longrightarrow \text{Product Select
 
 ## 2. Current Project Status & Evidence Matrix
 
-**MVP Progress:** Ahead of schedule — Core vertical slice verified in runtime code; 113 backend tests pass across active apps; frontend zero type errors.
+**MVP Progress:** Ahead of schedule — Core vertical slice verified in runtime code; 114 backend tests pass across active apps; frontend zero type errors.
 
 | Feature or Behavior | Current Status | Verifiable Evidence | Remaining Work (to Week 11 Freeze) |
 |---|---|---|---|
-| **Multi-Tenant Isolation (RLS)** | **PASS** | 113 Django tests pass (`test_isolation.py`); HTTP 404 cross-tenant guard | Retest during Week 11 feature freeze |
+| **Multi-Tenant Isolation (RLS)** | **PASS** | 114 Django tests pass (`test_isolation.py`); HTTP 404 cross-tenant guard | Retest during Week 11 feature freeze |
 | **Storefront Discovery (`/s/brewmellow`)** | **PASS** | Deployed live on Vercel over HTTPS; SSR catalog hydration | Polish mobile hero banner contrast |
 | **Product Customization & Cart Drawer** | **PASS** | Store-scoped local persistence; variant price recalculation | Add quantity stepper micro-animations |
 | **Single-Screen Checkout** | **PASS** | Nepali address validation (10-digit regex, province enum) | Edge-case validation testing |

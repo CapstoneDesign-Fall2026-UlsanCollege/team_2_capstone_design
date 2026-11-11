@@ -24,7 +24,7 @@ This roadmap guides Sprint 2 (Weeks 9–11: October 29 – November 12, 2026), m
   Themed `/s/[storeSlug]` storefronts (`/s/brewmellow`), store-namespaced cart drawer, single-screen checkout with Nepali addresses, official Khalti ePayment v2 sandbox (`pidx` server-side verification) + Cash on Delivery (COD) fallback, immutable order snapshots, and merchant fulfillment queue.
 
 - [ ] **Phase 4: Multi-Store Demo, Production Hardening & MVP Freeze (Subscriptions Cut in PR #45)** (Active / In Progress: Nov 3 – Nov 12, 2026; Freeze Gate: Nov 12)  
-  *(Scope Note: Following PR #45 and Week 9 Scope Cut, recurring shopper subscriptions were formally removed from the MVP. All purchases are direct one-time retail).* Second demo tenant (`/s/pahadi-honey` / `himalayan-artisans`) proving PostgreSQL RLS isolation, platform landing showcase (`/`), Khalti Sandbox v2 + COD fallback verification, and end-to-end regression freeze (113 active tests) ahead of the Week 11 MVP Gate.
+  *(Scope Note: Following PR #45 and Week 9 Scope Cut, recurring shopper subscriptions were formally removed from the MVP. All purchases are direct one-time retail).* Second demo tenant (`/s/pahadi-honey` / `himalayan-artisans`) proving PostgreSQL RLS isolation, platform landing showcase (`/`), Khalti Sandbox v2 + COD fallback verification, and end-to-end regression freeze (114 active tests) ahead of the Week 11 MVP Gate.
 
 ---
 
@@ -99,11 +99,11 @@ This roadmap guides Sprint 2 (Weeks 9–11: October 29 – November 12, 2026), m
 1. Shopper completes direct one-time purchase on Store #1 (`/s/brewmellow`) and Store #2 (`/s/pahadi-honey`) with localized Nepali addresses.
 2. Official Khalti Sandbox ePayment v2 completes via test credentials (`9800000000` / OTP `987654`) with server-authoritative `epayment/lookup/` verification, paired with instant zero-network Cash on Delivery (COD) fallback.
 3. PostgreSQL Row-Level Security (RLS) isolation prevents Store B merchant from probing Store A data (HTTP 404).
-4. Public landing page at `/` showcases the platform with live links to demo stores, legacy URLs redirect cleanly, and all 113 backend tests across active apps (`accounts catalog orders stores`) pass cleanly.
+4. Public landing page at `/` showcases the platform with live links to demo stores, legacy URLs redirect cleanly, and all 114 backend tests across active apps (`accounts catalog orders stores`) pass cleanly.
 
 **Phase 4 Plan Status:**
-- [x] `04-01-PLAN.md` — [CUT / RETIRED in PR #45] (Shopper Subscriptions formally removed per scope rules)
-- [x] `04-02-PLAN.md` — [CUT / RETIRED in PR #45] (Merchant Subscriptions Workspace removed per scope rules)
+- [-] `04-01-PLAN.md` — [CUT / RETIRED in PR #45] (Shopper Subscriptions formally cut per PR #45; out of MVP scope)
+- [-] `04-02-PLAN.md` — [CUT / RETIRED in PR #45] (Merchant Subscriptions Workspace formally cut per PR #45; out of MVP scope)
 - [x] `04-03-PLAN.md` — Second Demo Store (`Himalayan Artisans` / `Pahadi Honey`) & Multi-Tenant Isolation
 - [x] `04-04-PLAN.md` — Public Platform Landing Page & Production Launch Readiness
 - [ ] `04-05-PLAN.md` — Independent Teammate Regression Verification & MVP Freeze Sign-off (Target: Nov 10–12, 2026)
@@ -117,4 +117,4 @@ This roadmap guides Sprint 2 (Weeks 9–11: October 29 – November 12, 2026), m
 | **1. Foundation, Auth & Tenant Core** | 5/5 | Verified (47 Tests Pass) | Completed Oct 30, 2026 |
 | **2. Merchant Onboarding & Catalog** | 4/4 | Verified | Completed Oct 30, 2026 |
 | **3. Storefront, Checkout & Khalti Sandbox** | 4/4 | Verified (Sandbox + COD) | Completed Nov 2, 2026 |
-| **4. Multi-Store Demo & MVP Freeze (Subscriptions Cut)** | Active | 113 Tests Pass; Subscriptions Cut in PR #45 | Target Nov 12, 2026 (Freeze Gate) |
+| **4. Multi-Store Demo & MVP Freeze (Subscriptions Cut)** | Active | 114 Tests Pass; Subscriptions Cut in PR #45 | Target Nov 12, 2026 (Freeze Gate) |

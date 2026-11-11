@@ -39,7 +39,7 @@ Following the Midterm review, our team acted on feedback received in class:
 
 3. **Multi-Tenant Data Isolation & RLS Security:**
    - PostgreSQL Row-Level Security (RLS) and Django `StoreScopedManager` enforcing complete data isolation across stores.
-   - 51 automated tests, including 6 dedicated tenant-isolation tests (`test_isolation.py`), proving that Store Owner A probing Store B receives HTTP 404.
+   - 114 automated tests, including 6 dedicated tenant-isolation tests (`test_isolation.py`), proving that Store Owner A probing Store B receives HTTP 404.
 
 4. **Merchant Order Fulfillment Queue:**
    - Status machine transitions (`PAID → PROCESSING → SHIPPED → DELIVERED`) backed by `OrderEvent` audit logs.

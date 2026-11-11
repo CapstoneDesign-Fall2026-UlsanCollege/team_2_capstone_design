@@ -62,7 +62,7 @@ Explicitly excluded to protect the 4-week solo timeline and regulatory complianc
 
 | Feature | Reason |
 |---------|--------|
-| Automated recurring card/wallet rebilling | Unavailable on standard Nepali wallets without commercial bank acquiring contracts; solved via prepaid commitments + "Pay Now" renewal orders |
+| Automated recurring card/wallet rebilling & shopper subscriptions | Unavailable on standard Nepali wallets without commercial bank acquiring contracts; formally cut from MVP in PR #45; replaced by direct one-time retail checkout with Khalti Sandbox v2 and Cash on Delivery fallback |
 | Platform escrow / split payouts | Holding merchant funds triggers Nepal Rastra Bank PSP/PSO licensing; merchants use their own Khalti keys |
 | Drag-and-drop storefront page builder | Multi-week UI trap; structured theme tokens + clean default storefront template cover capstone & MVP needs |
 | Per-tenant PWA manifests & offline API caching | Service worker API caching risks cross-tenant data leakage; PWA stays platform-level with `/api/*` excluded |
@@ -91,10 +91,10 @@ Explicitly excluded to protect the 4-week solo timeline and regulatory complianc
 | SHOP-04 | Phase 3 | Pending |
 | SHOP-05 | Phase 3 | Pending |
 | MERCH-05 | Phase 3 | Pending |
-| SUBS-01 | Phase 4 | Pending |
-| SUBS-02 | Phase 4 | Pending |
-| SUBS-03 | Phase 4 | Pending |
-| SUBS-04 | Phase 4 | Pending |
+| SUBS-01 | Phase 4 | CUT in PR #45 (Out of Scope) |
+| SUBS-02 | Phase 4 | CUT in PR #45 (Out of Scope) |
+| SUBS-03 | Phase 4 | CUT in PR #45 (Out of Scope) |
+| SUBS-04 | Phase 4 | Completed (Multi-store & launch) |
 
 **Coverage:**
 - v1 requirements: 23 total
