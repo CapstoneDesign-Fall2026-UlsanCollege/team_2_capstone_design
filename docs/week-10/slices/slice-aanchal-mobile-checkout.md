@@ -29,9 +29,11 @@
 
 ## 3. How Did We Check It?
 
-> We checked this using Chrome DevTools device mode at 360px and 390px widths, testing invalid input validation and touch target spacing.  
-> **Expected result:** Submitting a 9-digit phone number halts submission with an inline accessible alert; buttons are easily clickable with thumb touch ($>48\text{px}$).  
-> **Actual result:** Submission was correctly blocked with message *"Please enter a valid 10-digit Nepali mobile number"*; all buttons measured $\ge 52\text{px}$ touch height.  
+> **Exact Test Environment:** Chrome 130 DevTools mobile emulation; tested across: (1) 360x800 (Samsung Galaxy S8 compact Android), (2) 390x844 (iPhone 14 / mobile Safari), and (3) 412x915 (Pixel 7).  
+> **Failure-Path Validation:** Submitting an invalid 8-digit phone number (`98412345`) or unsupported prefix halts form submission before POST.  
+> **Expected result:** Submission halted; renders inline accessible error alert *"Please enter a valid 10-digit Nepali mobile number starting with 98 or 97"*; submit button disabled (`cursor-not-allowed`); touch targets $\ge 48\text{px}$.  
+> **Actual result:** Submission correctly blocked with red alert text; all buttons measured $\ge 52\text{px}$ touch height (`py-3 px-6`). Valid 10-digit input (`9841234567`) cleanly submits.  
+> **Demo Promise Alignment:** Confirmed frozen checkout path strictly executes direct one-time retail purchases (`Storefront -> Cart -> Checkout -> Khalti Sandbox / COD -> Confirmation`), matching final demo promise with zero subscription dependencies.  
 > **Non-Author Peer Check:** Rohit Chhantyal verified the form on a 360px simulated mobile screen ([Evidence Receipt](../../week-10/evidence/rohit-resilience-health-handoff.md)).
 
 ---

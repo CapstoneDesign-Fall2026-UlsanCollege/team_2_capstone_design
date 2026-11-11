@@ -49,10 +49,15 @@ npx tsc --noEmit && node scripts/check-surfaces.mjs
 
 ## 3. Responsive Viewport Audit Matrix
 
+- **Exact Test Environment:** Chrome 130 DevTools mobile emulation; tested across: (1) 360x800 (Samsung Galaxy S8/S21 compact Android), (2) 390x844 (Apple iPhone 13/14 / mobile Safari), and (3) 412x915 (Google Pixel 7).
+- **Failure-Path Result:** Submitting checkout with an invalid 8-digit phone (`98412345`) or unsupported prefix halts form submission before POST; renders inline accessible error alert *"Please enter a valid 10-digit Nepali mobile number starting with 98 or 97"*; submit button remains disabled (`cursor-not-allowed`).
+- **Demo Promise Alignment:** Confirmed frozen checkout path strictly executes direct one-time retail purchases (`Storefront -> Cart -> Checkout -> Khalti Sandbox / COD -> Confirmation`), matching final demo promise with zero subscription dependencies.
+
 | Viewport Tested | Simulated Device | Behavior Tested | Result |
 |---|---|---|---|
 | **360 x 800 px** | Samsung Galaxy S21 / Android | Single-screen layout, touch targets, on-screen keyboard dismiss | **PASS** |
 | **390 x 844 px** | Apple iPhone 13/14 / iOS Safari | Sticky bottom CTA bar, accordion summary sheet, modal overlay | **PASS** |
+| **412 x 915 px** | Google Pixel 7 / Android | Fluid grid scaling, 10-digit phone regex validation | **PASS** |
 | **768 x 1024 px** | Apple iPad / Tablet | 2-column split checkout (Address form left, Order Summary right) | **PASS** |
 | **1440 x 900 px** | Desktop Chrome | Hero layout, responsive product grid, and merchant console | **PASS** |
 
