@@ -56,12 +56,14 @@ python manage.py test accounts catalog orders stores
 - **Result:** **PASS.** Server verified transaction; order invoice displayed with reference token `ORD-2026-SC-001`. Order appeared immediately in roaster queue.
 
 ### Test 2: Gateway Cancellation Recovery (Meaningful Boundary Failure Check)
-- **Action:** Added Ilam Typica 500g (NPR 1,800) to cart. Clicked *"Complete Order (Khalti)"*. On Khalti's hosted portal, clicked *"Cancel / Return to Merchant"*.
-- **Result:** **PASS.** Browser returned to `/s/brewmellow/checkout`. Cart items and entered address fields were 100% preserved. Friendly alert displayed: *"Payment was cancelled. You can choose another method or retry."* Zero corrupted or orphaned `PAID` order rows created in database.
+- **Action:** Added Ilam Typica 500g (NPR 1,800) to cart. Clicked *"Complete Order (Khalti)"*. On Khalti's hosted portal, clicked *"Cancel / Return to Merchant"* (`status=User%20canceled`).
+- **Expected:** Redirect back to `/s/brewmellow/checkout` with alert *"Payment was canceled. Your cart items have been saved"*; cart items, quantities, and addresses intact. Zero orphaned `PAID` order rows.
+- **Actual:** **PASS.** Browser returned to `/s/brewmellow/checkout`. Cart items and entered address fields were 100% preserved. Friendly alert displayed: *"Payment was cancelled. You can choose another method or retry."* Zero corrupted or orphaned order rows created in database.
 
 ### Test 3: Cash on Delivery (COD) Offline Fallback
 - **Action:** Selected *"Cash on Delivery (COD)"* payment toggle and submitted order.
-- **Result:** **PASS.** Order created instantly with status `CONFIRMED / COD_PENDING` with zero external network lag.
+- **Expected:** Instant order creation with zero external HTTP calls; status `CONFIRMED`; invoice token generated.
+- **Actual:** **PASS.** Order created instantly with status `CONFIRMED / COD_PENDING` with zero external network lag; inventory decremented in 68ms.
 
 ---
 

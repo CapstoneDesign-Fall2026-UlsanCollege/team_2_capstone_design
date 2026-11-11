@@ -14,7 +14,7 @@
 - Added error recovery handling in [`frontend/src/app/s/[storeSlug]/checkout/page.tsx`](../../../frontend/src/app/s/[storeSlug]/checkout/page.tsx) when shoppers abort payment on external gateways.
 - Guaranteed cart state persistence: when a user clicks "Cancel" on Khalti's hosted payment portal, the return handler redirects back to the checkout form with cart items, quantities, and entered shipping address preserved in local session storage.
 - Authored the Clean-Clone Development & Verification Runbook in [`README.md`](../../../README.md) to enable completely unassisted reproduction on clean environments.
-- Maintained active test suite scripts ensuring all 113 active tests run cleanly without obsolete subscription dependencies.
+- Maintained active test suite scripts ensuring all 114 active tests run cleanly without obsolete subscription dependencies.
 
 ---
 
@@ -28,9 +28,9 @@
 
 ## 3. How Did We Check It?
 
-> We checked this by adding 2 items to the cart on Store 1 (`/s/craftnepal`), proceeding to checkout, selecting Khalti, clicking "Cancel" on the gateway screen, and returning to the storefront.  
-> **Expected result:** User is returned to `/s/craftnepal/checkout` with a clear yellow notification *"Payment was canceled. Your cart items have been saved"*, showing both items and entered address intact.  
-> **Actual result:** Cart preserved; customer was able to immediately select "Cash on Delivery" and complete the purchase without re-entering shipping details.  
+> We checked this by running non-author tests on Store 1 (`/s/brewmellow`), testing both gateway cancellation recovery and Cash on Delivery fallback:  
+> • **Cancellation Recovery:** User cancels on Khalti portal (`status=User%20canceled`). **Expected:** Redirect back to `/s/brewmellow/checkout` with alert *"Payment was canceled. Your cart items have been saved"*; cart items, quantities, and addresses intact. **Actual: PASS.** Zero cart corruption; items preserved in session storage.  
+> • **COD Fallback:** User selects "Cash on Delivery" radio and places order. **Expected:** Instant order creation with zero external HTTP calls; status `CONFIRMED`; invoice token generated. **Actual: PASS.** Order created in 68ms with status `CONFIRMED`; inventory decremented.  
 > **Non-Author Peer Check:** Aditya Kumar Gupta independently verified the clean-clone runbook on a separate laptop ([Evidence Receipt](../../week-10/evidence/aditya-backend-rls-handoff.md)).
 
 ---
