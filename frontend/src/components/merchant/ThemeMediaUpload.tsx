@@ -1,7 +1,7 @@
 "use client";
 
 import React, { useRef, useState } from "react";
-import { UploadCloud, Image as ImageIcon, AlertCircle, RefreshCw, Trash2, CheckCircle2 } from "lucide-react";
+import { Upload, UploadCloud, Image as ImageIcon, AlertCircle, RefreshCw, Trash2, CheckCircle2 } from "lucide-react";
 import { uploadThemeMedia } from "@/lib/api";
 
 interface ThemeMediaUploadProps {
@@ -175,7 +175,7 @@ export function ThemeMediaUpload({
           </div>
 
           {/* Action buttons */}
-          <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]/50">
+          <div className="flex flex-wrap items-center justify-between gap-2 pt-1 border-t border-[var(--border)]/50">
             <div className="flex items-center gap-1.5 text-[10px] text-emerald-600 dark:text-emerald-400 font-mono truncate max-w-[200px]">
               <CheckCircle2 className="w-3.5 h-3.5 shrink-0" />
               <span className="truncate">Cloudinary CDN Synced</span>
@@ -186,9 +186,10 @@ export function ThemeMediaUpload({
                 type="button"
                 onClick={() => fileInputRef.current?.click()}
                 disabled={uploading}
-                className="px-2.5 py-1 text-xs font-semibold rounded border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-[var(--foreground)] transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-[var(--foreground)] transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
               >
-                Replace
+                <Upload className="w-3.5 h-3.5 text-emerald-500" />
+                <span>Upload New {assetType === "hero" ? "Banner" : "Logo"}</span>
               </button>
               <button
                 type="button"
@@ -198,10 +199,11 @@ export function ThemeMediaUpload({
                   setLocalError(null);
                 }}
                 disabled={uploading}
-                className="p-1 text-xs rounded text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-semibold rounded-md text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
                 title="Remove image"
               >
                 <Trash2 className="w-3.5 h-3.5" />
+                <span>Remove</span>
               </button>
             </div>
           </div>
@@ -243,9 +245,10 @@ export function ThemeMediaUpload({
               </div>
               <button
                 type="button"
-                className="inline-flex items-center gap-1.5 px-3 py-1 rounded-md text-xs font-semibold bg-[var(--secondary)] hover:bg-[var(--secondary)]/80 text-[var(--foreground)] border border-[var(--border)] transition-colors pointer-events-none"
+                className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-semibold bg-[var(--primary)] text-[var(--primary-foreground)] shadow-xs hover:opacity-90 transition-opacity pointer-events-none"
               >
-                Choose File
+                <Upload className="w-3.5 h-3.5" />
+                <span>Upload {assetType === "hero" ? "Hero Image" : "Store Logo"}</span>
               </button>
             </div>
           )}

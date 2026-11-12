@@ -108,6 +108,24 @@ export default function MerchantThemesPage({ params }: PageProps) {
   const [activeTab, setActiveTab] = useState<"theme" | "branding" | "story">("theme");
 
   useEffect(() => {
+    if (typeof window !== "undefined") {
+      const params = new URLSearchParams(window.location.search);
+      const tab = params.get("tab");
+      const hash = window.location.hash.toLowerCase();
+      if (
+        tab === "branding" ||
+        tab === "media" ||
+        tab === "hero" ||
+        hash.includes("branding") ||
+        hash.includes("media") ||
+        hash.includes("hero")
+      ) {
+        setActiveTab("branding");
+      }
+    }
+  }, []);
+
+  useEffect(() => {
     let active = true;
     fetchMerchantSettings(storeSlug)
       .then((data) => {
