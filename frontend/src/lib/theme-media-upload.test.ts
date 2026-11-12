@@ -37,8 +37,9 @@ describe("uploadThemeMedia", () => {
     expect(capturedUrl).toContain("/api/merchant/stores/my-store/media/theme/upload/");
     expect(capturedMethod).toBe("POST");
     expect(capturedBody).toBeInstanceOf(FormData);
-    expect(capturedBody?.get("asset_type")).toBe("hero");
-    expect(capturedBody?.get("file")).toBe(file);
+    const formData = capturedBody as unknown as FormData;
+    expect(formData.get("asset_type")).toBe("hero");
+    expect(formData.get("file")).toBe(file);
 
     expect(result.success).toBe(true);
     expect(result.url).toBe(mockResponse.url);
