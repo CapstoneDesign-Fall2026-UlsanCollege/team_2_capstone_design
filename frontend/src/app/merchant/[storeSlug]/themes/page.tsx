@@ -2,7 +2,6 @@
 
 import React, { use, useEffect, useState, useMemo } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
   Palette,
   Eye,
@@ -16,7 +15,6 @@ import {
 import {
   fetchMerchantSettings,
   updateMerchantSettings,
-  MerchantStoreSettings,
   ApiError,
 } from "@/lib/api";
 import { ThemeMediaUpload } from "@/components/merchant/ThemeMediaUpload";
@@ -86,7 +84,6 @@ const THEME_PRESETS: PresetThemeOption[] = [
 
 export default function MerchantThemesPage({ params }: PageProps) {
   const { storeSlug } = use(params);
-  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -94,7 +91,6 @@ export default function MerchantThemesPage({ params }: PageProps) {
   const [error, setError] = useState<string | null>(null);
 
   // Settings State
-  const [settings, setSettings] = useState<MerchantStoreSettings | null>(null);
   const [themePreset, setThemePreset] = useState("editorial-warm");
   const [tagline, setTagline] = useState("");
   const [storyHeadline, setStoryHeadline] = useState("");
@@ -120,7 +116,9 @@ export default function MerchantThemesPage({ params }: PageProps) {
         hash.includes("media") ||
         hash.includes("hero")
       ) {
-        setActiveTab("branding");
+        setTimeout(() => {
+          setActiveTab("branding");
+        }, 0);
       }
     }
   }, []);
@@ -130,7 +128,6 @@ export default function MerchantThemesPage({ params }: PageProps) {
     fetchMerchantSettings(storeSlug)
       .then((data) => {
         if (!active) return;
-        setSettings(data);
         setThemePreset(data.theme_preset || "editorial-warm");
         setTagline(data.tagline || "");
         setStoryHeadline(data.story_headline || "");
@@ -157,7 +154,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
     setFieldErrors({});
 
     try {
-      const updated = await updateMerchantSettings(storeSlug, {
+      await updateMerchantSettings(storeSlug, {
         theme_preset: themePreset,
         tagline: tagline.trim(),
         story_headline: storyHeadline.trim(),
@@ -165,7 +162,6 @@ export default function MerchantThemesPage({ params }: PageProps) {
         banner_url: bannerUrl.trim(),
         logo_url: logoUrl.trim(),
       });
-      setSettings(updated);
       setFieldErrors({});
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);

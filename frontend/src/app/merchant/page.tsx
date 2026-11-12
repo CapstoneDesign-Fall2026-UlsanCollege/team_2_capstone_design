@@ -19,7 +19,9 @@ export default function MerchantIndexRedirectPage() {
     if (typeof window !== "undefined") {
       const stored = sessionStorage.getItem("shopcraft_merchant_notice");
       if (stored) {
-        setNotice(stored);
+        setTimeout(() => {
+          setNotice(stored);
+        }, 0);
         sessionStorage.removeItem("shopcraft_merchant_notice");
       }
     }
