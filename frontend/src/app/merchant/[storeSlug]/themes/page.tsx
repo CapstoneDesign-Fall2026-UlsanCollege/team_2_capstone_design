@@ -12,15 +12,14 @@ import {
   Save,
   ExternalLink,
   RefreshCw,
-  Sparkles,
-  Layers,
-  ArrowRight,
 } from "lucide-react";
 import {
   fetchMerchantSettings,
   updateMerchantSettings,
   MerchantStoreSettings,
+  ApiError,
 } from "@/lib/api";
+import { ThemeMediaUpload } from "@/components/merchant/ThemeMediaUpload";
 
 interface PageProps {
   params: Promise<{ storeSlug: string }>;
@@ -102,6 +101,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
   const [aboutText, setAboutText] = useState("");
   const [bannerUrl, setBannerUrl] = useState("");
   const [logoUrl, setLogoUrl] = useState("");
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   // Preview State
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
@@ -136,6 +136,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
     setSaving(true);
     setSaveSuccess(false);
     setError(null);
+    setFieldErrors({});
 
     try {
       const updated = await updateMerchantSettings(storeSlug, {
@@ -147,9 +148,13 @@ export default function MerchantThemesPage({ params }: PageProps) {
         logo_url: logoUrl.trim(),
       });
       setSettings(updated);
+      setFieldErrors({});
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
-    } catch (err) {
+    } catch (err: unknown) {
+      if (err instanceof ApiError && err.fieldErrors) {
+        setFieldErrors(err.fieldErrors);
+      }
       setError(err instanceof Error ? err.message : "Failed to save theme settings");
     } finally {
       setSaving(false);
@@ -369,31 +374,31 @@ export default function MerchantThemesPage({ params }: PageProps) {
                 </p>
               </div>
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[var(--foreground)] block">
-                  Hero Cover Image URL
-                </label>
-                <input
-                  type="url"
-                  value={bannerUrl}
-                  onChange={(e) => setBannerUrl(e.target.value)}
-                  placeholder="https://images.unsplash.com/photo-..."
-                  className="w-full h-8 px-3 rounded border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)] font-mono focus:outline-none focus:border-[var(--ring)]"
-                />
-              </div>
+              <ThemeMediaUpload
+                label="Hero Cover Image"
+                description="Displayed as the primary background or showcase banner in your storefront hero."
+                assetType="hero"
+                storeSlug={storeSlug}
+                value={bannerUrl}
+                onChange={(url) => {
+                  setBannerUrl(url);
+                  setFieldErrors((prev) => ({ ...prev, banner_url: [] }));
+                }}
+                error={fieldErrors?.banner_url?.[0]}
+              />
 
-              <div className="space-y-1.5">
-                <label className="text-xs font-medium text-[var(--foreground)] block">
-                  Store Logo URL (Optional)
-                </label>
-                <input
-                  type="url"
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  placeholder="https://example.com/logo.png"
-                  className="w-full h-8 px-3 rounded border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)] font-mono focus:outline-none focus:border-[var(--ring)]"
-                />
-              </div>
+              <ThemeMediaUpload
+                label="Store Logo (Optional)"
+                description="Brand avatar displayed in your storefront header, footer, and packaging slips."
+                assetType="logo"
+                storeSlug={storeSlug}
+                value={logoUrl}
+                onChange={(url) => {
+                  setLogoUrl(url);
+                  setFieldErrors((prev) => ({ ...prev, logo_url: [] }));
+                }}
+                error={fieldErrors?.logo_url?.[0]}
+              />
             </div>
           )}
 

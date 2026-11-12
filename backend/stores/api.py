@@ -8,7 +8,10 @@ from django.urls import path
 from django.utils import timezone
 from rest_framework import permissions, serializers, status
 from rest_framework.response import Response
+from rest_framework.throttling import ScopedRateThrottle
 from rest_framework.views import APIView
+from PIL import Image
+import io
 
 from accounts.models import User
 from catalog.models import Discount, Product, Variant
@@ -18,6 +21,9 @@ from stores.cloudinary_upload import (
     CloudinaryUploadError,
     is_cloudinary_configured,
     upload_store_image_to_cloudinary,
+    upload_theme_image_to_cloudinary,
+    delete_cloudinary_asset,
+    extract_cloudinary_public_id,
 )
 from stores.khalti import (
     initiate_khalti_epayment,
@@ -81,6 +87,13 @@ class StorePublicMixin(StoreTenantMixin):
     def finalize_response(self, request, response, *args, **kwargs):
         reset_current_tenant_id()
         return super().finalize_response(request, response, *args, **kwargs)
+
+
+def is_local_media_allowed() -> bool:
+    """Local media uploads are strictly forbidden in production."""
+    if getattr(settings, "DEBUG", False) or getattr(settings, "IS_TEST_COMMAND", False):
+        return bool(getattr(settings, "ALLOW_LOCAL_MEDIA_UPLOADS", False))
+    return False
 
 
 class StoreMerchantMixin(StoreTenantMixin):
@@ -1187,10 +1200,57 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                 store.theme_preset = preset
         if "accent_color" in data:
             store.accent_color = str(data["accent_color"]).strip()
-        if "logo_url" in data:
-            store.logo_url = str(data["logo_url"]).strip()
+        # Strict CDN host and store folder validation (only if changed)
+        cloud_name = getattr(settings, "CLOUDINARY_CLOUD_NAME", "").strip()
+        allow_local = is_local_media_allowed()
+        field_errors = {}
+
+        old_banner_url = store.banner_url
+        old_logo_url = store.logo_url
+        banner_changed = False
+        logo_changed = False
+
         if "banner_url" in data:
+            candidate_banner = str(data["banner_url"]).strip()
+            if candidate_banner != (store.banner_url or "").strip():
+                banner_changed = True
+                if candidate_banner:
+                    valid_cdn = False
+                    expected_cdn_prefix = f"https://res.cloudinary.com/{cloud_name}/" if cloud_name else ""
+                    expected_store_folder = f"shopcraft/stores/{store.id}_"
+
+                    if cloud_name and candidate_banner.startswith(expected_cdn_prefix) and expected_store_folder in candidate_banner:
+                        valid_cdn = True
+                    elif allow_local and candidate_banner.startswith("/uploads/stores/") and expected_store_folder in candidate_banner:
+                        valid_cdn = True
+
+                    if not valid_cdn:
+                        field_errors["banner_url"] = ["Hero cover image URL must be hosted on our CDN within your store's folder."]
+
+        if "logo_url" in data:
+            candidate_logo = str(data["logo_url"]).strip()
+            if candidate_logo != (store.logo_url or "").strip():
+                logo_changed = True
+                if candidate_logo:
+                    valid_cdn = False
+                    expected_cdn_prefix = f"https://res.cloudinary.com/{cloud_name}/" if cloud_name else ""
+                    expected_store_folder = f"shopcraft/stores/{store.id}_"
+
+                    if cloud_name and candidate_logo.startswith(expected_cdn_prefix) and expected_store_folder in candidate_logo:
+                        valid_cdn = True
+                    elif allow_local and candidate_logo.startswith("/uploads/stores/") and expected_store_folder in candidate_logo:
+                        valid_cdn = True
+
+                    if not valid_cdn:
+                        field_errors["logo_url"] = ["Store logo URL must be hosted on our CDN within your store's folder."]
+
+        if field_errors:
+            return Response(field_errors, status=status.HTTP_400_BAD_REQUEST)
+
+        if banner_changed:
             store.banner_url = str(data["banner_url"]).strip()
+        if logo_changed:
+            store.logo_url = str(data["logo_url"]).strip()
         if "contact_email" in data:
             store.contact_email = str(data["contact_email"]).strip()
         if "support_email" in data:
@@ -1275,6 +1335,16 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                 store.set_khalti_secret_key(str(data["khalti_secret_key"]).strip())
 
         store.save()
+
+        # Best-effort deletion of old assets on replacement (strictly scoped to current store folder)
+        if banner_changed and old_banner_url:
+            old_pub_id = extract_cloudinary_public_id(old_banner_url, store.id)
+            if old_pub_id:
+                delete_cloudinary_asset(public_id=old_pub_id, store_id=store.id)
+        if logo_changed and old_logo_url:
+            old_pub_id = extract_cloudinary_public_id(old_logo_url, store.id)
+            if old_pub_id:
+                delete_cloudinary_asset(public_id=old_pub_id, store_id=store.id)
         MerchantAuditLog.objects.create(
             store=self.store,
             actor=request.user,
@@ -2128,7 +2198,7 @@ class MerchantMediaUploadView(StoreMerchantMixin, APIView):
                 )
             except CloudinaryUploadError as exc:
                 return Response({"error": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
-        elif getattr(settings, "ALLOW_LOCAL_MEDIA_UPLOADS", False):
+        elif is_local_media_allowed():
             base_dir = (settings.BASE_DIR.parent / "frontend" / "public" / "uploads" / "stores" / clean_slug / "products").resolve()
             trusted_root = (settings.BASE_DIR.parent / "frontend" / "public" / "uploads").resolve()
 
@@ -2165,6 +2235,168 @@ class MerchantMediaUploadView(StoreMerchantMixin, APIView):
             "url": url,
             "relativeUrl": url,
         }, status=status.HTTP_201_CREATED)
+
+
+def process_theme_image(uploaded_file, asset_type: str) -> tuple[bytes, str, str]:
+    """
+    Validates that uploaded_file is a genuine image (JPEG, PNG, or WebP) using Pillow,
+    rejects SVGs, enforces strict size limits (hero: 5MB, logo: 2MB),
+    strips EXIF/GPS metadata, and returns (cleaned_bytes, extension, mime_type).
+    """
+    max_size = 5 * 1024 * 1024 if asset_type == "hero" else 2 * 1024 * 1024
+    if uploaded_file.size > max_size:
+        limit_mb = 5 if asset_type == "hero" else 2
+        raise serializers.ValidationError(f"{asset_type.capitalize()} image size exceeds {limit_mb}MB limit.")
+
+    filename_lower = (uploaded_file.name or "").lower()
+    content_type_lower = getattr(uploaded_file, "content_type", "").lower()
+    if filename_lower.endswith(".svg") or "svg" in content_type_lower:
+        raise serializers.ValidationError("SVG files are not supported. Please upload JPEG, PNG, or WebP.")
+
+    # Inspect genuine image content using Pillow
+    uploaded_file.seek(0)
+    try:
+        with Image.open(uploaded_file) as img:
+            img.verify()
+    except Exception:
+        raise serializers.ValidationError("Invalid or corrupted image file.")
+
+    # Re-open image since verify() invalidates the image state
+    uploaded_file.seek(0)
+    try:
+        img = Image.open(uploaded_file)
+    except Exception:
+        raise serializers.ValidationError("Invalid image format.")
+
+    fmt = (img.format or "").upper()
+    if fmt not in ("JPEG", "PNG", "WEBP"):
+        raise serializers.ValidationError("Unsupported image format. Please upload JPG, PNG, or WebP.")
+
+    buf = io.BytesIO()
+    if fmt == "JPEG":
+        if img.mode in ("RGBA", "P"):
+            img = img.convert("RGB")
+        img.save(buf, format="JPEG", quality=90)
+        ext = ".jpg"
+        mime = "image/jpeg"
+    elif fmt == "PNG":
+        img.save(buf, format="PNG", optimize=True)
+        ext = ".png"
+        mime = "image/png"
+    elif fmt == "WEBP":
+        img.save(buf, format="WEBP", quality=90)
+        ext = ".webp"
+        mime = "image/webp"
+
+    return buf.getvalue(), ext, mime
+
+
+class MerchantThemeMediaUploadView(StoreMerchantMixin, APIView):
+    """
+    Authenticated and store-member-only signed image upload for store branding (hero banner and logo).
+    Enforces per-user rate limiting, Pillow-based content verification, EXIF stripping,
+    strict size limits (hero: 5MB, logo: 2MB), and stores assets under shopcraft/stores/{store.id}_{slug}/theme/.
+    Returns 404 for non-members, keeping RLS intact.
+    """
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "theme_media_upload"
+
+    def permission_denied(self, request, message=None, code=None):
+        raise Http404("Store not found.")
+
+    def post(self, request, store_slug):
+        asset_type = str(request.data.get("asset_type") or "hero").strip().lower()
+        if asset_type not in ("hero", "logo"):
+            return Response({"error": "Invalid asset_type. Must be 'hero' or 'logo'."}, status=status.HTTP_400_BAD_REQUEST)
+
+        uploaded_file = request.FILES.get("file")
+        if not uploaded_file:
+            return Response({"error": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
+
+        try:
+            cleaned_bytes, ext, mime = process_theme_image(uploaded_file, asset_type)
+        except serializers.ValidationError as exc:
+            msg = exc.detail if isinstance(exc.detail, str) else exc.detail[0]
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
+
+        import re
+        import secrets
+        from pathlib import Path
+
+        clean_slug = re.sub(r"[^a-z0-9_-]", "", self.store.slug.lower())
+        if not clean_slug:
+            return Response({"error": "Invalid store context."}, status=status.HTTP_400_BAD_REQUEST)
+
+        stem = f"store_{self.store.id}_{asset_type}_{int(timezone.now().timestamp())}_{secrets.token_hex(6)}"
+        filename = f"{stem}{ext}"
+
+        if is_cloudinary_configured():
+            try:
+                url = upload_theme_image_to_cloudinary(
+                    file_bytes=cleaned_bytes,
+                    filename=filename,
+                    content_type=mime,
+                    store_id=self.store.id,
+                    clean_store_slug=clean_slug,
+                    asset_type=asset_type,
+                    public_id=stem,
+                )
+            except CloudinaryUploadError as exc:
+                return Response({"error": str(exc)}, status=status.HTTP_502_BAD_GATEWAY)
+        elif is_local_media_allowed():
+            base_dir = (
+                settings.BASE_DIR.parent
+                / "frontend"
+                / "public"
+                / "uploads"
+                / "stores"
+                / f"{self.store.id}_{clean_slug}"
+                / "theme"
+            ).resolve()
+            trusted_root = (settings.BASE_DIR.parent / "frontend" / "public" / "uploads").resolve()
+
+            if not str(base_dir).startswith(str(trusted_root)):
+                return Response({"error": "Invalid upload destination."}, status=status.HTTP_400_BAD_REQUEST)
+
+            base_dir.mkdir(parents=True, exist_ok=True)
+            file_path = base_dir / filename
+
+            with open(file_path, "wb+") as dest:
+                dest.write(cleaned_bytes)
+
+            url = f"/uploads/stores/{self.store.id}_{clean_slug}/theme/{filename}"
+        else:
+            return Response(
+                {"error": "Cloud media storage is not configured."},
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
+            )
+
+        MerchantAuditLog.objects.create(
+            store=self.store,
+            actor=request.user,
+            action="MEDIA_UPLOAD",
+            entity_type="ThemeAsset",
+            entity_id=filename,
+            details={
+                "asset_type": asset_type,
+                "filename": filename,
+                "url": url,
+                "size": len(cleaned_bytes),
+            },
+            ip_address=request.META.get("REMOTE_ADDR"),
+        )
+
+        full_public_id = f"shopcraft/stores/{self.store.id}_{clean_slug}/theme/{stem}"
+
+        return Response(
+            {
+                "success": True,
+                "filename": filename,
+                "url": url,
+                "public_id": full_public_id,
+            },
+            status=status.HTTP_201_CREATED,
+        )
 
 # -----------------------------------------------------------------------------
 # Slice 6 Views (Analytics, Discounts, Staff RBAC) & URL Patterns
@@ -2221,6 +2453,7 @@ urlpatterns = [
     path("merchant/stores/<slug:store_slug>/staff/<int:membership_id>/", MerchantStaffDetailView.as_view(), name="merchant_staff_detail"),
     path("merchant/stores/<slug:store_slug>/settings/", MerchantStoreSettingsView.as_view(), name="merchant_store_settings"),
     path("merchant/stores/<slug:store_slug>/media/upload/", MerchantMediaUploadView.as_view(), name="merchant_media_upload"),
+    path("merchant/stores/<slug:store_slug>/media/theme/upload/", MerchantThemeMediaUploadView.as_view(), name="merchant_theme_media_upload"),
     path("merchant/stores/<slug:store_slug>/audit-logs/", MerchantAuditLogListView.as_view(), name="merchant_audit_logs"),
     path("merchant/stores/<slug:store_slug>/products/", MerchantProductListCreateView.as_view(), name="merchant_product_list_create"),
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/", MerchantProductDetailView.as_view(), name="merchant_product_detail"),

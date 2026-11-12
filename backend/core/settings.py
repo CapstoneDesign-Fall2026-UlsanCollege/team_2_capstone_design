@@ -297,7 +297,10 @@ KHALTI_PLATFORM_SANDBOX_KEY = os.getenv("KHALTI_PLATFORM_SANDBOX_KEY", "").strip
 CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
 CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "").strip()
 CLOUDINARY_API_SECRET = os.getenv("CLOUDINARY_API_SECRET", "").strip()
-ALLOW_LOCAL_MEDIA_UPLOADS = DEBUG
+# Local media uploads are strictly forbidden in production (DEBUG or IS_TEST_COMMAND must be True)
+ALLOW_LOCAL_MEDIA_UPLOADS = (DEBUG or IS_TEST_COMMAND) and (
+    os.getenv("ALLOW_LOCAL_MEDIA_UPLOADS", "True").strip().lower() in ("1", "true", "yes")
+)
 
 # Cache Configuration
 CACHES = {
@@ -410,6 +413,7 @@ REST_FRAMEWORK = {
         "otp_request": "5/min",
         "otp_verify": "10/min",
         "auth_google": "15/min",
+        "theme_media_upload": "30/min",
         "anon": "60/min",
         "user": "120/min",
     },

@@ -6,7 +6,9 @@ import {
   MerchantSettingsUpdatePayload,
   MerchantStoreSettings,
   updateMerchantSettings,
+  ApiError,
 } from "@/lib/api";
+import { ThemeMediaUpload } from "@/components/merchant/ThemeMediaUpload";
 
 const PRESETS = [
   {
@@ -118,6 +120,7 @@ export function SettingsForm({
   const [feedback, setFeedback] = useState<{ type: "success" | "error"; message: string } | null>(
     null
   );
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string[]>>({});
 
   const handleClearKhaltiKey = async () => {
     if (!isOwner) return;
@@ -196,9 +199,13 @@ export function SettingsForm({
       setCustomDomain(updated.custom_domain || "");
       setCodEnabled(updated.cod_enabled !== false);
       setKhaltiSecretKey("");
+      setFieldErrors({});
       setFeedback({ type: "success", message: "Store settings saved and audited." });
       if (onSaved) onSaved(updated);
     } catch (err: unknown) {
+      if (err instanceof ApiError && err.fieldErrors) {
+        setFieldErrors(err.fieldErrors);
+      }
       const msg = err instanceof Error ? err.message : "Failed to update store settings";
       setFeedback({ type: "error", message: msg });
     } finally {
@@ -292,36 +299,31 @@ export function SettingsForm({
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label htmlFor="store-logo" className="text-xs font-medium text-[var(--foreground)]">
-                  Logo Image URL (Optional)
-                </label>
-                <input
-                  id="store-logo"
-                  type="text"
-                  placeholder="/uploads/stores/..."
-                  value={logoUrl}
-                  onChange={(e) => setLogoUrl(e.target.value)}
-                  className="w-full h-9 px-3 rounded border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)]"
-                />
-              </div>
+              <ThemeMediaUpload
+                label="Store Logo (Optional)"
+                description="Brand avatar displayed across header, footer, and receipts."
+                assetType="logo"
+                storeSlug={storeSlug}
+                value={logoUrl}
+                onChange={(url) => {
+                  setLogoUrl(url);
+                  setFieldErrors((prev) => ({ ...prev, logo_url: [] }));
+                }}
+                error={fieldErrors?.logo_url?.[0]}
+              />
 
-              <div className="space-y-1">
-                <label
-                  htmlFor="store-banner"
-                  className="text-xs font-medium text-[var(--foreground)]"
-                >
-                  Banner / Hero Cover URL (Optional)
-                </label>
-                <input
-                  id="store-banner"
-                  type="text"
-                  placeholder="/uploads/stores/..."
-                  value={bannerUrl}
-                  onChange={(e) => setBannerUrl(e.target.value)}
-                  className="w-full h-9 px-3 rounded border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)]"
-                />
-              </div>
+              <ThemeMediaUpload
+                label="Banner / Hero Cover"
+                description="Storefront cover banner displayed in your hero section."
+                assetType="hero"
+                storeSlug={storeSlug}
+                value={bannerUrl}
+                onChange={(url) => {
+                  setBannerUrl(url);
+                  setFieldErrors((prev) => ({ ...prev, banner_url: [] }));
+                }}
+                error={fieldErrors?.banner_url?.[0]}
+              />
             </div>
 
             {/* Theme Preset */}

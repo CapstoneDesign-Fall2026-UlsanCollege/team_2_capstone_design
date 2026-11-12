@@ -558,6 +558,32 @@ export async function updateMerchantSettings(
   );
 }
 
+export interface ThemeMediaUploadResponse {
+  success: boolean;
+  url: string;
+  filename: string;
+  public_id: string;
+}
+
+export async function uploadThemeMedia(
+  storeSlug: string,
+  file: File,
+  assetType: "hero" | "logo"
+): Promise<ThemeMediaUploadResponse> {
+  const formData = new FormData();
+  formData.append("file", file);
+  formData.append("asset_type", assetType);
+
+  return apiFetch<ThemeMediaUploadResponse>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/media/theme/upload/`,
+    {
+      method: "POST",
+      body: formData,
+    }
+  );
+}
+
+
 export interface ProductVariant {
   id: number;
   sku: string;

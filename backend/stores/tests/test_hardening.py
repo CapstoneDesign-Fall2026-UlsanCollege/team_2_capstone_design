@@ -9,6 +9,8 @@ from django.core.files.uploadedfile import SimpleUploadedFile
 from django.db import connection, transaction
 from django.test import TestCase, override_settings
 from rest_framework.test import APIClient, APITransactionTestCase
+from PIL import Image
+import io
 
 from catalog.models import Product, Variant
 from core.settings import (
@@ -585,6 +587,316 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
             self.assertEqual(res_ok.status_code, 201)
             self.assertTrue(res_ok.json()["url"].startswith("https://res.cloudinary.com/demo-cloud/"))
             mock_session.post.assert_called_once()
+
+
+class ThemeMediaSignedUploadTests(APITransactionTestCase):
+    """
+    Tests for Cloudinary signed uploads of theme media (hero image and logo):
+    - Authenticated store members only (404 otherwise, RLS intact)
+    - Key strictly includes store ID
+    - Image format verification with Pillow (JPEG, PNG, WebP only; rejects SVG & spoofed files)
+    - File size limits (hero: 5MB, logo: 2MB)
+    - Local media uploads cannot be on in production (DEBUG=False)
+    - Strict CDN host & folder validation on settings update with field-level 400s
+    - Unchanged legacy URLs do not block saving other settings
+    - Best-effort asset deletion on replace strictly scoped to current store folder
+    """
+    def setUp(self):
+        self.owner = User.objects.create_user("theme.owner@example.com", full_name="Theme Owner")
+        self.other_user = User.objects.create_user("theme.other@example.com", full_name="Other User")
+        self.store = Store.objects.create(name="Himalayan Teas", slug="himalayan-teas", is_active=True)
+        self.other_store = Store.objects.create(name="Other Store", slug="other-store", is_active=True)
+
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=self.owner, role="OWNER")
+        with TenantDatabaseContext(self.other_store.id):
+            StoreMembership.objects.create(store=self.other_store, user=self.other_user, role="OWNER")
+
+        self.client = APIClient()
+        self.client.force_authenticate(user=self.owner)
+
+    @staticmethod
+    def _make_image(fmt="PNG", color="red", size=(50, 50)):
+        buf = io.BytesIO()
+        img = Image.new("RGB", size, color=color)
+        img.save(buf, format=fmt)
+        return buf.getvalue()
+
+    def test_unauthenticated_and_non_member_access_returns_404(self):
+        img_bytes = self._make_image("PNG")
+        upload = SimpleUploadedFile("hero.png", img_bytes, content_type="image/png")
+
+        # 1. Anonymous client returns 404
+        anon_client = APIClient()
+        res_anon = anon_client.post(
+            f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+            {"file": upload, "asset_type": "hero"},
+            format="multipart",
+        )
+        self.assertEqual(res_anon.status_code, 404)
+
+        # 2. Member of another store returns 404
+        other_client = APIClient()
+        other_client.force_authenticate(user=self.other_user)
+        upload.seek(0)
+        res_other = other_client.post(
+            f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+            {"file": upload, "asset_type": "hero"},
+            format="multipart",
+        )
+        self.assertEqual(res_other.status_code, 404)
+
+    def test_key_includes_store_id_and_returns_f_auto_q_auto_cloudinary_url(self):
+        mock_session = MagicMock()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "secure_url": f"https://res.cloudinary.com/demo-cloud/image/upload/v1700000/shopcraft/stores/{self.store.id}_himalayan-teas/theme/store_{self.store.id}_hero_1.png"
+        }
+        mock_session.post.return_value = mock_resp
+
+        img_bytes = self._make_image("PNG")
+        upload = SimpleUploadedFile("hero.png", img_bytes, content_type="image/png")
+
+        with override_settings(
+            ALLOW_LOCAL_MEDIA_UPLOADS=False,
+            CLOUDINARY_CLOUD_NAME="demo-cloud",
+            CLOUDINARY_API_KEY="123456789",
+            CLOUDINARY_API_SECRET="test-secret",
+        ), patch("stores.cloudinary_upload.get_shared_http_session", return_value=mock_session):
+            res = self.client.post(
+                f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+                {"file": upload, "asset_type": "hero"},
+                format="multipart",
+            )
+            self.assertEqual(res.status_code, 201)
+            data = res.json()
+            self.assertTrue(data["success"])
+            self.assertIn("f_auto,q_auto", data["url"])
+            self.assertIn(f"shopcraft/stores/{self.store.id}_himalayan-teas/theme", data["public_id"])
+
+            # Verify parameters sent to Cloudinary API include store ID in folder and public_id
+            call_kwargs = mock_session.post.call_args[1]
+            post_data = call_kwargs["data"]
+            self.assertEqual(post_data["folder"], f"shopcraft/stores/{self.store.id}_himalayan-teas/theme")
+            self.assertTrue(post_data["public_id"].startswith(f"store_{self.store.id}_hero_"))
+            self.assertTrue(bool(post_data["signature"]))
+
+    def test_pillow_image_verification_rejects_spoofed_and_svg(self):
+        # 1. Spoofed text file posing as PNG
+        spoofed = SimpleUploadedFile("fake.png", b"Not a real image binary", content_type="image/png")
+        res_spoofed = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+            {"file": spoofed, "asset_type": "hero"},
+            format="multipart",
+        )
+        self.assertEqual(res_spoofed.status_code, 400)
+        self.assertIn("Invalid or corrupted image file.", res_spoofed.json()["error"])
+
+        # 2. SVG file rejected
+        svg = SimpleUploadedFile("vector.svg", b"<svg><circle r='10'/></svg>", content_type="image/svg+xml")
+        res_svg = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+            {"file": svg, "asset_type": "logo"},
+            format="multipart",
+        )
+        self.assertEqual(res_svg.status_code, 400)
+        self.assertIn("SVG", res_svg.json()["error"])
+
+        # 3. Invalid asset_type rejected
+        img_bytes = self._make_image("PNG")
+        valid_img = SimpleUploadedFile("test.png", img_bytes, content_type="image/png")
+        res_invalid_type = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+            {"file": valid_img, "asset_type": "invalid_type"},
+            format="multipart",
+        )
+        self.assertEqual(res_invalid_type.status_code, 400)
+
+    def test_size_limits_hero_and_logo(self):
+        # 1. Hero > 5MB
+        huge_hero = SimpleUploadedFile("hero.png", b"x" * (5 * 1024 * 1024 + 10), content_type="image/png")
+        res_hero = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+            {"file": huge_hero, "asset_type": "hero"},
+            format="multipart",
+        )
+        self.assertEqual(res_hero.status_code, 400)
+        self.assertIn("5MB limit", res_hero.json()["error"])
+
+        # 2. Logo > 2MB
+        huge_logo = SimpleUploadedFile("logo.png", b"x" * (2 * 1024 * 1024 + 10), content_type="image/png")
+        res_logo = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+            {"file": huge_logo, "asset_type": "logo"},
+            format="multipart",
+        )
+        self.assertEqual(res_logo.status_code, 400)
+        self.assertIn("2MB limit", res_logo.json()["error"])
+
+    def test_production_guard_blocks_local_uploads_when_debug_false(self):
+        img_bytes = self._make_image("PNG")
+        upload = SimpleUploadedFile("hero.png", img_bytes, content_type="image/png")
+
+        with override_settings(
+            DEBUG=False,
+            IS_TEST_COMMAND=False,
+            ALLOW_LOCAL_MEDIA_UPLOADS=True,
+            CLOUDINARY_CLOUD_NAME="",
+            CLOUDINARY_API_KEY="",
+            CLOUDINARY_API_SECRET="",
+        ):
+            res = self.client.post(
+                f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+                {"file": upload, "asset_type": "hero"},
+                format="multipart",
+            )
+            self.assertEqual(res.status_code, 503)
+
+    def test_settings_strict_cdn_validation_field_level_400(self):
+        with override_settings(
+            CLOUDINARY_CLOUD_NAME="demo-cloud",
+            CLOUDINARY_API_KEY="123456789",
+            CLOUDINARY_API_SECRET="test-secret",
+        ):
+            # 1. Attempt to set banner_url from another store's folder -> 400 with banner_url error
+            res_wrong_store = self.client.patch(
+                f"/api/merchant/stores/{self.store.slug}/settings/",
+                {
+                    "banner_url": f"https://res.cloudinary.com/demo-cloud/image/upload/v1/shopcraft/stores/{self.other_store.id}_other-store/theme/banner.jpg"
+                },
+                format="json",
+            )
+            self.assertEqual(res_wrong_store.status_code, 400)
+            self.assertIn("banner_url", res_wrong_store.json())
+
+            # 2. Attempt to set logo_url from external host -> 400 with logo_url error
+            res_external = self.client.patch(
+                f"/api/merchant/stores/{self.store.slug}/settings/",
+                {
+                    "logo_url": "https://external-cdn.com/logo.png"
+                },
+                format="json",
+            )
+            self.assertEqual(res_external.status_code, 400)
+            self.assertIn("logo_url", res_external.json())
+
+            # 3. Unchanged legacy URL does NOT block editing other settings
+            self.store.banner_url = "https://images.unsplash.com/legacy-banner.jpg"
+            self.store.save()
+
+            res_legacy_ok = self.client.patch(
+                f"/api/merchant/stores/{self.store.slug}/settings/",
+                {
+                    "tagline": "Updated organic specialty tea tagline."
+                },
+                format="json",
+            )
+            self.assertEqual(res_legacy_ok.status_code, 200)
+            self.store.refresh_from_db()
+            self.assertEqual(self.store.tagline, "Updated organic specialty tea tagline.")
+            self.assertEqual(self.store.banner_url, "https://images.unsplash.com/legacy-banner.jpg")
+
+            # 4. Valid CDN URL inside this store's folder succeeds
+            valid_banner = f"https://res.cloudinary.com/demo-cloud/image/upload/v1/shopcraft/stores/{self.store.id}_himalayan-teas/theme/banner.jpg"
+            res_valid = self.client.patch(
+                f"/api/merchant/stores/{self.store.slug}/settings/",
+                {
+                    "banner_url": valid_banner
+                },
+                format="json",
+            )
+            self.assertEqual(res_valid.status_code, 200)
+            self.store.refresh_from_db()
+            self.assertEqual(self.store.banner_url, valid_banner)
+
+    def test_deletion_on_replace_strictly_scoped_to_own_store(self):
+        old_banner = f"https://res.cloudinary.com/demo-cloud/image/upload/v1/shopcraft/stores/{self.store.id}_himalayan-teas/theme/old_banner.jpg"
+        self.store.banner_url = old_banner
+        self.store.save()
+
+        mock_session = MagicMock()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {"result": "ok"}
+        mock_session.post.return_value = mock_resp
+
+        new_banner = f"https://res.cloudinary.com/demo-cloud/image/upload/v1/shopcraft/stores/{self.store.id}_himalayan-teas/theme/new_banner.jpg"
+
+        with override_settings(
+            CLOUDINARY_CLOUD_NAME="demo-cloud",
+            CLOUDINARY_API_KEY="123456789",
+            CLOUDINARY_API_SECRET="test-secret",
+        ), patch("stores.cloudinary_upload.get_shared_http_session", return_value=mock_session):
+            res = self.client.patch(
+                f"/api/merchant/stores/{self.store.slug}/settings/",
+                {"banner_url": new_banner},
+                format="json",
+            )
+            self.assertEqual(res.status_code, 200)
+            mock_session.post.assert_called_once()
+            call_kwargs = mock_session.post.call_args[1]
+            self.assertEqual(
+                call_kwargs["data"]["public_id"],
+                f"shopcraft/stores/{self.store.id}_himalayan-teas/theme/old_banner",
+            )
+
+        # Verify: If old URL had another store's asset, deletion must NOT be triggered
+        self.store.banner_url = f"https://res.cloudinary.com/demo-cloud/image/upload/v1/shopcraft/stores/{self.other_store.id}_other-store/theme/foreign_banner.jpg"
+        self.store.save()
+
+        mock_session_2 = MagicMock()
+        with override_settings(
+            CLOUDINARY_CLOUD_NAME="demo-cloud",
+            CLOUDINARY_API_KEY="123456789",
+            CLOUDINARY_API_SECRET="test-secret",
+        ), patch("stores.cloudinary_upload.get_shared_http_session", return_value=mock_session_2):
+            res_foreign = self.client.patch(
+                f"/api/merchant/stores/{self.store.slug}/settings/",
+                {"banner_url": new_banner},
+                format="json",
+            )
+            self.assertEqual(res_foreign.status_code, 200)
+            # Destroy endpoint must NOT be called for the foreign asset!
+            mock_session_2.post.assert_not_called()
+
+    def test_per_user_rate_limiting_enforced(self):
+        from django.core.cache import cache
+        cache.clear()
+
+        mock_session = MagicMock()
+        mock_resp = MagicMock()
+        mock_resp.status_code = 200
+        mock_resp.json.return_value = {
+            "secure_url": f"https://res.cloudinary.com/demo-cloud/image/upload/v1/shopcraft/stores/{self.store.id}_himalayan-teas/theme/store_{self.store.id}_hero_1.png"
+        }
+        mock_session.post.return_value = mock_resp
+
+        img_bytes = self._make_image("PNG")
+
+        with override_settings(
+            CLOUDINARY_CLOUD_NAME="demo-cloud",
+            CLOUDINARY_API_KEY="123456789",
+            CLOUDINARY_API_SECRET="test-secret",
+        ), patch("stores.cloudinary_upload.get_shared_http_session", return_value=mock_session):
+            for i in range(30):
+                upload = SimpleUploadedFile(f"hero_{i}.png", img_bytes, content_type="image/png")
+                res = self.client.post(
+                    f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+                    {"file": upload, "asset_type": "hero"},
+                    format="multipart",
+                )
+                self.assertEqual(res.status_code, 201)
+
+            # 31st request from same authenticated user hits rate limit
+            upload_31 = SimpleUploadedFile("hero_31.png", img_bytes, content_type="image/png")
+            res_31 = self.client.post(
+                f"/api/merchant/stores/{self.store.slug}/media/theme/upload/",
+                {"file": upload_31, "asset_type": "hero"},
+                format="multipart",
+            )
+            self.assertEqual(res_31.status_code, 429)
+
 
 
 class UserMembershipContextAndPoolerLeakageTests(APITransactionTestCase):
