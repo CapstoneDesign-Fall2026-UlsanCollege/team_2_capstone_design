@@ -35,6 +35,7 @@ import {
   verifyStorefrontGoogleAuth,
 } from "@/lib/api";
 import { emitAuthChange, useStorefrontAuth } from "@/lib/auth";
+import { getStorefrontAccountBadge } from "@/lib/storefront-helpers";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAccount } from "@/components/storefront/AccountContext";
 import { Chip, ChipTone } from "@/components/ui/chip";
@@ -327,7 +328,7 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
     }
   };
 
-  const userInitial = (customer?.full_name || user?.full_name || user?.email || "")[0]?.toUpperCase() || null;
+  const { isStorefrontCustomer, userInitial } = getStorefrontAccountBadge(isAuthenticated, customer);
 
   return (
     <div className="w-full min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans antialiased flex flex-col">
@@ -338,10 +339,10 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
         tagline={store.tagline}
         logoUrl={store.logo_url}
         cartCount={itemCount}
-        freeShippingThresholdMinor={store.free_shipping_threshold_minor}
+        freeShippingThresholdMinor={store.shipping_configured ? store.free_shipping_threshold_minor : null}
         onOpenCart={openCart}
         onOpenAccount={openAccount}
-        isAuthenticated={isAuthenticated}
+        isAuthenticated={isStorefrontCustomer}
         userInitial={userInitial}
       />
 

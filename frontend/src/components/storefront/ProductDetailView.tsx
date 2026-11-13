@@ -26,26 +26,18 @@ import { Button } from "@/components/ui/button";
 import { Chip } from "@/components/ui/chip";
 import { StorefrontHeader } from "./StorefrontHeader";
 import { StoreImage } from "./StoreImage";
+import {
+  buildWhatsAppUrl,
+  cleanStoreCategory,
+  getStorefrontAccountBadge,
+  getStorefrontPaymentAndDeliveryClaims,
+  sanitizeStorefrontImageUrl,
+} from "@/lib/storefront-helpers";
 
 export interface ProductDetailViewProps {
   store: StorePublicMetadata;
   product: ProductItem;
   relatedProducts: ProductItem[];
-}
-
-function isPlaceholderText(text?: string | null): boolean {
-  if (!text) return true;
-  const trimmed = text.trim();
-  if (!trimmed) return true;
-  const lower = trimmed.toLowerCase();
-  return (
-    lower === "general" ||
-    lower === "aaa" ||
-    lower === "placeholder" ||
-    lower === "online storefront · nepal" ||
-    lower === "online storefront" ||
-    lower === "official online store"
-  );
 }
 
 export function ProductDetailView({
@@ -55,7 +47,9 @@ export function ProductDetailView({
 }: ProductDetailViewProps) {
   const { itemCount, openCart, addItem } = useCart();
   const { openAccount } = useAccount();
-  const { isAuthenticated, user, customer } = useStorefrontAuth(store.slug);
+  const { isAuthenticated, customer } = useStorefrontAuth(store.slug);
+  const accountBadge = getStorefrontAccountBadge(isAuthenticated, customer);
+  const claims = useMemo(() => getStorefrontPaymentAndDeliveryClaims(store), [store]);
 
   const variants = product.variants || [];
   const defaultVariant =
@@ -138,14 +132,21 @@ export function ProductDetailView({
   // Collect all product images
   const images = useMemo(() => {
     const list: string[] = [];
-    if (product.image_url) list.push(product.image_url);
+    const primary = sanitizeStorefrontImageUrl(product.image_url);
+    if (primary) list.push(primary);
     if (product.attributes?.secondary_image && typeof product.attributes.secondary_image === "string") {
-      list.push(product.attributes.secondary_image);
+      const secondary = sanitizeStorefrontImageUrl(product.attributes.secondary_image);
+      if (secondary && !list.includes(secondary)) {
+        list.push(secondary);
+      }
     }
     if (Array.isArray(product.attributes?.gallery)) {
       for (const item of product.attributes.gallery) {
-        if (typeof item === "string" && !list.includes(item)) {
-          list.push(item);
+        if (typeof item === "string") {
+          const sanitized = sanitizeStorefrontImageUrl(item);
+          if (sanitized && !list.includes(sanitized)) {
+            list.push(sanitized);
+          }
         }
       }
     }
@@ -181,11 +182,12 @@ export function ProductDetailView({
   };
 
   const waUrl = useMemo(() => {
-    if (!store.contact_phone) return null;
-    const clean = store.contact_phone.replace(/\D/g, "").replace(/^0+/, "");
-    if (!clean) return null;
-    const phoneWithCountry = clean.startsWith("977") ? clean : `977${clean}`;
-    return `https://wa.me/${phoneWithCountry}?text=Hi%20${encodeURIComponent(store.name)}%2C%20I%20have%20an%20inquiry%20about%20${encodeURIComponent(product.name)}.`;
+    const base = buildWhatsAppUrl(store.contact_phone, store.name);
+    if (!base) return null;
+    const baseOrigin = base.split("?")[0];
+    return `${baseOrigin}?text=${encodeURIComponent(
+      `Hi ${store.name}, I have an inquiry about ${product.name}.`
+    )}`;
   }, [store.contact_phone, store.name, product.name]);
 
   // Extract custom attribute key-values for specs table
@@ -209,9 +211,9 @@ export function ProductDetailView({
   }, [product.attributes]);
 
   const cleanCategory = useMemo(() => {
-    const raw = product.category || (product.attributes?.category as string) || "";
-    if (isPlaceholderText(raw)) return "";
-    return raw.trim();
+    return cleanStoreCategory(
+      product.category || (product.attributes?.category as string) || ""
+    );
   }, [product.category, product.attributes]);
 
   return (
@@ -223,11 +225,14 @@ export function ProductDetailView({
         tagline={store.tagline}
         logoUrl={store.logo_url}
         cartCount={itemCount}
-        freeShippingThresholdMinor={store.free_shipping_threshold_minor}
+        freeShippingThresholdMinor={
+          claims.shippingConfigured ? store.free_shipping_threshold_minor : null
+        }
         onOpenCart={openCart}
         onOpenAccount={openAccount}
-        isAuthenticated={isAuthenticated}
-        userInitial={(customer?.full_name || user?.full_name || user?.email || "")[0]?.toUpperCase() || null}
+        isAuthenticated={accountBadge.isStorefrontCustomer}
+        userInitial={accountBadge.userInitial}
+        showDeliveryLink={claims.shippingConfigured || claims.hasKhalti || claims.codEnabled}
       />
 
       {/* 2. Main Product Content */}
@@ -474,9 +479,11 @@ export function ProductDetailView({
               </Button>
 
               {/* Single Delivery Promise Line */}
-              <p className="text-xs text-[var(--ink-2)] text-center sm:text-left pt-1 leading-relaxed">
-                Kathmandu Valley 1–2 days · Nationwide courier · Khalti or Cash on Delivery
-              </p>
+              {claims.heroPromiseLine && (
+                <p className="text-xs text-[var(--ink-2)] text-center sm:text-left pt-1 leading-relaxed">
+                  {claims.heroPromiseLine}
+                </p>
+              )}
             </div>
 
             {/* 4. Structured Product Accordions (Details & Delivery) */}
@@ -516,57 +523,69 @@ export function ProductDetailView({
               </div>
 
               {/* Accordion 2: Delivery & Shipping in Nepal */}
-              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
-                <button
-                  type="button"
-                  onClick={() => setOpenDelivery((prev) => !prev)}
-                  className="w-full p-4 flex items-center justify-between text-left text-xs font-semibold text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer min-h-[44px]"
-                >
-                  <span>Delivery &amp; Payment Details</span>
-                  {openDelivery ? (
-                    <ChevronUp className="w-4 h-4 text-[var(--ink-2)]" />
-                  ) : (
-                    <ChevronDown className="w-4 h-4 text-[var(--ink-2)]" />
+              {(claims.shippingConfigured || claims.hasKhalti || claims.codEnabled || waUrl) && (
+                <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+                  <button
+                    type="button"
+                    onClick={() => setOpenDelivery((prev) => !prev)}
+                    className="w-full p-4 flex items-center justify-between text-left text-xs font-semibold text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer min-h-[44px]"
+                  >
+                    <span>Delivery &amp; Payment Details</span>
+                    {openDelivery ? (
+                      <ChevronUp className="w-4 h-4 text-[var(--ink-2)]" />
+                    ) : (
+                      <ChevronDown className="w-4 h-4 text-[var(--ink-2)]" />
+                    )}
+                  </button>
+                  {openDelivery && (
+                    <div className="p-4 border-t border-[var(--border)] bg-[var(--canvas)] text-xs space-y-2 text-[var(--ink-2)] leading-relaxed">
+                      {claims.shippingConfigured && (
+                        <>
+                          <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
+                            <span>Kathmandu Valley (1–2 days):</span>
+                            <span className="font-semibold text-[var(--ink)] tabular-nums">
+                              {formatNpr(store.inside_valley_shipping_minor || 10000)}
+                            </span>
+                          </div>
+                          <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
+                            <span>Outside Valley (Nationwide courier):</span>
+                            <span className="font-semibold text-[var(--ink)] tabular-nums">
+                              {formatNpr(store.outside_valley_shipping_minor || 20000)}
+                            </span>
+                          </div>
+                          {store.free_shipping_threshold_minor && (
+                            <p className="font-semibold text-[var(--ink)] pt-1">
+                              Free delivery on orders over {formatNpr(store.free_shipping_threshold_minor)}.
+                            </p>
+                          )}
+                        </>
+                      )}
+                      {(claims.hasKhalti || claims.codEnabled) && (
+                        <p className="pt-1 text-[11px]">
+                          {claims.hasKhalti && claims.codEnabled
+                            ? "We accept verified Khalti ePayment (instant wallet redirect / Fonepay QR) and Cash on Delivery (COD)."
+                            : claims.hasKhalti
+                            ? "We accept verified Khalti ePayment (instant wallet redirect / Fonepay QR)."
+                            : "We accept Cash on Delivery (COD)."}
+                        </p>
+                      )}
+                      {waUrl && (
+                        <div className="pt-2">
+                          <a
+                            href={waUrl}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)] underline hover:opacity-80"
+                          >
+                            <MessageCircle className="w-3.5 h-3.5" />
+                            <span>Have questions? Chat on WhatsApp</span>
+                          </a>
+                        </div>
+                      )}
+                    </div>
                   )}
-                </button>
-                {openDelivery && (
-                  <div className="p-4 border-t border-[var(--border)] bg-[var(--canvas)] text-xs space-y-2 text-[var(--ink-2)] leading-relaxed">
-                    <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
-                      <span>Kathmandu Valley (1–2 days):</span>
-                      <span className="font-semibold text-[var(--ink)] tabular-nums">
-                        {formatNpr(store.inside_valley_shipping_minor || 10000)}
-                      </span>
-                    </div>
-                    <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
-                      <span>Outside Valley (Nationwide courier):</span>
-                      <span className="font-semibold text-[var(--ink)] tabular-nums">
-                        {formatNpr(store.outside_valley_shipping_minor || 20000)}
-                      </span>
-                    </div>
-                    {store.free_shipping_threshold_minor && (
-                      <p className="font-semibold text-[var(--ink)] pt-1">
-                        Free delivery on orders over {formatNpr(store.free_shipping_threshold_minor)}.
-                      </p>
-                    )}
-                    <p className="pt-1 text-[11px]">
-                      We accept verified Khalti ePayment (instant wallet redirect / Fonepay QR) and Cash on Delivery (COD).
-                    </p>
-                    {waUrl && (
-                      <div className="pt-2">
-                        <a
-                          href={waUrl}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)] underline hover:opacity-80"
-                        >
-                          <MessageCircle className="w-3.5 h-3.5" />
-                          <span>Have questions? Chat on WhatsApp</span>
-                        </a>
-                      </div>
-                    )}
-                  </div>
-                )}
-              </div>
+                </div>
+              )}
 
             </div>
 
@@ -600,7 +619,7 @@ export function ProductDetailView({
                   >
                     <div className="relative aspect-[4/3] rounded-lg bg-[var(--canvas)] overflow-hidden border border-[var(--border)] mb-2.5">
                       <StoreImage
-                        src={rel.image_url || ""}
+                        src={sanitizeStorefrontImageUrl(rel.image_url)}
                         alt={rel.name}
                         sizes="(max-width: 640px) 50vw, 33vw"
                         className="object-cover transition-transform duration-300 group-hover:scale-102"
@@ -614,9 +633,11 @@ export function ProductDetailView({
                     <h3 className="text-xs font-semibold text-[var(--ink)] truncate group-hover:underline">
                       {rel.name}
                     </h3>
-                    <span className="text-xs font-semibold text-[var(--ink)] tabular-nums mt-0.5 block">
-                      {relPrice > 0 ? formatNpr(relPrice) : "Rs. 0"}
-                    </span>
+                    {relPrice > 0 && (
+                      <span className="text-xs font-semibold text-[var(--ink)] tabular-nums mt-0.5 block">
+                        {formatNpr(relPrice)}
+                      </span>
+                    )}
                   </Link>
                 );
               })}
@@ -668,10 +689,11 @@ export function ProductDetailView({
               <span className="font-serif text-lg font-semibold text-[var(--ink)] block">
                 {store.name}
               </span>
-              <p className="text-xs text-[var(--ink-2)] leading-relaxed max-w-sm">
-                {store.tagline ||
-                  "Quality goods delivered directly to your doorstep across Kathmandu Valley and nationwide."}
-              </p>
+              {store.tagline && (
+                <p className="text-xs text-[var(--ink-2)] leading-relaxed max-w-sm">
+                  {store.tagline}
+                </p>
+              )}
             </div>
 
             <div className="md:col-span-3 space-y-2.5 text-xs">
@@ -689,11 +711,13 @@ export function ProductDetailView({
                     About Us
                   </Link>
                 </li>
-                <li>
-                  <Link href={`/s/${encodeURIComponent(store.slug)}/shipping`} className="hover:text-[var(--ink)] transition-colors">
-                    Delivery &amp; COD
-                  </Link>
-                </li>
+                {(claims.shippingConfigured || claims.hasKhalti || claims.codEnabled) && (
+                  <li>
+                    <Link href={`/s/${encodeURIComponent(store.slug)}/shipping`} className="hover:text-[var(--ink)] transition-colors">
+                      Delivery &amp; COD
+                    </Link>
+                  </li>
+                )}
                 <li>
                   <Link href={`/s/${encodeURIComponent(store.slug)}/contact`} className="hover:text-[var(--ink)] transition-colors">
                     Contact &amp; Help
@@ -707,9 +731,9 @@ export function ProductDetailView({
                 Payments &amp; Delivery
               </span>
               <div className="space-y-1.5 text-[var(--ink-2)] text-xs">
-                <div>Khalti ePayment (Instant redirect)</div>
-                <div>Cash on Delivery (COD)</div>
-                <div>Nationwide Courier Delivery</div>
+                {claims.hasKhalti && <div>Khalti ePayment (Instant redirect)</div>}
+                {claims.codEnabled && <div>Cash on Delivery (COD)</div>}
+                {claims.shippingConfigured && <div>Nationwide Courier Delivery</div>}
                 <div>Settled in Nepalese Rupees (NPR)</div>
               </div>
             </div>
@@ -722,8 +746,6 @@ export function ProductDetailView({
             </div>
             <div className="flex items-center gap-3">
               <span>Settled in NPR</span>
-              <span>·</span>
-              <span>Powered by ShopCraft</span>
             </div>
           </div>
         </div>

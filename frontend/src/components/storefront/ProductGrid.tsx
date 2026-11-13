@@ -4,6 +4,7 @@ import React from "react";
 import Link from "next/link";
 import { Package } from "lucide-react";
 import { formatNpr, ProductItem } from "@/lib/api";
+import { isPlaceholderText, sanitizeStorefrontImageUrl } from "@/lib/storefront-helpers";
 import { Button } from "@/components/ui/button";
 import { StoreImage } from "./StoreImage";
 
@@ -14,18 +15,6 @@ export interface ProductGridProps {
   onQuickAdd?: (product: ProductItem) => void;
   themePreset?: string;
   defaultCategory?: string;
-}
-
-function isPlaceholderText(text?: string | null): boolean {
-  if (!text) return true;
-  const trimmed = text.trim().toLowerCase();
-  return (
-    trimmed === "" ||
-    trimmed === "general" ||
-    trimmed === "aaa" ||
-    trimmed === "placeholder" ||
-    trimmed === "online storefront · nepal"
-  );
 }
 
 export function ProductGrid({
@@ -87,7 +76,7 @@ export function ProductGrid({
             {/* 1. Product Image Frame (12px rounded container, 1px border, no overlay text) */}
             <div className="relative aspect-square sm:aspect-[4/5] w-full bg-[var(--canvas)] border-b border-[var(--border)] overflow-hidden flex items-center justify-center">
               <StoreImage
-                src={product.image_url || ""}
+                src={sanitizeStorefrontImageUrl(product.image_url)}
                 alt={product.name}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
                 className="object-cover transition-transform duration-300 group-hover:scale-102"

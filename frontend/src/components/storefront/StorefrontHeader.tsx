@@ -9,6 +9,7 @@ import {
   optimizeCloudinaryUrl,
   shouldBypassNextImageOptimization,
 } from "@/lib/cloudinary";
+import { isPlaceholderText } from "@/lib/storefront-helpers";
 
 export interface StorefrontHeaderProps {
   storeSlug: string;
@@ -24,25 +25,12 @@ export interface StorefrontHeaderProps {
   onOpenAccount?: () => void;
   isAuthenticated?: boolean;
   userInitial?: string | null;
+  showDeliveryLink?: boolean;
+  deliveryLinkLabel?: string;
   onCatalogClick?: () => void;
   onSelectCategory?: (category: string) => void;
   activeCategory?: string;
   categories?: string[];
-}
-
-function isPlaceholderText(text?: string | null): boolean {
-  if (!text) return true;
-  const trimmed = text.trim();
-  if (!trimmed) return true;
-  const lower = trimmed.toLowerCase();
-  return (
-    lower === "general" ||
-    lower === "aaa" ||
-    lower === "placeholder" ||
-    lower === "online storefront · nepal" ||
-    lower === "online storefront" ||
-    lower === "official online store"
-  );
 }
 
 export function StorefrontHeader({
@@ -58,6 +46,8 @@ export function StorefrontHeader({
   onOpenAccount,
   isAuthenticated = false,
   userInitial = null,
+  showDeliveryLink = true,
+  deliveryLinkLabel = "Delivery & COD",
   onCatalogClick,
 }: StorefrontHeaderProps) {
   // Determine announcement message. Hidden if empty.
@@ -146,12 +136,14 @@ export function StorefrontHeader({
             >
               Our story
             </Link>
-            <Link
-              href={`/s/${encodeURIComponent(storeSlug)}/shipping`}
-              className="hover:text-[var(--ink)] cursor-pointer transition-colors"
-            >
-              Delivery &amp; COD
-            </Link>
+            {showDeliveryLink && (
+              <Link
+                href={`/s/${encodeURIComponent(storeSlug)}/shipping`}
+                className="hover:text-[var(--ink)] cursor-pointer transition-colors"
+              >
+                {deliveryLinkLabel}
+              </Link>
+            )}
             <Link
               href={`/s/${encodeURIComponent(storeSlug)}/contact`}
               className="hover:text-[var(--ink)] cursor-pointer transition-colors"

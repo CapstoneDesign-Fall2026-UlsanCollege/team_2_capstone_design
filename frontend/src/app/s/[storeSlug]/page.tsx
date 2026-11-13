@@ -40,10 +40,12 @@ async function fetchStoreData(storeSlug: string): Promise<{
 
 export default async function StorefrontHomePage({
   params,
+  searchParams,
 }: {
   params: Promise<{ storeSlug: string }>;
+  searchParams: Promise<{ preview_theme?: string }>;
 }) {
-  const { storeSlug } = await params;
+  const [{ storeSlug }, resolvedSearchParams] = await Promise.all([params, searchParams]);
   const { store, catalog } = await fetchStoreData(storeSlug);
 
   if (!store) {
@@ -54,6 +56,7 @@ export default async function StorefrontHomePage({
     <StorefrontCatalogView
       store={store}
       products={catalog.products}
+      isThemePreview={Boolean(resolvedSearchParams?.preview_theme)}
     />
   );
 }

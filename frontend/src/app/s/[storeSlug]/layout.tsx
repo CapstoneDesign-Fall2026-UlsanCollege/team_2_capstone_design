@@ -41,10 +41,12 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { storeSlug } = await params;
   const store = await fetchStore(storeSlug);
+  const storeName = store?.name?.trim() || "Online Store";
+  const cleanTagline = store?.tagline?.trim();
 
   return {
-    title: store ? `${store.name} | Storefront` : "Store | ShopCraft",
-    description: store?.tagline || "Online shop powered by ShopCraft.",
+    title: storeName,
+    description: cleanTagline || `${storeName} online storefront.`,
   };
 }
 

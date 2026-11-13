@@ -150,6 +150,8 @@ class StoreScopedSerializerMixin(serializers.ModelSerializer):
 # -----------------------------------------------------------------------------
 
 class StorePublicSerializer(serializers.ModelSerializer):
+    has_khalti = serializers.SerializerMethodField()
+
     class Meta:
         model = Store
         fields = [
@@ -175,9 +177,14 @@ class StorePublicSerializer(serializers.ModelSerializer):
             "inside_valley_shipping_minor",
             "outside_valley_shipping_minor",
             "free_shipping_threshold_minor",
+            "shipping_configured",
+            "has_khalti",
             "cod_enabled",
             "custom_domain",
         ]
+
+    def get_has_khalti(self, obj) -> bool:
+        return bool(obj.khalti_secret_key_encrypted)
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -1122,7 +1129,7 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
 
         checklist = {
             "has_products": products_count > 0,
-            "has_shipping": bool(self.store.inside_valley_shipping_minor > 0),
+            "has_shipping": bool(self.store.shipping_configured),
             "has_khalti": bool(self.store.khalti_secret_key_encrypted),
             "has_story": bool(self.store.story_headline or self.store.about_text),
         }
@@ -1184,10 +1191,8 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
             store.name = str(data["name"]).strip()
         if "tagline" in data:
             store.tagline = str(data["tagline"]).strip()
-        if "category" in data and str(data["category"]).strip():
-            cat = str(data["category"]).strip()
-            if cat in [c[0] for c in Store.CATEGORY_CHOICES]:
-                store.category = cat
+        if "category" in data:
+            store.category = str(data["category"] or "").strip()[:64]
         if "city" in data and str(data["city"]).strip():
             store.city = str(data["city"]).strip()
         if "province" in data and str(data["province"]).strip():
@@ -1278,6 +1283,10 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
             raw_domain = raw_domain.replace("https://", "").replace("http://", "").split("/")[0].strip()
             store.custom_domain = raw_domain[:160]
 
+        old_inside_shipping = store.inside_valley_shipping_minor
+        old_outside_shipping = store.outside_valley_shipping_minor
+        old_free_threshold = store.free_shipping_threshold_minor
+
         if "inside_valley_shipping_minor" in data:
             try:
                 val = int(data["inside_valley_shipping_minor"])
@@ -1304,6 +1313,28 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                     store.free_shipping_threshold_minor = val if val >= 0 else None
                 except (ValueError, TypeError):
                     pass
+
+        shipping_rate_changed = (
+            store.inside_valley_shipping_minor != old_inside_shipping
+            or store.outside_valley_shipping_minor != old_outside_shipping
+            or store.free_shipping_threshold_minor != old_free_threshold
+        )
+        shipping_keys = {
+            "inside_valley_shipping_minor",
+            "outside_valley_shipping_minor",
+            "free_shipping_threshold_minor",
+            "shipping_configured",
+        }
+        if "shipping_configured" in data:
+            raw_sc = data["shipping_configured"]
+            if isinstance(raw_sc, bool):
+                store.shipping_configured = raw_sc
+            elif isinstance(raw_sc, str):
+                store.shipping_configured = raw_sc.lower() in ("true", "1", "yes")
+        elif shipping_rate_changed or (
+            any(k in data for k in shipping_keys) and set(data.keys()).issubset(shipping_keys)
+        ):
+            store.shipping_configured = True
 
         khalti_fields_touched = any(
             k in data for k in ("khalti_mode", "khalti_secret_key", "clear_khalti_secret_key")
@@ -1435,9 +1466,14 @@ class MerchantProductDetailView(StoreMerchantMixin, APIView):
 
     def patch(self, request, store_slug, product_id):
         product = self.get_product(product_id)
+        old_name = product.name
+        old_image_url = product.image_url
         serializer = ProductSerializer(product, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        if product.is_starter_default and (product.name != old_name or product.image_url != old_image_url):
+            product.is_starter_default = False
+            product.save(update_fields=["is_starter_default"])
         return Response(ProductSerializer(product).data)
 
     def delete(self, request, store_slug, product_id):
@@ -1491,9 +1527,15 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
 
     def patch(self, request, store_slug, product_id, variant_id):
         variant = self.get_variant(product_id, variant_id)
+        old_price_minor = variant.price_minor
         serializer = VariantSerializer(variant, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         serializer.save()
+        if variant.price_minor != old_price_minor:
+            Product.objects.for_store(self.store).filter(
+                id=variant.product_id,
+                is_starter_default=True,
+            ).update(is_starter_default=False)
         return Response(VariantSerializer(variant).data)
 
     def delete(self, request, store_slug, product_id, variant_id):
@@ -1972,7 +2014,7 @@ class StoreCreateView(APIView):
         name = request.data.get("name", "").strip()
         slug = request.data.get("slug", "").strip().lower()
         theme_preset = request.data.get("theme_preset", "editorial-warm")
-        category = request.data.get("category", "").strip() or "Specialty Goods"
+        category = request.data.get("category", "").strip()[:64]
         city = request.data.get("city", "").strip() or "Kathmandu"
         province = request.data.get("province", "").strip() or "Bagmati"
         tagline = request.data.get("tagline", "").strip()
@@ -2003,19 +2045,8 @@ class StoreCreateView(APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        # 4. Resolve banner image
+        # 4. Resolve optional banner image (leave empty when unset so storefront renders store hero fallback)
         banner_url = request.data.get("banner_url", "").strip()
-        if not banner_url:
-            theme_defaults = {
-                "editorial-warm": "/images/banners/editorial-warm.svg",
-                "himalayan-craft": "/images/banners/himalayan-craft.svg",
-                "minimal-mono": "/images/banners/minimal-mono.svg",
-                "midnight-obsidian": "/images/banners/midnight-obsidian.svg",
-            }
-            if theme_preset in theme_defaults:
-                banner_url = theme_defaults[theme_preset]
-            else:
-                banner_url = "https://images.unsplash.com/photo-1472851294608-062f824d29cc?auto=format&fit=crop&w=1200&q=80"
 
         # 5. Atomic check & store creation: lock user row with select_for_update() so concurrent
         # requests serialize and strictly obey the 3-store cap.
@@ -2064,7 +2095,6 @@ class StoreCreateView(APIView):
                     user=user,
                     role="OWNER",
                 )
-                seed_starter_catalog(store)
                 MerchantAuditLog.objects.create(
                     store=store,
                     actor=user,
@@ -2109,7 +2139,7 @@ class MerchantMyStoresView(APIView):
                     "id": st.id,
                     "name": st.name,
                     "slug": st.slug,
-                    "category": getattr(st, "category", "Specialty Goods"),
+                    "category": st.category or "",
                     "city": getattr(st, "city", "Kathmandu"),
                     "province": getattr(st, "province", "Bagmati"),
                     "theme_preset": st.theme_preset,

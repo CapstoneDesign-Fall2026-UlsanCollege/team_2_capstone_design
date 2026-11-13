@@ -252,3 +252,20 @@ class StorefrontAccountProfileAndOrdersTests(TestCase):
         self.assertFalse(customer_map["guest.shopper@nepal.np"]["has_account"])
         self.assertNotIn("password", customer_map["alice@shopper.np"])
         self.assertNotIn("token", customer_map["alice@shopper.np"])
+
+    def test_lookup_only_does_not_autoprovision_merchant_session(self):
+        """
+        GET /api/stores/<slug>/account/?lookup_only=1 returns customer=None
+        without auto-creating a Customer row when a merchant/platform session
+        visits a storefront they have not signed into as a customer.
+        """
+        self.client.force_login(self.owner)
+        with TenantDatabaseContext(self.store_b.id):
+            self.assertFalse(Customer.objects.for_store(self.store_b).filter(user=self.owner).exists())
+
+        resp = self.client.get(f"/api/stores/{self.store_b.slug}/account/?lookup_only=1")
+        self.assertEqual(resp.status_code, 200)
+        self.assertIsNone(resp.json()["customer"])
+
+        with TenantDatabaseContext(self.store_b.id):
+            self.assertFalse(Customer.objects.for_store(self.store_b).filter(user=self.owner).exists())

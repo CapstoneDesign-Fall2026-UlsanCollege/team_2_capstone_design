@@ -313,3 +313,367 @@ class MerchantStoreCreationAndSignupTests(TestCase):
             )
             self.assertEqual(res.status_code, status.HTTP_429_TOO_MANY_REQUESTS)
             self.assertIn("Too many store creations", res.json()["error"])
+
+
+class StoreCreationNoPlaceholdersTests(TestCase):
+    """
+    Tests verifying that newly created stores have zero placeholder products,
+    empty optional category/banner defaults, boolean-only Khalti status on public
+    endpoints, accurate shipping_configured behavior, starter flag clearing on
+    edit, and preservation of the 4 demo store seed commands.
+    """
+
+    def setUp(self):
+        ActionRateLimit.objects.all().delete()
+        self.client = APIClient()
+        self.merchant = User.objects.create_user(
+            email="clean.merchant@example.com",
+            full_name="Clean Merchant",
+        )
+
+    def _create_store(self, slug="clean-shop", name="Clean Shop", **extra):
+        self.client.force_authenticate(user=self.merchant)
+        payload = {"name": name, "slug": slug, **extra}
+        return self.client.post(
+            "/api/stores/create/",
+            payload,
+            format="json",
+            REMOTE_ADDR="198.51.100.77",
+        )
+
+    def test_new_store_created_with_zero_products_empty_banner_and_empty_category(self):
+        res = self._create_store(slug="zero-item-shop", name="Zero Item Shop")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        data = res.json()
+
+        self.assertEqual(data["category"], "")
+        self.assertEqual(data["banner_url"], "")
+        self.assertIs(data["shipping_configured"], False)
+        self.assertIs(data["has_khalti"], False)
+
+        store = Store.objects.get(slug="zero-item-shop")
+        self.assertEqual(store.category, "")
+        self.assertEqual(store.banner_url, "")
+        self.assertFalse(store.shipping_configured)
+
+        with TenantDatabaseContext(store.id):
+            self.assertEqual(Product.objects.for_store(store).count(), 0)
+
+        self.client.force_authenticate(user=None)
+        cat_res = self.client.get("/api/stores/zero-item-shop/catalog/")
+        self.assertEqual(cat_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(cat_res.json(), {"products": []})
+
+        self.client.force_authenticate(user=self.merchant)
+        ov_res = self.client.get("/api/merchant/stores/zero-item-shop/overview/")
+        self.assertEqual(ov_res.status_code, status.HTTP_200_OK)
+        checklist = ov_res.json()["checklist"]
+        self.assertIs(checklist["has_products"], False)
+        self.assertIs(checklist["has_shipping"], False)
+
+    def test_public_serializer_exposes_has_khalti_boolean_only_never_key_material(self):
+        res = self._create_store(slug="khalti-public-check", name="Khalti Public Check")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        store = Store.objects.get(slug="khalti-public-check")
+        raw_secret = "test_secret_key_very_private_987654"
+        store.set_khalti_secret_key(raw_secret)
+        store.save()
+
+        self.client.force_authenticate(user=None)
+        pub_res = self.client.get("/api/stores/khalti-public-check/")
+        self.assertEqual(pub_res.status_code, status.HTTP_200_OK)
+        pub_data = pub_res.json()
+
+        self.assertIn("has_khalti", pub_data)
+        self.assertIs(type(pub_data["has_khalti"]), bool)
+        self.assertIs(pub_data["has_khalti"], True)
+
+        for forbidden_key in (
+            "khalti_secret_key_encrypted",
+            "khalti_secret_key",
+            "khalti_key_masked",
+            "has_custom_khalti_key",
+        ):
+            self.assertNotIn(forbidden_key, pub_data)
+
+        raw_body = pub_res.content.decode("utf-8")
+        self.assertNotIn(raw_secret, raw_body)
+        self.assertNotIn("987654", raw_body)
+        self.assertNotIn(store.khalti_secret_key_encrypted, raw_body)
+
+    def test_shipping_configured_flag_and_checkout_quote_fallback(self):
+        from catalog.models import Variant
+
+        res = self._create_store(slug="shipping-flag-shop", name="Shipping Flag Shop")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        store = Store.objects.get(slug="shipping-flag-shop")
+
+        with TenantDatabaseContext(store.id):
+            product = Product.objects.create(
+                store=store,
+                slug="ceramic-bowl",
+                name="Ceramic Bowl",
+                is_active=True,
+            )
+            variant = Variant.objects.create(
+                store=store,
+                product=product,
+                sku="CB-01",
+                label="Standard",
+                price_minor=150000,
+                in_stock=True,
+                is_active=True,
+            )
+
+        # Checkout quote still applies transparent default rates while shipping_configured is False
+        self.client.force_authenticate(user=None)
+        quote_res = self.client.post(
+            "/api/stores/shipping-flag-shop/checkout/quote/",
+            {"items": [{"variant_id": variant.id, "quantity": 1}], "district": "Kathmandu"},
+            format="json",
+        )
+        self.assertEqual(quote_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(quote_res.json()["shipping_minor"], 10000)
+
+        # Saving unrelated settings with unchanged default shipping rates keeps shipping_configured=False
+        self.client.force_authenticate(user=self.merchant)
+        patch_general = self.client.patch(
+            "/api/merchant/stores/shipping-flag-shop/settings/",
+            {
+                "tagline": "Locally thrown ceramics",
+                "category": "Handmade Ceramics",
+                "inside_valley_shipping_minor": 10000,
+                "outside_valley_shipping_minor": 20000,
+                "free_shipping_threshold_minor": None,
+            },
+            format="json",
+        )
+        self.assertEqual(patch_general.status_code, status.HTTP_200_OK)
+        store.refresh_from_db()
+        self.assertEqual(store.category, "Handmade Ceramics")
+        self.assertFalse(store.shipping_configured)
+
+        # Updating shipping rate marks shipping_configured=True and completes checklist.has_shipping
+        patch_shipping = self.client.patch(
+            "/api/merchant/stores/shipping-flag-shop/settings/",
+            {"inside_valley_shipping_minor": 15000},
+            format="json",
+        )
+        self.assertEqual(patch_shipping.status_code, status.HTTP_200_OK)
+        store.refresh_from_db()
+        self.assertTrue(store.shipping_configured)
+
+        ov_res = self.client.get("/api/merchant/stores/shipping-flag-shop/overview/")
+        self.assertIs(ov_res.json()["checklist"]["has_shipping"], True)
+
+    def test_editing_product_name_price_or_image_clears_starter_default(self):
+        from catalog.models import Variant
+
+        res = self._create_store(slug="starter-edit-shop", name="Starter Edit Shop")
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        store = Store.objects.get(slug="starter-edit-shop")
+
+        with TenantDatabaseContext(store.id):
+            product = Product.objects.create(
+                store=store,
+                slug="starter-offering",
+                name="Starter Edit Shop Signature Offering",
+                image_url="/images/products/placeholder.svg",
+                is_active=True,
+                is_starter_default=True,
+            )
+            variant = Variant.objects.create(
+                store=store,
+                product=product,
+                sku="SE-01",
+                label="Standard",
+                price_minor=125000,
+                in_stock=True,
+                is_active=True,
+            )
+
+        self.client.force_authenticate(user=self.merchant)
+
+        # Unrelated field edit keeps is_starter_default=True
+        self.client.patch(
+            f"/api/merchant/stores/starter-edit-shop/products/{product.id}/",
+            {"description": "Just tweaked description"},
+            format="json",
+        )
+        with TenantDatabaseContext(store.id):
+            product.refresh_from_db()
+            self.assertTrue(product.is_starter_default)
+
+        # Name edit clears is_starter_default
+        self.client.patch(
+            f"/api/merchant/stores/starter-edit-shop/products/{product.id}/",
+            {"name": "roti sabji"},
+            format="json",
+        )
+        with TenantDatabaseContext(store.id):
+            product.refresh_from_db()
+            self.assertFalse(product.is_starter_default)
+            Product.objects.filter(id=product.id).update(is_starter_default=True)
+
+        # Image edit clears is_starter_default
+        self.client.patch(
+            f"/api/merchant/stores/starter-edit-shop/products/{product.id}/",
+            {"image_url": "https://res.cloudinary.com/demo/image/upload/v1/roti.jpg"},
+            format="json",
+        )
+        with TenantDatabaseContext(store.id):
+            product.refresh_from_db()
+            self.assertFalse(product.is_starter_default)
+            Product.objects.filter(id=product.id).update(is_starter_default=True)
+
+        # Variant price edit clears is_starter_default
+        self.client.patch(
+            f"/api/merchant/stores/starter-edit-shop/products/{product.id}/variants/{variant.id}/",
+            {"price_minor": 99000},
+            format="json",
+        )
+        with TenantDatabaseContext(store.id):
+            product.refresh_from_db()
+            self.assertFalse(product.is_starter_default)
+
+    def test_migration_starter_pattern_conservatism_and_shipping_backfill(self):
+        import importlib
+        from django.apps import apps as django_apps
+        from catalog.starter_patterns import is_untouched_starter_product
+        from orders.models import Order
+        from stores.models import Customer
+
+        # Untouched legacy and newer starter rows must match
+        self.assertTrue(
+            is_untouched_starter_product(
+                "rohitstore",
+                "rohitstore",
+                "starter-offering",
+                "rohitstore Signature Offering",
+                "/images/products/placeholder.svg",
+            )
+        )
+        self.assertTrue(
+            is_untouched_starter_product(
+                "aaa",
+                "AAA",
+                "aaa-wild-cliff-honey",
+                "Raw Himalayan Wild Cliff Honey",
+                "/images/products/himalayan-honey.svg",
+            )
+        )
+
+        # Edited starter product (e.g. adi's roti sabji with real image, or partial edit) stays unflagged
+        self.assertFalse(
+            is_untouched_starter_product(
+                "adi",
+                "adi",
+                "starter-offering",
+                "roti sabji",
+                "https://res.cloudinary.com/demo/image/upload/v1/roti.jpg",
+            )
+        )
+        self.assertFalse(
+            is_untouched_starter_product(
+                "adi",
+                "adi",
+                "starter-offering",
+                "roti sabji",
+                "/images/products/placeholder.svg",
+            )
+        )
+        self.assertFalse(
+            is_untouched_starter_product(
+                "adi",
+                "adi",
+                "starter-offering",
+                "adi Signature Offering",
+                "https://res.cloudinary.com/demo/image/upload/v1/roti.jpg",
+            )
+        )
+
+        # Backfill shipping_configured + starter_default migration helpers
+        mig_shipping = importlib.import_module("stores.migrations.0012_store_shipping_configured_alter_store_category")
+        mig_catalog = importlib.import_module("catalog.migrations.0005_product_is_starter_default")
+
+        s_default = Store.objects.create(name="Default Unconfigured", slug="mig-default-unconf")
+        s_custom = Store.objects.create(
+            name="Custom Rates",
+            slug="mig-custom-rates",
+            inside_valley_shipping_minor=15000,
+        )
+        s_ordered = Store.objects.create(name="Has Orders", slug="mig-has-orders")
+        with TenantDatabaseContext(s_ordered.id):
+            cust = Customer.objects.create(store=s_ordered, email="buyer@example.com", full_name="Buyer")
+            Order.objects.create(
+                store=s_ordered,
+                customer=cust,
+                order_number="MIG-ORD-1",
+                subtotal_minor=50000,
+                total_minor=60000,
+            )
+
+        s_adi = Store.objects.create(name="adi", slug="mig-adi")
+        with TenantDatabaseContext(s_adi.id):
+            untouched = Product.objects.create(
+                store=s_adi,
+                slug="starter-offering",
+                name="adi Signature Offering",
+                image_url="/images/products/placeholder.svg",
+            )
+            edited = Product.objects.create(
+                store=s_adi,
+                slug="mig-adi-signature-offering",
+                name="roti sabji",
+                image_url="https://res.cloudinary.com/demo/image/upload/roti.jpg",
+            )
+
+        mig_shipping.backfill_shipping_configured(django_apps, None)
+        mig_catalog.backfill_starter_default_products(django_apps, None)
+
+        s_default.refresh_from_db()
+        s_custom.refresh_from_db()
+        s_ordered.refresh_from_db()
+        self.assertFalse(s_default.shipping_configured)
+        self.assertTrue(s_custom.shipping_configured)
+        self.assertTrue(s_ordered.shipping_configured)
+
+        with TenantDatabaseContext(s_adi.id):
+            untouched.refresh_from_db()
+            edited.refresh_from_db()
+            self.assertTrue(untouched.is_starter_default)
+            self.assertFalse(edited.is_starter_default)
+
+    def test_demo_seed_commands_still_work(self):
+        from django.core.management import call_command
+        from core.tenant_context import reset_current_tenant_id
+
+        expected = [
+            ("seed_brewmellow", "brewmellow", False),
+            ("seed_himalayan_artisans", "himalayan-artisans", True),
+            ("seed_ktm_streetwear", "ktm-streetwear", True),
+            ("seed_himalayan_roasters", "himalayan-roasters", True),
+        ]
+        for cmd_name, slug, needs_tenant_ctx in expected:
+            try:
+                if needs_tenant_ctx:
+                    shell_store, _ = Store.objects.get_or_create(
+                        slug=slug,
+                        defaults={"name": slug},
+                    )
+                    with TenantDatabaseContext(shell_store.id):
+                        call_command(cmd_name)
+                else:
+                    call_command(cmd_name)
+            finally:
+                reset_current_tenant_id()
+
+            store = Store.objects.get(slug=slug)
+            with TenantDatabaseContext(store.id):
+                qs = Product.objects.for_store(store)
+                self.assertGreater(qs.count(), 0, f"{cmd_name} seeded 0 products")
+                self.assertFalse(
+                    qs.filter(is_starter_default=True).exists(),
+                    f"{cmd_name} products must not be flagged is_starter_default",
+                )
+

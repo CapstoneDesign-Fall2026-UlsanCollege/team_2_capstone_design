@@ -379,7 +379,7 @@ export default async function StorefrontOrderDetailPage({
       </main>
 
       <footer className="border-t border-[var(--border)] bg-[var(--surface)] py-6 px-4 text-center text-xs text-[var(--ink-2)]">
-        <p>{store.name} · Powered by ShopCraft</p>
+        <p>{store.name}</p>
       </footer>
     </div>
   );
