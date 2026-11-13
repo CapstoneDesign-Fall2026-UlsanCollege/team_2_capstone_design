@@ -16,19 +16,18 @@ export function StorefrontFloatingWhatsApp({
   const [isOpen, setIsOpen] = useState(false);
   const pathname = usePathname();
 
-  // Hide floating WhatsApp button on checkout to prevent collision with sticky payment bar
-  if (pathname?.includes("/checkout")) {
+  // Hide floating WhatsApp button on checkout or if merchant has not configured a phone
+  const cleanPhone = (contactPhone || "").trim().replace(/\D/g, "");
+  if (pathname?.includes("/checkout") || !cleanPhone || cleanPhone === "9801234567") {
     return null;
   }
 
-  const phone = contactPhone?.trim() || "9801234567";
-  const cleanPhone = phone.replace(/\D/g, "");
   const formattedPhone = cleanPhone.startsWith("977")
     ? cleanPhone
     : `977${cleanPhone}`;
 
   const defaultMessage = encodeURIComponent(
-    `Namaste! I'm browsing ${storeName} on ShopCraft and would like to ask a question.`
+    `Namaste! I'm browsing ${storeName} and would like to ask a question.`
   );
   const whatsappUrl = `https://wa.me/${formattedPhone}?text=${defaultMessage}`;
 

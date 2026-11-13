@@ -5,6 +5,7 @@ import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { CheckoutForm, CheckoutSkeleton } from "@/components/storefront/CheckoutForm";
 import { StorePublicMetadata } from "@/lib/api";
 import { getServerApiOrigin } from "@/lib/env";
+import { getStorefrontPaymentAndDeliveryClaims } from "@/lib/storefront-helpers";
 
 async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null> {
   const origin = getServerApiOrigin();
@@ -12,37 +13,10 @@ async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null
     const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
       cache: "no-store",
     });
-    if (res.status === 404) return null;
-    if (!res.ok) {
-      return {
-        slug: storeSlug,
-        name: storeSlug,
-        tagline: "",
-        currency: "NPR",
-        theme_preset: "editorial-warm",
-        logo_url: "",
-        accent_color: "",
-        contact_phone: "9801234567",
-        inside_valley_shipping_minor: 10000,
-        outside_valley_shipping_minor: 20000,
-        free_shipping_threshold_minor: null,
-      };
-    }
+    if (res.status === 404 || !res.ok) return null;
     return await res.json();
   } catch {
-    return {
-      slug: storeSlug,
-      name: storeSlug,
-      tagline: "",
-      currency: "NPR",
-      theme_preset: "editorial-warm",
-      logo_url: "",
-      accent_color: "",
-      contact_phone: "9801234567",
-      inside_valley_shipping_minor: 10000,
-      outside_valley_shipping_minor: 20000,
-      free_shipping_threshold_minor: null,
-    };
+    return null;
   }
 }
 
@@ -89,7 +63,8 @@ export default async function StorefrontCheckoutPage({
             Checkout
           </h1>
           <p className="text-xs text-[var(--ink-2)]">
-            Direct purchase from {store.name} · Khalti or Cash on Delivery
+            {getStorefrontPaymentAndDeliveryClaims(store).heroPromiseLine ||
+              `Direct purchase from ${store.name}`}
           </p>
         </div>
 

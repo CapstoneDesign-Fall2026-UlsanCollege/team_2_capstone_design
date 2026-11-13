@@ -98,7 +98,7 @@ function CreateStoreContent() {
   const [storeName, setStoreName] = useState(initialName);
   const [customSlug, setCustomSlug] = useState("");
   const [isEditingSlug, setIsEditingSlug] = useState(false);
-  const [category, setCategory] = useState("Specialty Coffee & Tea");
+  const [category, setCategory] = useState("");
   const [tagline, setTagline] = useState("");
 
   const [contactPhone, setContactPhone] = useState("");
@@ -346,24 +346,24 @@ function CreateStoreContent() {
           {/* Setup Checklist Preview */}
           <div className="p-4 rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-left space-y-2.5">
             <span className="text-xs font-bold text-[var(--sc-ink,#111318)] block">
-              Automatic Nepal Rails Activated:
+              Next Steps in Your Merchant Console:
             </span>
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-2 text-xs text-[var(--sc-ink-2,#4B5060)]">
               <div className="flex items-center gap-2">
                 <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Signature product seeded</span>
+                <span>Storefront URL reserved &amp; live</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Khalti Test Wallet linked</span>
+                <CheckCircle2 className="w-4 h-4 text-[var(--sc-ink-3,#8B90A0)] shrink-0" />
+                <span>Add your first product in Catalog</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>Cash on Delivery active</span>
+                <CheckCircle2 className="w-4 h-4 text-[var(--sc-ink-3,#8B90A0)] shrink-0" />
+                <span>Set delivery fees &amp; thresholds</span>
               </div>
               <div className="flex items-center gap-2">
-                <CheckCircle2 className="w-4 h-4 text-emerald-600 shrink-0" />
-                <span>7-Province shipping rates set</span>
+                <CheckCircle2 className="w-4 h-4 text-[var(--sc-ink-3,#8B90A0)] shrink-0" />
+                <span>Connect Khalti or configure COD</span>
               </div>
             </div>
           </div>
@@ -524,7 +524,7 @@ function CreateStoreContent() {
             {/* Category Selector: "What are you selling?" */}
             <div className="space-y-2 pt-2">
               <label className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-semibold">
-                2. What will you be selling? *
+                2. What will you be selling? (Optional)
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                 {CATEGORY_OPTIONS.map((cat) => {
@@ -532,7 +532,7 @@ function CreateStoreContent() {
                   return (
                     <div
                       key={cat.id}
-                      onClick={() => setCategory(cat.id)}
+                      onClick={() => setCategory(isSelected ? "" : cat.id)}
                       className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
                         isSelected
                           ? "border-[var(--sc-ink,#111318)] bg-[var(--sc-paper,#FAFAF7)] shadow-2xs"

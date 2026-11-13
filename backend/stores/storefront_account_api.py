@@ -305,11 +305,14 @@ class StorefrontAccountDetailView(StorePublicMixin, APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request, store_slug):
+        lookup_only = request.query_params.get("lookup_only") == "1"
         customer = Customer.objects.for_store(self.store).filter(user=request.user).first()
-        if not customer:
+        if not customer and not lookup_only:
             customer = provision_store_customer(self.store, request.user)
 
-        if customer.user_id != request.user.id:
+        if customer is None:
+            cust_payload = None
+        elif customer.user_id != request.user.id:
             cust_payload = {
                 "id": None,
                 "email": request.user.email,

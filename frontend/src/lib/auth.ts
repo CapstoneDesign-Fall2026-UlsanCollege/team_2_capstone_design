@@ -8,6 +8,7 @@ import {
   StorefrontCustomerProfile,
   UserProfile,
 } from "./api";
+import { getStorefrontAccountBadge } from "./storefront-helpers";
 
 const AUTH_CHANGE_EVENT = "shopcraft:auth-change";
 
@@ -36,16 +37,22 @@ export function useStorefrontAuth(storeSlug: string): StorefrontAuthState {
     try {
       const session = await fetchSession();
       if (session.authenticated && session.user) {
-        setIsAuthenticated(true);
-        setUser(session.user);
         try {
-          const account = await fetchStorefrontAccount(storeSlug);
-          setCustomer(account.customer);
-          if (account.user) {
-            setUser(account.user);
+          const account = await fetchStorefrontAccount(storeSlug, { lookupOnly: true });
+          const { isStorefrontCustomer } = getStorefrontAccountBadge(true, account.customer);
+          if (isStorefrontCustomer && account.customer) {
+            setIsAuthenticated(true);
+            setCustomer(account.customer);
+            setUser(account.user || session.user);
+          } else {
+            setIsAuthenticated(false);
+            setUser(null);
+            setCustomer(null);
           }
         } catch {
-          // If customer profile fetch fails, user is still authenticated
+          setIsAuthenticated(false);
+          setUser(null);
+          setCustomer(null);
         }
       } else {
         setIsAuthenticated(false);

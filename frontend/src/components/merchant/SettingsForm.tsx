@@ -184,6 +184,10 @@ export function SettingsForm({
       cod_enabled: codEnabled,
     };
 
+    if (section === "shipping") {
+      payload.shipping_configured = true;
+    }
+
     if (isOwner) {
       payload.khalti_mode = khaltiMode;
       payload.custom_domain = customDomain.trim().toLowerCase();

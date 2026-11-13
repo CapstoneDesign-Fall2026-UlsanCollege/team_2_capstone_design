@@ -182,24 +182,21 @@ const CATEGORY_MEDIA_MAP: Record<string, CategoryMediaConfig> = {
     ],
   },
   default: {
-    heroImage:
-      "/images/products/placeholder.svg",
+    heroImage: "",
     badge: "Verified Nepali Merchant · Small-Batch Craftsmanship",
     headline: "Carefully Curated Local Goods Handcrafted in Nepal",
     tagline:
-      "High standards, ethical local sourcing, and guaranteed doorstep deliveries across Nepal.",
+      "High standards, ethical local sourcing, and reliable local support.",
     originDistrict: "Kathmandu Valley, Nepal",
     productFallbacks: [
       {
         name: "Signature Craft Small-Batch Edition",
-        image:
-          "/images/products/placeholder.svg",
+        image: "",
         category: "Signature",
       },
       {
         name: "Artisanal Studio Edition Reserve",
-        image:
-          "/images/products/placeholder.svg",
+        image: "",
         category: "Reserve",
       },
       {

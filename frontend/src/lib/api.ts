@@ -58,6 +58,8 @@ export interface StorePublicMetadata {
   inside_valley_shipping_minor: number;
   outside_valley_shipping_minor: number;
   free_shipping_threshold_minor: number | null;
+  shipping_configured?: boolean;
+  has_khalti?: boolean;
   cod_enabled?: boolean;
   custom_domain?: string;
 }
@@ -326,7 +328,7 @@ export interface StorefrontCustomerProfile {
 
 export interface StorefrontAccountResponse {
   user: UserProfile;
-  customer: StorefrontCustomerProfile;
+  customer: StorefrontCustomerProfile | null;
 }
 
 export interface StorefrontOrderSummary {
@@ -374,9 +376,13 @@ export async function verifyStorefrontGoogleAuth(storeSlug: string, credential: 
   });
 }
 
-export async function fetchStorefrontAccount(storeSlug: string) {
+export async function fetchStorefrontAccount(
+  storeSlug: string,
+  options?: { lookupOnly?: boolean }
+) {
+  const qs = options?.lookupOnly ? "?lookup_only=1" : "";
   return apiFetch<StorefrontAccountResponse>(
-    `/api/stores/${encodeURIComponent(storeSlug)}/account/`
+    `/api/stores/${encodeURIComponent(storeSlug)}/account/${qs}`
   );
 }
 
@@ -532,6 +538,7 @@ export interface MerchantSettingsUpdatePayload {
   inside_valley_shipping_minor?: number;
   outside_valley_shipping_minor?: number;
   free_shipping_threshold_minor?: number | null;
+  shipping_configured?: boolean;
   cod_enabled?: boolean;
   custom_domain?: string;
   khalti_mode?: "TEST" | "LIVE";

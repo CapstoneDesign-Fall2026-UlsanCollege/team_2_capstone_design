@@ -94,7 +94,12 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const [streetLandmark, setStreetLandmark] = useState<string>("");
 
   // 3. Payment, Promo Code & Quote State
-  const [paymentMethod, setPaymentMethod] = useState<"KHALTI" | "COD">("KHALTI");
+  const isKhaltiUnavailable = store.has_khalti === false;
+  const isStoreCodDisabled = store.cod_enabled === false;
+  const isCodUnavailable = isStoreCodDisabled;
+  const [paymentMethod, setPaymentMethod] = useState<"KHALTI" | "COD">(
+    isKhaltiUnavailable && !isCodUnavailable ? "COD" : "KHALTI"
+  );
   const [promoInput, setPromoInput] = useState<string>("");
   const [appliedPromoCode, setAppliedPromoCode] = useState<string>("");
   const [promoError, setPromoError] = useState<string | null>(null);
@@ -103,10 +108,6 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const [quote, setQuote] = useState<CheckoutQuoteResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
-
-  // Check if merchant disabled COD
-  const isStoreCodDisabled = store.cod_enabled === false;
-  const isCodUnavailable = isStoreCodDisabled;
 
   // 1. Fetch Session & Saved Addresses on Mount & on Auth Change
   useEffect(() => {
@@ -129,11 +130,13 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
           try {
             const account = await fetchStorefrontAccount(store.slug);
             if (!mounted) return;
-            if (account.customer?.phone) {
-              setPhone((prev) => prev || account.customer.phone || "");
+            const customerPhone = account.customer?.phone;
+            if (customerPhone) {
+              setPhone((prev) => prev || customerPhone);
             }
-            if (account.customer?.full_name) {
-              setRecipientName((prev) => prev || account.customer.full_name || "");
+            const customerName = account.customer?.full_name;
+            if (customerName) {
+              setRecipientName((prev) => prev || customerName);
             }
           } catch {
             // Customer profile not created yet or not accessible
@@ -211,12 +214,14 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
       });
   }, [items, district, store.slug, appliedPromoCode]);
 
-  // If store disabled COD, automatically switch to KHALTI
+  // Keep paymentMethod aligned with store-enabled payment providers
   useEffect(() => {
-    if (isCodUnavailable && paymentMethod === "COD") {
+    if (isCodUnavailable && !isKhaltiUnavailable && paymentMethod === "COD") {
       Promise.resolve().then(() => setPaymentMethod("KHALTI"));
+    } else if (isKhaltiUnavailable && !isCodUnavailable && paymentMethod === "KHALTI") {
+      Promise.resolve().then(() => setPaymentMethod("COD"));
     }
-  }, [isCodUnavailable, paymentMethod]);
+  }, [isCodUnavailable, isKhaltiUnavailable, paymentMethod]);
 
   const handleApplyPromo = async () => {
     const clean = promoInput.trim().toUpperCase();
@@ -763,18 +768,24 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
           {/* Khalti Card */}
           <div
             role="button"
-            tabIndex={0}
-            onClick={() => setPaymentMethod("KHALTI")}
+            tabIndex={isKhaltiUnavailable ? -1 : 0}
+            onClick={() => {
+              if (isKhaltiUnavailable) return;
+              setPaymentMethod("KHALTI");
+            }}
             onKeyDown={(e) => {
+              if (isKhaltiUnavailable) return;
               if (e.key === "Enter" || e.key === " ") {
                 e.preventDefault();
                 setPaymentMethod("KHALTI");
               }
             }}
-            className={`min-h-[72px] rounded-xl border p-4 flex items-center justify-between cursor-pointer transition-colors ${
-              paymentMethod === "KHALTI"
-                ? "border-2 border-[var(--ink)] bg-[var(--canvas)]"
-                : "border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--ink)]"
+            className={`min-h-[72px] rounded-xl border p-4 flex items-center justify-between transition-colors ${
+              isKhaltiUnavailable
+                ? "border border-[var(--border)] bg-[var(--canvas)] opacity-50 cursor-not-allowed"
+                : paymentMethod === "KHALTI"
+                ? "border-2 border-[var(--ink)] bg-[var(--canvas)] cursor-pointer"
+                : "border border-[var(--border)] bg-[var(--surface)] hover:border-[var(--ink)] cursor-pointer"
             }`}
           >
             <div className="flex items-center gap-3">
@@ -782,11 +793,18 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                 <CreditCard className="w-5 h-5" aria-hidden="true" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-[var(--ink)]">
-                  Khalti
+                <p className="text-sm font-semibold text-[var(--ink)] flex items-center gap-1.5">
+                  <span>Khalti</span>
+                  {isKhaltiUnavailable && (
+                    <span className="text-[10px] px-1.5 py-0.5 rounded border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-2)]">
+                      Unavailable
+                    </span>
+                  )}
                 </p>
                 <p className="text-xs text-[var(--ink-2)]">
-                  Digital Wallet · eBanking · Mobile
+                  {isKhaltiUnavailable
+                    ? "Not configured by merchant"
+                    : "Digital Wallet · eBanking · Mobile"}
                 </p>
               </div>
             </div>
@@ -840,7 +858,9 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                 </p>
                 <p className="text-xs text-[var(--ink-2)]">
                   {isStoreCodDisabled
-                    ? "Store supports Khalti payment only"
+                    ? isKhaltiUnavailable
+                      ? "Cash on Delivery disabled"
+                      : "Store supports Khalti payment only"
                     : `Pay ${formatNpr(computedTotal)} cash to rider`}
                 </p>
               </div>

@@ -261,7 +261,7 @@ export function CartDrawer() {
               </button>
 
               <p className="text-center text-xs text-[var(--ink-2)]">
-                Kathmandu Valley 1–2 days · Khalti or Cash on Delivery
+                Shipping and payment options are shown at checkout
               </p>
             </div>
           )}

@@ -14,6 +14,14 @@ import {
   X,
 } from "lucide-react";
 import { formatNpr, ProductItem, StorePublicMetadata } from "@/lib/api";
+import {
+  buildThemePreviewDemoProducts,
+  cleanStoreCategory,
+  getStorefrontAccountBadge,
+  getStorefrontPaymentAndDeliveryClaims,
+  isPlaceholderText,
+  sanitizeStorefrontImageUrl,
+} from "@/lib/storefront-helpers";
 import { StorefrontHeader } from "./StorefrontHeader";
 import { StoreImage } from "./StoreImage";
 import { ProductGrid } from "./ProductGrid";
@@ -23,33 +31,58 @@ import { useAccount } from "./AccountContext";
 import { useStorefrontAuth } from "@/lib/auth";
 import { Button } from "@/components/ui/button";
 
-function isPlaceholderText(text?: string | null): boolean {
-  if (!text) return true;
-  const trimmed = text.trim();
-  if (!trimmed) return true;
-  const lower = trimmed.toLowerCase();
+function StoreHeroFallback({
+  storeName,
+  logoUrl,
+}: {
+  storeName: string;
+  logoUrl?: string | null;
+}) {
+  const safeLogoUrl = sanitizeStorefrontImageUrl(logoUrl);
+  const initial = (storeName || "S").trim().charAt(0).toUpperCase();
+
   return (
-    lower === "general" ||
-    lower === "aaa" ||
-    lower === "placeholder" ||
-    lower === "online storefront · nepal" ||
-    lower === "online storefront" ||
-    lower === "official online store"
+    <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 bg-[var(--surface)] text-center">
+      {safeLogoUrl ? (
+        <div className="relative w-20 h-20 rounded-xl border border-[var(--border)] bg-[var(--canvas)] overflow-hidden">
+          <StoreImage
+            src={safeLogoUrl}
+            alt={storeName}
+            sizes="80px"
+            className="object-contain p-2"
+            fallback={
+              <div className="w-full h-full flex items-center justify-center font-serif text-2xl font-semibold text-[var(--ink)]">
+                {initial}
+              </div>
+            }
+          />
+        </div>
+      ) : (
+        <div className="w-16 h-16 rounded-xl border border-[var(--border)] bg-[var(--canvas)] flex items-center justify-center font-serif text-2xl font-semibold text-[var(--ink)]">
+          {initial}
+        </div>
+      )}
+      <span className="font-serif text-lg sm:text-xl font-semibold text-[var(--ink)] max-w-xs truncate">
+        {storeName}
+      </span>
+    </div>
   );
 }
 
 export interface StorefrontCatalogViewProps {
   store: StorePublicMetadata;
   products: ProductItem[];
+  isThemePreview?: boolean;
 }
 
 export function StorefrontCatalogView({
   store,
   products = [],
+  isThemePreview = false,
 }: StorefrontCatalogViewProps) {
   const { itemCount, openCart, addItem } = useCart();
   const { openAccount } = useAccount();
-  const { isAuthenticated, user, customer } = useStorefrontAuth(store.slug);
+  const { isAuthenticated, customer } = useStorefrontAuth(store.slug);
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState<boolean>(false);
   const [isMobileFilterOpen, setIsMobileFilterOpen] = useState<boolean>(false);
@@ -62,10 +95,16 @@ export function StorefrontCatalogView({
   const [searchOpen, setSearchOpen] = useState<boolean>(false);
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
-  // Pure catalog from backend (no hardcoded fallback)
+  // Real catalog unless theme-editor preview explicitly requests ephemeral preview items
   const fullCatalog: ProductItem[] = useMemo(() => {
-    return products || [];
-  }, [products]);
+    if (products && products.length > 0) {
+      return products;
+    }
+    if (isThemePreview) {
+      return buildThemePreviewDemoProducts(store);
+    }
+    return [];
+  }, [products, isThemePreview, store]);
 
   // Derived category list (ignoring placeholders)
   const availableCategories = useMemo(() => {
@@ -148,12 +187,12 @@ export function StorefrontCatalogView({
     );
   };
 
-  // Featured product (first available product with image and in stock, or first product)
+  // Featured product (first available product with valid image and in stock, or first product)
   const featuredProduct = useMemo(() => {
     if (!fullCatalog || fullCatalog.length === 0) return null;
     return (
-      fullCatalog.find((p) => p.image_url && p.variants?.some((v) => v.in_stock)) ||
-      fullCatalog.find((p) => p.image_url) ||
+      fullCatalog.find((p) => sanitizeStorefrontImageUrl(p.image_url) && p.variants?.some((v) => v.in_stock)) ||
+      fullCatalog.find((p) => sanitizeStorefrontImageUrl(p.image_url)) ||
       fullCatalog[0]
     );
   }, [fullCatalog]);
@@ -182,13 +221,12 @@ export function StorefrontCatalogView({
   }, [fullCatalog]);
 
   const cleanCategory = useMemo(() => {
-    if (!store.category || isPlaceholderText(store.category)) return "";
-    return store.category.trim();
+    return cleanStoreCategory(store.category);
   }, [store.category]);
 
   const shopButtonText = useMemo(() => {
     const formattedPrice = minCatalogPriceMinor > 0 ? formatNpr(minCatalogPriceMinor) : null;
-    const categoryPart = cleanCategory ? `Shop ${cleanCategory}` : "Shop collection";
+    const categoryPart = cleanCategory ? `Shop ${cleanCategory}` : "Shop all";
     return formattedPrice ? `${categoryPart} · from ${formattedPrice}` : categoryPart;
   }, [cleanCategory, minCatalogPriceMinor]);
 
@@ -207,16 +245,22 @@ export function StorefrontCatalogView({
   }, [store.tagline]);
 
   const heroImageUrl = useMemo(() => {
-    return featuredProduct?.image_url || store.banner_url || null;
+    return (
+      sanitizeStorefrontImageUrl(featuredProduct?.image_url) ||
+      sanitizeStorefrontImageUrl(store.banner_url) ||
+      null
+    );
   }, [featuredProduct, store.banner_url]);
 
-  const waUrl = useMemo(() => {
-    if (!store.contact_phone) return null;
-    const clean = store.contact_phone.replace(/\D/g, "").replace(/^0+/, "");
-    if (!clean) return null;
-    const phoneWithCountry = clean.startsWith("977") ? clean : `977${clean}`;
-    return `https://wa.me/${phoneWithCountry}?text=Hi%20${encodeURIComponent(store.name)}%2C%20I%20have%20an%20inquiry%20about%20your%20products.`;
-  }, [store.contact_phone, store.name]);
+  const claims = useMemo(() => {
+    return getStorefrontPaymentAndDeliveryClaims(store);
+  }, [store]);
+
+  const waUrl = claims.waUrl;
+  const accountBadge = useMemo(
+    () => getStorefrontAccountBadge(isAuthenticated, customer),
+    [isAuthenticated, customer]
+  );
 
   const handleQuickAddProduct = (product: ProductItem) => {
     if (product.variants && product.variants.length > 1) {
@@ -260,28 +304,36 @@ export function StorefrontCatalogView({
     scrollToCollection();
   };
 
-  // Dynamic Store FAQs
-  const STORE_FAQS = [
-    {
-      q: "How does Cash on Delivery (COD) work?",
-      a: "Select Cash on Delivery during checkout. Our delivery courier brings your package directly to your doorstep in Kathmandu or nationwide. You can inspect the package and pay the courier with cash or via mobile banking QR.",
-    },
-    {
-      q: "What are your delivery times and shipping rates?",
-      a: `Inside Kathmandu Valley orders typically arrive within 24 to 48 hours for ${formatNpr(store.inside_valley_shipping_minor || 10000)}. Outside Kathmandu Valley deliveries take 2 to 4 business days via express courier for ${formatNpr(store.outside_valley_shipping_minor || 20000)}.${store.free_shipping_threshold_minor ? ` Orders over ${formatNpr(store.free_shipping_threshold_minor)} qualify for free delivery!` : ""}`,
-    },
-    {
-      q: "How do I pay with Khalti?",
-      a: "Choose Khalti at checkout. You will be securely redirected to the Khalti payment gateway where you can authenticate with your mobile number and MPIN or scan the instant Fonepay/Khalti QR code. Once confirmed, you return right back to this storefront with your verified receipt.",
-    },
-    {
+  // Dynamic Store FAQs (driven strictly by configured store capabilities)
+  const STORE_FAQS = useMemo(() => {
+    const faqs: Array<{ q: string; a: string }> = [];
+    if (claims.codEnabled) {
+      faqs.push({
+        q: "How does Cash on Delivery (COD) work?",
+        a: "Select Cash on Delivery during checkout. Pay the courier upon delivery with cash or mobile banking QR.",
+      });
+    }
+    if (claims.shippingConfigured) {
+      faqs.push({
+        q: "What are your delivery times and shipping rates?",
+        a: `Inside Kathmandu Valley orders typically arrive within 1 to 2 days for ${formatNpr(store.inside_valley_shipping_minor || 10000)}. Outside Kathmandu Valley deliveries take 2 to 4 business days via courier for ${formatNpr(store.outside_valley_shipping_minor || 20000)}.${store.free_shipping_threshold_minor ? ` Orders over ${formatNpr(store.free_shipping_threshold_minor)} qualify for free delivery.` : ""}`,
+      });
+    }
+    if (claims.hasKhalti) {
+      faqs.push({
+        q: "How do I pay with Khalti?",
+        a: "Choose Khalti at checkout to complete payment securely using your Khalti wallet, eBanking, or QR code.",
+      });
+    }
+    faqs.push({
       q: "Can I track my order status?",
-      a: "Yes! As soon as your order is placed, you receive an instant confirmation receipt page with real-time status updates as your package transitions from packaged to out for delivery.",
-    },
-  ];
+      a: "Yes. As soon as your order is placed, you receive a confirmation receipt link with live order status updates.",
+    });
+    return faqs;
+  }, [claims, store.inside_valley_shipping_minor, store.outside_valley_shipping_minor, store.free_shipping_threshold_minor]);
 
   return (
-    <div className="w-full min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans antialiased flex flex-col pb-20 md:pb-0">
+    <div className={`w-full min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans antialiased flex flex-col ${fullCatalog.length > 0 && featuredProduct ? "pb-20 md:pb-0" : ""}`}>
       
       {/* 1. Header with Static Merchant Announcement Bar */}
       <StorefrontHeader
@@ -290,12 +342,14 @@ export function StorefrontCatalogView({
         tagline={store.tagline}
         logoUrl={store.logo_url}
         cartCount={itemCount}
-        freeShippingThresholdMinor={store.free_shipping_threshold_minor}
+        freeShippingThresholdMinor={claims.shippingConfigured ? store.free_shipping_threshold_minor : null}
         categories={availableCategories}
         onOpenCart={openCart}
         onOpenAccount={openAccount}
-        isAuthenticated={isAuthenticated}
-        userInitial={(customer?.full_name || user?.full_name || user?.email || "")[0]?.toUpperCase() || null}
+        isAuthenticated={accountBadge.isStorefrontCustomer}
+        userInitial={accountBadge.userInitial}
+        showDeliveryLink={claims.shippingConfigured || claims.hasKhalti || claims.codEnabled}
+        deliveryLinkLabel={claims.shippingConfigured ? (claims.codEnabled ? "Delivery & COD" : "Delivery") : "Payment Options"}
         onOpenSearch={() => setSearchOpen((prev) => !prev)}
         onCatalogClick={scrollToCollection}
         onSelectCategory={handleNavCategorySelect}
@@ -380,12 +434,14 @@ export function StorefrontCatalogView({
                 )}
               </div>
 
-              <p className="pt-2 text-xs lg:text-sm text-[var(--ink-2)]">
-                Kathmandu Valley 1-2 days · Nationwide courier · Khalti or Cash on Delivery
-              </p>
+              {claims.heroPromiseLine && (
+                <p className="pt-2 text-xs lg:text-sm text-[var(--ink-2)]">
+                  {claims.heroPromiseLine}
+                </p>
+              )}
             </div>
 
-            {/* Right Column: Real product photo with caption row below */}
+            {/* Right Column: Real product photo or clean store-branded hero fallback */}
             <div>
               <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
                 <StoreImage
@@ -394,13 +450,7 @@ export function StorefrontCatalogView({
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority
                   fallback={
-                    <div
-                      className="w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)]"
-                      aria-hidden="true"
-                    >
-                      <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
-                      <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
-                    </div>
+                    <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
                   }
                 />
               </div>
@@ -453,13 +503,7 @@ export function StorefrontCatalogView({
                 sizes="(max-width: 768px) 100vw, 50vw"
                 priority
                 fallback={
-                  <div
-                    className="w-full h-full flex flex-col items-center justify-center p-6 text-[var(--ink-2)]"
-                    aria-hidden="true"
-                  >
-                    <Package className="w-12 h-12 stroke-[1.25] text-[var(--ink-2)] mb-2" />
-                    <span className="text-xs font-medium text-[var(--ink-2)]">No photo available</span>
-                  </div>
+                  <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
                 }
               />
             </div>
@@ -471,9 +515,11 @@ export function StorefrontCatalogView({
               </div>
             )}
 
-            <p className="text-xs text-[var(--ink-2)] pt-1">
-              Kathmandu Valley 1-2 days · Nationwide courier · Khalti or Cash on Delivery
-            </p>
+            {claims.heroPromiseLine && (
+              <p className="text-xs text-[var(--ink-2)] pt-1">
+                {claims.heroPromiseLine}
+              </p>
+            )}
 
             <div className="pt-1">
               <Button
@@ -491,7 +537,8 @@ export function StorefrontCatalogView({
       {/* 3. Catalog & Products Section */}
       <section id="collection-section" className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1">
         
-        {/* Controls: Desktop Bar (8px radius, no mono) */}
+        {/* Controls: Desktop Bar (shown when catalog has products) */}
+        {fullCatalog.length > 0 && (
         <div className="hidden sm:flex sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
           {/* Category Tabs */}
           <div className="flex flex-wrap items-center gap-2">
@@ -545,8 +592,10 @@ export function StorefrontCatalogView({
             </select>
           </div>
         </div>
+        )}
 
         {/* Controls: Mobile 44px Filter & Sort Trigger */}
+        {fullCatalog.length > 0 && (
         <div className="sm:hidden flex items-center justify-between gap-3 mb-6">
           <button
             type="button"
@@ -565,6 +614,7 @@ export function StorefrontCatalogView({
             {filteredProducts.length} {filteredProducts.length === 1 ? "item" : "items"}
           </span>
         </div>
+        )}
 
         {/* Catalog Body or Empty State */}
         {fullCatalog.length === 0 ? (
@@ -574,10 +624,10 @@ export function StorefrontCatalogView({
             </div>
             <div className="space-y-1.5">
               <h3 className="font-serif text-xl font-semibold text-[var(--ink)]">
-                Catalog in Preparation
+                Products coming soon
               </h3>
               <p className="text-xs text-[var(--ink-2)] leading-relaxed">
-                {store.name} hasn&apos;t published any items yet. We&apos;re stocking our shelves with fresh goods — please check back soon!
+                {store.name} hasn&apos;t added any products yet. Please check back soon.
               </p>
             </div>
 
@@ -649,10 +699,11 @@ export function StorefrontCatalogView({
             <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[var(--ink)]">
               {store.story_headline || `About ${store.name}`}
             </h2>
-            <p className="text-sm text-[var(--ink-2)] leading-relaxed">
-              {store.about_text || store.tagline ||
-                "Every item in our collection is carefully packaged and dispatched fresh. We believe in high standards, fair local sourcing, and reliable doorstep delivery across Nepal."}
-            </p>
+            {(store.about_text || description) && (
+              <p className="text-sm text-[var(--ink-2)] leading-relaxed">
+                {store.about_text || description}
+              </p>
+            )}
           </div>
 
           <div className="pt-2 flex flex-wrap items-center gap-4">
@@ -679,7 +730,8 @@ export function StorefrontCatalogView({
         </div>
       </section>
 
-      {/* 5. ONE Delivery & Payment Section (Say it once; no repeated trust chips, no fake reviews) */}
+      {/* 5. Conditional Delivery & Payment Section */}
+      {(claims.shippingConfigured || claims.hasKhalti || claims.codEnabled) && (
       <section className="w-full border-t border-[var(--border)] bg-[var(--surface)] py-12 px-4 sm:px-6 lg:px-8 text-left">
         <div className="max-w-4xl mx-auto space-y-8">
           <div className="space-y-1">
@@ -687,12 +739,13 @@ export function StorefrontCatalogView({
               Store Information
             </p>
             <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[var(--ink)]">
-              Delivery &amp; Payment in Nepal
+              {claims.shippingConfigured ? "Delivery & Payment in Nepal" : "Payment Options"}
             </h2>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-4 sm:gap-6">
+          <div className={`grid grid-cols-1 ${claims.shippingConfigured && (claims.hasKhalti || claims.codEnabled) ? "md:grid-cols-2" : ""} gap-4 sm:gap-6`}>
             {/* Delivery Card */}
+            {claims.shippingConfigured && (
             <div className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-5 sm:p-6 space-y-3">
               <h3 className="font-semibold text-sm text-[var(--ink)]">
                 Doorstep Delivery
@@ -716,30 +769,37 @@ export function StorefrontCatalogView({
                   </p>
                 )}
                 <p className="text-[11px] text-[var(--ink-2)] pt-1">
-                  Dispatched via verified local couriers with phone confirmation.
+                  Dispatched via local couriers with phone confirmation.
                 </p>
               </div>
             </div>
+            )}
 
             {/* Payment Methods Card */}
+            {(claims.hasKhalti || claims.codEnabled) && (
             <div className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-5 sm:p-6 space-y-3">
               <h3 className="font-semibold text-sm text-[var(--ink)]">
                 Payment Options
               </h3>
               <div className="space-y-2 text-xs text-[var(--ink-2)] leading-relaxed">
-                <div className="py-1 border-b border-[var(--border)]/60">
+                {claims.hasKhalti && (
+                <div className={`py-1 ${claims.codEnabled ? "border-b border-[var(--border)]/60" : ""}`}>
                   <span className="font-semibold text-[var(--ink)] block">Khalti ePayment</span>
                   <span>Instant wallet redirect, MPIN verification, or scan Fonepay QR.</span>
                 </div>
+                )}
+                {claims.codEnabled && (
                 <div className="py-1">
                   <span className="font-semibold text-[var(--ink)] block">Cash on Delivery (COD)</span>
-                  <span>Inspect package on arrival and pay cash or mobile banking QR to courier.</span>
+                  <span>Pay courier upon arrival with cash or mobile banking QR.</span>
                 </div>
+                )}
                 <p className="text-[11px] text-[var(--ink-2)] pt-1">
                   All transactions settled securely in Nepalese Rupees (NPR).
                 </p>
               </div>
             </div>
+            )}
           </div>
 
           {/* Clean FAQ Accordion */}
@@ -776,6 +836,7 @@ export function StorefrontCatalogView({
           </div>
         </div>
       </section>
+      )}
 
       {/* 6. Product Detail Sheet Drawer (Mobile quick add / variant picker) */}
       <ProductDetailSheet
@@ -913,7 +974,8 @@ export function StorefrontCatalogView({
         </div>
       )}
 
-      {/* 8. Mobile Sticky Bottom Bar (44px tap targets: price + Add to bag + WhatsApp icon) */}
+      {/* 8. Mobile Sticky Bottom Bar (shown only when products exist) */}
+      {fullCatalog.length > 0 && featuredProduct && (
       <aside
         aria-label="Quick order bar"
         className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[var(--surface)] border-t border-[var(--border)] p-3 flex items-center gap-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))]"
@@ -921,7 +983,7 @@ export function StorefrontCatalogView({
         <div className="flex flex-col shrink-0 min-w-[70px]">
           <span className="text-[10px] text-[var(--ink-2)] uppercase tracking-wider font-medium">Price</span>
           <span className="text-base font-semibold text-[var(--ink)] tabular-nums leading-none">
-            {featuredPriceMinor > 0 ? formatNpr(featuredPriceMinor) : "Rs. 0"}
+            {formatNpr(featuredPriceMinor)}
           </span>
         </div>
 
@@ -945,6 +1007,7 @@ export function StorefrontCatalogView({
           </a>
         )}
       </aside>
+      )}
 
       {/* 9. Multi-Column Storefront Footer */}
       <footer className="w-full border-t border-[var(--border)] bg-[var(--surface)] pt-12 pb-16 px-4 sm:px-6 lg:px-8 text-left">
@@ -956,10 +1019,11 @@ export function StorefrontCatalogView({
               <span className="font-serif text-lg font-semibold text-[var(--ink)] block">
                 {store.name}
               </span>
-              <p className="text-xs text-[var(--ink-2)] leading-relaxed max-w-sm">
-                {store.tagline ||
-                  "Quality goods delivered directly to your doorstep across Kathmandu Valley and nationwide."}
-              </p>
+              {description && (
+                <p className="text-xs text-[var(--ink-2)] leading-relaxed max-w-sm">
+                  {description}
+                </p>
+              )}
               {waUrl && (
                 <div className="pt-1">
                   <a
@@ -998,14 +1062,16 @@ export function StorefrontCatalogView({
                     About Us
                   </Link>
                 </li>
+                {(claims.shippingConfigured || claims.hasKhalti || claims.codEnabled) && (
                 <li>
                   <Link
                     href={`/s/${encodeURIComponent(store.slug)}/shipping`}
                     className="hover:text-[var(--ink)] transition-colors"
                   >
-                    Delivery &amp; COD
+                    {claims.shippingConfigured ? (claims.codEnabled ? "Delivery & COD" : "Delivery") : "Payment Options"}
                   </Link>
                 </li>
+                )}
                 <li>
                   <Link
                     href={`/s/${encodeURIComponent(store.slug)}/contact`}
@@ -1043,18 +1109,20 @@ export function StorefrontCatalogView({
               </ul>
             </div>
 
-            {/* Col 4: Payments & Delivery */}
+            {/* Col 4: Payments & Delivery (conditional) */}
+            {(claims.shippingConfigured || claims.hasKhalti || claims.codEnabled) && (
             <div className="md:col-span-3 space-y-2.5 text-xs">
               <span className="font-semibold uppercase tracking-wider text-[var(--ink)] block text-[11px]">
-                Payments &amp; Delivery
+                {claims.shippingConfigured ? "Payments & Delivery" : "Payments"}
               </span>
               <div className="space-y-1.5 text-[var(--ink-2)] text-xs">
-                <div>Khalti ePayment (Instant redirect)</div>
-                <div>Cash on Delivery (COD)</div>
-                <div>Nationwide Courier Delivery</div>
+                {claims.hasKhalti && <div>Khalti ePayment (Instant redirect)</div>}
+                {claims.codEnabled && <div>Cash on Delivery (COD)</div>}
+                {claims.shippingConfigured && <div>Nationwide Courier Delivery</div>}
                 <div>Settled in Nepalese Rupees (NPR)</div>
               </div>
             </div>
+            )}
 
           </div>
 
@@ -1065,12 +1133,6 @@ export function StorefrontCatalogView({
             </div>
             <div className="flex items-center gap-3">
               <span>Settled in NPR</span>
-              <span>·</span>
-              <span>Powered by ShopCraft</span>
-              <span>·</span>
-              <Link href="/" className="hover:text-[var(--ink)] underline transition-colors">
-                Launch Your Store
-              </Link>
             </div>
           </div>
         </div>
