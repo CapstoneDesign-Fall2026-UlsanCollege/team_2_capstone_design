@@ -937,10 +937,8 @@ class TenantIsolationTests(APITestCase):
             self.assertIsNotNone(membership)
             self.assertEqual(membership.role, "OWNER")
 
-            # Verify starter product seeded
-            starter_prod = Product.objects.for_store(created_store).first()
-            self.assertIsNotNone(starter_prod)
-            self.assertGreaterEqual(starter_prod.variants.count(), 1)
+            # Verify store starts with zero starter/placeholder products
+            self.assertEqual(Product.objects.for_store(created_store).count(), 0)
 
             # Verify MerchantAuditLog created
             audit_log = MerchantAuditLog.objects.filter(store=created_store, action="STORE_CREATE").first()

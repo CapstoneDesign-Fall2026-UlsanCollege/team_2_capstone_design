@@ -17,6 +17,7 @@ class Product(models.Model):
     attributes = models.JSONField(default=dict, blank=True)
     allow_one_time = models.BooleanField(default=True)
     is_active = models.BooleanField(default=True)
+    is_starter_default = models.BooleanField(default=False)
     sort_order = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True)
