@@ -646,15 +646,28 @@ class StoreCreationNoPlaceholdersTests(TestCase):
 
     def test_demo_seed_commands_still_work(self):
         from django.core.management import call_command
+        from core.tenant_context import reset_current_tenant_id
 
         expected = [
-            ("seed_brewmellow", "brewmellow"),
-            ("seed_himalayan_artisans", "himalayan-artisans"),
-            ("seed_ktm_streetwear", "ktm-streetwear"),
-            ("seed_himalayan_roasters", "himalayan-roasters"),
+            ("seed_brewmellow", "brewmellow", False),
+            ("seed_himalayan_artisans", "himalayan-artisans", True),
+            ("seed_ktm_streetwear", "ktm-streetwear", True),
+            ("seed_himalayan_roasters", "himalayan-roasters", True),
         ]
-        for cmd_name, slug in expected:
-            call_command(cmd_name)
+        for cmd_name, slug, needs_tenant_ctx in expected:
+            try:
+                if needs_tenant_ctx:
+                    shell_store, _ = Store.objects.get_or_create(
+                        slug=slug,
+                        defaults={"name": slug},
+                    )
+                    with TenantDatabaseContext(shell_store.id):
+                        call_command(cmd_name)
+                else:
+                    call_command(cmd_name)
+            finally:
+                reset_current_tenant_id()
+
             store = Store.objects.get(slug=slug)
             with TenantDatabaseContext(store.id):
                 qs = Product.objects.for_store(store)
