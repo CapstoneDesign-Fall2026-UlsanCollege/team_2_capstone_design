@@ -225,7 +225,8 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
             <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-2">
               <div>
                 <h2 className="text-sm font-semibold text-[var(--foreground)]">
-                  Daily Sales Trajectory
+                  Daily Sales Trajectory (
+                  {data.daily_series.length > 7 ? "Last 14 days" : "Last 7 days"})
                 </h2>
                 <p className="text-xs text-[var(--muted-foreground)]">
                   Confirmed storefront orders over time (integer Rs.)

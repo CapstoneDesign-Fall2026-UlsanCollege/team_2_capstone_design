@@ -57,14 +57,18 @@ export function CartProvider({
   // Sync state from client storage on mount or store change (React 19 safe async microtask)
   // Strict guarantee: Drawer NEVER auto-opens on load or after restoring persisted cart
   useEffect(() => {
-    setIsCartOpen(false);
+    let active = true;
     Promise.resolve().then(() => {
+      if (!active) return;
       const initialCart = getCart(storeSlug);
       setItems(initialCart.items);
       setSubtotalMinor(initialCart.subtotalMinor);
       setItemCount(initialCart.itemCount);
       setIsCartOpen(false);
     });
+    return () => {
+      active = false;
+    };
   }, [storeSlug]);
 
   const openCart = useCallback(() => setIsCartOpen(true), []);

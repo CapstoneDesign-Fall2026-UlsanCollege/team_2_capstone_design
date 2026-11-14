@@ -122,7 +122,9 @@ export function SalesBarChart({
       {/* Chart Header: Title + Popover controls + Full Report Link */}
       <div className="flex items-center justify-between gap-3">
         <div className="flex items-center gap-2">
-          <h2 className="text-sm font-semibold text-[var(--ink)]">Sales</h2>
+          <h2 className="text-sm font-semibold text-[var(--ink)]">
+            {safeSeries.length > 7 ? "Sales · Last 14 days" : "Sales"}
+          </h2>
           <span className="text-xs text-[var(--ink-2)] tabular-nums">
             {formatNpr(totalSalesMinor)} in {rangeLabel}
           </span>

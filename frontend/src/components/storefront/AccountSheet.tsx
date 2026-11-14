@@ -6,15 +6,12 @@ import * as Dialog from "@radix-ui/react-dialog";
 import {
   AlertCircle,
   ArrowRight,
-  CheckCircle2,
   Clock,
   Loader2,
   LogOut,
-  Mail,
   MapPin,
   Package,
   ShieldCheck,
-  User,
   X,
 } from "lucide-react";
 import {
@@ -47,9 +44,12 @@ export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: Acco
 
   const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
-  // When sheet opens, if prefillEmail is given, set it
+  // When sheet opens, reset step/error state cleanly in a microtask
   useEffect(() => {
-    if (isAccountOpen) {
+    if (!isAccountOpen) return;
+    let active = true;
+    Promise.resolve().then(() => {
+      if (!active) return;
       setErrorMsg(null);
       if (isAuthenticated) {
         setStep("LOGGED_IN");
@@ -59,7 +59,10 @@ export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: Acco
           setEmail(prefillEmail);
         }
       }
-    }
+    });
+    return () => {
+      active = false;
+    };
   }, [isAccountOpen, isAuthenticated, prefillEmail]);
 
   // Handle 60s cooldown countdown

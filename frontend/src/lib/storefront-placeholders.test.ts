@@ -566,13 +566,19 @@ describe("StorefrontCatalogView placeholder removal", () => {
 
     const chartHtml = renderToStaticMarkup(
       React.createElement(SalesBarChart, {
-        series: [],
+        series: Array.from({ length: 14 }, (_, idx) => ({
+          date: `2026-11-${String(idx + 1).padStart(2, "0")}`,
+          label: `Nov ${idx + 1}`,
+          revenue_minor: 10000,
+          orders_count: 1,
+        })),
         storeSlug: "adi-store",
         totalOrdersInRange: 6,
         totalSalesMinor: 150000,
-        rangeLabel: "7 days",
+        rangeLabel: "30 days",
       })
     );
     expect(chartHtml).not.toContain("Compare prior period");
+    expect(chartHtml).toContain("Last 14 days");
   });
 });
