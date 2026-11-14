@@ -8,6 +8,7 @@ import {
   cleanStoreCategory,
   getStorefrontAccountBadge,
   getStorefrontPaymentAndDeliveryClaims,
+  resolveStorefrontContactDetails,
   sanitizeStorefrontImageUrl,
 } from "./storefront-helpers";
 
@@ -334,5 +335,50 @@ describe("StorefrontCatalogView placeholder removal", () => {
       })
     );
     expect(customerSessionHtml).toContain(">M<");
+  });
+
+  it("resolves storefront contact details with 977 normalization, email fallback, and empty-state flags", () => {
+    const withAll = resolveStorefrontContactDetails({
+      name: "Rohit Store",
+      contact_phone: "+977 98-4122-3344",
+      support_email: "support@rohitstore.np",
+      contact_email: "owner@rohitstore.np",
+      address: "Itahari, Koshi Province",
+    });
+    expect(withAll.whatsappUrl).toBe(
+      "https://wa.me/9779841223344?text=Hi%20Rohit%20Store%2C%20I%20have%20an%20inquiry%20about%20your%20products."
+    );
+    expect(withAll.telHref).toBe("tel:+9779841223344");
+    expect(withAll.phoneDisplay).toBe("+977 9841223344");
+    expect(withAll.email).toBe("support@rohitstore.np");
+    expect(withAll.mailtoHref).toBe("mailto:support@rohitstore.np");
+    expect(withAll.address).toBe("Itahari, Koshi Province");
+    expect(withAll.hasAnyDetail).toBe(true);
+    expect(withAll.hasAnyContact).toBe(true);
+
+    const noWhatsappFallback = resolveStorefrontContactDetails({
+      name: "Clean Craft",
+      contact_phone: "9801234567",
+      support_email: "",
+      contact_email: "hello@cleancraft.np",
+      address: "",
+    });
+    expect(noWhatsappFallback.whatsappUrl).toBeNull();
+    expect(noWhatsappFallback.telHref).toBeNull();
+    expect(noWhatsappFallback.email).toBe("hello@cleancraft.np");
+    expect(noWhatsappFallback.mailtoHref).toBe("mailto:hello@cleancraft.np");
+    expect(noWhatsappFallback.hasAnyDetail).toBe(true);
+    expect(noWhatsappFallback.hasAnyContact).toBe(true);
+
+    const completelyEmpty = resolveStorefrontContactDetails({
+      name: "New Store",
+      contact_phone: "",
+      support_email: "",
+      contact_email: "",
+      address: "",
+    });
+    expect(completelyEmpty.whatsappUrl).toBeNull();
+    expect(completelyEmpty.hasAnyDetail).toBe(false);
+    expect(completelyEmpty.hasAnyContact).toBe(false);
   });
 });
