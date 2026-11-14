@@ -727,10 +727,39 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
         recipient_name = str(shipping_address.get("recipient_name", "")).strip()
         phone = str(shipping_address.get("phone", "")).strip()
         district = str(shipping_address.get("district", "")).strip()
+        municipality = str(shipping_address.get("municipality", "")).strip()
+        ward_raw = str(shipping_address.get("ward", "")).strip()
+        street_landmark = str(
+            shipping_address.get("street_landmark")
+            or shipping_address.get("tole")
+            or ""
+        ).strip()
 
         if not recipient_name or not phone or not district:
             return Response(
                 {"error": "Recipient name, phone number, and district are required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not municipality:
+            return Response(
+                {"error": "Municipality / Palika is required."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        try:
+            ward_num = int(ward_raw)
+        except (TypeError, ValueError):
+            ward_num = 0
+        if ward_num < 1 or ward_num > 35:
+            return Response(
+                {"error": "Enter a valid Ward No. between 1 and 35."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if not street_landmark:
+            return Response(
+                {"error": "Nearest Chowk / Landmark address is required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 

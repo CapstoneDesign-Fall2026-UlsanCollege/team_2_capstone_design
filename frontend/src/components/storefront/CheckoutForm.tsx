@@ -108,6 +108,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const [quote, setQuote] = useState<CheckoutQuoteResponse | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
 
   // 1. Fetch Session & Saved Addresses on Mount & on Auth Change
   useEffect(() => {
@@ -300,40 +301,45 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const handlePlaceOrder = async (e: React.FormEvent) => {
     e.preventDefault();
     setErrorMessage(null);
+    const nextErrors: Record<string, string> = {};
 
     // 1. Validation - Nepali Phone Number FIRST
     const cleanPhone = phone.trim();
     if (!/^9[78]\d{8}$/.test(cleanPhone)) {
-      setErrorMessage("Enter a valid 10-digit Nepali mobile number starting with 98 or 97.");
-      return;
+      nextErrors.phone = "Enter a valid 10-digit Nepali mobile number starting with 98 or 97.";
     }
 
     if (!recipientName.trim()) {
-      setErrorMessage("Full name is required.");
-      return;
+      nextErrors.recipientName = "Full name is required.";
     }
 
     if (!email.trim() || !email.includes("@")) {
-      setErrorMessage("A valid email address is required for order receipt.");
-      return;
+      nextErrors.email = "A valid email address is required for order receipt.";
     }
 
     if (!municipality.trim()) {
-      setErrorMessage("Municipality / Palika is required.");
-      return;
+      nextErrors.municipality = "Municipality / Palika is required.";
     }
 
     const wardNum = Number(ward.trim());
     if (!ward.trim() || !Number.isInteger(wardNum) || wardNum < 1 || wardNum > 35) {
-      setErrorMessage("Enter a valid Ward No. between 1 and 35.");
-      return;
+      nextErrors.ward = "Enter a valid Ward No. between 1 and 35.";
     }
 
     if (!streetLandmark.trim()) {
-      setErrorMessage("Nearest Chowk / Landmark address is required.");
+      nextErrors.streetLandmark = "Nearest Chowk / Landmark address is required.";
+    }
+
+    if (Object.keys(nextErrors).length > 0) {
+      setFieldErrors(nextErrors);
+      setErrorMessage(Object.values(nextErrors)[0]);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
       return;
     }
 
+    setFieldErrors({});
     setIsSubmitting(true);
 
     try {
@@ -405,9 +411,9 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const activeSavedAddress = savedAddresses.find((a) => a.id === selectedAddressId);
 
   return (
-    <form onSubmit={handlePlaceOrder} className="space-y-6 pb-28">
+    <form onSubmit={handlePlaceOrder} noValidate className="space-y-6 pb-28">
       {errorMessage && (
-        <div className="p-4 rounded-xl border border-[var(--error-bd)] bg-[var(--error-bg)] text-[var(--error-fg)] flex items-start gap-2.5 text-xs font-medium">
+        <div role="alert" className="p-4 rounded-xl border border-[var(--error-bd)] bg-[var(--error-bg)] text-[var(--error-fg)] flex items-start gap-2.5 text-xs font-medium">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
           <span>{errorMessage}</span>
         </div>
@@ -465,11 +471,20 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               inputMode="tel"
               autoComplete="tel"
               required
+              aria-invalid={Boolean(fieldErrors.phone)}
               placeholder="98XXXXXXXX or 97XXXXXXXX"
               value={phone}
-              onChange={(e) => setPhone(e.target.value)}
-              className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)] tabular-nums"
+              onChange={(e) => {
+                setPhone(e.target.value);
+                if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: "" }));
+              }}
+              className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none tabular-nums ${
+                fieldErrors.phone ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+              }`}
             />
+            {fieldErrors.phone && (
+              <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.phone}</p>
+            )}
           </div>
 
           {/* Full Name */}
@@ -485,11 +500,20 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               type="text"
               autoComplete="name"
               required
+              aria-invalid={Boolean(fieldErrors.recipientName)}
               placeholder="e.g. Nisha Shrestha"
               value={recipientName}
-              onChange={(e) => setRecipientName(e.target.value)}
-              className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)]"
+              onChange={(e) => {
+                setRecipientName(e.target.value);
+                if (fieldErrors.recipientName) setFieldErrors((p) => ({ ...p, recipientName: "" }));
+              }}
+              className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none ${
+                fieldErrors.recipientName ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+              }`}
             />
+            {fieldErrors.recipientName && (
+              <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.recipientName}</p>
+            )}
           </div>
 
           {/* Email Address */}
@@ -506,11 +530,20 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               inputMode="email"
               autoComplete="email"
               required
+              aria-invalid={Boolean(fieldErrors.email)}
               placeholder="you@example.com"
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)]"
+              onChange={(e) => {
+                setEmail(e.target.value);
+                if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: "" }));
+              }}
+              className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none ${
+                fieldErrors.email ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+              }`}
             />
+            {fieldErrors.email && (
+              <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.email}</p>
+            )}
           </div>
         </div>
       </section>
@@ -675,11 +708,20 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                   id="checkout-municipality"
                   type="text"
                   required
+                  aria-invalid={Boolean(fieldErrors.municipality)}
                   placeholder="e.g. Kathmandu Metropolitan City"
                   value={municipality}
-                  onChange={(e) => setMunicipality(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)]"
+                  onChange={(e) => {
+                    setMunicipality(e.target.value);
+                    if (fieldErrors.municipality) setFieldErrors((p) => ({ ...p, municipality: "" }));
+                  }}
+                  className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none ${
+                    fieldErrors.municipality ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+                  }`}
                 />
+                {fieldErrors.municipality && (
+                  <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.municipality}</p>
+                )}
               </div>
 
               {/* Ward */}
@@ -696,11 +738,20 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                   min={1}
                   max={35}
                   required
+                  aria-invalid={Boolean(fieldErrors.ward)}
                   placeholder="e.g. 3"
                   value={ward}
-                  onChange={(e) => setWard(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)] tabular-nums"
+                  onChange={(e) => {
+                    setWard(e.target.value);
+                    if (fieldErrors.ward) setFieldErrors((p) => ({ ...p, ward: "" }));
+                  }}
+                  className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none tabular-nums ${
+                    fieldErrors.ward ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+                  }`}
                 />
+                {fieldErrors.ward && (
+                  <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.ward}</p>
+                )}
               </div>
 
               {/* Nearest Chowk / Landmark */}
@@ -715,11 +766,20 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                   id="checkout-landmark"
                   type="text"
                   required
+                  aria-invalid={Boolean(fieldErrors.streetLandmark)}
                   placeholder="e.g. Near New Road Gate, Opposite Pipalbot"
                   value={streetLandmark}
-                  onChange={(e) => setStreetLandmark(e.target.value)}
-                  className="w-full h-11 px-3.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none focus:border-[var(--ink)]"
+                  onChange={(e) => {
+                    setStreetLandmark(e.target.value);
+                    if (fieldErrors.streetLandmark) setFieldErrors((p) => ({ ...p, streetLandmark: "" }));
+                  }}
+                  className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none ${
+                    fieldErrors.streetLandmark ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+                  }`}
                 />
+                {fieldErrors.streetLandmark && (
+                  <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.streetLandmark}</p>
+                )}
               </div>
             </div>
 

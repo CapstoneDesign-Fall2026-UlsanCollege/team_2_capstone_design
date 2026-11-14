@@ -293,6 +293,32 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
             },
         }
 
+    def test_checkout_rejects_empty_municipality_ward_and_landmark(self):
+        for bad_address_patch in (
+            {"municipality": ""},
+            {"municipality": "   "},
+            {"ward": ""},
+            {"ward": "0"},
+            {"ward": "36"},
+            {"ward": "abc"},
+            {"street_landmark": ""},
+        ):
+            payload = self._checkout_payload()
+            payload["payment_method"] = "COD"
+            payload["shipping_address"] = {
+                **payload["shipping_address"],
+                **bad_address_patch,
+            }
+            res = self.client.post(
+                f"/api/stores/{self.store.slug}/checkout/place/",
+                payload,
+                format="json",
+            )
+            self.assertEqual(res.status_code, 400, f"Expected 400 for {bad_address_patch}")
+
+        with TenantDatabaseContext(self.store.id):
+            self.assertEqual(Order.objects.for_store(self.store).count(), 0)
+
     def test_khalti_defaults_to_sandbox_and_live_requires_explicit_env_flag(self):
         self.assertEqual(self.store.khalti_mode, "TEST")
         self.assertFalse(settings.KHALTI_LIVE_ENABLED)
