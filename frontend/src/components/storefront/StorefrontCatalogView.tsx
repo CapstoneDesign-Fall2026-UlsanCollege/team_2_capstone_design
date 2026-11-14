@@ -763,7 +763,8 @@ export function StorefrontCatalogView({
                     {formatNpr(store.outside_valley_shipping_minor || 20000)}
                   </span>
                 </div>
-                {store.free_shipping_threshold_minor && (
+                {typeof store.free_shipping_threshold_minor === "number" &&
+                  store.free_shipping_threshold_minor > 0 && (
                   <p className="text-xs font-medium text-[var(--ink)] pt-1">
                     Free delivery on orders over {formatNpr(store.free_shipping_threshold_minor)}.
                   </p>

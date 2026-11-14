@@ -318,7 +318,7 @@ export default function MerchantCustomersPage({ params }: PageProps) {
 
                       {/* Location */}
                       <td className="py-3 px-4 text-[var(--foreground)]">
-                        {c.city || "Kathmandu"}
+                        {c.city || "—"}
                       </td>
 
                       {/* Orders Count */}

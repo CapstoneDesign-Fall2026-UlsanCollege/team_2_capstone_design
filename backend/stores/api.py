@@ -224,9 +224,9 @@ class CustomerSerializer(serializers.ModelSerializer):
             return (
                 last_order.shipping_address_snapshot.get("district")
                 or last_order.shipping_address_snapshot.get("city")
-                or "Kathmandu"
+                or ""
             )
-        return "Kathmandu"
+        return ""
 
     def to_representation(self, instance):
         data = super().to_representation(instance)

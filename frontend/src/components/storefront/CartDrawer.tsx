@@ -33,11 +33,19 @@ export function CartDrawer() {
     freeShippingThresholdMinor,
   } = useCart();
 
-  // Free delivery threshold calculations
-  const thresholdMinor = freeShippingThresholdMinor || 150000;
-  const isFreeDeliveryQualified = subtotalMinor >= thresholdMinor;
-  const remainingForFreeDelivery = Math.max(0, thresholdMinor - subtotalMinor);
-  const thresholdProgressPct = Math.min(100, Math.round((subtotalMinor / thresholdMinor) * 100));
+  // Free delivery threshold calculations (only when explicitly configured > 0)
+  const thresholdMinor =
+    typeof freeShippingThresholdMinor === "number" && freeShippingThresholdMinor > 0
+      ? freeShippingThresholdMinor
+      : 0;
+  const hasFreeDeliveryThreshold = thresholdMinor > 0;
+  const isFreeDeliveryQualified = hasFreeDeliveryThreshold && subtotalMinor >= thresholdMinor;
+  const remainingForFreeDelivery = hasFreeDeliveryThreshold
+    ? Math.max(0, thresholdMinor - subtotalMinor)
+    : 0;
+  const thresholdProgressPct = hasFreeDeliveryThreshold
+    ? Math.min(100, Math.round((subtotalMinor / thresholdMinor) * 100))
+    : 0;
 
   // Automatically close cart on navigation
   useEffect(() => {
@@ -96,7 +104,7 @@ export function CartDrawer() {
           </Dialog.Description>
 
           {/* Delivery Threshold Progress Meter */}
-          {items.length > 0 && freeShippingThresholdMinor && (
+          {items.length > 0 && hasFreeDeliveryThreshold && (
             <div className="px-4 py-3 bg-[var(--canvas)] border-b border-[var(--border)] space-y-1.5">
               <div className="flex items-center justify-between text-xs">
                 <div className="flex items-center gap-1.5 text-[var(--ink)] font-medium">

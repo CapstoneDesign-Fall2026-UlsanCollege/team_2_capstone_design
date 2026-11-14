@@ -25,22 +25,55 @@ vi.mock("@/lib/auth", () => ({
   useStorefrontAuth: () => mockAuthState,
 }));
 
+const mockCartState = vi.hoisted(() => ({
+  storeSlug: "adi-store",
+  items: [] as Array<{
+    productId: number;
+    variantId: number;
+    slug: string;
+    name: string;
+    variantLabel: string;
+    unitPriceMinor: number;
+    quantity: number;
+    imageUrl?: string;
+    inStock: boolean;
+  }>,
+  itemCount: 0,
+  subtotalMinor: 0,
+  isCartOpen: false,
+  freeShippingThresholdMinor: null as number | null,
+  openCart: vi.fn(),
+  closeCart: vi.fn(),
+  toggleCart: vi.fn(),
+  addItem: vi.fn(),
+  updateQty: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+}));
+
 vi.mock("@/components/storefront/CartContext", () => ({
-  useCart: () => ({
-    storeSlug: "adi-store",
-    items: [],
-    itemCount: 0,
-    subtotalMinor: 0,
-    isCartOpen: false,
-    freeShippingThresholdMinor: null,
-    openCart: vi.fn(),
-    closeCart: vi.fn(),
-    toggleCart: vi.fn(),
-    addItem: vi.fn(),
-    updateQty: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
+  useCart: () => mockCartState,
+}));
+
+vi.mock("@radix-ui/react-dialog", () => ({
+  Root: ({ open, children }: { open?: boolean; children?: React.ReactNode }) =>
+    open ? React.createElement("div", { "data-dialog-root": "true" }, children) : null,
+  Portal: ({ children }: { children?: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+  Overlay: () => React.createElement("div"),
+  Content: ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children),
+  Title: ({ children }: { children?: React.ReactNode }) => React.createElement("h2", null, children),
+  Description: ({ children }: { children?: React.ReactNode }) => React.createElement("p", null, children),
+  Close: ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
   }),
+  usePathname: () => "/s/adi-store",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/components/storefront/AccountContext", () => ({
@@ -73,6 +106,9 @@ vi.mock("next/link", () => ({
 
 import { StorefrontCatalogView } from "@/components/storefront/StorefrontCatalogView";
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader";
+import { ProductDetailView } from "@/components/storefront/ProductDetailView";
+import { CartDrawer } from "@/components/storefront/CartDrawer";
+import { CheckoutForm } from "@/components/storefront/CheckoutForm";
 
 function makeStore(overrides: Partial<StorePublicMetadata> = {}): StorePublicMetadata {
   return {
@@ -180,6 +216,11 @@ describe("StorefrontCatalogView placeholder removal", () => {
     mockAuthState.isAuthenticated = false;
     mockAuthState.user = null;
     mockAuthState.customer = null;
+    mockCartState.items = [];
+    mockCartState.itemCount = 0;
+    mockCartState.subtotalMinor = 0;
+    mockCartState.isCartOpen = false;
+    mockCartState.freeShippingThresholdMinor = null;
   });
 
   it("renders friendly empty state with fallback hero, Shop all, and zero fake prices/ShopCraft branding", () => {
@@ -380,5 +421,85 @@ describe("StorefrontCatalogView placeholder removal", () => {
     expect(completelyEmpty.whatsappUrl).toBeNull();
     expect(completelyEmpty.hasAnyDetail).toBe(false);
     expect(completelyEmpty.hasAnyContact).toBe(false);
+  });
+
+  it("hides non-functional attribute pickers and uses neutral empty description on ProductDetailView", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ProductDetailView, {
+        store: makeStore(),
+        product: makeProduct({
+          description: "",
+          attributes: {
+            options: { Size: ["S", "M", "L"] },
+            material: "100% Cotton",
+          },
+        }),
+        relatedProducts: [],
+      })
+    );
+
+    expect(html).not.toContain("Authentic quality product crafted with care in Nepal.");
+    expect(html).not.toContain(">Size<");
+    expect(html).toContain("100% Cotton");
+  });
+
+  it("hides the free-delivery meter in CartDrawer unless a threshold is configured", () => {
+    mockCartState.isCartOpen = true;
+    mockCartState.itemCount = 1;
+    mockCartState.subtotalMinor = 50000;
+    mockCartState.items = [
+      {
+        productId: 1,
+        variantId: 11,
+        slug: "roti-sabji",
+        name: "Roti Sabji",
+        variantLabel: "Standard",
+        unitPriceMinor: 50000,
+        quantity: 1,
+        inStock: true,
+      },
+    ];
+    mockCartState.freeShippingThresholdMinor = null;
+
+    const withoutThresholdHtml = renderToStaticMarkup(
+      React.createElement(CartDrawer)
+    );
+    expect(withoutThresholdHtml).not.toContain("free delivery");
+    expect(withoutThresholdHtml).not.toContain("Unlocked free delivery");
+
+    mockCartState.freeShippingThresholdMinor = 150000;
+    const withThresholdHtml = renderToStaticMarkup(
+      React.createElement(CartDrawer)
+    );
+    expect(withThresholdHtml).toContain("for free delivery");
+  });
+
+  it("leaves municipality and ward empty by default and omits unconfigured courier promises on CheckoutForm", () => {
+    mockCartState.itemCount = 1;
+    mockCartState.subtotalMinor = 50000;
+    mockCartState.items = [
+      {
+        productId: 1,
+        variantId: 11,
+        slug: "roti-sabji",
+        name: "Roti Sabji",
+        variantLabel: "Standard",
+        unitPriceMinor: 50000,
+        quantity: 1,
+        inStock: true,
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      React.createElement(CheckoutForm, {
+        store: makeStore({ shipping_configured: false, cod_enabled: true }),
+      })
+    );
+
+    expect(html).not.toContain('value="Kathmandu Metropolitan City"');
+    expect(html).not.toContain('value="3"');
+    expect(html).not.toContain("Kathmandu Valley Express");
+    expect(html).not.toContain("Delivered within 1");
+    expect(html).toContain("Standard Delivery");
   });
 });

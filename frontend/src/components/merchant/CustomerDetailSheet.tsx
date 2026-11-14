@@ -149,7 +149,7 @@ export function CustomerDetailSheet({
                   Location
                 </span>
                 <span className="text-sm font-semibold text-[var(--foreground)] truncate block">
-                  {customer.city || "Nepal"}
+                  {customer.city || "—"}
                 </span>
               </div>
             </div>

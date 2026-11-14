@@ -89,8 +89,8 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   // 2. Address State
   const [province, setProvince] = useState<string>("Bagmati");
   const [district, setDistrict] = useState<string>("Kathmandu");
-  const [municipality, setMunicipality] = useState<string>("Kathmandu Metropolitan City");
-  const [ward, setWard] = useState<string>("3");
+  const [municipality, setMunicipality] = useState<string>("");
+  const [ward, setWard] = useState<string>("");
   const [streetLandmark, setStreetLandmark] = useState<string>("");
 
   // 3. Payment, Promo Code & Quote State
@@ -318,6 +318,17 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
       return;
     }
 
+    if (!municipality.trim()) {
+      setErrorMessage("Municipality / Palika is required.");
+      return;
+    }
+
+    const wardNum = Number(ward.trim());
+    if (!ward.trim() || !Number.isInteger(wardNum) || wardNum < 1 || wardNum > 35) {
+      setErrorMessage("Enter a valid Ward No. between 1 and 35.");
+      return;
+    }
+
     if (!streetLandmark.trim()) {
       setErrorMessage("Nearest Chowk / Landmark address is required.");
       return;
@@ -332,7 +343,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
         province,
         district,
         municipality: municipality.trim(),
-        ward: ward.trim() || "1",
+        ward: String(wardNum),
         street_landmark: streetLandmark.trim(),
       };
 
@@ -740,12 +751,18 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
             </div>
             <div>
               <p className="text-sm font-semibold text-[var(--ink)]">
-                {isValley ? "Kathmandu Valley Express" : "Nationwide Courier"}
+                {store.shipping_configured
+                  ? isValley
+                    ? "Kathmandu Valley Express"
+                    : "Nationwide Courier"
+                  : "Standard Delivery"}
               </p>
               <p className="text-xs text-[var(--ink-2)] mt-0.5">
-                {isValley
-                  ? "Delivered within 1–2 business days to Kathmandu, Lalitpur, and Bhaktapur."
-                  : `Delivered within 2–4 business days across ${district} and all 7 provinces.`}
+                {store.shipping_configured
+                  ? isValley
+                    ? "Delivered within 1–2 business days to Kathmandu, Lalitpur, and Bhaktapur."
+                    : `Delivered within 2–4 business days across ${district} and all 7 provinces.`
+                  : `Delivery rate calculated for ${district}.`}
               </p>
             </div>
           </div>
