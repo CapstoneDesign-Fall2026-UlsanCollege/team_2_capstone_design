@@ -432,6 +432,7 @@ export interface CreateStorePayload {
   category?: string;
   city?: string;
   province?: string;
+  address?: string;
   theme_preset: string;
   tagline?: string;
   contact_phone?: string;

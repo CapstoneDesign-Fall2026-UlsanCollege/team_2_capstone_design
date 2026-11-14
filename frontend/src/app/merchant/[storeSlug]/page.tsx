@@ -34,12 +34,6 @@ import { HomeKpiStrip, HomeKpiData } from "@/components/merchant/HomeKpiStrip";
 import { ProductSheet } from "@/components/merchant/ProductSheet";
 import { SalesBarChart } from "@/components/merchant/SalesBarChart";
 import { RecentOrdersSection } from "@/components/merchant/RecentOrdersSection";
-import {
-  countsAsSales,
-  fulfillmentView,
-  isKhaltiProblem,
-  paymentView,
-} from "@/lib/merchant-status";
 
 interface PageProps {
   params: Promise<{ storeSlug: string }>;
@@ -58,10 +52,6 @@ export default function MerchantOverviewPage({ params }: PageProps) {
 
   // Date range segmented control: 7d, 30d, 90d
   const [range, setRange] = useState<"7d" | "30d" | "90d">("7d");
-
-  // Chart configuration controls (lives on the chart)
-  const [chartMode, setChartMode] = useState<"bar" | "line">("bar");
-  const [showCompare, setShowCompare] = useState(false);
 
   // Inline Product Add / Edit Drawer
   const [sheetOpen, setSheetOpen] = useState(false);
@@ -157,9 +147,6 @@ export default function MerchantOverviewPage({ params }: PageProps) {
         ordersCount: analytics.kpis.orders_count ?? 0,
         aovMinor: analytics.kpis.aov_minor ?? 0,
         codPendingMinor: analytics.kpis.cod_pending_minor ?? overview?.cod_pending_minor ?? 0,
-        salesDeltaPct: null,
-        ordersDeltaPct: null,
-        aovDeltaPct: null,
       };
     }
     // Fallback to overview data if analytics fetch is in-flight
@@ -171,16 +158,8 @@ export default function MerchantOverviewPage({ params }: PageProps) {
       ordersCount,
       aovMinor: aov,
       codPendingMinor: overview?.cod_pending_minor ?? 0,
-      salesDeltaPct: null,
-      ordersDeltaPct: null,
-      aovDeltaPct: null,
     };
   }, [analytics, overview]);
-
-  // Khalti problem orders
-  const khaltiProblemsCount = overview?.recent_orders
-    ? overview.recent_orders.filter(isKhaltiProblem).length
-    : 0;
 
   // Chart data
   const chartSeries: OverviewDailyPoint[] = useMemo(() => {
@@ -281,12 +260,10 @@ export default function MerchantOverviewPage({ params }: PageProps) {
       <NeedsAttentionCards
         storeSlug={storeSlug}
         ordersToDispatchCount={overview.pending_fulfillment_count ?? 0}
-        codPendingMinor={overview.cod_pending_minor ?? 0}
-        khaltiProblemsCount={khaltiProblemsCount}
       />
 
       {/* 4. KPI Strip */}
-      <HomeKpiStrip data={kpiData} rangeLabel={rangeLabel} />
+      <HomeKpiStrip data={kpiData} />
 
       {/* 5. Sales Chart Section (BAR chart, near-black bars, today highlighted, 240px tall, compact summary if < 5 orders) */}
       <SalesBarChart

@@ -73,12 +73,14 @@ export interface StorefrontCatalogViewProps {
   store: StorePublicMetadata;
   products: ProductItem[];
   isThemePreview?: boolean;
+  initialSearchOpen?: boolean;
 }
 
 export function StorefrontCatalogView({
   store,
   products = [],
   isThemePreview = false,
+  initialSearchOpen = false,
 }: StorefrontCatalogViewProps) {
   const { itemCount, openCart, addItem } = useCart();
   const { openAccount } = useAccount();
@@ -92,7 +94,7 @@ export function StorefrontCatalogView({
   const [selectedCategory, setSelectedCategory] = useState<string>("all");
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<"featured" | "price-asc" | "price-desc">("featured");
-  const [searchOpen, setSearchOpen] = useState<boolean>(false);
+  const [searchOpen, setSearchOpen] = useState<boolean>(Boolean(initialSearchOpen));
   const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Real catalog unless theme-editor preview explicitly requests ephemeral preview items
@@ -263,6 +265,7 @@ export function StorefrontCatalogView({
   );
 
   const handleQuickAddProduct = (product: ProductItem) => {
+    if (product.id < 0) return;
     if (product.variants && product.variants.length > 1) {
       handleOpenSheet(product);
       return;
@@ -468,6 +471,8 @@ export function StorefrontCatalogView({
                       size="sm"
                       variant="secondary"
                       onClick={handleQuickAddFeatured}
+                      disabled={featuredProduct.id < 0}
+                      title={featuredProduct.id < 0 ? "Preview demo item" : undefined}
                       className="h-8 px-3 text-xs"
                     >
                       Add

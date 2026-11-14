@@ -89,8 +89,10 @@ function ProductDetailSheetContent({
 
   const finalVariantLabel = selectedVariant?.label || "Standard";
 
+  const isDemoProduct = product.id < 0;
+
   const handleAddToCart = () => {
-    if (!selectedVariant || !isInStock) return;
+    if (isDemoProduct || !selectedVariant || !isInStock) return;
 
     if (onAddToCart) {
       onAddToCart({
@@ -250,7 +252,7 @@ function ProductDetailSheetContent({
         <Button
           variant="primary"
           onClick={handleAddToCart}
-          disabled={!isInStock || justAdded}
+          disabled={isDemoProduct || !isInStock || justAdded}
           className="w-full h-11 text-sm font-semibold"
         >
           {justAdded ? (
@@ -258,6 +260,8 @@ function ProductDetailSheetContent({
               <Check className="w-4 h-4 text-[var(--surface)]" />
               <span>Added to Bag</span>
             </>
+          ) : isDemoProduct ? (
+            <span>Demo Preview Only</span>
           ) : !isInStock ? (
             <span>Sold Out</span>
           ) : (

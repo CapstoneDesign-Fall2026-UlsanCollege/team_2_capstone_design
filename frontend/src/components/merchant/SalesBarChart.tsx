@@ -50,7 +50,6 @@ export function SalesBarChart({
   rangeLabel,
 }: SalesBarChartProps) {
   const [optionsOpen, setOptionsOpen] = useState(false);
-  const [showCompare, setShowCompare] = useState(false);
   const [showTarget, setShowTarget] = useState(false);
   const [hoveredIdx, setHoveredIdx] = useState<number | null>(null);
 
@@ -154,16 +153,6 @@ export function SalesBarChart({
                 <div className="font-semibold text-xs border-b border-[var(--border)] pb-1.5 text-[var(--ink)]">
                   Chart display
                 </div>
-
-                <label className="flex items-center justify-between gap-2 p-1.5 rounded-md hover:bg-[var(--canvas)] cursor-pointer select-none">
-                  <span className="text-[13px] text-[var(--ink)]">Compare prior period</span>
-                  <input
-                    type="checkbox"
-                    checked={showCompare}
-                    onChange={(e) => setShowCompare(e.target.checked)}
-                    className="size-4 rounded accent-[var(--ink)] cursor-pointer"
-                  />
-                </label>
 
                 <label className="flex items-center justify-between gap-2 p-1.5 rounded-md hover:bg-[var(--canvas)] cursor-pointer select-none">
                   <span className="text-[13px] text-[var(--ink)]">Target average</span>

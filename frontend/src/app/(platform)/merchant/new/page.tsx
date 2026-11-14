@@ -241,6 +241,7 @@ function CreateStoreContent() {
         category,
         city: city.trim(),
         province,
+        address: streetAddress.trim(),
         tagline: tagline.trim(),
         contact_phone: contactPhone.trim(),
         theme_preset: themePreset,

@@ -1,7 +1,7 @@
 "use client";
 
-import React, { useEffect, useRef, useState } from "react";
-import { useParams } from "next/navigation";
+import React, { Suspense, useEffect, useRef, useState } from "react";
+import { useParams, useSearchParams } from "next/navigation";
 import {
   RotateCcw,
   Search,
@@ -14,8 +14,7 @@ import {
 } from "@/lib/api";
 import { OrderQueueTable } from "@/components/merchant/OrderQueueTable";
 import { OrderDetailSheet } from "@/components/merchant/OrderDetailSheet";
-
-type StatusTab = "all" | "new" | "packed" | "shipped" | "delivered";
+import { OrdersQueueTab, resolveOrdersStatusTab } from "@/lib/merchant-status";
 
 interface PendingUndo {
   orderId: number;
@@ -26,11 +25,15 @@ interface PendingUndo {
   expiresAt: number;
 }
 
-export default function MerchantOrdersPage() {
+function MerchantOrdersContent() {
   const params = useParams();
+  const searchParams = useSearchParams();
   const storeSlug = typeof params.storeSlug === "string" ? params.storeSlug : "";
+  const statusQueryParam = searchParams.get("status");
 
-  const [activeTab, setActiveTab] = useState<StatusTab>("all");
+  const [activeTab, setActiveTab] = useState<OrdersQueueTab>(() =>
+    resolveOrdersStatusTab(statusQueryParam)
+  );
   const [searchQuery, setSearchQuery] = useState<string>("");
   const [orders, setOrders] = useState<OrderDetail[]>([]);
   const [counts, setCounts] = useState<OrderQueueCounts>({
@@ -180,7 +183,7 @@ export default function MerchantOrdersPage() {
     }
   };
 
-  const tabs: Array<{ id: StatusTab; label: string; count: number }> = [
+  const tabs: Array<{ id: OrdersQueueTab; label: string; count: number }> = [
     { id: "new", label: "New", count: counts.new },
     { id: "packed", label: "Packed", count: counts.packed },
     { id: "shipped", label: "Shipped", count: counts.shipped },
@@ -288,5 +291,19 @@ export default function MerchantOrdersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function MerchantOrdersPage() {
+  return (
+    <Suspense
+      fallback={
+        <div className="p-12 text-center text-xs font-mono text-[var(--muted-foreground)]">
+          Loading order queue...
+        </div>
+      }
+    >
+      <MerchantOrdersContent />
+    </Suspense>
   );
 }

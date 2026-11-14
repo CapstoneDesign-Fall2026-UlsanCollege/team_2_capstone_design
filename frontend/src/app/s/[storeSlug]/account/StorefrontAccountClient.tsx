@@ -35,7 +35,10 @@ import {
   verifyStorefrontGoogleAuth,
 } from "@/lib/api";
 import { emitAuthChange, useStorefrontAuth } from "@/lib/auth";
-import { getStorefrontAccountBadge } from "@/lib/storefront-helpers";
+import {
+  getStorefrontAccountBadge,
+  getStorefrontPaymentAndDeliveryClaims,
+} from "@/lib/storefront-helpers";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAccount } from "@/components/storefront/AccountContext";
 import { Chip, ChipTone } from "@/components/ui/chip";
@@ -329,6 +332,7 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
   };
 
   const { isStorefrontCustomer, userInitial } = getStorefrontAccountBadge(isAuthenticated, customer);
+  const claims = getStorefrontPaymentAndDeliveryClaims(store);
 
   return (
     <div className="w-full min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans antialiased flex flex-col">
@@ -344,6 +348,8 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
         onOpenAccount={openAccount}
         isAuthenticated={isStorefrontCustomer}
         userInitial={userInitial}
+        showDeliveryLink={claims.shippingConfigured || claims.hasKhalti || claims.codEnabled}
+        deliveryLinkLabel={claims.shippingConfigured ? (claims.codEnabled ? "Delivery & COD" : "Delivery") : "Payment Options"}
       />
 
       {/* 2. Main Content */}

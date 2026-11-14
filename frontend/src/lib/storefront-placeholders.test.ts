@@ -109,6 +109,9 @@ import { StorefrontHeader } from "@/components/storefront/StorefrontHeader";
 import { ProductDetailView } from "@/components/storefront/ProductDetailView";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { CheckoutForm } from "@/components/storefront/CheckoutForm";
+import { NeedsAttentionCards } from "@/components/merchant/NeedsAttentionCards";
+import { HomeKpiStrip } from "@/components/merchant/HomeKpiStrip";
+import { SalesBarChart } from "@/components/merchant/SalesBarChart";
 
 function makeStore(overrides: Partial<StorePublicMetadata> = {}): StorePublicMetadata {
   return {
@@ -501,5 +504,75 @@ describe("StorefrontCatalogView placeholder removal", () => {
     expect(html).not.toContain("Kathmandu Valley Express");
     expect(html).not.toContain("Delivered within 1");
     expect(html).toContain("Standard Delivery");
+  });
+
+  it("renders working Catalog and Search links when callbacks are absent and opens search when initialSearchOpen is true", () => {
+    const headerHtml = renderToStaticMarkup(
+      React.createElement(StorefrontHeader, {
+        storeSlug: "adi-store",
+        storeName: "Adi Studio",
+        showDeliveryLink: false,
+      })
+    );
+    expect(headerHtml).toContain('href="/s/adi-store#collection-section"');
+    expect(headerHtml).toContain('href="/s/adi-store?search=1#collection-section"');
+    expect(headerHtml).not.toContain("Delivery &amp; COD");
+
+    const catalogSearchHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore(),
+        products: [makeProduct()],
+        initialSearchOpen: true,
+      })
+    );
+    expect(catalogSearchHtml).toContain("Search products, variants, or collections...");
+  });
+
+  it("disables Add controls for negative-id preview demo products", () => {
+    const previewHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({ category: "Coffee" }),
+        products: [],
+        isThemePreview: true,
+      })
+    );
+    expect(previewHtml).toContain("Preview demo item");
+    expect(previewHtml).toContain("disabled");
+  });
+
+  it("removes payment-filter cards, prior-period deltas, and compare prior checkbox from merchant overview widgets", () => {
+    const attentionHtml = renderToStaticMarkup(
+      React.createElement(NeedsAttentionCards, {
+        storeSlug: "adi-store",
+        ordersToDispatchCount: 4,
+      })
+    );
+    expect(attentionHtml).toContain("Orders to dispatch");
+    expect(attentionHtml).toContain("/merchant/adi-store/orders?status=new");
+    expect(attentionHtml).not.toContain("?payment=");
+    expect(attentionHtml).not.toContain("Khalti issues");
+
+    const kpiHtml = renderToStaticMarkup(
+      React.createElement(HomeKpiStrip, {
+        data: {
+          salesPaidMinor: 150000,
+          ordersCount: 3,
+          aovMinor: 50000,
+          codPendingMinor: 25000,
+        },
+      })
+    );
+    expect(kpiHtml).not.toContain("vs prior");
+
+    const chartHtml = renderToStaticMarkup(
+      React.createElement(SalesBarChart, {
+        series: [],
+        storeSlug: "adi-store",
+        totalOrdersInRange: 6,
+        totalSalesMinor: 150000,
+        rangeLabel: "7 days",
+      })
+    );
+    expect(chartHtml).not.toContain("Compare prior period");
   });
 });

@@ -42,6 +42,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<MerchantAnalyticsResponse | null>(null);
+  const [reloadCount, setReloadCount] = useState(0);
 
   useEffect(() => {
     let mounted = true;
@@ -81,7 +82,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
     return () => {
       mounted = false;
     };
-  }, [storeSlug, range, router]);
+  }, [storeSlug, range, router, reloadCount]);
 
   return (
     <div className="space-y-8">
@@ -173,7 +174,7 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
           </p>
           <button
             type="button"
-            onClick={() => setRange(range)}
+            onClick={() => setReloadCount((c) => c + 1)}
             className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md text-xs font-medium bg-[var(--primary)] text-[var(--primary-foreground)] cursor-pointer"
           >
             <RefreshCw className="w-3.5 h-3.5" />

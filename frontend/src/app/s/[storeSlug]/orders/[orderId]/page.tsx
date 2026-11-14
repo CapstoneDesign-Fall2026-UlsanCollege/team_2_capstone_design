@@ -131,6 +131,10 @@ export default async function StorefrontOrderDetailPage({
     heroSubtitle = `${store.name} is preparing your items for courier dispatch.`;
   }
 
+  const isOrderActive =
+    !["DELIVERED", "CANCELLED", "PAYMENT_FAILED"].includes(statusUpper) &&
+    paymentStatusUpper !== "FAILED";
+
   // Stepper lifecycle calculation
   const isConfirmed = [
     "CONFIRMED",
@@ -235,9 +239,11 @@ export default async function StorefrontOrderDetailPage({
             <h2 className="font-serif text-base font-semibold text-[var(--ink)]">
               Order Progress
             </h2>
-            <span className="text-xs text-[var(--ink-2)]">
-              Estimated Delivery: 1–3 Days
-            </span>
+            {Boolean(store.shipping_configured) && isOrderActive && (
+              <span className="text-xs text-[var(--ink-2)]">
+                Estimated Delivery: 1–3 Days
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-4 gap-2 pt-2">
