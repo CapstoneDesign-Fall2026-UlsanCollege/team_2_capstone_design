@@ -19,6 +19,7 @@ import {
 } from "lucide-react";
 import {
   formatNpr,
+  formatOrderNumber,
   fetchMerchantCustomerDetail,
   MerchantCustomerItem,
   MerchantCustomerDetail,
@@ -253,7 +254,7 @@ export function CustomerDetailSheet({
                           >
                             <div className="flex items-center justify-between">
                               <span className="font-mono font-bold text-xs text-[var(--foreground)]">
-                                #{ord.order_number}
+                                {formatOrderNumber(ord.order_number)}
                               </span>
                               <div className="flex items-center gap-1.5">
                                 <span

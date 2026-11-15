@@ -3,7 +3,7 @@
 import React, { useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Printer, X, Check, AlertTriangle, Package, MapPin, Phone, User } from "lucide-react";
-import { formatNpr, OrderDetail } from "@/lib/api";
+import { formatNpr, formatOrderNumber, OrderDetail } from "@/lib/api";
 
 export interface PackingSlipModalProps {
   storeName: string;
@@ -52,7 +52,7 @@ export function PackingSlipModal({
             <div className="flex items-center gap-2">
               <Printer className="w-4 h-4 text-[var(--foreground)]" />
               <Dialog.Title className="text-sm font-bold text-[var(--foreground)] font-mono">
-                Courier Delivery Slip · #{order.order_number}
+                Courier Delivery Slip · {formatOrderNumber(order.order_number)}
               </Dialog.Title>
             </div>
 
@@ -124,7 +124,7 @@ export function PackingSlipModal({
 
               <div className="text-right">
                 <p className="text-sm font-mono font-bold text-zinc-900">
-                  #{order.order_number}
+                  {formatOrderNumber(order.order_number)}
                 </p>
                 <p className="text-[10px] font-mono text-zinc-500">{formattedDate}</p>
                 <span className="inline-block mt-1 px-2 py-0.5 text-[9px] font-mono font-bold uppercase tracking-wider border border-zinc-400 bg-zinc-100 rounded">

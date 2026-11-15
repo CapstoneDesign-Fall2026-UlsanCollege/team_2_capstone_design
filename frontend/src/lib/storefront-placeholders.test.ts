@@ -2,6 +2,7 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProductItem, StorePublicMetadata } from "./api";
+import { formatOrderNumber } from "./api";
 import {
   buildThemePreviewDemoProducts,
   buildWhatsAppUrl,
@@ -580,5 +581,13 @@ describe("StorefrontCatalogView placeholder removal", () => {
     );
     expect(chartHtml).not.toContain("Compare prior period");
     expect(chartHtml).toContain("Last 14 days");
+  });
+
+  it("normalizes order numbers without producing double hash prefixes", () => {
+    expect(formatOrderNumber("#HI-2026-0003")).toBe("#HI-2026-0003");
+    expect(formatOrderNumber("HI-2026-0003")).toBe("#HI-2026-0003");
+    expect(formatOrderNumber(42)).toBe("#42");
+    expect(formatOrderNumber("")).toBe("—");
+    expect(formatOrderNumber(null)).toBe("—");
   });
 });

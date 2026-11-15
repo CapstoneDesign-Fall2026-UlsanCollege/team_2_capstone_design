@@ -28,6 +28,7 @@ import {
   DeliveryAddressPayload,
   fetchStorefrontOrders,
   formatNpr,
+  formatOrderNumber,
   listDeliveryAddresses,
   StorefrontOrderSummary,
   StorePublicMetadata,
@@ -605,7 +606,7 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
                           <div className="space-y-1.5 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-mono text-xs font-semibold text-[var(--ink)]">
-                                #{ord.order_number || ord.id}
+                                {formatOrderNumber(ord.order_number || ord.id)}
                               </span>
                               <span>·</span>
                               <span className="text-xs text-[var(--ink-2)]">{formatDate(ord.created_at)}</span>
