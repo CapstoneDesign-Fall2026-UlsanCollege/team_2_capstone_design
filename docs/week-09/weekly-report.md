@@ -6,7 +6,7 @@
 **Week:** 9 (Sprint 2: MVP Contract & SaaS Pivot Formalization)  
 **Date:** Wednesday, November 4, 2026 (Submitted for Wed 2026-11-04 EOD Deadline)  
 **Status:** Completed  
-**Live Deployed Application:** [https://team-2-capstone-design-one.vercel.app](https://team-2-capstone-design-one.vercel.app)  
+**Live Deployed Application:** [https://shopcraft.me](https://shopcraft.me)  
 **Repository:** [https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design)
 
 ---

@@ -5,7 +5,7 @@
 **Course:** Capstone Design — Fall 2026  
 **Week:** 9 (MVP Contract and Scope Cut)  
 **Date:** Wednesday, November 4, 2026 (Submitted for Nov 4 EOD Deadline)  
-**Live Deployed Application:** [https://team-2-capstone-design-one.vercel.app](https://team-2-capstone-design-one.vercel.app)  
+**Live Deployed Application:** [https://shopcraft.me](https://shopcraft.me)  
 **Repository:** [https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design)
 
 > *“After the midterm, your job is not to make the project bigger. Your job is to make it real.”*

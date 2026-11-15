@@ -6,7 +6,7 @@
 **Date:** Monday, November 9, 2026 (Submitted for Wednesday, November 11, 2026 EOD KST Deadline)  
 **Status:** Completed & Independently Verified across all 4 Codebase Areas  
 **Repository:** [https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design)  
-**Live Deployed Application:** [https://team-2-capstone-design-one.vercel.app](https://team-2-capstone-design-one.vercel.app)
+**Live Deployed Application:** [https://shopcraft.me](https://shopcraft.me)
 
 > *“AI can help, but your team owns the code you submit. Each student contributes a roadmap slice and helps steward a codebase area.”*
 

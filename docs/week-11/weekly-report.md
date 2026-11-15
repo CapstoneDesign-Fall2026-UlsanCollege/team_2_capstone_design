@@ -5,7 +5,7 @@
 **Week:** Week 11 (Sprint 2: MVP and Freeze — Final Class)  
 **Date:** Thursday, November 12, 2026 (Submitted for Wednesday, November 18, 2026 EOD KST Deadline)  
 **Status:** **PASSED & FEATURE SCOPE FROZEN**  
-**Live Production URL:** [https://team-2-capstone-design-one.vercel.app](https://team-2-capstone-design-one.vercel.app)  
+**Live Production URL:** [https://shopcraft.me](https://shopcraft.me)  
 
 ---
 
@@ -46,7 +46,7 @@ No new stretch features will be introduced for Sprint 3 (Weeks 12–14). The pro
 | **Kushan Handoff & Slice** | QA Lead, Non-Author Testing, Clean Clone Runbook & Payment Edge Cases | [Kushan Handoff](../week-10/evidence/kushan-independent-qa-handoff.md) · [Slice](../week-10/slices/slice-kushan-checkout-cancellation.md) · [Receipt](receipts/receipt-kushan.md) |
 | **Aanchal Handoff & Slice** | Storefront UI/UX, Mobile Viewport Ergonomics (360px/390px) & WCAG AA | [Aanchal Handoff](../week-10/evidence/aanchal-storefront-a11y-handoff.md) · [Slice](../week-10/slices/slice-aanchal-mobile-checkout.md) · [Receipt](receipts/receipt-aanchal.md) |
 | **Rohit Handoff & Slice** | DevOps, Backend Health Probe (`/api/health/`), Order Lifecycle State Machine | [Rohit Handoff](../week-10/evidence/rohit-resilience-health-handoff.md) · [Slice](../week-10/slices/slice-rohit-order-statemachine.md) · [Receipt](receipts/receipt-rohit.md) |
-| **Live Deployed App** | Live Production Deployment on Vercel over HTTPS | [https://team-2-capstone-design-one.vercel.app](https://team-2-capstone-design-one.vercel.app) |
+| **Live Deployed App** | Live Production Deployment on Vercel over HTTPS | [https://shopcraft.me](https://shopcraft.me) |
 | **MVP Contract** | Official Scope Cut Contract & Week 11 Freeze Gates | [mvp-contract.md](../week-09/mvp-contract.md) |
 | **Final Demo Roadmap** | Complete Roadmap & Verification Boundaries | [final-demo-roadmap.md](../week-09/final-demo-roadmap.md) |
 

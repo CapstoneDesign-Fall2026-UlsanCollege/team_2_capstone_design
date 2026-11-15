@@ -5,7 +5,7 @@
 **Project:** **ShopCraft** (formerly BrewMellow — Post-Midterm Architectural Pivot)  
 **Evidence Review Date:** 2026/11/04 (Asia/Kathmandu)  
 **Status:** Sprint 2 (MVP Contract & Scope Cut Phase)  
-**Live Production URL:** [https://team-2-capstone-design-one.vercel.app](https://team-2-capstone-design-one.vercel.app)
+**Live Production URL:** [https://shopcraft.me](https://shopcraft.me)
 
 This roadmap connects our project status, testing evidence, remaining work, and preparation for the final demonstration. Planned activities are explicitly separated from completed verification.
 

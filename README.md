@@ -1,6 +1,6 @@
 # 🛍️ ShopCraft: Multi-Tenant E-Commerce Platform for Nepal's Craft Economy
 
-[![Live Deployed App](https://img.shields.io/badge/Production-Live%20on%20Vercel-success?style=for-the-badge&logo=vercel)](https://team-2-capstone-design-one.vercel.app)
+[![Live Deployed App](https://img.shields.io/badge/Production-Live%20at%20shopcraft.me-success?style=for-the-badge&logo=vercel)](https://shopcraft.me)
 [![Backend Tests](https://img.shields.io/badge/Django%20Tests-114%2F114%20Passing-brightgreen?style=for-the-badge&logo=django)](backend/stores/tests/test_isolation.py)
 [![TypeScript](https://img.shields.io/badge/TypeScript-0%20Errors-blue?style=for-the-badge&logo=typescript)](frontend/)
 [![Payment Gateway](https://img.shields.io/badge/Khalti-Sandbox%20v2%20Verified-purple?style=for-the-badge)](docs/week-09/core-demo-evidence-matrix.md)
@@ -34,7 +34,7 @@ ShopCraft operates a unified Next.js + Django full-stack architecture divided in
 ```
                                   ┌────────────────────────────────────────────────────────┐
                                   │                  SHOPCRAFT PLATFORM                    │
-                                  │           https://team-2-capstone-design.vercel.app    │
+                                  │                   https://shopcraft.me                 │
                                   └───────────────────────────┬────────────────────────────┘
                                                               │
                     ┌─────────────────────────────────────────┴─────────────────────────────────────────┐
@@ -207,7 +207,7 @@ curl http://localhost:8000/api/health/
 ```
 
 ### Test 5: End-to-End User Checkout Journey
-1. Open `http://localhost:3000/s/brewmellow` (or the [Live Vercel App](https://team-2-capstone-design-one.vercel.app/s/brewmellow)).
+1. Open `http://localhost:3000/s/brewmellow` (or the [Live Production App](https://shopcraft.me/s/brewmellow)).
 2. Add *Gulmi Bourbon 250g Whole Bean* to the cart.
 3. Proceed to Checkout, enter a Nepali delivery address (Bagmati Province, Kathmandu, Phone: `9841234567`).
 4. Select **Khalti Digital Wallet** and submit.
