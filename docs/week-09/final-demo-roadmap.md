@@ -92,7 +92,7 @@ $$\text{Storefront } (/s/\text{brewmellow}) \longrightarrow \text{Product Select
 ### Sprint 2 (Weeks 9–11) — MVP Contract, Scope Cut & Feature Freeze
 - **Week 9 (Current — Nov 4):** Author official MVP Contract; deliver Khalti Sandbox ePayment v2 + COD fallback; record end-to-end tenant isolation test; fix roadmap chronology; publish shared report with all 4 student rows and receipts.
 - **Week 10 (Nov 5–11):** Conduct thorough Code Ownership & AI-use audit across frontend and backend; prepare individual code defense portfolios.
-- **Week 11 (Nov 12 — MVP Feature Freeze Gate):** Lock all feature branches; verify zero regressions; freeze production build.
+- **Week 11 (Nov 12 — MVP Feature Freeze Gate):** Lock all feature branches; verify zero regressions; freeze production build [COMPLETED & VERIFIED: 114 tests pass, scope frozen].
 
 ### Sprint 3 (Weeks 12–14) — Non-Author QA, Mobile Audits & Packaging
 - **Week 12 (Nov 13–19):** Full non-author reproduction drill across different OS environments (Windows, macOS, Linux).
