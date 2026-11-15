@@ -27,7 +27,7 @@
 
 ### Test 1: Khalti Sandbox Successful Checkout Flow
 - **Environment:** Google Chrome on separate Windows laptop (non-developer environment).
-- **Target URL:** Live Vercel deployment (`https://team-2-capstone-design-one.vercel.app/s/brewmellow/checkout`).
+- **Target URL:** Live production deployment (`https://shopcraft.me/s/brewmellow/checkout`).
 - **Steps:**
   1. Navigated to `/s/brewmellow`, selected *Gulmi Bourbon 250g Whole Bean* (NPR 1,200), and added to cart.
   2. Opened cart drawer, verified quantity stepper, and clicked **Checkout**.

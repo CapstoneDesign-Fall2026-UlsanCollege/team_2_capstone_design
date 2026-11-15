@@ -51,7 +51,7 @@ python manage.py test accounts catalog orders stores
 
 ### Test 1: Khalti Sandbox Successful Checkout
 - **Device:** Windows 11 Laptop (Non-developer test environment).
-- **URL:** Live Vercel app (`https://team-2-capstone-design-one.vercel.app/s/brewmellow/checkout`).
+- **URL:** Live production app (`https://shopcraft.me/s/brewmellow/checkout`).
 - **Action:** Added Gulmi Bourbon 250g (NPR 1,200) to cart. Entered delivery details (Bagmati Province, Kathmandu, Phone: `9841234567`). Selected Khalti and entered test credentials.
 - **Result:** **PASS.** Server verified transaction; order invoice displayed with reference token `ORD-2026-SC-001`. Order appeared immediately in roaster queue.
 
