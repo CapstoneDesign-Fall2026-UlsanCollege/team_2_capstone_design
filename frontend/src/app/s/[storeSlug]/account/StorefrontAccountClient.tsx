@@ -28,6 +28,7 @@ import {
   DeliveryAddressPayload,
   fetchStorefrontOrders,
   formatNpr,
+  formatOrderNumber,
   listDeliveryAddresses,
   StorefrontOrderSummary,
   StorePublicMetadata,
@@ -35,7 +36,10 @@ import {
   verifyStorefrontGoogleAuth,
 } from "@/lib/api";
 import { emitAuthChange, useStorefrontAuth } from "@/lib/auth";
-import { getStorefrontAccountBadge } from "@/lib/storefront-helpers";
+import {
+  getStorefrontAccountBadge,
+  getStorefrontPaymentAndDeliveryClaims,
+} from "@/lib/storefront-helpers";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAccount } from "@/components/storefront/AccountContext";
 import { Chip, ChipTone } from "@/components/ui/chip";
@@ -329,6 +333,7 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
   };
 
   const { isStorefrontCustomer, userInitial } = getStorefrontAccountBadge(isAuthenticated, customer);
+  const claims = getStorefrontPaymentAndDeliveryClaims(store);
 
   return (
     <div className="w-full min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans antialiased flex flex-col">
@@ -344,6 +349,8 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
         onOpenAccount={openAccount}
         isAuthenticated={isStorefrontCustomer}
         userInitial={userInitial}
+        showDeliveryLink={claims.shippingConfigured || claims.hasKhalti || claims.codEnabled}
+        deliveryLinkLabel={claims.shippingConfigured ? (claims.codEnabled ? "Delivery & COD" : "Delivery") : "Payment Options"}
       />
 
       {/* 2. Main Content */}
@@ -599,7 +606,7 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
                           <div className="space-y-1.5 min-w-0">
                             <div className="flex flex-wrap items-center gap-2">
                               <span className="font-mono text-xs font-semibold text-[var(--ink)]">
-                                #{ord.order_number || ord.id}
+                                {formatOrderNumber(ord.order_number || ord.id)}
                               </span>
                               <span>·</span>
                               <span className="text-xs text-[var(--ink-2)]">{formatDate(ord.created_at)}</span>

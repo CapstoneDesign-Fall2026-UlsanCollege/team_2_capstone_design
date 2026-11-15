@@ -123,13 +123,22 @@ export function StorefrontHeader({
             aria-label="Main storefront navigation"
             className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--ink-2)]"
           >
-            <button
-              type="button"
-              onClick={onCatalogClick}
-              className="hover:text-[var(--ink)] cursor-pointer transition-colors"
-            >
-              Catalog
-            </button>
+            {onCatalogClick ? (
+              <button
+                type="button"
+                onClick={onCatalogClick}
+                className="hover:text-[var(--ink)] cursor-pointer transition-colors"
+              >
+                Catalog
+              </button>
+            ) : (
+              <Link
+                href={`/s/${encodeURIComponent(storeSlug)}#collection-section`}
+                className="hover:text-[var(--ink)] cursor-pointer transition-colors"
+              >
+                Catalog
+              </Link>
+            )}
             <Link
               href={`/s/${encodeURIComponent(storeSlug)}/about`}
               className="hover:text-[var(--ink)] cursor-pointer transition-colors"
@@ -155,14 +164,24 @@ export function StorefrontHeader({
           {/* Right: Actions (Search, Account, Bag) with min 44px tap targets */}
           <div className="flex items-center gap-1.5 sm:gap-2">
             {/* Search Trigger */}
-            <button
-              type="button"
-              onClick={onOpenSearch}
-              className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
-              aria-label="Search catalog"
-            >
-              <Search className="w-4 h-4" />
-            </button>
+            {onOpenSearch ? (
+              <button
+                type="button"
+                onClick={onOpenSearch}
+                className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
+                aria-label="Search catalog"
+              >
+                <Search className="w-4 h-4" />
+              </button>
+            ) : (
+              <Link
+                href={`/s/${encodeURIComponent(storeSlug)}?search=1#collection-section`}
+                className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
+                aria-label="Search catalog"
+              >
+                <Search className="w-4 h-4" />
+              </Link>
+            )}
 
             {/* Account Trigger (Lucide User, 44px tap target, between Search and Bag) */}
             <button

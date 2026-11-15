@@ -250,6 +250,7 @@ class StorefrontAccountProfileAndOrdersTests(TestCase):
 
         self.assertTrue(customer_map["alice@shopper.np"]["has_account"])
         self.assertFalse(customer_map["guest.shopper@nepal.np"]["has_account"])
+        self.assertEqual(customer_map["guest.shopper@nepal.np"]["city"], "")
         self.assertNotIn("password", customer_map["alice@shopper.np"])
         self.assertNotIn("token", customer_map["alice@shopper.np"])
 

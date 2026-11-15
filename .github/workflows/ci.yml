@@ -120,7 +120,7 @@ jobs:
 
       - name: ESLint
         run: |
-          if [ -d "frontend/src/app/(platform)" ]; then npm --prefix frontend run lint -- "src/app/(platform)" "src/app/merchant" "src/app/s" "src/components/account" "src/components/auth" "src/lib"; else npm --prefix frontend run lint -- next.config.ts; fi
+          if [ -d "frontend/src/app/(platform)" ]; then npm --prefix frontend run lint -- "src/app/(platform)" "src/app/merchant" "src/app/s" "src/components/account" "src/components/auth" "src/components/storefront" "src/lib"; else npm --prefix frontend run lint -- next.config.ts; fi
 
       - name: TypeScript Check
         run: |

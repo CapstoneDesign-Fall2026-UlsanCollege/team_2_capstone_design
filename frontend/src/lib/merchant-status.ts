@@ -117,3 +117,15 @@ const sum = (orders: MoneyOrder[], pred: (o: OrderLike) => boolean) =>
 export const salesMinor = (orders: MoneyOrder[]) => sum(orders, countsAsSales);
 export const codToCollectMinor = (orders: MoneyOrder[]) => sum(orders, isCodToCollect);
 export const codWithCourierMinor = (orders: MoneyOrder[]) => sum(orders, isCodWithCourier);
+
+export type OrdersQueueTab = "all" | "new" | "packed" | "shipped" | "delivered";
+
+/** Resolve ?status= query values (including dashboard links like to_dispatch) into an order queue tab. */
+export function resolveOrdersStatusTab(raw: string | null | undefined): OrdersQueueTab {
+  const normalized = (raw || "").trim().toLowerCase();
+  if (normalized === "to_dispatch" || normalized === "new") return "new";
+  if (normalized === "packed") return "packed";
+  if (normalized === "shipped") return "shipped";
+  if (normalized === "delivered") return "delivered";
+  return "all";
+}

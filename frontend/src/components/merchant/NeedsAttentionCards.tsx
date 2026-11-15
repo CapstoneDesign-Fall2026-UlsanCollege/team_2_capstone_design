@@ -2,23 +2,18 @@
 
 import React from "react";
 import Link from "next/link";
-import { AlertTriangle, ArrowRight, Clock, PackageCheck, Wallet } from "lucide-react";
-import { Card, CardContent } from "@/components/ui/card";
+import { ArrowRight, Clock } from "lucide-react";
+import { CardContent } from "@/components/ui/card";
 import { Chip } from "@/components/ui/chip";
-import { formatNpr } from "@/lib/api";
 
 export interface NeedsAttentionCardsProps {
   storeSlug: string;
   ordersToDispatchCount: number;
-  codPendingMinor: number;
-  khaltiProblemsCount: number;
 }
 
 export function NeedsAttentionCards({
   storeSlug,
   ordersToDispatchCount,
-  codPendingMinor,
-  khaltiProblemsCount,
 }: NeedsAttentionCardsProps) {
   const baseHref = `/merchant/${encodeURIComponent(storeSlug)}/orders`;
 
@@ -29,9 +24,9 @@ export function NeedsAttentionCards({
       </div>
 
       <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
-        {/* 1. Orders to Dispatch (Warning tone) */}
+        {/* Orders to Dispatch (Warning tone) */}
         <Link
-          href={`${baseHref}?status=to_dispatch`}
+          href={`${baseHref}?status=new`}
           className="group block rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--canvas)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
         >
           <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
@@ -57,66 +52,6 @@ export function NeedsAttentionCards({
             </div>
           </CardContent>
         </Link>
-
-        {/* 2. COD to Collect (Neutral tone) */}
-        <Link
-          href={`${baseHref}?payment=cod_pending`}
-          className="group block rounded-xl border border-[var(--border)] bg-[var(--surface)] hover:bg-[var(--canvas)] transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
-        >
-          <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-            <div className="flex items-start justify-between gap-2">
-              <span className="text-xs font-medium text-[var(--ink-2)]">COD to collect</span>
-              <Chip tone="neutral" icon={PackageCheck}>
-                Doorstep collection
-              </Chip>
-            </div>
-
-            <div className="flex items-baseline justify-between">
-              <div className="space-y-0.5">
-                <p className="text-2xl font-semibold tracking-tight text-[var(--ink)] tabular-nums">
-                  {formatNpr(codPendingMinor)}
-                </p>
-                <p className="text-xs text-[var(--ink-2)]">Held with courier until delivery</p>
-              </div>
-
-              <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--ink-2)] group-hover:text-[var(--ink)] transition-colors">
-                <span>View</span>
-                <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-              </span>
-            </div>
-          </CardContent>
-        </Link>
-
-        {/* 3. Failed / Pending Khalti Payments (Error tone, ONLY if > 0) */}
-        {khaltiProblemsCount > 0 && (
-          <Link
-            href={`${baseHref}?payment=failed`}
-            className="group block rounded-xl border border-[var(--error-bd)] bg-[var(--error-bg)]/30 hover:bg-[var(--error-bg)]/50 transition-colors focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-[var(--ink)]"
-          >
-            <CardContent className="p-4 flex flex-col justify-between h-full space-y-3">
-              <div className="flex items-start justify-between gap-2">
-                <span className="text-xs font-medium text-[var(--error-fg)]">Khalti issues</span>
-                <Chip tone="error" icon={AlertTriangle}>
-                  Action needed
-                </Chip>
-              </div>
-
-              <div className="flex items-baseline justify-between">
-                <div className="space-y-0.5">
-                  <p className="text-2xl font-semibold tracking-tight text-[var(--error-fg)] tabular-nums">
-                    {khaltiProblemsCount}
-                  </p>
-                  <p className="text-xs text-[var(--error-fg)]/80">Failed or unverified payments</p>
-                </div>
-
-                <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--error-fg)] group-hover:underline">
-                  <span>Fix</span>
-                  <ArrowRight className="size-3.5 transition-transform group-hover:translate-x-0.5" aria-hidden="true" />
-                </span>
-              </div>
-            </CardContent>
-          </Link>
-        )}
       </div>
     </div>
   );

@@ -10,6 +10,7 @@ import {
   isKhaltiProblem,
   needsDispatch,
   paymentView,
+  resolveOrdersStatusTab,
   salesMinor,
   type MoneyOrder,
 } from "./merchant-status";
@@ -140,5 +141,17 @@ describe("Sales vs COD to collect vs held by courier (mixed)", () => {
   it("empty list is zero, and bad totals are treated as zero", () => {
     expect(salesMinor([])).toBe(0);
     expect(salesMinor([{ ...khalti("PAID", "PAID"), total_minor: NaN }])).toBe(0);
+  });
+});
+
+describe("resolveOrdersStatusTab", () => {
+  it("maps status query parameters cleanly to queue tabs", () => {
+    expect(resolveOrdersStatusTab("to_dispatch")).toBe("new");
+    expect(resolveOrdersStatusTab("new")).toBe("new");
+    expect(resolveOrdersStatusTab("packed")).toBe("packed");
+    expect(resolveOrdersStatusTab("shipped")).toBe("shipped");
+    expect(resolveOrdersStatusTab("delivered")).toBe("delivered");
+    expect(resolveOrdersStatusTab("unknown")).toBe("all");
+    expect(resolveOrdersStatusTab(null)).toBe("all");
   });
 });

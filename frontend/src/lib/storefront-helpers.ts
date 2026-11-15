@@ -58,6 +58,61 @@ export function buildWhatsAppUrl(
   return `https://wa.me/${phoneWithCountry}?text=${encodeURIComponent(greeting)}`;
 }
 
+export interface StorefrontContactDetails {
+  whatsappUrl: string | null;
+  telHref: string | null;
+  phoneDisplay: string | null;
+  email: string | null;
+  mailtoHref: string | null;
+  address: string | null;
+  hasAnyDetail: boolean;
+  hasAnyContact: boolean;
+}
+
+export function resolveStorefrontContactDetails(
+  store: Partial<StorePublicMetadata>
+): StorefrontContactDetails {
+  const whatsappUrl = buildWhatsAppUrl(store.contact_phone, store.name);
+
+  const rawPhone =
+    store.contact_phone && store.contact_phone.trim() !== "9801234567"
+      ? store.contact_phone.trim()
+      : "";
+  const cleanDigits = rawPhone.replace(/\D/g, "").replace(/^0+/, "");
+  const phoneWithCountry = cleanDigits
+    ? cleanDigits.startsWith("977")
+      ? cleanDigits
+      : `977${cleanDigits}`
+    : "";
+  const localDigits = phoneWithCountry.startsWith("977")
+    ? phoneWithCountry.slice(3)
+    : phoneWithCountry;
+
+  const telHref = phoneWithCountry ? `tel:+${phoneWithCountry}` : null;
+  const phoneDisplay = localDigits ? `+977 ${localDigits}` : null;
+
+  const rawEmail = (store.support_email || store.contact_email || "").trim();
+  const email = rawEmail || null;
+  const mailtoHref = email ? `mailto:${email}` : null;
+
+  const rawAddress = (store.address || "").trim();
+  const address = isPlaceholderText(rawAddress) ? null : rawAddress;
+
+  const hasAnyDetail = Boolean(telHref || mailtoHref || address);
+  const hasAnyContact = Boolean(whatsappUrl || hasAnyDetail);
+
+  return {
+    whatsappUrl,
+    telHref,
+    phoneDisplay,
+    email,
+    mailtoHref,
+    address,
+    hasAnyDetail,
+    hasAnyContact,
+  };
+}
+
 export interface StorefrontClaims {
   shippingConfigured: boolean;
   hasKhalti: boolean;

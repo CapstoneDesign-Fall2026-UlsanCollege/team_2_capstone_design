@@ -59,51 +59,6 @@ export function ProductDetailView({
     defaultVariant ? defaultVariant.id : null
   );
 
-  // Dynamic Product Attributes (from product.attributes JSONField)
-  const dynamicAttributeOptions = useMemo(() => {
-    const attrs = product.attributes || {};
-    const result: Array<{ name: string; values: string[] }> = [];
-
-    if (attrs.options && typeof attrs.options === "object" && !Array.isArray(attrs.options)) {
-      for (const [key, val] of Object.entries(attrs.options)) {
-        if (Array.isArray(val) && val.length > 0) {
-          result.push({ name: key, values: val.map(String) });
-        }
-      }
-    } else {
-      for (const [key, val] of Object.entries(attrs)) {
-        if (
-          Array.isArray(val) &&
-          val.length > 0 &&
-          typeof val[0] === "string" &&
-          !key.includes("image") &&
-          key !== "tasting_notes" &&
-          key !== "gallery"
-        ) {
-          const readableName = key
-            .replace(/_/g, " ")
-            .replace(/\b\w/g, (c) => c.toUpperCase());
-          result.push({ name: readableName, values: val as string[] });
-        }
-      }
-    }
-    return result;
-  }, [product.attributes]);
-
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>(() => {
-    const initial: Record<string, string> = {};
-    for (const opt of dynamicAttributeOptions) {
-      if (opt.values.length > 0) {
-        initial[opt.name] = opt.values[0];
-      }
-    }
-    return initial;
-  });
-
-  const handleSelectAttribute = (attrName: string, value: string) => {
-    setSelectedAttributes((prev) => ({ ...prev, [attrName]: value }));
-  };
-
   const [quantity, setQuantity] = useState<number>(1);
   const [justAdded, setJustAdded] = useState<boolean>(false);
   const [activeImageIndex, setActiveImageIndex] = useState<number>(0);
@@ -120,14 +75,7 @@ export function ProductDetailView({
   const totalPriceMinor = unitPriceMinor * quantity;
   const isInStock = selectedVariant ? selectedVariant.in_stock && selectedVariant.is_active : true;
 
-  // Build final variant label
-  const attributeLabels = Object.values(selectedAttributes).filter(Boolean);
-  const finalVariantLabel = [
-    selectedVariant?.label || "",
-    ...attributeLabels,
-  ]
-    .filter(Boolean)
-    .join(" · ") || "Standard";
+  const finalVariantLabel = selectedVariant?.label || "Standard";
 
   // Collect all product images
   const images = useMemo(() => {
@@ -348,43 +296,6 @@ export function ProductDetailView({
               </div>
             </div>
 
-            {/* 1. Dynamic Attribute Option Pickers (e.g. Size, Color, Grind) */}
-            {dynamicAttributeOptions.length > 0 && (
-              <div className="space-y-3">
-                {dynamicAttributeOptions.map((opt) => (
-                  <div key={opt.name} className="space-y-2">
-                    <div className="flex items-center justify-between text-xs">
-                      <label className="font-semibold text-[var(--ink)]">
-                        {opt.name}
-                      </label>
-                      <span className="text-[var(--ink-2)]">
-                        {selectedAttributes[opt.name] || opt.values[0]}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-wrap gap-2">
-                      {opt.values.map((val) => {
-                        const isSelected = (selectedAttributes[opt.name] || opt.values[0]) === val;
-                        return (
-                          <button
-                            key={val}
-                            type="button"
-                            onClick={() => handleSelectAttribute(opt.name, val)}
-                            className={`min-h-[44px] px-4 rounded-lg border text-xs font-semibold transition-colors cursor-pointer ${
-                              isSelected
-                                ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--surface)]"
-                                : "border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--ink-2)]"
-                            }`}
-                          >
-                            {val}
-                          </button>
-                        );
-                      })}
-                    </div>
-                  </div>
-                ))}
-              </div>
-            )}
 
             {/* 2. Variant Selector (8px radius, 1px border) */}
             {variants.length > 1 && (
@@ -506,7 +417,7 @@ export function ProductDetailView({
                 {openDetails && (
                   <div className="p-4 border-t border-[var(--border)] bg-[var(--canvas)] text-xs space-y-3 text-[var(--ink-2)]">
                     <p className="leading-relaxed text-[var(--ink)]">
-                      {product.description || "Authentic quality product crafted with care in Nepal."}
+                      {product.description || "No product description provided."}
                     </p>
                     {specEntries.length > 0 && (
                       <div className="pt-2 border-t border-[var(--border)] divide-y divide-[var(--border)]/60">
@@ -553,7 +464,8 @@ export function ProductDetailView({
                               {formatNpr(store.outside_valley_shipping_minor || 20000)}
                             </span>
                           </div>
-                          {store.free_shipping_threshold_minor && (
+                          {typeof store.free_shipping_threshold_minor === "number" &&
+                            store.free_shipping_threshold_minor > 0 && (
                             <p className="font-semibold text-[var(--ink)] pt-1">
                               Free delivery on orders over {formatNpr(store.free_shipping_threshold_minor)}.
                             </p>

@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { ArrowUpRight, Check, Minus, Package, Plus, X } from "lucide-react";
 import { formatNpr, ProductItem, ProductVariant } from "@/lib/api";
@@ -77,25 +77,6 @@ function ProductDetailSheetContent({
     defaultVariant ? defaultVariant.id : null
   );
 
-  const dynamicOptions = useMemo(() => {
-    const attrs = product.attributes || {};
-    const res: Array<{ name: string; values: string[] }> = [];
-    if (attrs.options && typeof attrs.options === "object" && !Array.isArray(attrs.options)) {
-      for (const [k, v] of Object.entries(attrs.options)) {
-        if (Array.isArray(v) && v.length > 0) res.push({ name: k, values: v.map(String) });
-      }
-    }
-    return res;
-  }, [product.attributes]);
-
-  const [selectedAttributes, setSelectedAttributes] = useState<Record<string, string>>(() => {
-    const init: Record<string, string> = {};
-    for (const opt of dynamicOptions) {
-      if (opt.values.length > 0) init[opt.name] = opt.values[0];
-    }
-    return init;
-  });
-
   const [quantity, setQuantity] = useState<number>(1);
   const [justAdded, setJustAdded] = useState<boolean>(false);
 
@@ -106,16 +87,12 @@ function ProductDetailSheetContent({
   const totalPriceMinor = unitPriceMinor * quantity;
   const isInStock = selectedVariant ? selectedVariant.in_stock : true;
 
-  const attributeLabels = Object.values(selectedAttributes).filter(Boolean);
-  const finalVariantLabel = [
-    selectedVariant?.label || "",
-    ...attributeLabels,
-  ]
-    .filter(Boolean)
-    .join(" · ") || "Standard";
+  const finalVariantLabel = selectedVariant?.label || "Standard";
+
+  const isDemoProduct = product.id < 0;
 
   const handleAddToCart = () => {
-    if (!selectedVariant || !isInStock) return;
+    if (isDemoProduct || !selectedVariant || !isInStock) return;
 
     if (onAddToCart) {
       onAddToCart({
@@ -195,37 +172,6 @@ function ProductDetailSheetContent({
           </div>
         </div>
 
-        {/* 1. Dynamic Attribute Pickers */}
-        {dynamicOptions.length > 0 && (
-          <div className="space-y-2">
-            {dynamicOptions.map((opt) => (
-              <div key={opt.name} className="space-y-1">
-                <label className="font-semibold text-[var(--ink)] uppercase tracking-wider text-[11px] block">
-                  Select {opt.name}
-                </label>
-                <div className="flex flex-wrap gap-1.5">
-                  {opt.values.map((val) => {
-                    const isSelected = (selectedAttributes[opt.name] || opt.values[0]) === val;
-                    return (
-                      <button
-                        key={val}
-                        type="button"
-                        onClick={() => setSelectedAttributes((p) => ({ ...p, [opt.name]: val }))}
-                        className={`h-9 px-3 rounded-lg text-xs font-medium border transition-colors cursor-pointer ${
-                          isSelected
-                            ? "border-[var(--ink)] bg-[var(--ink)] text-[var(--surface)] font-semibold"
-                            : "border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] hover:border-[var(--ink-2)]"
-                        }`}
-                      >
-                        {val}
-                      </button>
-                    );
-                  })}
-                </div>
-              </div>
-            ))}
-          </div>
-        )}
 
         {/* 2. Variant Selector */}
         {variants.length > 1 && (
@@ -306,7 +252,7 @@ function ProductDetailSheetContent({
         <Button
           variant="primary"
           onClick={handleAddToCart}
-          disabled={!isInStock || justAdded}
+          disabled={isDemoProduct || !isInStock || justAdded}
           className="w-full h-11 text-sm font-semibold"
         >
           {justAdded ? (
@@ -314,6 +260,8 @@ function ProductDetailSheetContent({
               <Check className="w-4 h-4 text-[var(--surface)]" />
               <span>Added to Bag</span>
             </>
+          ) : isDemoProduct ? (
+            <span>Demo Preview Only</span>
           ) : !isInStock ? (
             <span>Sold Out</span>
           ) : (

@@ -102,6 +102,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
   // Preview State
   const [viewport, setViewport] = useState<"desktop" | "mobile">("desktop");
   const [activeTab, setActiveTab] = useState<"theme" | "branding" | "story">("theme");
+  const [previewRevision, setPreviewRevision] = useState(0);
 
   useEffect(() => {
     if (typeof window !== "undefined") {
@@ -163,6 +164,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
         logo_url: logoUrl.trim(),
       });
       setFieldErrors({});
+      setPreviewRevision((v) => v + 1);
       setSaveSuccess(true);
       setTimeout(() => setSaveSuccess(false), 3000);
     } catch (err: unknown) {
@@ -180,7 +182,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
     [themePreset]
   );
 
-  const previewUrl = `/s/${encodeURIComponent(storeSlug)}?preview_theme=${encodeURIComponent(themePreset)}`;
+  const previewUrl = `/s/${encodeURIComponent(storeSlug)}?preview_theme=${encodeURIComponent(themePreset)}&v=${previewRevision}`;
 
   if (loading) {
     return (
@@ -502,6 +504,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
               }`}
             >
               <iframe
+                key={`${themePreset}-${previewRevision}`}
                 src={previewUrl}
                 title="Live Storefront Preview"
                 className="w-full h-full border-0 bg-white"

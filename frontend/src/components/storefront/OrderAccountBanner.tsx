@@ -67,14 +67,14 @@ export function OrderHeaderNav({
   const { openAccount } = useAccount();
 
   if (loading) {
-    return <span className="text-xs text-[var(--ink-2)] tabular-nums">{orderNumber}</span>;
+    return <span className="text-xs text-[var(--ink-2)] tabular-nums shrink-0 whitespace-nowrap">{orderNumber}</span>;
   }
 
   if (isAuthenticated) {
     return (
       <Link
         href={`/s/${encodeURIComponent(storeSlug)}/account`}
-        className="text-xs font-medium text-[var(--ink)] hover:text-[var(--ink-2)] underline min-h-[44px] inline-flex items-center"
+        className="text-xs font-medium text-[var(--ink)] hover:text-[var(--ink-2)] underline min-h-[44px] inline-flex items-center shrink-0 whitespace-nowrap"
       >
         Order history
       </Link>
@@ -82,12 +82,12 @@ export function OrderHeaderNav({
   }
 
   return (
-    <div className="flex items-center gap-3">
-      <span className="hidden sm:inline text-xs text-[var(--ink-2)] tabular-nums">{orderNumber}</span>
+    <div className="flex items-center gap-3 shrink-0">
+      <span className="hidden sm:inline text-xs text-[var(--ink-2)] tabular-nums whitespace-nowrap">{orderNumber}</span>
       <button
         type="button"
         onClick={() => openAccount()}
-        className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)] underline min-h-[44px] inline-flex items-center cursor-pointer"
+        className="text-xs text-[var(--ink-2)] hover:text-[var(--ink)] underline min-h-[44px] inline-flex items-center whitespace-nowrap cursor-pointer"
       >
         Sign in
       </button>

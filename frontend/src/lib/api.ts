@@ -87,6 +87,18 @@ export function formatNpr(amountMinor: number | null | undefined): string {
   return `Rs. ${formatted}`;
 }
 
+/** Ensures order numbers display a single '#' prefix without producing '##...'. */
+export function formatOrderNumber(orderNumber: string | number | null | undefined): string {
+  if (orderNumber === null || orderNumber === undefined) {
+    return "—";
+  }
+  const raw = String(orderNumber).trim();
+  if (!raw) {
+    return "—";
+  }
+  return raw.startsWith("#") ? raw : `#${raw}`;
+}
+
 export function sanitizeRedirectTarget(
   nextParam?: string | null,
   storeNameParam?: string | null
@@ -432,6 +444,7 @@ export interface CreateStorePayload {
   category?: string;
   city?: string;
   province?: string;
+  address?: string;
   theme_preset: string;
   tagline?: string;
   contact_phone?: string;

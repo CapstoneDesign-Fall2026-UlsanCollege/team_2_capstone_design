@@ -17,6 +17,7 @@ interface StorePublicData {
   logo_url: string | null;
   contact_phone: string;
   accent_color?: string | null;
+  shipping_configured?: boolean;
   free_shipping_threshold_minor?: number | null;
 }
 
@@ -92,7 +93,13 @@ export default async function StorefrontLayout({
         <CartProvider
           storeSlug={store.slug}
           themePreset={themePreset}
-          freeShippingThresholdMinor={store.free_shipping_threshold_minor}
+          freeShippingThresholdMinor={
+            store.shipping_configured &&
+            typeof store.free_shipping_threshold_minor === "number" &&
+            store.free_shipping_threshold_minor > 0
+              ? store.free_shipping_threshold_minor
+              : null
+          }
         >
           {children}
           <CartDrawer />

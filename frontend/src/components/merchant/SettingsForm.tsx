@@ -104,7 +104,6 @@ export function SettingsForm({
       ? Math.round(initialSettings.free_shipping_threshold_minor / 100).toString()
       : ""
   );
-  const [customDomain, setCustomDomain] = useState(initialSettings.custom_domain || "");
 
   // 5. COD & Khalti configuration
   const [codEnabled, setCodEnabled] = useState(initialSettings.cod_enabled !== false);
@@ -190,7 +189,6 @@ export function SettingsForm({
 
     if (isOwner) {
       payload.khalti_mode = khaltiMode;
-      payload.custom_domain = customDomain.trim().toLowerCase();
       if (khaltiSecretKey.trim()) {
         payload.khalti_secret_key = khaltiSecretKey.trim();
       }
@@ -200,7 +198,6 @@ export function SettingsForm({
       const updated = await updateMerchantSettings(storeSlug, payload);
       setHasCustomKey(updated.has_custom_khalti_key);
       setMaskedKey(updated.khalti_key_masked);
-      setCustomDomain(updated.custom_domain || "");
       setCodEnabled(updated.cod_enabled !== false);
       setKhaltiSecretKey("");
       setFieldErrors({});
@@ -828,64 +825,33 @@ export function SettingsForm({
           <section className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-5 space-y-4">
             <div className="flex items-center justify-between gap-2">
               <div className="flex items-center gap-2">
-                <Globe className="w-4 h-4 text-emerald-500" />
+                <Globe className="w-4 h-4 text-[var(--muted-foreground)]" />
                 <div>
                   <h2 className="text-sm font-semibold text-[var(--foreground)]">
                     Custom Domain &amp; Nepal `.com.np` Routing
                   </h2>
                   <p className="text-xs text-[var(--muted-foreground)]">
-                    Connect your free Mercantile `.com.np` domain or `.com` storefront hostname.
+                    Connect your own `.com.np` or `.com` domain to your storefront.
                   </p>
                 </div>
               </div>
-              {!isOwner && (
-                <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--secondary)] text-[10px] font-mono text-[var(--muted-foreground)]">
-                  <Lock className="w-3 h-3" />
-                  <span>Owner Only</span>
-                </span>
-              )}
+              <span className="inline-flex items-center px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--secondary)] text-[10px] font-mono text-[var(--muted-foreground)]">
+                Coming soon
+              </span>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div className="space-y-1">
-                <label className="text-xs font-medium text-[var(--foreground)]">
-                  Default ShopCraft Path
-                </label>
-                <div className="h-9 px-3 rounded border border-[var(--border)] bg-[var(--secondary)] flex items-center text-xs font-mono text-[var(--foreground)]">
-                  shopcraft.com.np/s/{storeSlug}
-                </div>
-              </div>
-
-              <div className="space-y-1">
-                <label
-                  htmlFor="custom-domain"
-                  className="text-xs font-medium text-[var(--foreground)]"
-                >
-                  Custom Domain (Optional)
-                </label>
-                <input
-                  id="custom-domain"
-                  type="text"
-                  disabled={!isOwner}
-                  placeholder={`shop.${storeSlug}.com.np`}
-                  value={customDomain}
-                  onChange={(e) => setCustomDomain(e.target.value)}
-                  className="w-full h-9 px-3 rounded border border-[var(--border)] bg-[var(--background)] text-xs font-mono text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)] disabled:opacity-60"
-                />
+            <div className="space-y-1">
+              <p className="text-xs font-medium text-[var(--foreground)]">
+                Default ShopCraft Storefront URL
+              </p>
+              <div className="h-9 px-3 rounded border border-[var(--border)] bg-[var(--secondary)] flex items-center text-xs font-mono text-[var(--foreground)]">
+                /s/{storeSlug}
               </div>
             </div>
 
-            <div className="p-3 rounded-md border border-[var(--border)] bg-[var(--secondary)]/50 text-[11px] font-mono text-[var(--muted-foreground)] space-y-1">
-              <p className="font-semibold text-[var(--foreground)]">
-                DNS CNAME Record Instructions (Mercantile register.com.np / Cloudflare):
-              </p>
-              <p>
-                Type: <span className="text-[var(--foreground)]">CNAME</span> · Host:{" "}
-                <span className="text-[var(--foreground)]">shop</span> (or{" "}
-                <span className="text-[var(--foreground)]">www</span>) · Target:{" "}
-                <span className="text-[var(--foreground)]">cname.shopcraft.com.np</span>
-              </p>
-            </div>
+            <p className="text-xs text-[var(--muted-foreground)]">
+              Custom domain mapping and automated SSL provisioning are coming soon.
+            </p>
           </section>
         </>
       )}

@@ -2,12 +2,14 @@ import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import type { ProductItem, StorePublicMetadata } from "./api";
+import { formatOrderNumber } from "./api";
 import {
   buildThemePreviewDemoProducts,
   buildWhatsAppUrl,
   cleanStoreCategory,
   getStorefrontAccountBadge,
   getStorefrontPaymentAndDeliveryClaims,
+  resolveStorefrontContactDetails,
   sanitizeStorefrontImageUrl,
 } from "./storefront-helpers";
 
@@ -24,22 +26,55 @@ vi.mock("@/lib/auth", () => ({
   useStorefrontAuth: () => mockAuthState,
 }));
 
+const mockCartState = vi.hoisted(() => ({
+  storeSlug: "adi-store",
+  items: [] as Array<{
+    productId: number;
+    variantId: number;
+    slug: string;
+    name: string;
+    variantLabel: string;
+    unitPriceMinor: number;
+    quantity: number;
+    imageUrl?: string;
+    inStock: boolean;
+  }>,
+  itemCount: 0,
+  subtotalMinor: 0,
+  isCartOpen: false,
+  freeShippingThresholdMinor: null as number | null,
+  openCart: vi.fn(),
+  closeCart: vi.fn(),
+  toggleCart: vi.fn(),
+  addItem: vi.fn(),
+  updateQty: vi.fn(),
+  removeItem: vi.fn(),
+  clear: vi.fn(),
+}));
+
 vi.mock("@/components/storefront/CartContext", () => ({
-  useCart: () => ({
-    storeSlug: "adi-store",
-    items: [],
-    itemCount: 0,
-    subtotalMinor: 0,
-    isCartOpen: false,
-    freeShippingThresholdMinor: null,
-    openCart: vi.fn(),
-    closeCart: vi.fn(),
-    toggleCart: vi.fn(),
-    addItem: vi.fn(),
-    updateQty: vi.fn(),
-    removeItem: vi.fn(),
-    clear: vi.fn(),
+  useCart: () => mockCartState,
+}));
+
+vi.mock("@radix-ui/react-dialog", () => ({
+  Root: ({ open, children }: { open?: boolean; children?: React.ReactNode }) =>
+    open ? React.createElement("div", { "data-dialog-root": "true" }, children) : null,
+  Portal: ({ children }: { children?: React.ReactNode }) => React.createElement(React.Fragment, null, children),
+  Overlay: () => React.createElement("div"),
+  Content: ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children),
+  Title: ({ children }: { children?: React.ReactNode }) => React.createElement("h2", null, children),
+  Description: ({ children }: { children?: React.ReactNode }) => React.createElement("p", null, children),
+  Close: ({ children }: { children?: React.ReactNode }) => React.createElement("div", null, children),
+}));
+
+vi.mock("next/navigation", () => ({
+  useRouter: () => ({
+    push: vi.fn(),
+    replace: vi.fn(),
+    refresh: vi.fn(),
   }),
+  usePathname: () => "/s/adi-store",
+  useSearchParams: () => new URLSearchParams(),
 }));
 
 vi.mock("@/components/storefront/AccountContext", () => ({
@@ -72,6 +107,12 @@ vi.mock("next/link", () => ({
 
 import { StorefrontCatalogView } from "@/components/storefront/StorefrontCatalogView";
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader";
+import { ProductDetailView } from "@/components/storefront/ProductDetailView";
+import { CartDrawer } from "@/components/storefront/CartDrawer";
+import { CheckoutForm } from "@/components/storefront/CheckoutForm";
+import { NeedsAttentionCards } from "@/components/merchant/NeedsAttentionCards";
+import { HomeKpiStrip } from "@/components/merchant/HomeKpiStrip";
+import { SalesBarChart } from "@/components/merchant/SalesBarChart";
 
 function makeStore(overrides: Partial<StorePublicMetadata> = {}): StorePublicMetadata {
   return {
@@ -179,6 +220,11 @@ describe("StorefrontCatalogView placeholder removal", () => {
     mockAuthState.isAuthenticated = false;
     mockAuthState.user = null;
     mockAuthState.customer = null;
+    mockCartState.items = [];
+    mockCartState.itemCount = 0;
+    mockCartState.subtotalMinor = 0;
+    mockCartState.isCartOpen = false;
+    mockCartState.freeShippingThresholdMinor = null;
   });
 
   it("renders friendly empty state with fallback hero, Shop all, and zero fake prices/ShopCraft branding", () => {
@@ -334,5 +380,214 @@ describe("StorefrontCatalogView placeholder removal", () => {
       })
     );
     expect(customerSessionHtml).toContain(">M<");
+  });
+
+  it("resolves storefront contact details with 977 normalization, email fallback, and empty-state flags", () => {
+    const withAll = resolveStorefrontContactDetails({
+      name: "Rohit Store",
+      contact_phone: "+977 98-4122-3344",
+      support_email: "support@rohitstore.np",
+      contact_email: "owner@rohitstore.np",
+      address: "Itahari, Koshi Province",
+    });
+    expect(withAll.whatsappUrl).toBe(
+      "https://wa.me/9779841223344?text=Hi%20Rohit%20Store%2C%20I%20have%20an%20inquiry%20about%20your%20products."
+    );
+    expect(withAll.telHref).toBe("tel:+9779841223344");
+    expect(withAll.phoneDisplay).toBe("+977 9841223344");
+    expect(withAll.email).toBe("support@rohitstore.np");
+    expect(withAll.mailtoHref).toBe("mailto:support@rohitstore.np");
+    expect(withAll.address).toBe("Itahari, Koshi Province");
+    expect(withAll.hasAnyDetail).toBe(true);
+    expect(withAll.hasAnyContact).toBe(true);
+
+    const noWhatsappFallback = resolveStorefrontContactDetails({
+      name: "Clean Craft",
+      contact_phone: "9801234567",
+      support_email: "",
+      contact_email: "hello@cleancraft.np",
+      address: "",
+    });
+    expect(noWhatsappFallback.whatsappUrl).toBeNull();
+    expect(noWhatsappFallback.telHref).toBeNull();
+    expect(noWhatsappFallback.email).toBe("hello@cleancraft.np");
+    expect(noWhatsappFallback.mailtoHref).toBe("mailto:hello@cleancraft.np");
+    expect(noWhatsappFallback.hasAnyDetail).toBe(true);
+    expect(noWhatsappFallback.hasAnyContact).toBe(true);
+
+    const completelyEmpty = resolveStorefrontContactDetails({
+      name: "New Store",
+      contact_phone: "",
+      support_email: "",
+      contact_email: "",
+      address: "",
+    });
+    expect(completelyEmpty.whatsappUrl).toBeNull();
+    expect(completelyEmpty.hasAnyDetail).toBe(false);
+    expect(completelyEmpty.hasAnyContact).toBe(false);
+  });
+
+  it("hides non-functional attribute pickers and uses neutral empty description on ProductDetailView", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(ProductDetailView, {
+        store: makeStore(),
+        product: makeProduct({
+          description: "",
+          attributes: {
+            options: { Size: ["S", "M", "L"] },
+            material: "100% Cotton",
+          },
+        }),
+        relatedProducts: [],
+      })
+    );
+
+    expect(html).not.toContain("Authentic quality product crafted with care in Nepal.");
+    expect(html).not.toContain(">Size<");
+    expect(html).toContain("100% Cotton");
+  });
+
+  it("hides the free-delivery meter in CartDrawer unless a threshold is configured", () => {
+    mockCartState.isCartOpen = true;
+    mockCartState.itemCount = 1;
+    mockCartState.subtotalMinor = 50000;
+    mockCartState.items = [
+      {
+        productId: 1,
+        variantId: 11,
+        slug: "roti-sabji",
+        name: "Roti Sabji",
+        variantLabel: "Standard",
+        unitPriceMinor: 50000,
+        quantity: 1,
+        inStock: true,
+      },
+    ];
+    mockCartState.freeShippingThresholdMinor = null;
+
+    const withoutThresholdHtml = renderToStaticMarkup(
+      React.createElement(CartDrawer)
+    );
+    expect(withoutThresholdHtml).not.toContain("free delivery");
+    expect(withoutThresholdHtml).not.toContain("Unlocked free delivery");
+
+    mockCartState.freeShippingThresholdMinor = 150000;
+    const withThresholdHtml = renderToStaticMarkup(
+      React.createElement(CartDrawer)
+    );
+    expect(withThresholdHtml).toContain("for free delivery");
+  });
+
+  it("leaves municipality and ward empty by default and omits unconfigured courier promises on CheckoutForm", () => {
+    mockCartState.itemCount = 1;
+    mockCartState.subtotalMinor = 50000;
+    mockCartState.items = [
+      {
+        productId: 1,
+        variantId: 11,
+        slug: "roti-sabji",
+        name: "Roti Sabji",
+        variantLabel: "Standard",
+        unitPriceMinor: 50000,
+        quantity: 1,
+        inStock: true,
+      },
+    ];
+
+    const html = renderToStaticMarkup(
+      React.createElement(CheckoutForm, {
+        store: makeStore({ shipping_configured: false, cod_enabled: true }),
+      })
+    );
+
+    expect(html).not.toContain('value="Kathmandu Metropolitan City"');
+    expect(html).not.toContain('value="3"');
+    expect(html).not.toContain("Kathmandu Valley Express");
+    expect(html).not.toContain("Delivered within 1");
+    expect(html).toContain("Standard Delivery");
+  });
+
+  it("renders working Catalog and Search links when callbacks are absent and opens search when initialSearchOpen is true", () => {
+    const headerHtml = renderToStaticMarkup(
+      React.createElement(StorefrontHeader, {
+        storeSlug: "adi-store",
+        storeName: "Adi Studio",
+        showDeliveryLink: false,
+      })
+    );
+    expect(headerHtml).toContain('href="/s/adi-store#collection-section"');
+    expect(headerHtml).toContain('href="/s/adi-store?search=1#collection-section"');
+    expect(headerHtml).not.toContain("Delivery &amp; COD");
+
+    const catalogSearchHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore(),
+        products: [makeProduct()],
+        initialSearchOpen: true,
+      })
+    );
+    expect(catalogSearchHtml).toContain("Search products, variants, or collections...");
+  });
+
+  it("disables Add controls for negative-id preview demo products", () => {
+    const previewHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({ category: "Coffee" }),
+        products: [],
+        isThemePreview: true,
+      })
+    );
+    expect(previewHtml).toContain("Preview demo item");
+    expect(previewHtml).toContain("disabled");
+  });
+
+  it("removes payment-filter cards, prior-period deltas, and compare prior checkbox from merchant overview widgets", () => {
+    const attentionHtml = renderToStaticMarkup(
+      React.createElement(NeedsAttentionCards, {
+        storeSlug: "adi-store",
+        ordersToDispatchCount: 4,
+      })
+    );
+    expect(attentionHtml).toContain("Orders to dispatch");
+    expect(attentionHtml).toContain("/merchant/adi-store/orders?status=new");
+    expect(attentionHtml).not.toContain("?payment=");
+    expect(attentionHtml).not.toContain("Khalti issues");
+
+    const kpiHtml = renderToStaticMarkup(
+      React.createElement(HomeKpiStrip, {
+        data: {
+          salesPaidMinor: 150000,
+          ordersCount: 3,
+          aovMinor: 50000,
+          codPendingMinor: 25000,
+        },
+      })
+    );
+    expect(kpiHtml).not.toContain("vs prior");
+
+    const chartHtml = renderToStaticMarkup(
+      React.createElement(SalesBarChart, {
+        series: Array.from({ length: 14 }, (_, idx) => ({
+          date: `2026-11-${String(idx + 1).padStart(2, "0")}`,
+          label: `Nov ${idx + 1}`,
+          revenue_minor: 10000,
+          orders_count: 1,
+        })),
+        storeSlug: "adi-store",
+        totalOrdersInRange: 6,
+        totalSalesMinor: 150000,
+        rangeLabel: "30 days",
+      })
+    );
+    expect(chartHtml).not.toContain("Compare prior period");
+    expect(chartHtml).toContain("Last 14 days");
+  });
+
+  it("normalizes order numbers without producing double hash prefixes", () => {
+    expect(formatOrderNumber("#HI-2026-0003")).toBe("#HI-2026-0003");
+    expect(formatOrderNumber("HI-2026-0003")).toBe("#HI-2026-0003");
+    expect(formatOrderNumber(42)).toBe("#42");
+    expect(formatOrderNumber("")).toBe("—");
+    expect(formatOrderNumber(null)).toBe("—");
   });
 });

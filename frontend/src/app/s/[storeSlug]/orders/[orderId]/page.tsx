@@ -131,6 +131,10 @@ export default async function StorefrontOrderDetailPage({
     heroSubtitle = `${store.name} is preparing your items for courier dispatch.`;
   }
 
+  const isOrderActive =
+    !["DELIVERED", "CANCELLED", "PAYMENT_FAILED"].includes(statusUpper) &&
+    paymentStatusUpper !== "FAILED";
+
   // Stepper lifecycle calculation
   const isConfirmed = [
     "CONFIRMED",
@@ -155,16 +159,16 @@ export default async function StorefrontOrderDetailPage({
     <div className="min-h-dvh bg-[var(--canvas)] text-[var(--ink)] flex flex-col font-sans">
       {/* Header */}
       <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--surface)]">
-        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between">
+        <div className="max-w-2xl mx-auto px-4 h-14 flex items-center justify-between gap-2">
           <Link
             href={`/s/${encodeURIComponent(store.slug)}`}
-            className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors min-h-[44px]"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors min-h-[44px] shrink-0 whitespace-nowrap"
           >
-            <ArrowLeft className="w-4 h-4" aria-hidden="true" />
+            <ArrowLeft className="w-4 h-4 shrink-0" aria-hidden="true" />
             <span>Store Home</span>
           </Link>
 
-          <span className="font-serif text-base font-semibold text-[var(--ink)] truncate">
+          <span className="font-serif text-base font-semibold text-[var(--ink)] min-w-0 truncate text-center">
             {store.name}
           </span>
 
@@ -231,13 +235,15 @@ export default async function StorefrontOrderDetailPage({
 
         {/* Order Lifecycle Timeline */}
         <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
-          <div className="flex items-center justify-between">
+          <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <h2 className="font-serif text-base font-semibold text-[var(--ink)]">
               Order Progress
             </h2>
-            <span className="text-xs text-[var(--ink-2)]">
-              Estimated Delivery: 1–3 Days
-            </span>
+            {Boolean(store.shipping_configured) && isOrderActive && (
+              <span className="text-xs text-[var(--ink-2)]">
+                Estimated Delivery: 1–3 Days
+              </span>
+            )}
           </div>
 
           <div className="grid grid-cols-4 gap-2 pt-2">

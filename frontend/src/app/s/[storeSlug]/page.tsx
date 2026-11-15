@@ -7,19 +7,21 @@ interface StoreCatalogData {
   products: ProductItem[];
 }
 
-async function fetchStoreData(storeSlug: string): Promise<{
+async function fetchStoreData(
+  storeSlug: string,
+  bypassCache = false
+): Promise<{
   store: StorePublicMetadata | null;
   catalog: StoreCatalogData;
 }> {
   const origin = getServerApiOrigin();
   const encodedSlug = encodeURIComponent(storeSlug);
+  const fetchInit: RequestInit = bypassCache
+    ? { cache: "no-store" }
+    : { next: { revalidate: 60 } };
   const [storeRes, catalogRes] = await Promise.all([
-    fetch(`${origin}/api/stores/${encodedSlug}/`, {
-      next: { revalidate: 60 },
-    }),
-    fetch(`${origin}/api/stores/${encodedSlug}/catalog/`, {
-      next: { revalidate: 60 },
-    }),
+    fetch(`${origin}/api/stores/${encodedSlug}/`, fetchInit),
+    fetch(`${origin}/api/stores/${encodedSlug}/catalog/`, fetchInit),
   ]);
 
   if (storeRes.status === 404) {
@@ -43,10 +45,11 @@ export default async function StorefrontHomePage({
   searchParams,
 }: {
   params: Promise<{ storeSlug: string }>;
-  searchParams: Promise<{ preview_theme?: string }>;
+  searchParams: Promise<{ preview_theme?: string; search?: string }>;
 }) {
   const [{ storeSlug }, resolvedSearchParams] = await Promise.all([params, searchParams]);
-  const { store, catalog } = await fetchStoreData(storeSlug);
+  const isThemePreview = Boolean(resolvedSearchParams?.preview_theme);
+  const { store, catalog } = await fetchStoreData(storeSlug, isThemePreview);
 
   if (!store) {
     notFound();
@@ -56,7 +59,8 @@ export default async function StorefrontHomePage({
     <StorefrontCatalogView
       store={store}
       products={catalog.products}
-      isThemePreview={Boolean(resolvedSearchParams?.preview_theme)}
+      isThemePreview={isThemePreview}
+      initialSearchOpen={resolvedSearchParams?.search === "1"}
     />
   );
 }

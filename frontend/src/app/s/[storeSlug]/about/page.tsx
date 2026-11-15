@@ -10,17 +10,13 @@ import {
   MessageCircle,
   Package,
   Phone,
-  ShieldCheck,
   Sparkles,
-  Truck,
 } from "lucide-react";
 import { StoreImage } from "@/components/storefront/StoreImage";
 import { StorePublicMetadata } from "@/lib/api";
 import { getServerApiOrigin } from "@/lib/env";
 import {
   buildWhatsAppUrl,
-  cleanStoreCategory,
-  getStorefrontPaymentAndDeliveryClaims,
   sanitizeStorefrontImageUrl,
 } from "@/lib/storefront-helpers";
 
@@ -49,8 +45,6 @@ export default async function StorefrontAboutPage({
     notFound();
   }
 
-  const cleanCategory = cleanStoreCategory(store.category);
-  const claims = getStorefrontPaymentAndDeliveryClaims(store);
   const whatsappUrl = buildWhatsAppUrl(store.contact_phone, store.name);
   const displayPhone =
     store.contact_phone && store.contact_phone.trim() !== "9801234567"
@@ -62,14 +56,9 @@ export default async function StorefrontAboutPage({
     store.tagline ||
     `About ${store.name}`;
 
-  const aboutParagraphs = store.about_text
+  const aboutParagraphs = store.about_text?.trim()
     ? store.about_text.split(/\n\s*\n/).filter(Boolean)
-    : [
-        `${store.name}${store.city ? ` in ${store.city}` : ""} brings ${cleanCategory ? cleanCategory.toLowerCase() : "curated goods"} directly from an independent merchant.`,
-        claims.shippingConfigured
-          ? `Every item in our collection is curated with personal attention to quality, transparent pricing, and door-to-door courier delivery.`
-          : `Every item in our collection is curated with personal attention to quality and transparent pricing.`,
-      ];
+    : [];
 
   return (
     <div className="min-h-dvh bg-sf-canvas text-sf-ink flex flex-col font-sf-body">
@@ -127,49 +116,16 @@ export default async function StorefrontAboutPage({
             </p>
           )}
 
-          <div className="space-y-4 pt-2 text-sm sm:text-base text-sf-muted leading-relaxed max-w-2xl font-sf-body">
-            {aboutParagraphs.map((para, idx) => (
-              <p key={idx}>{para}</p>
-            ))}
-          </div>
-        </section>
-
-        {/* Core Commitments */}
-        <section
-          className={`grid grid-cols-1 ${
-            claims.shippingConfigured ? "sm:grid-cols-3" : "sm:grid-cols-2"
-          } gap-5`}
-        >
-          <div className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-2.5 shadow-2xs">
-            <Sparkles className="w-5 h-5 text-sf-cta" />
-            <h3 className="font-sf-display text-base font-bold text-sf-ink">
-              Quality &amp; Authenticity
-            </h3>
-            <p className="text-xs text-sf-muted leading-relaxed">
-              Every item dispatched is checked thoroughly for material purity, craftsmanship, and freshness before packaging.
-            </p>
-          </div>
-
-          <div className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-2.5 shadow-2xs">
-            <ShieldCheck className="w-5 h-5 text-emerald-700" />
-            <h3 className="font-sf-display text-base font-bold text-sf-ink">
-              Direct Independent Maker
-            </h3>
-            <p className="text-xs text-sf-muted leading-relaxed">
-              You are supporting an independent business directly. No intermediaries, no inflated markups.
-            </p>
-          </div>
-
-          {claims.shippingConfigured && (
-            <div className="p-5 rounded-sf border border-sf-line bg-sf-surface space-y-2.5 shadow-2xs">
-              <Truck className="w-5 h-5 text-sf-ink" />
-              <h3 className="font-sf-display text-base font-bold text-sf-ink">
-                Reliable Nepal Courier
-              </h3>
-              <p className="text-xs text-sf-muted leading-relaxed">
-                Prompt door-to-door dispatch across Kathmandu Valley and regional logistics nationwide.
-              </p>
+          {aboutParagraphs.length > 0 ? (
+            <div className="space-y-4 pt-2 text-sm sm:text-base text-sf-muted leading-relaxed max-w-2xl font-sf-body">
+              {aboutParagraphs.map((para, idx) => (
+                <p key={idx}>{para}</p>
+              ))}
             </div>
+          ) : (
+            <p className="pt-2 text-sm sm:text-base text-sf-muted leading-relaxed max-w-2xl font-sf-body">
+              No store story has been added yet.
+            </p>
           )}
         </section>
 

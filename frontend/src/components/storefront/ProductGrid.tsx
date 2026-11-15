@@ -40,6 +40,7 @@ export function ProductGrid({
   const handleAddClick = (e: React.MouseEvent, product: ProductItem) => {
     e.preventDefault();
     e.stopPropagation();
+    if (product.id < 0) return;
     if (onQuickAdd) {
       onQuickAdd(product);
     } else {
@@ -66,10 +67,12 @@ export function ProductGrid({
         const rawCategory = product.category || (product.attributes?.category as string) || "";
         const cleanCategory = !isPlaceholderText(rawCategory) ? rawCategory.trim() : "";
 
+        const isDemoProduct = product.id < 0;
         const productSlugOrId = product.slug || String(product.id);
-        const productHref = storeSlug
-          ? `/s/${encodeURIComponent(storeSlug)}/products/${encodeURIComponent(productSlugOrId)}`
-          : null;
+        const productHref =
+          storeSlug && !isDemoProduct
+            ? `/s/${encodeURIComponent(storeSlug)}/products/${encodeURIComponent(productSlugOrId)}`
+            : null;
 
         const CardContent = (
           <div className="flex flex-col h-full bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden transition-colors hover:border-[var(--ink)]">
@@ -129,7 +132,8 @@ export function ProductGrid({
                   size="sm"
                   variant="secondary"
                   onClick={(e) => handleAddClick(e, product)}
-                  disabled={!hasStock}
+                  disabled={!hasStock || isDemoProduct}
+                  title={isDemoProduct ? "Preview demo item" : undefined}
                   className="h-8 px-3 text-xs font-semibold shrink-0"
                   aria-label={`Add ${product.name} to bag`}
                 >
