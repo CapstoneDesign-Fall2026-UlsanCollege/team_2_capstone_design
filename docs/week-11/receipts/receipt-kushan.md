@@ -1,0 +1,43 @@
+# Individual Evidence Receipt — Week 11
+
+**Student:** Kushan Sunuwar ([`@Kushan2191`](https://github.com/Kushan2191))  
+**Team:** Team 2 — ShopCraft  
+**Week:** Week 11 (Sprint 2: MVP and Freeze — Final Class)  
+**Date:** Thursday, November 12, 2026 (Submitted for Wednesday, November 18, 2026 EOD KST Deadline)  
+
+This is supporting evidence, not a separate weekly report. Use it only when a weekly guide specifically asks for additional receipts; otherwise, enter your contribution and evidence in the one shared team Weekly Report. If this template is requested, each student completes their own copy.
+
+---
+
+## Receipt 1
+
+- **What I did:** Executed independent non-author testing of the Khalti Sandbox flow and Cash on Delivery fallback on an external laptop without author coaching, recording reproducible boundary checks for payment cancellation recovery and offline checkout.
+- **Roadmap slice / behavior (if relevant):** Gateway Cancellation Recovery Slice & Non-Author QA.
+- **Area I helped steward or hand off (if relevant):** Area 2: QA, Non-Author Verification & Runbooks (Backup: Aanchal Chand Thakuri).
+- **Evidence link:** [Commit `76172af`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/76172af) · [Commit `89b1420`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/89b1420) · [QA Note](../../week-10/evidence/kushan-independent-qa-handoff.md#test-2-gateway-cancellation-recovery).
+- **How I checked it:** Tested both cancellation recovery and COD fallback without coaching on live Vercel deployment:
+  - *Cancellation Recovery:* User cancels on Khalti portal (`status=User%20canceled`). **Expected:** Redirect back to `/s/brewmellow/checkout` with alert *"Payment was canceled. Your cart items have been saved"*; cart items, quantities, and addresses intact. **Actual: PASS.** Zero cart corruption; items preserved in session storage.
+  - *COD Fallback:* User selects "Cash on Delivery" radio and places order. **Expected:** Instant order creation with zero external HTTP calls; status `CONFIRMED`; invoice token generated. **Actual: PASS.** Order created in 68ms with status `CONFIRMED`; inventory decremented.
+- **What I learned or changed:** Handling gateway aborts gracefully protects e-commerce conversion rates; previously, canceling payment wiped the cart and caused user frustration.
+
+---
+
+## Receipt 2
+
+- **What I did:** Maintained and verified the Clean-Clone Setup Runbook in `README.md` and audited the automated backend test suite following the removal of subscriptions.
+- **Roadmap slice / behavior (if relevant):** Clean-clone reproduction and automated test suite verification.
+- **Area I helped steward or hand off (if relevant):** Area 2: QA, Non-Author Verification & Runbooks.
+- **Evidence link:** [Commit `00ff1b2`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/00ff1b2) · [MVP Verification Checklist](../mvp-verification-checklist.md#2-verification-checklist).
+- **How I checked it:** Executed `python manage.py test accounts catalog orders stores` in 8.475s; confirmed all 114 tests passed with 0 failures and 0 errors.
+- **What I learned or changed:** Keeping the test runner clean of dead code from cut features ensures continuous integration remains fast and reliable for graders.
+
+---
+
+## Receipt 3, optional
+
+- **What I did:** Tested Aditya's Khalti Sandbox payment flow on the live production Vercel deployment without author assistance.
+- **Roadmap slice / behavior (if relevant):** Non-author verification of Area 1 (Backend & Payments).
+- **Area I helped steward or hand off (if relevant):** Cross-area verification with Area 1.
+- **Evidence link:** [Weekly Report Peer Check Note](../weekly-report.md#5-cross-area-independent-peer-checks) · [QA Note](../../week-10/evidence/kushan-independent-qa-handoff.md#test-1-khalti-epayment-v2-sandbox-journey).
+- **How I checked it:** Initiated payment with test credentials `9800000000` / OTP `987654`; verified server-side signature lookup succeeded and token `ORD-2026-SC-001` was rendered.
+- **What I learned or changed:** Non-author testing exposes edge cases and usability issues that the original developer tends to overlook.
