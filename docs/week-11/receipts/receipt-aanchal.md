@@ -14,7 +14,7 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **What I did:** Audited and verified responsive single-screen checkout with localized Nepal 7 Provinces dropdown and 10-digit mobile number validation, ensuring mobile-first ergonomics and accessibility standards.
 - **Roadmap slice / behavior (if relevant):** Localized Nepali Mobile Checkout Slice.
 - **Area I helped steward or hand off (if relevant):** Area 3: Storefront UI/UX, Mobile & Accessibility (Backup: Kushan Sunuwar).
-- **Evidence link:** [Commit `8835f43`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/8835f43) · [Commit `7a72592`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/7a72592) · [A11y Audit Matrix](../../week-10/evidence/aanchal-storefront-a11y-handoff.md).
+- **Evidence link:** [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52) · [PR #48](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/48) · [Tested-By Note](../tested-by-note.md) · [Commit `8835f43`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/8835f43) · [A11y Audit Matrix](../../week-10/evidence/aanchal-storefront-a11y-handoff.md).
 - **How I checked it:** 
   - *Exact Test Environment:* Chrome 130 DevTools mobile device emulation across: (1) 360x800 (Samsung Galaxy S8/S21 compact Android), (2) 390x844 (iPhone 14 / mobile Safari), and (3) 412x915 (Google Pixel 7).
   - *Failure-Path Result:* Submitting with an invalid 8-digit phone (`98412345`) or unsupported prefix halts submission before POST; renders inline accessible error *"Please enter a valid 10-digit Nepali mobile number starting with 98 or 97"*; submit button disabled (`cursor-not-allowed`). All 7 provinces render cleanly in dropdown.
@@ -28,8 +28,8 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **What I did:** Audited mobile ergonomics and WCAG 2.1 AA accessibility across 360px (Android) and 390px (iOS) viewports, enforcing minimum 52px touch targets (`py-3 px-6`) and $>4.5:1$ color contrast ratios.
 - **Roadmap slice / behavior (if relevant):** Mobile Accessibility & Ergonomics.
 - **Area I helped steward or hand off (if relevant):** Area 3: Storefront UI/UX, Mobile & Accessibility.
-- **Evidence link:** [Commit `c1b48b1`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/c1b48b1) · [Surface Isolation Script](../../../frontend/scripts/check-surfaces.mjs).
-- **How I checked it:** Ran `node scripts/check-surfaces.mjs` confirming `SURFACE_ISOLATION_OK`; inspected DOM elements in Chrome DevTools mobile simulator; verified button bounding rects are $\ge 52\text{px}$ in height and contrast tools report $>4.5:1$ against background.
+- **Evidence link:** [w11-frontend-checks.txt](../evidence/w11-frontend-checks.txt) · [Commit `c1b48b1`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/c1b48b1) · [Surface Isolation Script](../../../frontend/scripts/check-surfaces.mjs).
+- **How I checked it:** Ran `npm test && npm run typecheck && npm run check:surfaces` confirming `63/63` Vitest unit tests (`storefront-placeholders.test.ts` `18/18`), `0` TypeScript errors, and `SURFACE_ISOLATION_OK`; inspected DOM elements in Chrome DevTools mobile simulator verifying $\ge 52\text{px}$ touch heights and $>4.5:1$ contrast. Negative boundary (`Chrome emulation vs. physical iOS Safari`) noted in [`tested-by-note.md`](../tested-by-note.md).
 - **What I learned or changed:** Small screen viewports easily break when using desktop-proportioned padding. Explicit minimum touch target dimensions ensure touch accuracy on mobile devices.
 
 ---
