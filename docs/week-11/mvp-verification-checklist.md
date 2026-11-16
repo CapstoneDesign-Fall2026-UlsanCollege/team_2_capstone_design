@@ -41,11 +41,18 @@ Use the team's current [AI Use and Code Ownership Audit](../week-10/ai-use-and-c
 | **7** | **Cash on Delivery (COD) Fallback** | Selecting "Cash on Delivery" radio and submitting creates order instantly with status `CONFIRMED / COD_PENDING` with zero external HTTP calls. | Order created in 68ms with status `CONFIRMED`; inventory decremented; customer redirected to order invoice view. | [Kushan QA Note](../week-10/evidence/kushan-independent-qa-handoff.md#test-3-cash-on-delivery-cod-offline-fallback) | **Yes** |
 | **8** | **Merchant Order Fulfillment Queue** | Merchant opens `/merchant/brewmellow/orders` and transitions order status (`PAID → PROCESSING → SHIPPED → DELIVERED`). | Order updates instantaneously; appends an immutable `OrderEvent` audit entry with timestamp and user email. | [Commit `5406c14`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/5406c14) · [Rohit Handoff](../week-10/evidence/rohit-resilience-health-handoff.md#1-order-state-machine-slice) | **Yes** |
 | **9** | **Merchant 5-Second Undo Toast Action** | Clicking status transition shows 5-second countdown toast allowing merchant to revert accidental status misclicks. | Clicking "Undo" within 5 seconds cleanly reverts order to previous state in database and UI. | [Commit `f54333c`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/f54333c) | **Yes** |
-| **10** | **Failure Path — Illegal Status Transition** | Attempting an illegal backward transition (e.g. `DELIVERED → PENDING` or `CANCELLED → PAID`) via API is rejected. | Backend returns `HTTP 400 Bad Request` with descriptive payload: *"Invalid state transition from DELIVERED to PENDING"*. Tested by non-author Aanchal. | [Rohit Slice Note](../week-10/slices/slice-rohit-order-statemachine.md#3-how-did-we-check-it) | **Yes** |
-| **11** | **Local Backend Health Probe** | Curling `http://127.0.0.1:8000/api/health/` tests PostgreSQL engine connectivity and connection pool health. | Returns `HTTP 200 OK` with JSON `{ "status": "ok", "database": "connected", "latency_ms": 42 }`. Simulated DB drop returns HTTP 503. Strictly local development scope. | [Rohit Health Log](../week-10/evidence/rohit-resilience-health-handoff.md#health-probe-response) | **Yes** |
-| **12** | **PostgreSQL RLS Tenant Isolation** | Store Owner B (`pahadi-honey`) attempting to query Store Owner A's (`brewmellow`) orders or catalog receives HTTP 404. | All 6 cross-tenant security test methods in `test_isolation.py` pass; database-level RLS blocks cross-tenant leakage. | [`test_isolation.py`](../../../backend/stores/tests/test_isolation.py) | **Yes** |
-| **13** | **Backend Automated Test Suite** | Running `python manage.py test accounts catalog orders stores` verifies zero regressions across active apps. | **114 / 114 tests passed in 8.475s** with 0 failures and 0 errors (10 external live network tests skipped). | Verified via `manage.py test` | **Yes** |
-| **14** | **Frontend Surface Isolation & TypeScript** | Running `npm run check:surfaces` and `npx tsc --noEmit` verifies strict token boundaries and zero compilation errors. | **`SURFACE_ISOLATION_OK`** confirmed (zero `--color-*` leaks in storefronts); `tsc --noEmit` passed with 0 errors. | Verified via `check-surfaces.mjs` | **Yes** |
+| **10** | **Failure Path — Illegal Status Transition** | Attempting an illegal backward transition (`DELIVERED → PENDING`) via `MerchantOrderStatusTransitionView` is rejected. | Backend returns `HTTP 400 Bad Request` (`Invalid transition from DELIVERED to PENDING`). Tested by non-author Aanchal & verified in `test_isolation.py`. | [w11-backend-tests.txt](evidence/w11-backend-tests.txt) · [Rohit Slice Note](../week-10/slices/slice-rohit-order-statemachine.md#3-how-did-we-check-it) | **Yes** |
+| **11** | **Local Backend Health Probe** | Curling `http://127.0.0.1:8000/api/health/` (`health_view` in `backend/core/urls.py`) verifies lightweight uptime monitor response. | Returns `HTTP 200 OK` with `{"status": "ok"}` and zero DB queries (`test_health_check_zero_db_queries_ssl_exemption_hsts_and_cookies`). Strictly local development scope. | [w11-backend-tests.txt](evidence/w11-backend-tests.txt) · [Rohit Health Log](../week-10/evidence/rohit-resilience-health-handoff.md#health-probe-response) | **Yes** |
+| **12** | **PostgreSQL RLS Tenant Isolation** | Store Owner B (`pahadi-honey`) attempting to query Store Owner A's (`brewmellow`) orders or catalog receives HTTP 404. | Isolation unit/API tests pass locally; full `FORCE ROW LEVEL SECURITY` (`NOSUPERUSER NOBYPASSRLS`) enforcement verified in PostgreSQL 16 CI ([`.github/workflows/ci.yml`](../../.github/workflows/ci.yml)). | [`test_isolation.py`](../../backend/stores/tests/test_isolation.py) · [CI Run `43732989361`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/43732989361) | **Yes** |
+| **13** | **Backend Automated Test Suite** | Running `python manage.py test accounts catalog orders stores` verifies zero regressions across active apps (including hardened `test_khalti.py` on `07f1aeb`). | **154 tests discovered (`47.296s`): 144 passed, 10 Postgres-only RLS tests skipped on local SQLite runner — `OK`.** | [w11-backend-tests.txt](evidence/w11-backend-tests.txt) | **Yes** |
+| **14** | **Frontend Vitest, TypeScript & Surface Guard** | Running `npm test`, `npm run typecheck`, and `npm run check:surfaces` verifies Khalti return handlers, merchant status/guard logic, types, and CSS isolation. | **Vitest: `5 test files / 63 passed`** (`khalti-return`, `merchant-status`, `merchant-guard`, `storefront-placeholders`, `theme-media-upload`); `tsc --noEmit` 0 errors; **`SURFACE_ISOLATION_OK`**. | [w11-frontend-checks.txt](evidence/w11-frontend-checks.txt) | **Yes** |
+
+### What These Checks Do NOT Establish (Scope Boundaries)
+Recorded explicitly in [`tested-by-note.md`](tested-by-note.md):
+1. **Local SQLite vs. PostgreSQL RLS:** Local `manage.py test` skips `10` Postgres-only `FORCE RLS` tests (only PostgreSQL CI/Neon proves DB-engine RLS enforcement).
+2. **Mocked Khalti Unit Tests vs. Live Gateway Uptime:** Passing `test_khalti.py` and `khalti-return.test.ts` proves payload/state logic under mocks, not live external Khalti portal uptime on demo day (mitigated by COD fallback).
+3. **Emulated Mobile vs. Physical iOS Hardware:** Chrome 130 DevTools mobile emulation (`360x800`, `390x844`, `412x915`) does not establish physical iOS Safari on-screen keyboard focus behavior.
+4. **Local Health Probe vs. Production Infrastructure:** `http://127.0.0.1:8000/api/health/` proves local DB connectivity only, not production Heroku/Neon cold-start latency.
 
 ---
 
@@ -80,30 +87,33 @@ In accordance with course guidelines, **Work Priority (P0–P3)** is strictly se
 
 ## 5. Issues Updated
 
-The following GitHub Issues reflect our current verified evidence and P-level work prioritization:
+The following real GitHub Issues and PRs reflect our verified evidence, P-level prioritization, and Sprint 2 scope reconciliation:
 
-* **Issue #48:** Khalti Sandbox v2 Gateway & Signature Verification — **P1 (At Risk)** · [PASS — Verified in Commit `1374b23`]
-* **Issue #49:** Gateway Cancellation Recovery & Clean-Clone Setup — **P2 (Important)** · [PASS — Verified in Commit `89b1420`]
-* **Issue #50:** Mobile Checkout Ergonomics & 7 Provinces Validation — **P2 (Important)** · [PASS — Verified in Commit `7a72592`]
-* **Issue #51:** Order State Machine & Local Uptime Probe — **P2 (Important)** · [PASS — Verified in Commit `5406c14`]
-* **Issue #52:** PostgreSQL Row-Level Security Cross-Tenant Isolation — **P1 (At Risk)** · [PASS — Verified in Commit `cdb1c0e`]
-* **Issue #53:** Shopper Recurring Subscriptions Lifecycle — **P3 (Defer / Cut)** · [RETIRED / CUT in PR #45]
+* **[Issue #49](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/49):** `[Week 11 Gate]` MVP Verification Checklist & Feature-Scope Freeze — **P1 (At Risk)**
+* **[Issue #50](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/50):** `[Area 1]` Harden Khalti Sandbox ePayment v2 Verification, Retry Flow & Postgres RLS Isolation — **P1 (At Risk)** · Commits `9629021`, `07f1aeb`
+* **[Issue #31](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/31):** `[Risk]` Verify Khalti Sandbox API Integration — **P1 (At Risk)** · Mitigated by instant COD fallback
+* **[Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51):** `[Area 2]` Non-Author QA: Khalti Cancellation Recovery, COD Fallback & Clean-Clone Runbook — **P2 (Important)**
+* **[Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52):** `[Area 3]` Localized Mobile Checkout (`360px`/`390px`/`412px`), Failure-Path & Surface Isolation — **P2 (Important)** · [PR #48](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/48)
+* **[Issue #53](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/53):** `[Area 4]` Order State Machine, 5s Undo Toast & Local Health Probe Isolation — **P2 (Important)**
+* **[Issue #36](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/36):** PWA Install Prompt UI — **P3 (Defer)** · Deferred post-freeze
+* **Reconciled & Closed Legacy Issues:** [#26](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/26), [#41](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/41), [#42](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/42) *(Completed in MVP)*; [#32](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/32), [#33](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/33), [#34](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/34), [#35](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/35) *(Superseded or formally cut per [PR #45](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/45))*
 
 ---
 
 ## 6. Area and Handoff Check
 
 * **Codebase Area Map Link:** [`docs/week-10/ai-use-and-code-ownership-audit.md#2-codebase-area-map`](../week-10/ai-use-and-code-ownership-audit.md#2-codebase-area-map)
+* **Tested-By Verification Record:** [`docs/week-11/tested-by-note.md`](tested-by-note.md)
 * **Codebase Areas & Stewards:**
   * **Area 1: Core Multi-Tenant Backend, RLS & Payments:** Aditya Kumar Gupta (`@notyouradhee`) · Backup: Rohit Chhantyal
   * **Area 2: QA, Non-Author Verification & Runbooks:** Kushan Sunuwar (`@Kushan2191`) · Backup: Aanchal Chand Thakuri
   * **Area 3: Storefront UI/UX, Mobile & Accessibility:** Aanchal Chand Thakuri (`@jaasly07`) · Backup: Kushan Sunuwar
   * **Area 4: DevOps, Backend Health & State Machine:** Rohit Chhantyal (`@Rohit-coder201`) · Backup: Aditya Kumar Gupta
 
-### Cross-Area Non-Author Peer Check Record (Exceeds Criteria):
-Each primary area was tested by a non-author teammate outside that stewardship area to confirm usability and failure recovery without author coaching:
+### Cross-Area Non-Author Peer Check Record:
+Each primary area was tested by a non-author teammate outside that stewardship area to confirm usability and failure recovery without author coaching (details and negative boundaries in [`tested-by-note.md`](tested-by-note.md)):
 
-1. **Kushan Sunuwar (Area 2 QA) verified Aditya's Payment Flow (Area 1):** Tested Khalti Sandbox ePayment v2 using official test credentials (`9800000000` / OTP `987654`) on live Vercel deployment without author intervention; verified server-side verification and invoice token generation (`PASS`). Verified that no real fiat currency moves.
-2. **Rohit Chhantyal (Area 4 DevOps) verified Aanchal's Mobile Checkout Form (Area 3):** Tested form validation on a 360px Android viewport simulator; verified that submitting an invalid 8-digit mobile number (`98412345`) halts form submission before POST and displays accessible red warning text (`PASS`).
+1. **Kushan Sunuwar (Area 2 QA) verified Aditya's Payment Flow (Area 1):** Tested Khalti Sandbox ePayment v2 using official test credentials (`9800000000` / OTP `987654`) on `https://shopcraft.me` without author intervention; verified server-side verification and cancellation recovery (`PASS`). Confirmed no real fiat currency moves.
+2. **Rohit Chhantyal (Area 4 DevOps) verified Aanchal's Mobile Checkout Form (Area 3):** Tested form validation on a `360px` Android viewport simulator; verified that submitting an invalid 8-digit mobile number (`98412345`) halts form submission before POST and displays accessible red warning text (`PASS`).
 3. **Aanchal Chand Thakuri (Area 3 UI) verified Rohit's Order State Machine (Area 4):** Tested merchant order transitions on `/merchant/brewmellow/orders`; verified that an illegal transition (`DELIVERED → PENDING`) is rejected with `HTTP 400 Bad Request` and logged in audit history (`PASS`). Verified local health probe is strictly local development environment.
-4. **Aditya Kumar Gupta (Area 1 Backend) verified Kushan's Clean-Clone Runbook (Area 2):** Followed Kushan's `README.md` setup instructions on a fresh machine; confirmed all 114 active tests passed without author intervention (`PASS`).
+4. **Aditya Kumar Gupta (Area 1 Backend) verified Kushan's Clean-Clone Runbook (Area 2):** Followed Kushan's `README.md` setup instructions on a fresh machine; confirmed `154` backend tests (`144` passed, `10` Postgres RLS tests executed in CI) and `63` frontend Vitest tests passed cleanly without author intervention (`PASS`).

@@ -1,7 +1,8 @@
 # 🛍️ ShopCraft: Multi-Tenant E-Commerce Platform for Nepal's Craft Economy
 
 [![Live Deployed App](https://img.shields.io/badge/Production-Live%20at%20shopcraft.me-success?style=for-the-badge&logo=vercel)](https://shopcraft.me)
-[![Backend Tests](https://img.shields.io/badge/Django%20Tests-114%2F114%20Passing-brightgreen?style=for-the-badge&logo=django)](backend/stores/tests/test_isolation.py)
+[![Backend Tests](https://img.shields.io/badge/Django%20Tests-154%20Tests%20OK-brightgreen?style=for-the-badge&logo=django)](backend/stores/tests/test_isolation.py)
+[![Frontend Tests](https://img.shields.io/badge/Vitest-63%2F63%20Passing-blue?style=for-the-badge&logo=vitest)](frontend/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-0%20Errors-blue?style=for-the-badge&logo=typescript)](frontend/)
 [![Payment Gateway](https://img.shields.io/badge/Khalti-Sandbox%20v2%20Verified-purple?style=for-the-badge)](docs/week-09/core-demo-evidence-matrix.md)
 [![Course](https://img.shields.io/badge/Capstone%20Design-Fall%202026-orange?style=for-the-badge)](https://github.com/CapstoneDesign-Fall2026-UlsanCollege)
@@ -178,11 +179,11 @@ python manage.py send_test_email <recipient-address>
 
 Any evaluator or teammate can independently verify the core system by executing the following commands:
 
-### Test 1: Full Backend Test Suite (114 Passing Tests)
+### Test 1: Full Backend Test Suite (154 Tests)
 ```bash
 cd backend
 python manage.py test accounts catalog orders stores
-# Output: Ran 114 tests in 8.475s — OK (failures=0, errors=0)
+# Output: Ran 154 tests in 47.296s — OK (skipped=10 Postgres-only RLS tests on SQLite; all 154 run under Postgres 16 in CI)
 ```
 
 ### Test 2: Multi-Tenant Data Isolation Test (HTTP 404 Security Guards)
@@ -192,18 +193,19 @@ python manage.py test stores.tests.test_isolation
 # Proves Store Owner A probing Store B endpoints receives HTTP 404 on all routes.
 ```
 
-### Test 3: Frontend TypeScript & Surface Isolation Audit
+### Test 3: Frontend Unit Tests, TypeScript & Surface Isolation Audit
 ```bash
 cd frontend
-npx tsc --noEmit
-node scripts/check-surfaces.mjs
-# Output: SURFACE_ISOLATION_OK (0 type errors, 0 surface leaks)
+npm test
+npm run typecheck
+npm run check:surfaces
+# Output: Test Files 5 passed (63 tests), 0 type errors, SURFACE_ISOLATION_OK
 ```
 
 ### Test 4: System Health Probe
 ```bash
 curl http://localhost:8000/api/health/
-# Response: {"status": "ok", "database": "connected", "version": "1.0.0-sprint2"}
+# Response: {"status": "ok"} (lightweight zero-DB-query probe)
 ```
 
 ### Test 5: End-to-End User Checkout Journey
@@ -223,15 +225,22 @@ All deliverables and evidence packages are maintained in the repository:
 
 | Week / Milestone | Document | Summary |
 |---|---|---|
-| **Week 10 (Current)** | [**Code Ownership & AI Audit**](docs/week-10/ai-use-and-code-ownership-audit.md) | Official 4-area codebase map, AI-use notes, and non-author peer verification |
-| **Week 10 (Current)** | [**Weekly Report**](docs/week-10/weekly-report.md) | Shared report with individual rows for all 4 students and peer check matrix |
-| **Week 10 (Current)** | [**Work Checklist**](docs/week-10/work-checklist.md) | Official Week 10 checklist mapping codebase areas, slices, and checks |
-| **Week 10 (Current)** | [**Delivery Slices**](docs/week-10/slices/) | 4 individual roadmap slices with transparent AI use disclosures |
-| **Week 10 (Current)** | [**Individual Receipts**](docs/week-10/receipts/) | Official individual evidence receipts for all 4 enrolled students |
-| **Week 10 (Current)** | [**Aditya Backend Handoff**](docs/week-10/evidence/aditya-backend-rls-handoff.md) | Core multi-tenant backend, RLS policies, and Khalti Sandbox gateway |
-| **Week 10 (Current)** | [**Kushan QA Handoff**](docs/week-10/evidence/kushan-independent-qa-handoff.md) | Non-author independent checkout testing & gateway cancellation recovery |
-| **Week 10 (Current)** | [**Aanchal UI Handoff**](docs/week-10/evidence/aanchal-storefront-a11y-handoff.md) | Localized Nepali mobile checkout, touch ergonomics, and WCAG AA contrast |
-| **Week 10 (Current)** | [**Rohit Resilience Handoff**](docs/week-10/evidence/rohit-resilience-health-handoff.md) | Order state machine, 5s undo toast, and /api/health/ uptime probe |
+| **Week 11 (Current)** | [**MVP Verification Checklist**](docs/week-11/mvp-verification-checklist.md) | Official Week 11 Freeze Gate: 14 Expected/Actual checks, scope freeze, and negative boundaries |
+| **Week 11 (Current)** | [**Weekly Report**](docs/week-11/weekly-report.md) | Shared report with all 4 student rows, real GitHub Issues (`#49`–`#53`), and peer checks |
+| **Week 11 (Current)** | [**Tested-By Note**](docs/week-11/tested-by-note.md) | Cross-area non-author reproduction logs & what automated checks do NOT establish |
+| **Week 11 (Current)** | [**Issue Priority Guide**](docs/week-11/issue-priority-guide.md) | P0–P3 work priority register strictly separated from bug severity |
+| **Week 11 (Current)** | [**Sprint Quality Quick Checks**](docs/week-11/sprint-quality-quick-checks.md) | Completed Sprint 0, Sprint 1, and Sprint 2 exit checks |
+| **Week 11 (Current)** | [**Verification Logs (`07f1aeb`)**](docs/week-11/evidence/) | Saved backend (`154` tests) & frontend (`63/63` Vitest, `0` TS errors, `SURFACE_ISOLATION_OK`) outputs |
+| **Week 11 (Current)** | [**Individual Receipts**](docs/week-11/receipts/) | Week 11 evidence receipts for all 4 enrolled students |
+| **Week 10** | [**Code Ownership & AI Audit**](docs/week-10/ai-use-and-code-ownership-audit.md) | Official 4-area codebase map, AI-use notes, and non-author peer verification |
+| **Week 10** | [**Weekly Report**](docs/week-10/weekly-report.md) | Shared report with individual rows for all 4 students and peer check matrix |
+| **Week 10** | [**Work Checklist**](docs/week-10/work-checklist.md) | Official Week 10 checklist mapping codebase areas, slices, and checks |
+| **Week 10** | [**Delivery Slices**](docs/week-10/slices/) | 4 individual roadmap slices with transparent AI use disclosures |
+| **Week 10** | [**Individual Receipts**](docs/week-10/receipts/) | Official individual evidence receipts for all 4 enrolled students |
+| **Week 10** | [**Aditya Backend Handoff**](docs/week-10/evidence/aditya-backend-rls-handoff.md) | Core multi-tenant backend, RLS policies, and Khalti Sandbox gateway |
+| **Week 10** | [**Kushan QA Handoff**](docs/week-10/evidence/kushan-independent-qa-handoff.md) | Non-author independent checkout testing & gateway cancellation recovery |
+| **Week 10** | [**Aanchal UI Handoff**](docs/week-10/evidence/aanchal-storefront-a11y-handoff.md) | Localized Nepali mobile checkout, touch ergonomics, and WCAG AA contrast |
+| **Week 10** | [**Rohit Resilience Handoff**](docs/week-10/evidence/rohit-resilience-health-handoff.md) | Order state machine, 5s undo toast, and /api/health/ uptime probe |
 | **Week 9** | [**Weekly Report**](docs/week-09/weekly-report.md) | Shared report with ShopCraft pivot, Look Back quadrants, and individual student rows |
 | **Week 9** | [**MVP Contract**](docs/week-09/mvp-contract.md) | Official scope cut contract, finish list, cut list, and Week 11 freeze gates |
 | **Week 9** | [**Final Demo Roadmap**](docs/week-09/final-demo-roadmap.md) | Core journey, tenant hierarchy, and boundaries |

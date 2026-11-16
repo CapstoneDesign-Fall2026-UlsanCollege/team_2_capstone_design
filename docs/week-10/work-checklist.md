@@ -32,7 +32,7 @@
 - [x] State how the team will check that behavior.
   - *Result:* Initiating sandbox payment with test credentials `9800000000` / OTP `987654` and verifying database order status `PAID`.
 - [x] Create or update an Issue with a slice owner, an area steward/co-steward to consult, a checkable result, and an evidence link.
-  - *Result:* Issues #48, #49, #50, and #51 updated with designated owners, checkable criteria, and evidence links.
+  - *Result:* Issues #50, #51, #52, and #53 (alongside Week 11 Gate Issue #49) created and linked with designated owners, checkable DoD criteria, and evidence links.
 - [x] Adjust the slice to the team's actual progress:
   - *Result:* Following PR #45, recurring shopper subscriptions were formally removed from MVP. Platform strictly executes direct one-time retail purchases.
 
