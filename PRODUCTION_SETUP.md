@@ -61,7 +61,8 @@ Never commit secret values, API keys, OTPs, tokens, real email addresses, or con
 | `EMAIL_TIMEOUT` | Optional | SMTP timeout in seconds (`<= 10`, default `10`) |
 | `GOOGLE_CLIENT_ID` | Yes | Google OAuth 2.0 Web Client ID verified server-side as `aud` |
 | `KHALTI_LIVE_ENABLED` | Yes | `False` by default (keeps Khalti strictly in Sandbox; set `True` only after live merchant approval) |
-| `KHALTI_PLATFORM_SANDBOX_KEY` | Optional | Platform fallback Khalti sandbox secret key when `KHALTI_LIVE_ENABLED=False` |
+| `KHALTI_PLATFORM_SANDBOX_KEY` | Optional | Platform fallback Khalti sandbox secret key for `TEST` mode demos (never used in `LIVE` mode) |
+| `KHALTI_MOCK_MODE` | Optional | `False` by default (must remain `False` in production; startup fails closed if `True` with `DEBUG=False`) |
 | `CLOUDINARY_CLOUD_NAME` | Yes | Cloudinary cloud name for merchant media uploads |
 | `CLOUDINARY_API_KEY` | Yes | Cloudinary API key |
 | `CLOUDINARY_API_SECRET` | Yes | Cloudinary API secret |
@@ -332,3 +333,21 @@ In Vercel Dashboard → **Deployments**, click **⋯ → Instant Rollback** on t
   ```bash
   heroku run "DATABASE_URL=\$DATABASE_URL_DIRECT python manage.py migrate <app_label> <previous_migration_name>" -a <app-name>
   ```
+
+---
+
+## 7. Khalti Sandbox Testing Guide
+
+Stores run in Khalti `TEST` mode by default and connect directly to the official Khalti Sandbox API (`https://dev.khalti.com/api/v2/`). No simulated auto-success fallback runs unless `KHALTI_MOCK_MODE=True` is explicitly set in a local `DEBUG=True` development environment.
+
+1. **Get a Khalti Sandbox Secret Key**:
+   - Create a sandbox merchant account at [test-admin.khalti.com](https://test-admin.khalti.com/).
+   - Copy the **Live Secret Key** shown in the **test-admin** dashboard (this is your sandbox key for `dev.khalti.com`).
+   - Either paste it per store in Merchant Console **Settings → Khalti**, or set `KHALTI_PLATFORM_SANDBOX_KEY` in `.env` as a demo fallback for `TEST` stores.
+2. **Test Wallet Credentials (on `test-pay.khalti.com`)**:
+   - **Khalti Wallet Mobile IDs**: `9800000000` through `9800000005`
+   - **MPIN**: `1111`
+   - **OTP**: `987654`
+3. **Sandbox Limitations**:
+   - Only **Khalti Wallet** payments are supported on Khalti Sandbox. Card and e-banking options are not available in Sandbox mode.
+   - Verification always calls server-side `POST /epayment/lookup/` and compares `total_amount` (paisa) against `Order.total_minor` before marking an order `PAID`.

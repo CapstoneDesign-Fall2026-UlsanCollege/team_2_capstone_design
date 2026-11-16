@@ -465,39 +465,40 @@ class TenantIsolationTests(APITestCase):
         res_cross = self.client.get(f"/api/stores/himalayan-craft/public-orders/{cod_token}/")
         self.assertEqual(res_cross.status_code, status.HTTP_404_NOT_FOUND)
 
-        # 5. Order Place via Khalti
-        res_khalti = self.client.post(
-            "/api/stores/brewmellow/checkout/place/",
-            {
-                "customer_email": "aayush@example.com",
-                "items": [{"variant_id": variant.id, "quantity": 1}],
-                "shipping_address": shipping_payload,
-                "payment_method": "KHALTI",
-            },
-            format="json",
-        )
-        self.assertEqual(res_khalti.status_code, status.HTTP_201_CREATED)
-        self.assertEqual(res_khalti.data["status"], "PENDING_PAYMENT")
-        khalti_order_id = res_khalti.data["order_id"]
-        pidx = res_khalti.data["pidx"]
-        self.assertTrue(bool(pidx))
+        # 5. Order Place via Khalti (explicitly opt-in mock mode for isolated checkout flow)
+        with override_settings(KHALTI_MOCK_MODE=True):
+            res_khalti = self.client.post(
+                "/api/stores/brewmellow/checkout/place/",
+                {
+                    "customer_email": "aayush@example.com",
+                    "items": [{"variant_id": variant.id, "quantity": 1}],
+                    "shipping_address": shipping_payload,
+                    "payment_method": "KHALTI",
+                },
+                format="json",
+            )
+            self.assertEqual(res_khalti.status_code, status.HTTP_201_CREATED)
+            self.assertEqual(res_khalti.data["status"], "PENDING_PAYMENT")
+            khalti_order_id = res_khalti.data["order_id"]
+            pidx = res_khalti.data["pidx"]
+            self.assertTrue(pidx.startswith("mock_"))
 
-        # 6. Verify Khalti Payment
-        res_verify = self.client.post(
-            "/api/stores/brewmellow/checkout/khalti-verify/",
-            {"pidx": pidx, "order_id": khalti_order_id},
-            format="json",
-        )
-        self.assertEqual(res_verify.status_code, status.HTTP_200_OK)
-        self.assertEqual(res_verify.data["status"], "PAID")
+            # 6. Verify Khalti Payment
+            res_verify = self.client.post(
+                "/api/stores/brewmellow/checkout/khalti-verify/",
+                {"pidx": pidx, "order_id": khalti_order_id},
+                format="json",
+            )
+            self.assertEqual(res_verify.status_code, status.HTTP_200_OK)
+            self.assertEqual(res_verify.data["status"], "PAID")
 
-        # Cross store cannot verify Store A's order
-        res_cross_verify = self.client.post(
-            "/api/stores/himalayan-craft/checkout/khalti-verify/",
-            {"pidx": pidx, "order_id": khalti_order_id},
-            format="json",
-        )
-        self.assertEqual(res_cross_verify.status_code, status.HTTP_404_NOT_FOUND)
+            # Cross store cannot verify Store A's order
+            res_cross_verify = self.client.post(
+                "/api/stores/himalayan-craft/checkout/khalti-verify/",
+                {"pidx": pidx, "order_id": khalti_order_id},
+                format="json",
+            )
+            self.assertEqual(res_cross_verify.status_code, status.HTTP_404_NOT_FOUND)
 
     def test_checkout_atomic_rollback_on_midway_failure(self):
         """
@@ -687,6 +688,7 @@ class TenantIsolationTests(APITestCase):
 
         with TenantDatabaseContext(self.store_a.id):
             cust_a = Customer.objects.filter(store=self.store_a).first()
+            fake_pidx = "sandbox_live_check_fake123"
             order = Order.objects.create(
                 store=self.store_a,
                 customer=cust_a,
@@ -694,13 +696,14 @@ class TenantIsolationTests(APITestCase):
                 subtotal_minor=50000,
                 total_minor=50000,
                 status="PENDING_PAYMENT",
-                payment_status="PENDING",
+                payment_status="UNPAID",
                 payment_method="KHALTI",
+                payment_ref=fake_pidx,
             )
 
         res = self.client.post(
             f"/api/stores/{self.store_a.slug}/checkout/khalti-verify/",
-            {"pidx": f"sandbox_{order.id}_fake123", "order_id": order.id},
+            {"pidx": fake_pidx, "order_id": order.id},
             format="json",
         )
         self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)

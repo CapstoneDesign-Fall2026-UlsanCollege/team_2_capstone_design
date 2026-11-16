@@ -52,9 +52,10 @@ Note: `Product`, `Variant`, `Order`, `OrderItem`, `Discount` etc. live in `backe
 
 ## Payments
 - `backend/stores/khalti.py` – Khalti payment initiate/verify integration (COD toggle on `Store`).
+- `frontend/src/lib/khalti-return.ts` – return verification deduplication, 202 polling, and retry controller.
 - `frontend/src/app/s/[storeSlug]/checkout/khalti-return/page.tsx` – Khalti redirect return handler.
+- `frontend/src/components/storefront/OrderPaymentActions.tsx` – failed retry / pending re-check controls on order detail.
 - `frontend/src/components/storefront/CheckoutForm.tsx` – payment method selection and submit.
-- `frontend/src/components/platform/KhaltiCheckoutSimulatorModal.tsx` – simulated checkout for demos.
 
 ## Storefront routes
 - `frontend/src/app/s/[storeSlug]/layout.tsx` and `page.tsx` – storefront shell and home.

@@ -3,6 +3,7 @@
 import React, { useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { saveKhaltiOrderToken } from "@/lib/khalti-return";
 import {
   AlertCircle,
   Banknote,
@@ -387,19 +388,22 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
         return_url: returnUrl,
       });
 
-      // Clear the tenant's cart upon successful order creation
-      clear();
-
       if (paymentMethod === "COD") {
+        // Clear cart immediately for COD; Khalti clears only after verification succeeds
+        clear();
         const targetId = response.token || response.order_id;
         const tokenQuery = response.token ? `?token=${encodeURIComponent(response.token)}` : "";
         router.push(`/s/${encodeURIComponent(store.slug)}/orders/${targetId}${tokenQuery}`);
       } else if (response.payment_url) {
-        if (response.is_sandbox || response.payment_url.startsWith("/")) {
+        saveKhaltiOrderToken(store.slug, response.order_id, response.token);
+        if (response.is_mock || response.payment_url.startsWith("/")) {
           router.push(response.payment_url);
         } else {
           window.location.href = response.payment_url;
         }
+      } else {
+        setIsSubmitting(false);
+        setErrorMessage("Payment gateway URL was not returned. Please try again.");
       }
     } catch (err: unknown) {
       setIsSubmitting(false);

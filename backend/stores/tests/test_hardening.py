@@ -386,20 +386,21 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
         # 3. Verify rejects sandbox/test tokens in LIVE mode even with a valid live key
         self.store.set_khalti_secret_key("live_secret_key_valid_fixture_9999")
         self.store.save(update_fields=["khalti_secret_key_encrypted"])
-        with TenantDatabaseContext(self.store.id):
-            order = Order.objects.create(
-                store=self.store,
-                customer=self.customer,
-                order_number="#HG-LIVE-0001",
-                status="PENDING_PAYMENT",
-                payment_method="KHALTI",
-                payment_status="UNPAID",
-                subtotal_minor=150000,
-                total_minor=150000,
-                is_test=False,
-            )
+        for idx, bad_pidx in enumerate((f"sandbox_{self.store.id}_abcd", "test_pidx_12345"), start=1):
+            with TenantDatabaseContext(self.store.id):
+                order = Order.objects.create(
+                    store=self.store,
+                    customer=self.customer,
+                    order_number=f"#HG-LIVE-{idx:04d}",
+                    status="PENDING_PAYMENT",
+                    payment_method="KHALTI",
+                    payment_status="UNPAID",
+                    payment_ref=bad_pidx,
+                    subtotal_minor=150000,
+                    total_minor=150000,
+                    is_test=False,
+                )
 
-        for bad_pidx in (f"sandbox_{order.id}_abcd", "test_pidx_12345"):
             verify_res = self.client.post(
                 f"/api/stores/{self.store.slug}/checkout/khalti-verify/",
                 {"pidx": bad_pidx, "order_id": order.id},
@@ -407,10 +408,10 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
             )
             self.assertEqual(verify_res.status_code, 400)
 
-        with TenantDatabaseContext(self.store.id):
-            order.refresh_from_db()
-            self.assertEqual(order.status, "PAYMENT_FAILED")
-            self.assertEqual(order.payment_status, "FAILED")
+            with TenantDatabaseContext(self.store.id):
+                order.refresh_from_db()
+                self.assertEqual(order.status, "PAYMENT_FAILED")
+                self.assertEqual(order.payment_status, "FAILED")
 
     def test_khalti_live_keys_and_tokens_rejected_in_sandbox_mode(self):
         self.assertEqual(self.store.khalti_mode, "TEST")
@@ -447,6 +448,7 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
                 status="PENDING_PAYMENT",
                 payment_method="KHALTI",
                 payment_status="UNPAID",
+                payment_ref="live_pidx_token_9999",
                 subtotal_minor=150000,
                 total_minor=150000,
                 is_test=True,
@@ -569,6 +571,15 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
                 secret_key=valid_secret,
                 field_encryption_key=valid_fernet,
                 allowed_hosts=[],
+            )
+
+        with self.assertRaises(ImproperlyConfigured):
+            validate_production_security_settings(
+                debug=False,
+                secret_key=valid_secret,
+                field_encryption_key=valid_fernet,
+                allowed_hosts=["api.example.com"],
+                khalti_mock_mode=True,
             )
 
     def test_cloudinary_signed_upload_and_ephemeral_fs_guard(self):

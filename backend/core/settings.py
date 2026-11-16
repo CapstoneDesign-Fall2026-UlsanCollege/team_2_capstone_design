@@ -34,6 +34,7 @@ def validate_production_security_settings(
     secret_key: str,
     field_encryption_key: str,
     allowed_hosts: list[str],
+    khalti_mock_mode: bool = False,
 ) -> None:
     """
     Fails startup closed when DEBUG is False and mandatory production secrets
@@ -41,6 +42,14 @@ def validate_production_security_settings(
     """
     if debug:
         return
+    if khalti_mock_mode:
+        import logging
+        logging.getLogger("shopcraft.payments").error(
+            "KHALTI_MOCK_MODE cannot be enabled in production when DEBUG=False."
+        )
+        raise ImproperlyConfigured(
+            "KHALTI_MOCK_MODE cannot be enabled in production when DEBUG=False."
+        )
     cleaned_secret = (secret_key or "").strip()
     if (
         not cleaned_secret
@@ -93,12 +102,18 @@ elif DEBUG or IS_TEST_COMMAND or IS_COLLECTSTATIC:
 else:
     ALLOWED_HOSTS = []
 
+# Khalti stays in SANDBOX by default; live mode and mock mode require explicit env opt-in
+KHALTI_LIVE_ENABLED = os.getenv("KHALTI_LIVE_ENABLED", "False").strip().lower() in ("1", "true", "yes")
+KHALTI_MOCK_MODE = os.getenv("KHALTI_MOCK_MODE", "False").strip().lower() in ("1", "true", "yes")
+KHALTI_PLATFORM_SANDBOX_KEY = os.getenv("KHALTI_PLATFORM_SANDBOX_KEY", "").strip()
+
 if not IS_TEST_COMMAND and not IS_COLLECTSTATIC:
     validate_production_security_settings(
         debug=DEBUG,
         secret_key=SECRET_KEY,
         field_encryption_key=FIELD_ENCRYPTION_KEY,
         allowed_hosts=ALLOWED_HOSTS,
+        khalti_mock_mode=KHALTI_MOCK_MODE,
     )
 
 # Application definition
@@ -289,10 +304,6 @@ GOOGLE_CLIENT_ID = (
     os.getenv("GOOGLE_CLIENT_ID", "").strip()
     or os.getenv("GOOGLE_OAUTH_CLIENT_ID", "").strip()
 )
-
-# Khalti stays in SANDBOX by default; live mode requires explicit env opt-in
-KHALTI_LIVE_ENABLED = os.getenv("KHALTI_LIVE_ENABLED", "False").strip().lower() in ("1", "true", "yes")
-KHALTI_PLATFORM_SANDBOX_KEY = os.getenv("KHALTI_PLATFORM_SANDBOX_KEY", "").strip()
 
 CLOUDINARY_CLOUD_NAME = os.getenv("CLOUDINARY_CLOUD_NAME", "").strip()
 CLOUDINARY_API_KEY = os.getenv("CLOUDINARY_API_KEY", "").strip()
