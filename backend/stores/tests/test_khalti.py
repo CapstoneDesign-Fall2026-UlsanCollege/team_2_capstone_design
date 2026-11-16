@@ -11,12 +11,13 @@ from catalog.models import Product, Variant
 from core.tenant_context import TenantDatabaseContext
 from orders.models import Order, OrderEvent
 from stores.khalti import (
+    KHALTI_INVALID_KEY_MESSAGE,
     KHALTI_LIVE_BASE_URL,
     KHALTI_SANDBOX_BASE_URL,
     initiate_khalti_epayment,
     is_khalti_mock_mode_enabled,
 )
-from stores.models import Customer, Store
+from stores.models import Customer, Store, StoreMembership
 
 
 def _mock_response(*, status_code=200, json_data=None, json_exc=None):
@@ -691,3 +692,182 @@ class KhaltiHardenedIntegrationTests(TestCase):
             fake_session.post.call_args.args[0],
             f"{KHALTI_LIVE_BASE_URL}/epayment/initiate/",
         )
+
+    @patch("stores.khalti.get_shared_http_session")
+    def test_test_mode_accepts_live_prefixed_sandbox_key_and_selects_sandbox_url(self, mock_get_session):
+        owner = User.objects.create_user(
+            email="khalti.owner@example.com",
+            full_name="Store Owner",
+        )
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=owner, role="OWNER")
+        sandbox_key = "live_secret_key_test_admin_9a8b7c6d"
+
+        self.client.force_authenticate(user=owner)
+        patch_res = self.client.patch(
+            f"/api/merchant/stores/{self.store.slug}/settings/",
+            {"khalti_mode": "TEST", "khalti_secret_key": f"  {sandbox_key}  "},
+            format="json",
+        )
+        self.assertEqual(patch_res.status_code, status.HTTP_200_OK)
+        self.store.refresh_from_db()
+        self.assertEqual(self.store.get_khalti_secret_key(), sandbox_key)
+        self.client.force_authenticate(user=None)
+
+        store_res = self.client.get(f"/api/stores/{self.store.slug}/")
+        self.assertEqual(store_res.status_code, status.HTTP_200_OK)
+        self.assertTrue(store_res.json()["has_khalti"])
+
+        fake_session = MagicMock()
+        fake_session.post.side_effect = [
+            _mock_response(
+                status_code=200,
+                json_data={
+                    "pidx": "kLt92OpqLiveShape",
+                    "payment_url": "https://test-pay.khalti.com/?pidx=kLt92OpqLiveShape",
+                },
+            ),
+            _mock_response(
+                status_code=200,
+                json_data={
+                    "pidx": "kLt92OpqLiveShape",
+                    "status": "Completed",
+                    "total_amount": 130000,
+                    "transaction_id": "TXN-SBX-SHAPE-01",
+                },
+            ),
+        ]
+        mock_get_session.return_value = fake_session
+
+        place_res = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/place/",
+            self._checkout_payload(),
+            format="json",
+        )
+        self.assertEqual(place_res.status_code, status.HTTP_201_CREATED)
+        place_data = place_res.json()
+        self.assertTrue(place_data["is_test"])
+        init_call = fake_session.post.call_args_list[0]
+        self.assertEqual(init_call.args[0], f"{KHALTI_SANDBOX_BASE_URL}/epayment/initiate/")
+        self.assertEqual(init_call.kwargs["headers"]["Authorization"], f"Key {sandbox_key}")
+
+        verify_res = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/khalti-verify/",
+            {
+                "pidx": "kLt92OpqLiveShape",
+                "order_id": place_data["order_id"],
+            },
+            format="json",
+        )
+        self.assertEqual(verify_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(verify_res.json()["status"], "PAID")
+        lookup_call = fake_session.post.call_args_list[1]
+        self.assertEqual(lookup_call.args[0], f"{KHALTI_SANDBOX_BASE_URL}/epayment/lookup/")
+        self.assertEqual(lookup_call.kwargs["headers"]["Authorization"], f"Key {sandbox_key}")
+
+    @patch("stores.khalti.get_shared_http_session")
+    def test_khalti_401_and_invalid_token_initiate_rolls_back_and_masks_secret(self, mock_get_session):
+        secret_key = "live_secret_key_wrong_env_secret_777"
+        self.store.set_khalti_secret_key(secret_key)
+        self.store.save(update_fields=["khalti_secret_key_encrypted"])
+
+        for resp in (
+            _mock_response(status_code=401, json_data={"detail": "Invalid token."}),
+            _mock_response(status_code=400, json_data={"detail": "Invalid token."}),
+        ):
+            fake_session = MagicMock()
+            fake_session.post.return_value = resp
+            mock_get_session.return_value = fake_session
+
+            with self.assertLogs("shopcraft.payments", level="WARNING") as captured:
+                res = self.client.post(
+                    f"/api/stores/{self.store.slug}/checkout/place/",
+                    self._checkout_payload(),
+                    format="json",
+                )
+
+            self.assertEqual(res.status_code, status.HTTP_502_BAD_GATEWAY)
+            data = res.json()
+            self.assertEqual(data["error"], KHALTI_INVALID_KEY_MESSAGE)
+            self.assertNotIn(secret_key, res.content.decode("utf-8"))
+            self.assertNotIn("wrong_env_secret_777", "\n".join(captured.output))
+            with TenantDatabaseContext(self.store.id):
+                self.assertEqual(Order.objects.for_store(self.store).count(), 0)
+
+    @patch("stores.khalti.get_shared_http_session")
+    def test_khalti_401_lookup_logs_warning_and_returns_clear_message(self, mock_get_session):
+        secret_key = "live_secret_key_lookup_secret_888"
+        self.store.set_khalti_secret_key(secret_key)
+        self.store.save(update_fields=["khalti_secret_key_encrypted"])
+        order = self._create_unpaid_khalti_order(pidx="real_pidx_lookup_401")
+
+        fake_session = MagicMock()
+        fake_session.post.return_value = _mock_response(
+            status_code=401,
+            json_data={"detail": "Invalid token."},
+        )
+        mock_get_session.return_value = fake_session
+
+        with self.assertLogs("shopcraft.payments", level="WARNING") as captured:
+            res = self.client.post(
+                f"/api/stores/{self.store.slug}/checkout/khalti-verify/",
+                {
+                    "pidx": "real_pidx_lookup_401",
+                    "order_id": order.id,
+                },
+                format="json",
+            )
+
+        self.assertEqual(res.status_code, status.HTTP_503_SERVICE_UNAVAILABLE)
+        self.assertEqual(res.json()["error"], KHALTI_INVALID_KEY_MESSAGE)
+        self.assertNotIn(secret_key, res.content.decode("utf-8"))
+        self.assertNotIn("lookup_secret_888", "\n".join(captured.output))
+
+        with TenantDatabaseContext(self.store.id):
+            order.refresh_from_db()
+            self.assertEqual(order.status, "PENDING_PAYMENT")
+            self.assertEqual(order.payment_status, "UNPAID")
+
+    @override_settings(
+        KHALTI_LIVE_ENABLED=True,
+        KHALTI_PLATFORM_SANDBOX_KEY="live_secret_key_platform_demo_123",
+    )
+    def test_live_mode_rejects_empty_and_sandbox_keys_and_never_uses_platform_key(self):
+        owner = User.objects.create_user(
+            email="khalti.liveowner@example.com",
+            full_name="Live Owner",
+        )
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=owner, role="OWNER")
+
+        self.store.khalti_mode = "LIVE"
+        self.store.set_khalti_secret_key("")
+        self.store.save(update_fields=["khalti_mode", "khalti_secret_key_encrypted"])
+
+        store_res = self.client.get(f"/api/stores/{self.store.slug}/")
+        self.assertEqual(store_res.status_code, status.HTTP_200_OK)
+        self.assertFalse(store_res.json()["has_khalti"])
+
+        place_res = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/place/",
+            self._checkout_payload(),
+            format="json",
+        )
+        self.assertEqual(place_res.status_code, status.HTTP_400_BAD_REQUEST)
+        with TenantDatabaseContext(self.store.id):
+            self.assertEqual(Order.objects.for_store(self.store).count(), 0)
+
+        self.client.force_authenticate(user=owner)
+        for bad_key in (
+            "",
+            "   ",
+            "test_secret_key_123",
+            "Key sandbox_key_456",
+            "live_secret_key_platform_demo_123",
+        ):
+            patch_res = self.client.patch(
+                f"/api/merchant/stores/{self.store.slug}/settings/",
+                {"khalti_mode": "LIVE", "khalti_secret_key": bad_key},
+                format="json",
+            )
+            self.assertEqual(patch_res.status_code, status.HTTP_400_BAD_REQUEST)

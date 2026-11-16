@@ -1553,10 +1553,19 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                 if "khalti_mode" in data
                 else store.khalti_mode
             )
+            submitted_key = None
             if data.get("clear_khalti_secret_key"):
                 candidate_key = ""
-            elif "khalti_secret_key" in data and str(data["khalti_secret_key"]).strip():
-                candidate_key = str(data["khalti_secret_key"]).strip()
+            elif "khalti_secret_key" in data and data["khalti_secret_key"] is not None:
+                trimmed = str(data["khalti_secret_key"]).strip()
+                bare = trimmed[4:].strip() if trimmed.lower().startswith("key ") else trimmed
+                if not bare:
+                    return Response(
+                        {"error": "Khalti secret key cannot be empty."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                submitted_key = trimmed
+                candidate_key = submitted_key
             else:
                 candidate_key = store.get_khalti_secret_key()
 
@@ -1570,8 +1579,8 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
             store.khalti_mode = candidate_mode
             if data.get("clear_khalti_secret_key"):
                 store.set_khalti_secret_key("")
-            elif "khalti_secret_key" in data and str(data["khalti_secret_key"]).strip():
-                store.set_khalti_secret_key(str(data["khalti_secret_key"]).strip())
+            elif submitted_key is not None:
+                store.set_khalti_secret_key(submitted_key)
 
         store.save()
 

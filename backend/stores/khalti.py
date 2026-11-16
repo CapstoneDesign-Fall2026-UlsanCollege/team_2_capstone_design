@@ -4,8 +4,8 @@ Khalti ePayment v2 mode, key, token safety guards, and initiation/lookup helpers
 Global invariants:
 - Khalti stays in SANDBOX (TEST) mode by default, hitting https://dev.khalti.com/api/v2/.
 - LIVE mode requires explicit server env opt-in (`KHALTI_LIVE_ENABLED=True`) and hits https://khalti.com/api/v2/.
-- Sandbox/test/mock keys and tokens are strictly rejected in LIVE mode.
-- Live keys and tokens are strictly rejected in SANDBOX (TEST) mode.
+- Endpoint selection is determined strictly by store `khalti_mode` (never by key prefix).
+- Sandbox/test/mock keys and tokens are rejected in LIVE mode.
 - Fabricated `sandbox_`/`test_` bypass tokens are always rejected; `mock_` tokens are ONLY accepted
   when `KHALTI_MOCK_MODE=True` in DEBUG or the automated test runner.
 - Never log raw secret keys or payment tokens.
@@ -23,6 +23,9 @@ logger = logging.getLogger("shopcraft.payments")
 
 KHALTI_SANDBOX_BASE_URL = "https://dev.khalti.com/api/v2"
 KHALTI_LIVE_BASE_URL = "https://khalti.com/api/v2"
+KHALTI_INVALID_KEY_MESSAGE = (
+    "Khalti rejected the configured key. Check that the key belongs to the right environment (test or live)."
+)
 
 KHALTI_STATE_COMPLETED = "COMPLETED"
 KHALTI_STATE_PENDING = "PENDING"
@@ -94,18 +97,6 @@ def is_sandbox_khalti_key(raw_key: str) -> bool:
     return False
 
 
-def is_live_khalti_key(raw_key: str) -> bool:
-    bare = _strip_key_prefix(raw_key)
-    if not bare:
-        return False
-    lower = bare.lower()
-    return (
-        lower.startswith("live_")
-        or "live_secret_key" in lower
-        or "live_public_key" in lower
-    )
-
-
 def is_mock_khalti_token(pidx: str) -> bool:
     cleaned = (pidx or "").strip().lower()
     return bool(cleaned and cleaned.startswith("mock_"))
@@ -141,28 +132,48 @@ def _parse_paisa_int(raw_val) -> int | None:
     return None
 
 
+def _is_khalti_invalid_key_response(resp) -> bool:
+    """Detects 401 or invalid-token responses without touching or logging any key material."""
+    if getattr(resp, "status_code", None) == 401:
+        return True
+    try:
+        payload = resp.json()
+    except Exception:
+        payload = None
+    if isinstance(payload, dict):
+        for field in ("detail", "message", "error_key", "error"):
+            val = payload.get(field)
+            if isinstance(val, str):
+                lower = val.lower()
+                if "invalid token" in lower or "invalid_token" in lower:
+                    return True
+    raw_text = getattr(resp, "text", None)
+    if isinstance(raw_text, str):
+        lower_text = raw_text.lower()
+        if "invalid token" in lower_text or "invalid_token" in lower_text:
+            return True
+    return False
+
+
 def store_has_khalti_configured(store) -> bool:
     """
     Returns whether Khalti checkout should be enabled on the storefront without revealing
     which credential (merchant custom key vs platform demo sandbox key) is in use.
     """
     mode = (getattr(store, "khalti_mode", "TEST") or "TEST").strip().upper()
-    custom_key = (store.get_khalti_secret_key() or "").strip()
+    custom_key = _strip_key_prefix(store.get_khalti_secret_key() or "")
 
     if mode == "LIVE":
         return bool(custom_key and not is_sandbox_khalti_key(custom_key))
 
-    if custom_key and not is_live_khalti_key(custom_key):
+    if custom_key:
         return True
 
-    if is_khalti_mock_mode_enabled() and not (custom_key and is_live_khalti_key(custom_key)):
+    if is_khalti_mock_mode_enabled():
         return True
 
-    platform_sandbox_key = (getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "") or "").strip()
-    if not custom_key and platform_sandbox_key and not is_live_khalti_key(platform_sandbox_key):
-        return True
-
-    return False
+    platform_sandbox_key = _strip_key_prefix(getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "") or "")
+    return bool(platform_sandbox_key)
 
 
 def validate_khalti_settings_update(*, target_mode: str, effective_secret_key: str) -> str | None:
@@ -173,13 +184,10 @@ def validate_khalti_settings_update(*, target_mode: str, effective_secret_key: s
     if mode == "LIVE":
         if not getattr(settings, "KHALTI_LIVE_ENABLED", False):
             return "Khalti LIVE mode is disabled on this server (KHALTI_LIVE_ENABLED is off)."
-        if not effective_secret_key:
+        if not _strip_key_prefix(effective_secret_key):
             return "A live Khalti secret key is required before enabling LIVE mode."
         if is_sandbox_khalti_key(effective_secret_key):
             return "Sandbox or test Khalti keys cannot be used in LIVE mode."
-    else:
-        if effective_secret_key and is_live_khalti_key(effective_secret_key):
-            return "Live Khalti keys cannot be used while Khalti is in SANDBOX mode."
 
     return None
 
@@ -187,11 +195,12 @@ def validate_khalti_settings_update(*, target_mode: str, effective_secret_key: s
 def resolve_khalti_initiation_config(store) -> tuple[str | None, str, str | None]:
     """
     Validates store Khalti mode + credentials prior to payment initiation.
+    Endpoint URL is selected strictly from store.khalti_mode (never from key shape).
     Returns (authorization_header_or_none, initiate_url, error_message_or_none).
     """
     mode = (getattr(store, "khalti_mode", "TEST") or "TEST").strip().upper()
-    custom_key = (store.get_khalti_secret_key() or "").strip()
-    platform_sandbox_key = (getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "") or "").strip()
+    custom_key = _strip_key_prefix(store.get_khalti_secret_key() or "")
+    platform_sandbox_key = _strip_key_prefix(getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "") or "")
 
     if mode == "LIVE":
         if not getattr(settings, "KHALTI_LIVE_ENABLED", False):
@@ -205,11 +214,6 @@ def resolve_khalti_initiation_config(store) -> tuple[str | None, str, str | None
             f"{KHALTI_LIVE_BASE_URL}/epayment/initiate/",
             None,
         )
-
-    if custom_key and is_live_khalti_key(custom_key):
-        return None, "", "Live Khalti keys are rejected in SANDBOX mode."
-    if not custom_key and platform_sandbox_key and is_live_khalti_key(platform_sandbox_key):
-        return None, "", "Live Khalti keys are rejected in SANDBOX mode."
 
     if is_khalti_mock_mode_enabled():
         return None, "mock://khalti/epayment/initiate/", None
@@ -228,11 +232,12 @@ def resolve_khalti_initiation_config(store) -> tuple[str | None, str, str | None
 def validate_khalti_verify_request(store, pidx: str) -> tuple[str | None, str, str | None]:
     """
     Validates store Khalti mode, key, and pidx token prior to payment verification.
+    Endpoint URL is selected strictly from store.khalti_mode (never from key shape).
     Returns (authorization_header_or_none, lookup_url, error_message_or_none).
     """
     mode = (getattr(store, "khalti_mode", "TEST") or "TEST").strip().upper()
-    custom_key = (store.get_khalti_secret_key() or "").strip()
-    platform_sandbox_key = (getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "") or "").strip()
+    custom_key = _strip_key_prefix(store.get_khalti_secret_key() or "")
+    platform_sandbox_key = _strip_key_prefix(getattr(settings, "KHALTI_PLATFORM_SANDBOX_KEY", "") or "")
 
     if mode == "LIVE":
         if not getattr(settings, "KHALTI_LIVE_ENABLED", False):
@@ -251,10 +256,6 @@ def validate_khalti_verify_request(store, pidx: str) -> tuple[str | None, str, s
 
     if is_live_khalti_token(pidx):
         return None, "", "Live payment tokens are rejected in SANDBOX mode."
-    if custom_key and is_live_khalti_key(custom_key):
-        return None, "", "Live Khalti keys are rejected in SANDBOX mode."
-    if not custom_key and platform_sandbox_key and is_live_khalti_key(platform_sandbox_key):
-        return None, "", "Live Khalti keys are rejected in SANDBOX mode."
 
     if is_khalti_mock_mode_enabled():
         if not is_mock_khalti_token(pidx):
@@ -318,6 +319,14 @@ def initiate_khalti_epayment(*, store, order, khalti_body: dict) -> tuple[str | 
                     if mode == "TEST" and (is_sandbox_khalti_token(pidx) or is_mock_khalti_token(pidx)):
                         return None, None, False, "Invalid payment token returned by Khalti."
                     return pidx, payment_url, False, None
+        elif _is_khalti_invalid_key_response(resp):
+            logger.warning(
+                "Khalti initiate rejected configured key: status_code=%s store_id=%s mode=%s",
+                resp.status_code,
+                store.id,
+                mode,
+            )
+            return None, None, False, KHALTI_INVALID_KEY_MESSAGE
         logger.warning(
             "Khalti initiate non-200 or incomplete response: status_code=%s store_id=%s mode=%s",
             resp.status_code,
@@ -389,6 +398,19 @@ def verify_khalti_epayment(
             timeout=5.0,
         )
         if resp.status_code != 200:
+            if _is_khalti_invalid_key_response(resp):
+                logger.warning(
+                    "Khalti lookup rejected configured key: status_code=%s store_id=%s mode=%s",
+                    resp.status_code,
+                    store.id,
+                    mode,
+                )
+                return KhaltiVerifyResult(
+                    KHALTI_STATE_UNKNOWN_ERROR,
+                    None,
+                    None,
+                    KHALTI_INVALID_KEY_MESSAGE,
+                )
             logger.warning(
                 "Khalti lookup non-200 response: status_code=%s store_id=%s mode=%s",
                 resp.status_code,
