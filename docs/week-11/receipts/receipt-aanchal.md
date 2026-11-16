@@ -3,7 +3,7 @@
 **Student:** Aanchal Chand Thakuri ([`@jaasly07`](https://github.com/jaasly07))  
 **Team:** Team 2 — ShopCraft  
 **Week:** Week 11 (Sprint 2: MVP and Freeze — Final Class)  
-**Date:** Thursday, November 12, 2026 (Submitted for Wednesday, November 18, 2026 EOD KST Deadline)  
+**Date:** Thursday, November 12, 2026 (Updated November 16, 2026 on merged `main` commit `6559ea2`)  
 
 This is supporting evidence, not a separate weekly report. Use it only when a weekly guide specifically asks for additional receipts; otherwise, enter your contribution and evidence in the one shared team Weekly Report. If this template is requested, each student completes their own copy.
 
@@ -16,7 +16,8 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **Area I helped steward or hand off (if relevant):** Area 3: Storefront UI/UX, Mobile & Accessibility (Backup: Kushan Sunuwar).
 - **Evidence link:** [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52) · [PR #48](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/48) · [Tested-By Note](../tested-by-note.md) · [Commit `8835f43`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/8835f43) · [A11y Audit Matrix](../../week-10/evidence/aanchal-storefront-a11y-handoff.md).
 - **How I checked it:** 
-  - *Exact Test Environment:* Chrome 130 DevTools mobile device emulation across: (1) 360x800 (Samsung Galaxy S8/S21 compact Android), (2) 390x844 (iPhone 14 / mobile Safari), and (3) 412x915 (Google Pixel 7).
+  - *Frozen Build & Exact Test Environment:* Verified on merged `main` (`6559ea2`) / `PR #48` using Chrome 130 DevTools mobile device emulation across: (1) `360x800` (Samsung Galaxy S8/S21 compact Android), (2) `390x844` (iPhone 14 / mobile Safari), and (3) `412x915` (Google Pixel 7).
+  - *Boundary / Negative Note:* DevTools mobile emulation verifies responsive layout and client validation, **not** physical hardware iOS Safari keyboard behavior (scheduled for Sprint 3 Week 13 hardware QA in [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52)).
   - *Failure-Path Result:* Submitting with an invalid 8-digit phone (`98412345`) or unsupported prefix halts submission before POST; renders inline accessible error *"Please enter a valid 10-digit Nepali mobile number starting with 98 or 97"*; submit button disabled (`cursor-not-allowed`). All 7 provinces render cleanly in dropdown.
   - *Demo Promise Alignment:* Confirmed frozen checkout path strictly executes direct one-time retail purchases (`Storefront -> Cart -> Checkout -> Khalti Sandbox / COD -> Confirmation`), matching final demo promise with zero subscription dependencies.
 - **What I learned or changed:** Standardizing address fields to Nepal's administrative divisions prevents incorrect deliveries for craft merchants and speeds up checkout completion. Explicit failure-path handling prevents invalid payloads from reaching backend APIs.
