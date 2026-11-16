@@ -12,24 +12,24 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 
 ## Receipt 1
 
-- **What I did:** Implemented and validated the order lifecycle state machine in [`backend/orders/models.py`](../../../backend/orders/models.py) with transition validation (`Order.transition_status()`) and connected the 5-second undo toast action in [`frontend/src/components/merchant/OrderDetailSheet.tsx`](../../../frontend/src/components/merchant/OrderDetailSheet.tsx).
+- **What I did:** Verified the order lifecycle state machine in `MerchantOrderStatusTransitionView` ([`backend/stores/api.py`](../../../backend/stores/api.py)) alongside merchant UI actions in [`frontend/src/components/merchant/OrderDetailSheet.tsx`](../../../frontend/src/components/merchant/OrderDetailSheet.tsx) and `frontend/src/lib/merchant-status.test.ts`.
 - **Roadmap slice / behavior (if relevant):** Order State Machine Slice.
 - **Area I helped steward or hand off (if relevant):** Area 4: DevOps, Backend Health & State Machine (Backup: Aditya Kumar Gupta).
-- **Evidence link:** [Commit `b53f520`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/b53f520) · [Commit `5406c14`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/5406c14) · [Commit `f54333c`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/f54333c) · [MVP Verification Checklist](../mvp-verification-checklist.md#2-verification-checklist).
-- **How I checked it:** Attempted an illegal backward transition (`DELIVERED → PENDING`); verified backend returned `HTTP 400 Bad Request` with descriptive error payload. Tested valid transitions (`PAID → PROCESSING`) and confirmed 5-second undo toast successfully rolls back state.
-- **What I learned or changed:** Hardcoding state transitions inside model methods prevents corrupted records and protects merchants from accidental status misclicks.
+- **Evidence link:** [Issue #53](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/53) · [Tested-By Note](../tested-by-note.md) · [w11-frontend-checks.txt](../evidence/w11-frontend-checks.txt) · [Commit `b53f520`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/b53f520) · [MVP Verification Checklist](../mvp-verification-checklist.md#2-verification-checklist).
+- **How I checked it:** Verified `test_merchant_order_queue_and_transition_isolation` in `backend/stores/tests/test_isolation.py` and `merchant-status.test.ts` (`19/19` tests passed); verified illegal backward transition (`DELIVERED → PENDING`) returns `HTTP 400 Bad Request` (`Invalid transition from DELIVERED to PENDING`).
+- **What I learned or changed:** Enforcing state transitions server-side inside `MerchantOrderStatusTransitionView` prevents invalid order mutations and protects merchants from accidental status clicks.
 
 ---
 
 ## Receipt 2
 
-- **What I did:** Maintained the `/api/health/` database uptime probe in [`backend/core/views.py`](../../../backend/core/views.py) testing PostgreSQL connectivity and connection pool status.
-- **Roadmap slice / behavior (if relevant):** Database Health & Uptime Probe (Local Development Environment).
+- **What I did:** Audited and verified `health_view` (`/api/health/`) in [`backend/core/urls.py`](../../../backend/core/urls.py) and `test_health_check_zero_db_queries_ssl_exemption_hsts_and_cookies` in [`backend/stores/tests/test_hardening.py`](../../../backend/stores/tests/test_hardening.py).
+- **Roadmap slice / behavior (if relevant):** Health & Uptime Probe (`health_view`, zero-DB-query check for Heroku/uptime monitors).
 - **Area I helped steward or hand off (if relevant):** Area 4: DevOps, Backend Health & State Machine.
-- **Evidence link:** [Commit `5406c14`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/5406c14) · [Health Check Response](../../week-10/evidence/rohit-resilience-health-handoff.md#health-probe-response).
+- **Evidence link:** [w11-backend-tests.txt](../evidence/w11-backend-tests.txt) · [Commit `b53f520`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/b53f520) · [Health Check Log](../../week-10/evidence/rohit-resilience-health-handoff.md#health-probe-response).
 - **How I checked it:** 
-  - *Local Development Scope:* Curled `http://127.0.0.1:8000/api/health/` in local terminal and verified HTTP 200 with JSON `{ "status": "ok", "database": "connected", "latency_ms": 42 }`. Verified simulated local DB drop yields HTTP 503.
-  - *Scope Distinction:* This health probe is strictly a **Local Development Environment** verification check of database engine connectivity; kept distinct from the deployed production frontend on Vercel.
+  - *Local Development Scope:* Verified `GET /api/health/` returns `HTTP 200 OK` with JSON `{"status": "ok"}` and executes zero DB queries (`test_health_check_zero_db_queries_ssl_exemption_hsts_and_cookies`).
+  - *Scope Distinction:* Local `/api/health/` (`127.0.0.1:8000`) verification is kept explicitly distinct from deployed production frontend `https://shopcraft.me` (documented in [`tested-by-note.md`](../tested-by-note.md)).
   - *Canonical Name Spelling:* Canonical identifier is GitHub login [`@Rohit-coder201`](https://github.com/Rohit-coder201); full name standardized as **Rohit Chhantyal** (harmonizing with earlier Week 8 draft spelling "Chhantiyal").
 - **What I learned or changed:** Having an explicit health probe is vital when running serverless PostgreSQL (Neon) to monitor and mitigate cold-start latency before the midterm demo. Local health testing must remain distinct from live multi-region production metrics.
 
