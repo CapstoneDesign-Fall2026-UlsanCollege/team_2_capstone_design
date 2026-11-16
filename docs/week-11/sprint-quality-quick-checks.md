@@ -34,20 +34,21 @@ These are quick evidence checks across project milestones to ensure engineering 
   * **Verified Path:** Storefront Discovery (`/s/brewmellow`) $\rightarrow$ Cart Drawer $\rightarrow$ Single-Screen Localized Checkout $\rightarrow$ Khalti Sandbox ePayment v2 (with server `epayment/lookup/`) OR Cash on Delivery (COD) fallback $\rightarrow$ Confirmation Invoice $\rightarrow$ Merchant Fulfillment Console (`/merchant/brewmellow/orders`) $\rightarrow$ PostgreSQL Row-Level Security (RLS) Cross-Tenant Isolation (HTTP 404 guard).
   * **Evidence:** Documented in [`mvp-verification-checklist.md`](mvp-verification-checklist.md) and [`weekly-report.md`](weekly-report.md).
 - [x] **Known bugs are labeled by severity and have an owner or plan:**
-  * Documented in [`issue-priority-guide.md`](issue-priority-guide.md) with strict separation between bug severity and work priority (P0–P3).
+  * Documented in [`issue-priority-guide.md`](issue-priority-guide.md) and tracked in real GitHub Issues ([`#49`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/49)–[`#53`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/53), [`#31`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/31), [`#36`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/36)) with strict separation between bug severity and work priority (`P0–P3`).
 - [x] **New features are frozen or explicitly justified against the MVP contract:**
-  * **Scope Freeze Locked:** Zero new feature scope will be added for Sprint 3.
-  * **Scope Cut Reconciled:** Shopper recurring subscriptions and merchant subscription workspaces were formally cut in PR #45; all purchases operate as direct one-time retail checkout with Khalti Sandbox v2 and COD fallback.
+  * **Scope Freeze Locked:** Zero new feature scope will be added for Sprint 3 ([`Issue #49`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/49)).
+  * **Scope Cut Reconciled:** Shopper recurring subscriptions and merchant subscription workspaces were formally cut in PR #45 (legacy Issues [`#33`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/33) and [`#34`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/34) closed); all purchases operate as direct one-time retail checkout with Khalti Sandbox v2 and COD fallback.
 - [x] **The project has basic input/error handling or a documented limitation:**
   * Phone validation rejects invalid 8-digit numbers (`98412345`) with inline alert before POST.
-  * Gateway cancellation on Khalti portal cleanly preserves cart items and address inputs in session storage.
+  * Gateway cancellation on Khalti portal cleanly preserves cart items and address inputs in session storage (`khalti-return.test.ts`).
   * Illegal order transitions (`DELIVERED → PENDING`) return `HTTP 400 Bad Request`.
   * Simulated database connection loss returns graceful `HTTP 503 Service Unavailable`.
+  * Negative check boundaries (what local SQLite/mocked tests do *not* establish) explicitly recorded in [`tested-by-note.md`](tested-by-note.md).
 - [x] **AI-assisted or outside material is reviewed, explainable, and attributed where relevant:**
   * Documented in [`docs/week-10/ai-use-and-code-ownership-audit.md`](../week-10/ai-use-and-code-ownership-audit.md) and individual PR with AI Use notes in [`docs/week-10/slices/`](../week-10/slices/).
 - [x] **Current codebase areas, checks, and support/backup paths are linked in the ownership audit; a teammate outside a relevant area reproduces a key check:**
   * 4 Codebase Areas mapped with primary stewards and designated backups.
-  * 4 cross-area independent non-author peer checks executed and documented with 0 author intervention.
+  * 4 cross-area independent non-author peer checks executed and documented in [`tested-by-note.md`](tested-by-note.md) alongside fresh logs [`w11-backend-tests.txt`](evidence/w11-backend-tests.txt) (`154` backend tests) and [`w11-frontend-checks.txt`](evidence/w11-frontend-checks.txt) (`63/63` Vitest, `0` TS errors, `SURFACE_ISOLATION_OK`).
 
 ---
 

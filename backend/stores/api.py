@@ -1,3 +1,4 @@
+import logging
 from datetime import timedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -26,11 +27,49 @@ from stores.cloudinary_upload import (
     extract_cloudinary_public_id,
 )
 from stores.khalti import (
+    KHALTI_STATE_CANCELED,
+    KHALTI_STATE_COMPLETED,
+    KHALTI_STATE_EXPIRED,
+    KHALTI_STATE_PENDING,
+    KHALTI_STATE_REFUNDED,
+    KHALTI_STATE_REJECTED,
+    KHALTI_STATE_UNKNOWN_ERROR,
     initiate_khalti_epayment,
     resolve_khalti_initiation_config,
+    store_has_khalti_configured,
     validate_khalti_settings_update,
     verify_khalti_epayment,
 )
+
+khalti_logger = logging.getLogger("shopcraft.payments")
+
+
+def _build_khalti_initiate_body(
+    *,
+    request,
+    store,
+    order,
+    purchase_order_name: str,
+    recipient_name: str,
+    customer_email: str,
+    phone: str,
+) -> dict:
+    """Build a canonical Khalti /epayment/initiate/ payload using paisa integer totals."""
+    return_url = request.data.get("return_url") or request.build_absolute_uri(
+        f"/s/{store.slug}/checkout/khalti-return/"
+    )
+    return {
+        "return_url": return_url,
+        "website_url": request.build_absolute_uri(f"/s/{store.slug}/"),
+        "amount": order.total_minor,
+        "purchase_order_id": str(order.id),
+        "purchase_order_name": purchase_order_name,
+        "customer_info": {
+            "name": recipient_name,
+            "email": customer_email,
+            "phone": phone,
+        },
+    }
 from accounts.otp import compute_salted_ip_hash, get_client_ip
 from stores.models import (
     ActionRateLimit,
@@ -184,7 +223,7 @@ class StorePublicSerializer(serializers.ModelSerializer):
         ]
 
     def get_has_khalti(self, obj) -> bool:
-        return bool(obj.khalti_secret_key_encrypted)
+        return store_has_khalti_configured(obj)
 
 
 class CustomerSerializer(serializers.ModelSerializer):
@@ -332,6 +371,7 @@ class OrderSerializer(serializers.ModelSerializer):
             "payment_method",
             "payment_status",
             "payment_ref",
+            "is_test",
             "subtotal_minor",
             "shipping_minor",
             "discount_minor",
@@ -503,20 +543,21 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         ).strip()
         order = None
 
+        qs = Order.objects.for_store(self.store).select_for_update()
         try:
             uuid_token = uuid.UUID(str(order_id))
-            order = Order.objects.for_store(self.store).filter(token=uuid_token).first()
+            order = qs.filter(token=uuid_token).first()
         except ValueError:
             try:
                 oid = int(order_id)
                 if token_param:
                     try:
                         param_uuid = uuid.UUID(token_param)
-                        order = Order.objects.for_store(self.store).filter(id=oid, token=param_uuid).first()
+                        order = qs.filter(id=oid, token=param_uuid).first()
                     except ValueError:
                         pass
                 elif request.user.is_authenticated:
-                    order = Order.objects.for_store(self.store).filter(id=oid, customer__user=request.user).first()
+                    order = qs.filter(id=oid, customer__user=request.user).first()
             except ValueError:
                 pass
 
@@ -541,11 +582,6 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 {"error": "Cash on Delivery is currently disabled for this store. Please pay via Khalti."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        if payment_method == "KHALTI":
-            _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
-            if khalti_cfg_err:
-                return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
 
         if payment_method == "COD":
             with transaction.atomic():
@@ -579,27 +615,21 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         if khalti_cfg_err:
             return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
 
-        return_url = request.data.get("return_url") or request.build_absolute_uri(
-            f"/s/{self.store.slug}/checkout/khalti-return/"
-        )
         snap = order.shipping_address_snapshot or {}
         recipient_name = snap.get("recipient_name") or order.customer.full_name or "Shopper"
         phone = snap.get("phone") or order.customer.phone or "9800000000"
 
-        khalti_body = {
-            "return_url": return_url,
-            "website_url": request.build_absolute_uri(f"/s/{self.store.slug}/"),
-            "amount": order.total_minor,
-            "purchase_order_id": str(order.id),
-            "purchase_order_name": f"{self.store.name} Renewal {order.order_number}",
-            "customer_info": {
-                "name": recipient_name,
-                "email": order.customer.email,
-                "phone": phone,
-            },
-        }
+        khalti_body = _build_khalti_initiate_body(
+            request=request,
+            store=self.store,
+            order=order,
+            purchase_order_name=f"{self.store.name} Order {order.order_number}",
+            recipient_name=recipient_name,
+            customer_email=order.customer.email,
+            phone=phone,
+        )
 
-        pidx, payment_url, is_sandbox, gw_err = initiate_khalti_epayment(
+        pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
             store=self.store,
             order=order,
             khalti_body=khalti_body,
@@ -610,9 +640,31 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 status=status.HTTP_502_BAD_GATEWAY,
             )
 
-        order.payment_method = "KHALTI"
-        order.payment_ref = pidx
-        order.save(update_fields=["payment_method", "payment_ref", "updated_at"])
+        with transaction.atomic():
+            prev_status = order.status
+            order.payment_method = "KHALTI"
+            order.payment_status = "UNPAID"
+            order.status = "PENDING_PAYMENT"
+            order.payment_ref = pidx
+            order.is_test = bool(is_mock or self.store.khalti_mode != "LIVE")
+            order.save(
+                update_fields=[
+                    "payment_method",
+                    "payment_status",
+                    "status",
+                    "payment_ref",
+                    "is_test",
+                    "updated_at",
+                ]
+            )
+            OrderEvent.objects.create(
+                store=self.store,
+                order=order,
+                from_status=prev_status,
+                to_status="PENDING_PAYMENT",
+                note="Khalti payment retry initiated.",
+                actor=request.user if request.user.is_authenticated else None,
+            )
 
         payload = {
             "order_id": order.id,
@@ -621,9 +673,10 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
             "pidx": pidx,
             "payment_url": payment_url,
             "status": order.status,
+            "is_test": order.is_test,
         }
-        if is_sandbox:
-            payload["is_sandbox"] = True
+        if is_mock:
+            payload["is_mock"] = True
         return Response(payload)
 
 
@@ -959,23 +1012,17 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 "total_minor": order.total_minor,
             }, status=status.HTTP_201_CREATED)
 
-        return_url = request.data.get("return_url") or request.build_absolute_uri(
-            f"/s/{self.store.slug}/checkout/khalti-return/"
+        khalti_body = _build_khalti_initiate_body(
+            request=request,
+            store=self.store,
+            order=order,
+            purchase_order_name=f"{self.store.name} Order {order.order_number}",
+            recipient_name=recipient_name,
+            customer_email=customer.email,
+            phone=phone,
         )
-        khalti_body = {
-            "return_url": return_url,
-            "website_url": request.build_absolute_uri(f"/s/{self.store.slug}/"),
-            "amount": order.total_minor,
-            "purchase_order_id": str(order.id),
-            "purchase_order_name": f"{self.store.name} Order {order.order_number}",
-            "customer_info": {
-                "name": recipient_name,
-                "email": customer.email,
-                "phone": phone,
-            },
-        }
 
-        pidx, payment_url, is_sandbox, gw_err = initiate_khalti_epayment(
+        pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
             store=self.store,
             order=order,
             khalti_body=khalti_body,
@@ -987,7 +1034,11 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             )
 
         order.payment_ref = pidx
-        order.save(update_fields=["payment_ref"])
+        if is_mock:
+            order.is_test = True
+            order.save(update_fields=["payment_ref", "is_test"])
+        else:
+            order.save(update_fields=["payment_ref"])
 
         payload = {
             "order_id": order.id,
@@ -996,87 +1047,215 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             "pidx": pidx,
             "payment_url": payment_url,
             "status": order.status,
+            "is_test": order.is_test,
         }
-        if is_sandbox:
-            payload["is_sandbox"] = True
+        if is_mock:
+            payload["is_mock"] = True
         return Response(payload, status=status.HTTP_201_CREATED)
 
 
 class StoreKhaltiVerifyView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
 
+    _FAILURE_REASON_MAP = {
+        KHALTI_STATE_CANCELED: (
+            "Khalti payment verification failed (User canceled).",
+            "Payment was canceled on Khalti.",
+            "canceled",
+        ),
+        KHALTI_STATE_EXPIRED: (
+            "Khalti payment verification failed (Expired).",
+            "Payment session expired.",
+            "expired",
+        ),
+        KHALTI_STATE_REFUNDED: (
+            "Khalti payment verification failed (Refunded).",
+            "Payment was refunded and cannot complete this order.",
+            "refunded",
+        ),
+    }
+
+    def _mark_payment_failed(self, order, *, actor, note: str, error_msg: str, reason: str) -> Response:
+        prev_status = order.status
+        order.status = "PAYMENT_FAILED"
+        order.payment_status = "FAILED"
+        order.save(update_fields=["status", "payment_status", "updated_at"])
+
+        OrderEvent.objects.create(
+            store=self.store,
+            order=order,
+            from_status=prev_status,
+            to_status="PAYMENT_FAILED",
+            note=note,
+            actor=actor,
+        )
+
+        return Response(
+            {
+                "error": error_msg,
+                "state": "failed",
+                "reason": reason,
+                "order_id": order.id,
+                "token": str(order.token),
+                "payment_status": order.payment_status,
+                "status": order.status,
+                "is_test": order.is_test,
+            },
+            status=status.HTTP_400_BAD_REQUEST,
+        )
+
     def post(self, request, store_slug):
         pidx = str(request.data.get("pidx", "")).strip()
-        order_id = request.data.get("order_id") or request.data.get("purchase_order_id")
+        raw_order_id = request.data.get("order_id") or request.data.get("purchase_order_id")
 
-        if not pidx or not order_id:
+        if not pidx or not raw_order_id:
             return Response(
                 {"error": "pidx and order_id are required."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        order = Order.objects.for_store(self.store).filter(id=order_id).first()
-        if not order:
-            raise Http404("Order not found for this store.")
+        try:
+            oid = int(raw_order_id)
+        except (TypeError, ValueError):
+            return Response(
+                {"error": "Invalid order_id."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
-        if order.status in ["PAID", "CONFIRMED"] and order.payment_status == "PAID":
-            return Response({
-                "success": True,
-                "order_id": order.id,
-                "token": str(order.token),
-                "order_number": order.order_number,
-                "status": order.status,
-            })
+        actor = request.user if request.user.is_authenticated else None
 
-        verified, rejection_reason = verify_khalti_epayment(store=self.store, pidx=pidx)
+        with transaction.atomic():
+            order = Order.objects.for_store(self.store).select_for_update().filter(id=oid).first()
+            if not order:
+                raise Http404("Order not found for this store.")
 
-        if verified:
-            mode_label = "Khalti Live" if self.store.khalti_mode == "LIVE" else "Khalti Sandbox"
-            with transaction.atomic():
-                order.status = "PAID"
-                order.payment_status = "PAID"
-                order.payment_ref = pidx
-                order.save(update_fields=["status", "payment_status", "payment_ref", "updated_at"])
-
-                OrderEvent.objects.create(
-                    store=self.store,
-                    order=order,
-                    from_status="PENDING_PAYMENT",
-                    to_status="PAID",
-                    note=f"Payment verified via {mode_label}.",
-                    actor=request.user if request.user.is_authenticated else None,
+            if not order.payment_ref or pidx != order.payment_ref:
+                return Response(
+                    {"error": "Payment reference does not match this order."},
+                    status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            return Response({
-                "success": True,
-                "order_id": order.id,
-                "token": str(order.token),
-                "order_number": order.order_number,
-                "status": order.status,
-            })
-        else:
-            failure_note = (
-                f"Khalti payment verification failed ({rejection_reason})"
-                if rejection_reason
-                else "Khalti payment verification failed."
+            if order.payment_status == "PAID":
+                return Response({
+                    "success": True,
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "order_number": order.order_number,
+                    "status": order.status,
+                    "payment_status": order.payment_status,
+                    "is_test": order.is_test,
+                })
+
+            if order.payment_method != "KHALTI" or order.payment_status != "UNPAID":
+                payload = {
+                    "error": "This order is not awaiting Khalti payment verification.",
+                    "state": "failed",
+                    "order_id": order.id,
+                    "payment_status": order.payment_status,
+                    "status": order.status,
+                    "is_test": order.is_test,
+                }
+                if order.payment_method == "KHALTI":
+                    payload["token"] = str(order.token)
+                return Response(payload, status=status.HTTP_409_CONFLICT)
+
+            result = verify_khalti_epayment(
+                store=self.store,
+                pidx=pidx,
+                expected_pidx=order.payment_ref,
+                mock_amount_paisa=order.total_minor,
             )
-            with transaction.atomic():
-                order.status = "PAYMENT_FAILED"
-                order.payment_status = "FAILED"
+
+            if result.state == KHALTI_STATE_COMPLETED:
+                if result.total_amount_paisa != order.total_minor:
+                    khalti_logger.warning(
+                        "Khalti payment amount mismatch: store_id=%s order_id=%s expected_paisa=%s received_paisa=%s",
+                        self.store.id,
+                        order.id,
+                        order.total_minor,
+                        result.total_amount_paisa,
+                    )
+                    return self._mark_payment_failed(
+                        order,
+                        actor=actor,
+                        note=(
+                            f"Khalti payment verification failed (amount mismatch: "
+                            f"expected {order.total_minor} paisa, received {result.total_amount_paisa} paisa)."
+                        ),
+                        error_msg="Payment amount mismatch.",
+                        reason="amount_mismatch",
+                    )
+
+                prev_status = order.status
+                order.status = "PAID"
+                order.payment_status = "PAID"
                 order.save(update_fields=["status", "payment_status", "updated_at"])
 
+                mode_label = "Khalti Live" if self.store.khalti_mode == "LIVE" else "Khalti Sandbox"
+                txn_suffix = f" Transaction ID: {result.transaction_id}." if result.transaction_id else ""
                 OrderEvent.objects.create(
                     store=self.store,
                     order=order,
-                    from_status="PENDING_PAYMENT",
-                    to_status="PAYMENT_FAILED",
-                    note=failure_note,
-                    actor=request.user if request.user.is_authenticated else None,
+                    from_status=prev_status,
+                    to_status="PAID",
+                    note=f"Payment verified via {mode_label}.{txn_suffix}",
+                    actor=actor,
+                )
+
+                return Response({
+                    "success": True,
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "order_number": order.order_number,
+                    "status": order.status,
+                    "payment_status": order.payment_status,
+                    "is_test": order.is_test,
+                })
+
+            if result.state == KHALTI_STATE_PENDING:
+                return Response(
+                    {
+                        "success": False,
+                        "state": "pending",
+                        "order_id": order.id,
+                        "token": str(order.token),
+                        "order_number": order.order_number,
+                        "status": order.status,
+                        "payment_status": order.payment_status,
+                        "is_test": order.is_test,
+                    },
+                    status=status.HTTP_202_ACCEPTED,
+                )
+
+            if result.state in self._FAILURE_REASON_MAP:
+                note, error_msg, reason = self._FAILURE_REASON_MAP[result.state]
+                return self._mark_payment_failed(
+                    order,
+                    actor=actor,
+                    note=note,
+                    error_msg=error_msg,
+                    reason=reason,
+                )
+
+            if result.state == KHALTI_STATE_REJECTED:
+                reason_detail = result.error or "Payment verification rejected."
+                return self._mark_payment_failed(
+                    order,
+                    actor=actor,
+                    note=f"Khalti payment verification failed ({reason_detail}).",
+                    error_msg=reason_detail,
+                    reason="rejected",
                 )
 
             return Response(
-                {"error": rejection_reason or "Payment verification failed or was cancelled."},
-                status=status.HTTP_400_BAD_REQUEST,
+                {
+                    "error": result.error or "Could not reach Khalti to verify payment.",
+                    "state": "error",
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "is_test": order.is_test,
+                },
+                status=status.HTTP_503_SERVICE_UNAVAILABLE,
             )
 
 
@@ -1374,10 +1553,19 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                 if "khalti_mode" in data
                 else store.khalti_mode
             )
+            submitted_key = None
             if data.get("clear_khalti_secret_key"):
                 candidate_key = ""
-            elif "khalti_secret_key" in data and str(data["khalti_secret_key"]).strip():
-                candidate_key = str(data["khalti_secret_key"]).strip()
+            elif "khalti_secret_key" in data and data["khalti_secret_key"] is not None:
+                trimmed = str(data["khalti_secret_key"]).strip()
+                bare = trimmed[4:].strip() if trimmed.lower().startswith("key ") else trimmed
+                if not bare:
+                    return Response(
+                        {"error": "Khalti secret key cannot be empty."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                submitted_key = trimmed
+                candidate_key = submitted_key
             else:
                 candidate_key = store.get_khalti_secret_key()
 
@@ -1391,8 +1579,8 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
             store.khalti_mode = candidate_mode
             if data.get("clear_khalti_secret_key"):
                 store.set_khalti_secret_key("")
-            elif "khalti_secret_key" in data and str(data["khalti_secret_key"]).strip():
-                store.set_khalti_secret_key(str(data["khalti_secret_key"]).strip())
+            elif submitted_key is not None:
+                store.set_khalti_secret_key(submitted_key)
 
         store.save()
 

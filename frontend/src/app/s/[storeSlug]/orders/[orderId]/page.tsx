@@ -9,13 +9,13 @@ import {
   CreditCard,
   MapPin,
   Package,
-  RotateCw,
   ShoppingBag,
 } from "lucide-react";
 import { formatNpr, OrderDetail, StorePublicMetadata } from "@/lib/api";
 import { getServerApiOrigin } from "@/lib/env";
 import { Chip, ChipTone } from "@/components/ui/chip";
 import { OrderAccountBanner, OrderHeaderNav } from "@/components/storefront/OrderAccountBanner";
+import { OrderPaymentActions } from "@/components/storefront/OrderPaymentActions";
 
 async function fetchOrderData(
   storeSlug: string,
@@ -85,7 +85,7 @@ export default async function StorefrontOrderDetailPage({
   let statusBadgeLabel = order.status.replace(/_/g, " ");
   let heroHeadline = "Order Received";
   let heroSubtitle = `Thank you for ordering directly from ${store.name}.`;
-  let canRetryPayment = false;
+  let paymentActionMode: "failed" | "pending" | null = null;
 
   if (statusUpper === "DELIVERED") {
     chipTone = "success";
@@ -102,7 +102,9 @@ export default async function StorefrontOrderDetailPage({
     statusBadgeLabel = "Payment Failed";
     heroHeadline = "Payment Not Completed";
     heroSubtitle = "Your payment transaction was not completed. Tap below to retry.";
-    canRetryPayment = true;
+    if (isKhalti) {
+      paymentActionMode = "failed";
+    }
   } else if (statusUpper === "CANCELLED") {
     chipTone = "error";
     statusBadgeLabel = "Cancelled";
@@ -122,8 +124,10 @@ export default async function StorefrontOrderDetailPage({
     chipTone = "warning";
     statusBadgeLabel = "Verifying Payment";
     heroHeadline = "Awaiting Payment Confirmation";
-    heroSubtitle = "We are verifying your transaction. If unpaid, you can complete payment now.";
-    canRetryPayment = true;
+    heroSubtitle = "We are verifying your transaction with Khalti. Tap Check again to refresh status.";
+    if (isKhalti) {
+      paymentActionMode = "pending";
+    }
   } else if (statusUpper === "CONFIRMED" || statusUpper === "PROCESSING" || statusUpper === "PACKED") {
     chipTone = "warning";
     statusBadgeLabel = "Processing";
@@ -216,17 +220,23 @@ export default async function StorefrontOrderDetailPage({
             <span className="font-semibold">{order.order_number}</span>
           </div>
 
-          {/* One-tap retry button for failed / pending payment */}
-          {canRetryPayment && (
-            <div className="pt-2 max-w-xs mx-auto">
-              <Link
-                href={`/s/${encodeURIComponent(store.slug)}/checkout`}
-                className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2"
-              >
-                <RotateCw className="w-4 h-4" />
-                <span>Retry Payment</span>
-              </Link>
+          {isKhalti && Boolean(order.is_test) && (
+            <div>
+              <p className="text-[11px] text-[var(--ink-2)] border border-[var(--border)] bg-[var(--canvas)] rounded-md px-3 py-1.5 inline-block">
+                Test mode: no real money is charged
+              </p>
             </div>
+          )}
+
+          {/* Payment action button for failed / verifying Khalti payments */}
+          {paymentActionMode && (
+            <OrderPaymentActions
+              storeSlug={store.slug}
+              orderId={order.id}
+              orderToken={order.token || token || ""}
+              paymentRef={order.payment_ref}
+              mode={paymentActionMode}
+            />
           )}
         </div>
 

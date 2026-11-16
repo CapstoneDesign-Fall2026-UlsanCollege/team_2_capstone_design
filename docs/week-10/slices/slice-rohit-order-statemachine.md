@@ -5,7 +5,7 @@
 **Backup Steward:** Aditya Kumar Gupta ([`@notyouradhee`](https://github.com/notyouradhee))  
 **Date:** Monday, November 9, 2026 (Week 10)  
 **Related Pull Request / Commit:** [Commit `5406c14`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/5406c14) · [Commit `f54333c`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/f54333c)  
-**Related Issue:** Issue #51 (Order Lifecycle State Machine Transitions & Uptime Health Probe)
+**Related Issue:** [Issue #53](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/53) (Order Lifecycle State Machine & Local Health Probe Isolation)
 
 ---
 
@@ -65,6 +65,6 @@ Choose one:
 
 ## 6. Evidence Links
 
-- **Issue:** Issue #51 (Order Lifecycle Validation & Database Health Monitoring)
+- **Issue:** [Issue #53](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/53) (Order Lifecycle Validation & Health Probe)
 - **Commits:** [`5406c14`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/5406c14), [`f54333c`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/f54333c)
 - **Health Check & Test Logs:** Documented in [`docs/week-10/evidence/rohit-resilience-health-handoff.md`](../evidence/rohit-resilience-health-handoff.md)

@@ -68,13 +68,20 @@ export class ApiError extends Error {
   status: number;
   detail: string;
   fieldErrors?: Record<string, string[]>;
+  data?: Record<string, unknown> | null;
 
-  constructor(status: number, detail: string, fieldErrors?: Record<string, string[]>) {
+  constructor(
+    status: number,
+    detail: string,
+    fieldErrors?: Record<string, string[]>,
+    data?: Record<string, unknown> | null
+  ) {
     super(detail);
     this.name = "ApiError";
     this.status = status;
     this.detail = detail;
     this.fieldErrors = fieldErrors;
+    this.data = data ?? null;
   }
 }
 
@@ -239,7 +246,7 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
           }
         }
       }
-      throw new ApiError(res.status, detail, fieldErrors);
+      throw new ApiError(res.status, detail, fieldErrors, data && typeof data === "object" ? data : null);
     }
 
     if (method === "GET" && !init?.body && !init?.signal) {
@@ -818,15 +825,21 @@ export interface CheckoutPlaceResponse {
   total_minor?: number;
   pidx?: string;
   payment_url?: string;
-  is_sandbox?: boolean;
+  is_test?: boolean;
+  is_mock?: boolean;
 }
 
 export interface KhaltiVerifyResponse {
   success: boolean;
+  state?: "pending" | "failed" | "error" | string;
   order_id: number;
   token?: string;
-  order_number: string;
-  status: string;
+  order_number?: string;
+  status?: string;
+  payment_status?: string;
+  is_test?: boolean;
+  error?: string;
+  reason?: string;
 }
 
 export interface OrderItemDetail {
@@ -855,6 +868,7 @@ export interface OrderDetail {
   payment_method: "KHALTI" | "COD" | string;
   payment_status: string;
   payment_ref: string;
+  is_test?: boolean;
   subtotal_minor: number;
   shipping_minor: number;
   discount_minor: number;
@@ -918,7 +932,8 @@ export interface PayPublicOrderResponse {
   payment_status?: string;
   pidx?: string;
   payment_url?: string;
-  is_sandbox?: boolean;
+  is_test?: boolean;
+  is_mock?: boolean;
 }
 
 export async function payPublicOrder(

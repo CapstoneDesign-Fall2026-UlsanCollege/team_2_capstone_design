@@ -19,6 +19,9 @@ class PostgresRLSDiscoverRunner(DiscoverRunner):
         settings.CSRF_COOKIE_SECURE = False
         settings.ALLOW_LOCAL_MEDIA_UPLOADS = True
         settings.KHALTI_LIVE_ENABLED = False
+        settings.KHALTI_MOCK_MODE = False
+        settings.KHALTI_PLATFORM_SANDBOX_KEY = ""
+        settings.IS_TEST_RUNNER_ACTIVE = True
 
     def setup_databases(self, **kwargs):
         config = super().setup_databases(**kwargs)

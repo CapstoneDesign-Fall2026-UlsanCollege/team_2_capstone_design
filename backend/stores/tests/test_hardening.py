@@ -386,20 +386,21 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
         # 3. Verify rejects sandbox/test tokens in LIVE mode even with a valid live key
         self.store.set_khalti_secret_key("live_secret_key_valid_fixture_9999")
         self.store.save(update_fields=["khalti_secret_key_encrypted"])
-        with TenantDatabaseContext(self.store.id):
-            order = Order.objects.create(
-                store=self.store,
-                customer=self.customer,
-                order_number="#HG-LIVE-0001",
-                status="PENDING_PAYMENT",
-                payment_method="KHALTI",
-                payment_status="UNPAID",
-                subtotal_minor=150000,
-                total_minor=150000,
-                is_test=False,
-            )
+        for idx, bad_pidx in enumerate((f"sandbox_{self.store.id}_abcd", "test_pidx_12345"), start=1):
+            with TenantDatabaseContext(self.store.id):
+                order = Order.objects.create(
+                    store=self.store,
+                    customer=self.customer,
+                    order_number=f"#HG-LIVE-{idx:04d}",
+                    status="PENDING_PAYMENT",
+                    payment_method="KHALTI",
+                    payment_status="UNPAID",
+                    payment_ref=bad_pidx,
+                    subtotal_minor=150000,
+                    total_minor=150000,
+                    is_test=False,
+                )
 
-        for bad_pidx in (f"sandbox_{order.id}_abcd", "test_pidx_12345"):
             verify_res = self.client.post(
                 f"/api/stores/{self.store.slug}/checkout/khalti-verify/",
                 {"pidx": bad_pidx, "order_id": order.id},
@@ -407,36 +408,101 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
             )
             self.assertEqual(verify_res.status_code, 400)
 
-        with TenantDatabaseContext(self.store.id):
-            order.refresh_from_db()
-            self.assertEqual(order.status, "PAYMENT_FAILED")
-            self.assertEqual(order.payment_status, "FAILED")
+            with TenantDatabaseContext(self.store.id):
+                order.refresh_from_db()
+                self.assertEqual(order.status, "PAYMENT_FAILED")
+                self.assertEqual(order.payment_status, "FAILED")
 
-    def test_khalti_live_keys_and_tokens_rejected_in_sandbox_mode(self):
+    @patch("stores.khalti.get_shared_http_session")
+    def test_khalti_live_prefixed_sandbox_keys_allowed_in_test_mode_and_live_tokens_rejected(
+        self, mock_get_session
+    ):
         self.assertEqual(self.store.khalti_mode, "TEST")
         self.client.force_login(self.owner)
 
-        # 1. Live keys rejected in merchant settings while in TEST (sandbox) mode
-        for live_key in ("live_secret_key_abc12345", "Key live_public_key_xyz987"):
+        # 1. Whitespace-only keys are rejected, while live_secret_key_* sandbox keys save cleanly in TEST mode
+        empty_res = self.client.patch(
+            f"/api/merchant/stores/{self.store.slug}/settings/",
+            {"khalti_mode": "TEST", "khalti_secret_key": "   "},
+            format="json",
+        )
+        self.assertEqual(empty_res.status_code, 400)
+
+        for raw_key, expected_saved in (
+            ("  live_secret_key_sandbox_abc12345  ", "live_secret_key_sandbox_abc12345"),
+            ("Key live_secret_key_sandbox_xyz987", "Key live_secret_key_sandbox_xyz987"),
+        ):
             res = self.client.patch(
                 f"/api/merchant/stores/{self.store.slug}/settings/",
-                {"khalti_mode": "TEST", "khalti_secret_key": live_key},
+                {"khalti_mode": "TEST", "khalti_secret_key": raw_key},
                 format="json",
             )
-            self.assertEqual(res.status_code, 400)
+            self.assertEqual(res.status_code, 200)
+            self.store.refresh_from_db()
+            self.assertEqual(self.store.get_khalti_secret_key(), expected_saved)
 
-        # 2. Checkout initiation rejects live key in TEST mode
-        self.store.set_khalti_secret_key("live_secret_key_abc12345")
-        self.store.save(update_fields=["khalti_secret_key_encrypted"])
+        store_res = self.client.get(f"/api/stores/{self.store.slug}/")
+        self.assertEqual(store_res.status_code, 200)
+        self.assertTrue(store_res.json()["has_khalti"])
+
+        # 2. Checkout initiation & lookup with live_secret_key_* in TEST mode hit dev.khalti.com only
+        self.client.logout()
+        fake_session = MagicMock()
+        mock_init_resp = MagicMock()
+        mock_init_resp.status_code = 200
+        mock_init_resp.json.return_value = {
+            "pidx": "kLt91OpqRealPidx",
+            "payment_url": "https://test-pay.khalti.com/?pidx=kLt91OpqRealPidx",
+        }
+        fake_session.post.return_value = mock_init_resp
+        mock_get_session.return_value = fake_session
 
         place_res = self.client.post(
             f"/api/stores/{self.store.slug}/checkout/place/",
             self._checkout_payload(),
             format="json",
         )
-        self.assertEqual(place_res.status_code, 400)
+        self.assertEqual(place_res.status_code, 201)
+        place_data = place_res.json()
+        self.assertTrue(place_data["is_test"])
+        self.assertEqual(
+            fake_session.post.call_args_list[0].args[0],
+            "https://dev.khalti.com/api/v2/epayment/initiate/",
+        )
+        self.assertEqual(
+            fake_session.post.call_args_list[0].kwargs["headers"]["Authorization"],
+            "Key live_secret_key_sandbox_xyz987",
+        )
 
-        # 3. Verify rejects live pidx token in TEST mode
+        with TenantDatabaseContext(self.store.id):
+            placed_order = Order.objects.get(id=place_data["order_id"])
+
+        mock_lookup_resp = MagicMock()
+        mock_lookup_resp.status_code = 200
+        mock_lookup_resp.json.return_value = {
+            "pidx": "kLt91OpqRealPidx",
+            "status": "Completed",
+            "total_amount": placed_order.total_minor,
+            "transaction_id": "TXN-SBX-001",
+        }
+        fake_session.post.return_value = mock_lookup_resp
+
+        verify_ok = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/khalti-verify/",
+            {
+                "pidx": "kLt91OpqRealPidx",
+                "order_id": place_data["order_id"],
+            },
+            format="json",
+        )
+        self.assertEqual(verify_ok.status_code, 200)
+        self.assertEqual(verify_ok.json()["status"], "PAID")
+        self.assertEqual(
+            fake_session.post.call_args_list[1].args[0],
+            "https://dev.khalti.com/api/v2/epayment/lookup/",
+        )
+
+        # 3. Verify still rejects live_pidx_token_* tokens in TEST mode
         self.store.set_khalti_secret_key("")
         self.store.save(update_fields=["khalti_secret_key_encrypted"])
         with TenantDatabaseContext(self.store.id):
@@ -447,6 +513,7 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
                 status="PENDING_PAYMENT",
                 payment_method="KHALTI",
                 payment_status="UNPAID",
+                payment_ref="live_pidx_token_9999",
                 subtotal_minor=150000,
                 total_minor=150000,
                 is_test=True,
@@ -454,7 +521,10 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
 
         verify_res = self.client.post(
             f"/api/stores/{self.store.slug}/checkout/khalti-verify/",
-            {"pidx": "live_pidx_token_9999", "order_id": order.id},
+            {
+                "pidx": "live_pidx_token_9999",
+                "order_id": order.id,
+            },
             format="json",
         )
         self.assertEqual(verify_res.status_code, 400)
@@ -569,6 +639,15 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
                 secret_key=valid_secret,
                 field_encryption_key=valid_fernet,
                 allowed_hosts=[],
+            )
+
+        with self.assertRaises(ImproperlyConfigured):
+            validate_production_security_settings(
+                debug=False,
+                secret_key=valid_secret,
+                field_encryption_key=valid_fernet,
+                allowed_hosts=["api.example.com"],
+                khalti_mock_mode=True,
             )
 
     def test_cloudinary_signed_upload_and_ephemeral_fs_guard(self):

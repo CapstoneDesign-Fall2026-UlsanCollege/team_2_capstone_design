@@ -5,7 +5,7 @@
 **Backup Steward:** Kushan Sunuwar ([`@Kushan2191`](https://github.com/Kushan2191))  
 **Date:** Monday, November 9, 2026 (Week 10)  
 **Related Pull Request / Commit:** [Commit `7a72592`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/7a72592) · [Commit `c1b48b1`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/c1b48b1)  
-**Related Issue:** Issue #50 (Mobile Storefront Ergonomics & WCAG AA Compliance)
+**Related Issue:** [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52) · [PR #48](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/48) (Mobile Storefront Ergonomics & Failure-Path Validation)
 
 ---
 
@@ -64,6 +64,6 @@ Choose one:
 
 ## 6. Evidence Links
 
-- **Issue:** Issue #50 (Storefront Mobile Accessibility & Localized Fields)
+- **Issue:** [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52) (Storefront Mobile Accessibility & Localized Fields)
 - **Commits:** [`7a72592`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/7a72592), [`c1b48b1`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/c1b48b1)
 - **Visual Evidence & Test Log:** Documented in [`docs/week-10/evidence/aanchal-storefront-a11y-handoff.md`](../evidence/aanchal-storefront-a11y-handoff.md)

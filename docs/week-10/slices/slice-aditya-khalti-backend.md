@@ -5,7 +5,7 @@
 **Backup Steward:** Rohit Chhantyal ([`@Rohit-coder201`](https://github.com/Rohit-coder201))  
 **Date:** Monday, November 9, 2026 (Week 10)  
 **Related Pull Request / Commit:** [Commit `1374b23`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/1374b23) · [Commit `cdb1c0e`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/cdb1c0e)  
-**Related Issue:** Issue #48 (Khalti Sandbox v2 Gateway & Cash on Delivery Fallback)
+**Related Issue:** [Issue #50](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/50) (and [Risk #31](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/31) · closed [Issue #26](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/26))
 
 ---
 
@@ -66,7 +66,7 @@ Choose one:
 
 ## 6. Evidence Links
 
-- **Issue:** Issue #48 (Payment Boundary & Khalti Gateway Integration)
+- **Issue:** [Issue #50](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/50) (Khalti Sandbox v2 Verification, Retry Flow & Postgres RLS)
 - **Commits:** [`1374b23`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/1374b23), [`cdb1c0e`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/cdb1c0e)
 - **Automated Tests:** 114 backend tests passing (`python manage.py test accounts catalog orders stores`)
 - **Non-Author QA Handoff:** [`docs/week-10/evidence/aditya-backend-rls-handoff.md`](../evidence/aditya-backend-rls-handoff.md)

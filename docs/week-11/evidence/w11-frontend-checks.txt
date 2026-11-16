@@ -1,0 +1,32 @@
+﻿Commit: 07f1aeb105bc8b462cd5d0d9f1f76d6a5e0d6eee
+Date: 2026-11-16 (Asia/Kathmandu)
+Commands: npm test && npm run typecheck && npm run check:surfaces
+======================================================================
+
+
+> frontend@0.1.0 test
+> vitest run
+
+
+ RUN  v3.2.7 D:/Team2_Capstone_project/team_2_capstone_design/frontend
+
+ ✓ src/lib/merchant-status.test.ts (19 tests) 29ms
+ ✓ src/lib/merchant-guard.test.ts (18 tests) 20ms
+ ✓ src/lib/theme-media-upload.test.ts (2 tests) 23ms
+ ✓ src/lib/khalti-return.test.ts (6 tests) 47ms
+ ✓ src/lib/storefront-placeholders.test.ts (18 tests) 709ms
+
+ Test Files  5 passed (5)
+      Tests  63 passed (63)
+   Start at  09:04:08
+   Duration  4.08s (transform 2.25s, setup 0ms, collect 3.91s, tests 828ms, environment 2ms, prepare 2.44s)
+
+
+> frontend@0.1.0 typecheck
+> tsc --noEmit
+
+
+> frontend@0.1.0 check:surfaces
+> node scripts/check-surfaces.mjs
+
+SURFACE_ISOLATION_OK
