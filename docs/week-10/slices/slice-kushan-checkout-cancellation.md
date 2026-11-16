@@ -5,7 +5,7 @@
 **Backup Steward:** Aanchal Chand Thakuri ([`@jaasly07`](https://github.com/jaasly07))  
 **Date:** Monday, November 9, 2026 (Week 10)  
 **Related Pull Request / Commit:** [Commit `89b1420`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/89b1420) · [Commit `00ff1b2`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/00ff1b2)  
-**Related Issue:** Issue #49 (Independent Non-Author Testing & Payment Recovery Verification)
+**Related Issue:** [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) (Independent Non-Author QA & Payment Recovery Verification)
 
 ---
 
@@ -61,6 +61,6 @@ Choose one:
 
 ## 6. Evidence Links
 
-- **Issue:** Issue #49 (Payment Error Recovery & Clean Clone Runbook)
+- **Issue:** [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) (Payment Error Recovery & Clean Clone Runbook)
 - **Commits:** [`89b1420`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/89b1420), [`00ff1b2`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/00ff1b2)
 - **Test Evidence:** Documented in [`docs/week-10/evidence/kushan-independent-qa-handoff.md`](../evidence/kushan-independent-qa-handoff.md)
