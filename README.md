@@ -83,7 +83,7 @@ ShopCraft operates a unified Next.js + Django full-stack architecture divided in
   - **Cash on Delivery (COD):** Zero-network instant offline checkout providing an unbreakable demo fallback.
 - **Localized Nepali Address Validation:** Enforces Nepal's 7 Provinces (Bagmati, Gandaki, Koshi, Lumbini, Madhesh, Karnali, Sudurpashchim) with 10-digit mobile number validation.
 - **Merchant Operations Console (`/merchant/[storeSlug]`):** Real-time order fulfillment queue, product variant editor, and delivery packing slip generation with 5-second undo toast actions.
-- **Automated Test Quality:** 114 Django tests passing (0 failures), 0 TypeScript compilation errors, and zero cross-surface state leakage (`check-surfaces.mjs`).
+- **Automated Test Quality:** `154` Django backend tests (`144` pass on local SQLite with `10` Postgres-only RLS tests executed in PostgreSQL 16 CI), `63/63` Vitest frontend unit tests, `0` TypeScript compilation errors, and zero cross-surface state leakage (`check-surfaces.mjs`).
 
 ---
 
@@ -183,7 +183,7 @@ Any evaluator or teammate can independently verify the core system by executing 
 ```bash
 cd backend
 python manage.py test accounts catalog orders stores
-# Output: Ran 154 tests in 47.296s — OK (skipped=10 Postgres-only RLS tests on SQLite; all 154 run under Postgres 16 in CI)
+# Output on main (6559ea2): Ran 154 tests in 17.467s — OK (skipped=10 Postgres-only RLS tests on SQLite; all 154 execute under Postgres 16 in CI)
 ```
 
 ### Test 2: Multi-Tenant Data Isolation Test (HTTP 404 Security Guards)

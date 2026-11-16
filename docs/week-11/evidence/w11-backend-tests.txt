@@ -1,67 +1,68 @@
-﻿Commit: 07f1aeb105bc8b462cd5d0d9f1f76d6a5e0d6eee
+﻿Commit: 6559ea2c0b5b226e5b5a11f65739f935137e478c (merged main via PR #54)
 Date: 2026-11-16 (Asia/Kathmandu)
+Environment: Local Windows SQLite Test Runner (Postgres-only RLS tests skipped locally and executed in PostgreSQL 16 CI)
 Command: .\venv\Scripts\python.exe manage.py test accounts catalog orders stores
 ======================================================================
 
 Creating test database for alias 'default'...
 
-2026-11-16 09:01:36,231 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:01:36,681 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:01:37,929 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-.2026-11-16 09:01:39,201 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
-2026-11-16 09:01:39,215 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
-2026-11-16 09:01:39,223 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
-.2026-11-16 09:01:39,396 level=WARNING logger=django.request msg=Bad Request: /api/auth/addresses/
-2026-11-16 09:01:39,407 level=WARNING logger=django.request msg=Bad Request: /api/auth/addresses/
-2026-11-16 09:01:39,418 level=WARNING logger=django.request msg=Bad Request: /api/auth/addresses/
-.2026-11-16 09:01:39,536 level=WARNING logger=django.request msg=Unauthorized: /api/auth/addresses/
-....2026-11-16 09:01:39,900 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
-.2026-11-16 09:01:39,945 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
-2026-11-16 09:01:39,956 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
-2026-11-16 09:01:39,963 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
-2026-11-16 09:01:39,972 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
-2026-11-16 09:01:39,979 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
-2026-11-16 09:01:39,985 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
-..2026-11-16 09:01:40,091 level=WARNING logger=django.request msg=Not Found: /
-....2026-11-16 09:01:40,424 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=platform
-2026-11-16 09:01:40,426 level=WARNING logger=django.request msg=Unauthorized: /api/auth/google/
-.2026-11-16 09:01:40,557 level=ERROR logger=django.request msg=Service Unavailable: /api/auth/google/
-.2026-11-16 09:01:40,706 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=unverified_email store_id=platform
-2026-11-16 09:01:40,707 level=WARNING logger=django.request msg=Unauthorized: /api/auth/google/
-..........2026-11-16 09:01:44,331 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-craft/overview/
-.2026-11-16 09:01:44,636 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=1
-2026-11-16 09:01:44,638 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
-.2026-11-16 09:01:44,972 level=WARNING logger=django.request msg=Unauthorized: /api/auth/google/
-.2026-11-16 09:01:45,114 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-craft/account/google/
-.2026-11-16 09:01:45,529 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-craft/overview/
-.2026-11-16 09:01:45,901 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
-..2026-11-16 09:01:46,564 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=1
-2026-11-16 09:01:46,564 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
-.2026-11-16 09:01:46,862 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=1
-2026-11-16 09:01:46,863 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
-.....2026-11-16 09:01:47,573 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
-2026-11-16 09:01:47,579 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
-2026-11-16 09:01:47,587 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
-2026-11-16 09:01:47,595 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
-2026-11-16 09:01:47,600 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
-2026-11-16 09:01:47,611 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
-2026-11-16 09:01:47,618 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
-.2026-11-16 09:01:47,831 level=ERROR logger=django.request msg=Service Unavailable: /api/merchant/stores/himalayan-goods/media/upload/
-...2026-11-16 09:01:48,388 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
-2026-11-16 09:01:48,400 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
-.2026-11-16 09:01:48,543 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
-2026-11-16 09:01:48,675 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/khalti-verify/
-.2026-11-16 09:01:48,798 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
-2026-11-16 09:01:48,808 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
-2026-11-16 09:01:48,817 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
-2026-11-16 09:01:48,830 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
-2026-11-16 09:01:48,845 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
-2026-11-16 09:01:48,867 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/khalti-verify/
-2026-11-16 09:01:48,889 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/khalti-verify/
-.2026-11-16 09:01:48,902 level=ERROR logger=shopcraft.payments msg=KHALTI_MOCK_MODE cannot be enabled in production when DEBUG=False.
-.2026-11-16 09:01:49,213 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/overview/
-2026-11-16 09:01:49,223 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
-..2026-11-16 09:01:49,531 level=ERROR logger=django.request msg=Internal Server Error: /api/stores/brewmellow/checkout/place/
+2026-11-16 21:34:13,637 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:13,719 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:14,033 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+.2026-11-16 21:34:14,611 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
+2026-11-16 21:34:14,615 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
+2026-11-16 21:34:14,619 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
+.2026-11-16 21:34:14,671 level=WARNING logger=django.request msg=Bad Request: /api/auth/addresses/
+2026-11-16 21:34:14,674 level=WARNING logger=django.request msg=Bad Request: /api/auth/addresses/
+2026-11-16 21:34:14,676 level=WARNING logger=django.request msg=Bad Request: /api/auth/addresses/
+.2026-11-16 21:34:14,713 level=WARNING logger=django.request msg=Unauthorized: /api/auth/addresses/
+....2026-11-16 21:34:14,862 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+.2026-11-16 21:34:14,870 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-16 21:34:14,873 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-16 21:34:14,875 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-16 21:34:14,878 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-16 21:34:14,883 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-16 21:34:14,887 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+..2026-11-16 21:34:14,946 level=WARNING logger=django.request msg=Not Found: /
+....2026-11-16 21:34:15,036 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=platform
+2026-11-16 21:34:15,036 level=WARNING logger=django.request msg=Unauthorized: /api/auth/google/
+.2026-11-16 21:34:15,076 level=ERROR logger=django.request msg=Service Unavailable: /api/auth/google/
+.2026-11-16 21:34:15,112 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=unverified_email store_id=platform
+2026-11-16 21:34:15,113 level=WARNING logger=django.request msg=Unauthorized: /api/auth/google/
+..........2026-11-16 21:34:16,237 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-craft/overview/
+.2026-11-16 21:34:16,374 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=1
+2026-11-16 21:34:16,374 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
+.2026-11-16 21:34:16,501 level=WARNING logger=django.request msg=Unauthorized: /api/auth/google/
+.2026-11-16 21:34:16,548 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-craft/account/google/
+.2026-11-16 21:34:16,710 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-craft/overview/
+.2026-11-16 21:34:16,854 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
+..2026-11-16 21:34:17,188 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=1
+2026-11-16 21:34:17,188 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
+.2026-11-16 21:34:17,343 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=1
+2026-11-16 21:34:17,344 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
+.....2026-11-16 21:34:17,583 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-16 21:34:17,585 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-16 21:34:17,586 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-16 21:34:17,588 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-16 21:34:17,590 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-16 21:34:17,591 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-16 21:34:17,593 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+.2026-11-16 21:34:17,643 level=ERROR logger=django.request msg=Service Unavailable: /api/merchant/stores/himalayan-goods/media/upload/
+...2026-11-16 21:34:17,799 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-16 21:34:17,804 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+.2026-11-16 21:34:17,852 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-16 21:34:17,890 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/khalti-verify/
+.2026-11-16 21:34:17,949 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-16 21:34:17,953 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-16 21:34:17,956 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-16 21:34:17,959 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-16 21:34:17,966 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-16 21:34:17,975 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/khalti-verify/
+2026-11-16 21:34:17,982 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/khalti-verify/
+.2026-11-16 21:34:17,986 level=ERROR logger=shopcraft.payments msg=KHALTI_MOCK_MODE cannot be enabled in production when DEBUG=False.
+.2026-11-16 21:34:18,096 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/overview/
+2026-11-16 21:34:18,102 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
+..2026-11-16 21:34:18,240 level=ERROR logger=django.request msg=Internal Server Error: /api/stores/brewmellow/checkout/place/
 Traceback (most recent call last):
   File "D:\Team2_Capstone_project\team_2_capstone_design\backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 56, in inner
     response = get_response(request)
@@ -102,191 +103,199 @@ Traceback (most recent call last):
   File "C:\Users\adity\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py", line 1226, in _execute_mock_call
     raise effect
 RuntimeError: Forced midway failure
-2026-11-16 09:01:49,601 level=ERROR logger=django.request msg=Internal Server Error: /api/stores/brewmellow/checkout/place/
-..2026-11-16 09:01:49,879 level=WARNING logger=django.request msg=Bad Request: /api/stores/brewmellow/checkout/khalti-verify/
-.2026-11-16 09:01:50,350 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/media/upload/
-2026-11-16 09:01:50,375 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/media/upload/
-.2026-11-16 09:01:50,596 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/audit-logs/
-.2026-11-16 09:01:50,932 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/overview/
-2026-11-16 09:01:50,986 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
-2026-11-16 09:01:51,009 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/
-2026-11-16 09:01:51,028 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/
-2026-11-16 09:01:51,041 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/orders/
-2026-11-16 09:01:51,057 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/customers/
-2026-11-16 09:01:51,082 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/overview/
-2026-11-16 09:01:51,094 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/
-2026-11-16 09:01:51,106 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/
-2026-11-16 09:01:51,135 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/orders/
-2026-11-16 09:01:51,155 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/customers/
-.2026-11-16 09:01:51,623 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/customers/4/
-2026-11-16 09:01:51,648 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/customers/4/
-.2026-11-16 09:01:51,860 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/customers/
-..2026-11-16 09:01:52,149 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/overview/
-2026-11-16 09:01:52,153 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/settings/
-2026-11-16 09:01:52,155 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/orders/
-2026-11-16 09:01:52,158 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/products/
-2026-11-16 09:01:52,278 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
-2026-11-16 09:01:52,285 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/settings/
-2026-11-16 09:01:52,294 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/orders/
-2026-11-16 09:01:52,323 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/
-2026-11-16 09:01:52,331 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/overview/
-2026-11-16 09:01:52,342 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/settings/
-2026-11-16 09:01:52,349 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/orders/
-2026-11-16 09:01:52,356 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/products/
-.2026-11-16 09:01:52,500 level=WARNING logger=django.request msg=Unauthorized: /api/stores/my-stores/
-.2026-11-16 09:01:52,826 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/orders/5/
-2026-11-16 09:01:52,839 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/orders/5/transition/
-.2026-11-16 09:01:53,015 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/5/
-2026-11-16 09:01:53,048 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/5/
-.2026-11-16 09:01:53,273 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/settings/
-2026-11-16 09:01:53,290 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/settings/
-.2026-11-16 09:01:53,434 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/settings/
-.2026-11-16 09:01:53,612 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/1/variants/14/
-..ss2026-11-16 09:01:53,940 level=WARNING logger=django.request msg=Not Found: /api/stores/brewmellow/public-orders/5/pay/
-..2026-11-16 09:01:54,258 level=WARNING logger=django.request msg=Not Found: /api/stores/brewmellow/orders/5/
-2026-11-16 09:01:54,276 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
-.2026-11-16 09:01:54,384 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/analytics/
-.2026-11-16 09:01:54,550 level=WARNING logger=django.request msg=Bad Request: /api/stores/brewmellow/checkout/place/
-.2026-11-16 09:01:54,753 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/discounts/
-2026-11-16 09:01:54,763 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/discounts/1/
-2026-11-16 09:01:54,803 level=WARNING logger=django.request msg=Bad Request: /api/stores/pahadi-honey/checkout/quote/
-2026-11-16 09:01:54,873 level=WARNING logger=django.request msg=Bad Request: /api/stores/brewmellow/checkout/quote/
-.2026-11-16 09:01:55,009 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/brewmellow/staff/1/
-2026-11-16 09:01:55,026 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/brewmellow/staff/1/
-2026-11-16 09:01:55,127 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
-2026-11-16 09:01:55,139 level=WARNING logger=django.request msg=Forbidden: /api/merchant/stores/brewmellow/settings/
-2026-11-16 09:01:55,149 level=WARNING logger=django.request msg=Forbidden: /api/merchant/stores/brewmellow/staff/
-2026-11-16 09:01:55,159 level=WARNING logger=django.request msg=Forbidden: /api/merchant/stores/brewmellow/staff/1/
-.2026-11-16 09:01:55,310 level=WARNING logger=django.request msg=Not Found: /api/stores/brewmellow/public-orders/5/
-2026-11-16 09:01:55,356 level=WARNING logger=django.request msg=Not Found: /api/stores/himalayan-craft/public-orders/619f5e59-528e-4b57-afd5-7ec6714bcbc1/
-2026-11-16 09:01:55,397 level=WARNING logger=django.request msg=Not Found: /api/stores/himalayan-craft/checkout/khalti-verify/
-...2026-11-16 09:01:55,802 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:01:55,812 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-..s2026-11-16 09:01:56,123 level=WARNING logger=shopcraft.payments msg=Khalti initiate non-200 or incomplete response: status_code=500 store_id=1 mode=TEST
-2026-11-16 09:01:56,124 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
-2026-11-16 09:01:56,148 level=WARNING logger=shopcraft.payments msg=Khalti initiate error: error_class=Timeout store_id=1 mode=TEST
-2026-11-16 09:01:56,149 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
-2026-11-16 09:01:56,171 level=WARNING logger=shopcraft.payments msg=Khalti initiate non-200 or incomplete response: status_code=200 store_id=1 mode=TEST
-2026-11-16 09:01:56,172 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
-2026-11-16 09:01:56,194 level=WARNING logger=shopcraft.payments msg=Khalti initiate non-200 or incomplete response: status_code=200 store_id=1 mode=TEST
-2026-11-16 09:01:56,196 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
-.2026-11-16 09:01:56,312 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/place/
-..2026-11-16 09:01:56,637 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
-2026-11-16 09:01:56,666 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
-.2026-11-16 09:01:56,828 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
-.2026-11-16 09:01:56,984 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/place/
-2026-11-16 09:01:56,995 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
-2026-11-16 09:01:57,004 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
-2026-11-16 09:01:57,012 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
-2026-11-16 09:01:57,021 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
-2026-11-16 09:01:57,030 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
-..2026-11-16 09:01:57,338 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-..2026-11-16 09:01:57,480 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-2026-11-16 09:01:57,490 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-2026-11-16 09:01:57,500 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-.2026-11-16 09:01:57,598 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/place/
-.2026-11-16 09:01:57,678 level=WARNING logger=django.request msg=Not Found: /api/stores/ktm-craft/public-orders/1/pay/
-2026-11-16 09:01:57,684 level=WARNING logger=django.request msg=Not Found: /api/stores/ktm-craft/public-orders/1/pay/
-2026-11-16 09:01:57,707 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-2026-11-16 09:01:57,722 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/public-orders/1/pay/
-..2026-11-16 09:01:58,018 level=WARNING logger=shopcraft.payments msg=Khalti payment amount mismatch: store_id=1 order_id=1 expected_paisa=130000 received_paisa=5000
-2026-11-16 09:01:58,023 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-.2026-11-16 09:01:58,195 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-2026-11-16 09:01:58,214 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-2026-11-16 09:01:58,230 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-..2026-11-16 09:01:58,481 level=WARNING logger=django.request msg=Not Found: /api/stores/pokhara-loom/checkout/khalti-verify/
-...2026-11-16 09:01:59,005 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-2026-11-16 09:01:59,015 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
-.2026-11-16 09:01:59,144 level=WARNING logger=shopcraft.payments msg=Khalti lookup error: error_class=Timeout store_id=1 mode=TEST
-2026-11-16 09:01:59,145 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
-2026-11-16 09:01:59,159 level=WARNING logger=shopcraft.payments msg=Khalti lookup non-200 response: status_code=502 store_id=1 mode=TEST
-2026-11-16 09:01:59,160 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
-2026-11-16 09:01:59,174 level=WARNING logger=shopcraft.payments msg=Khalti lookup error: error_class=ValueError store_id=1 mode=TEST
-2026-11-16 09:01:59,175 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
-2026-11-16 09:01:59,189 level=WARNING logger=shopcraft.payments msg=Khalti lookup returned unknown status='UnexpectedStatus' store_id=1 mode=TEST
-2026-11-16 09:01:59,190 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
-....2026-11-16 09:02:00,715 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-.2026-11-16 09:02:01,021 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/check-slug/
-.2026-11-16 09:02:01,153 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/existing-store/products/
-2026-11-16 09:02:01,193 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/existing-store/products/
-.2026-11-16 09:02:01,302 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/existing-store/products/
-.2026-11-16 09:02:01,624 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/create/
-.2026-11-16 09:02:01,733 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,739 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,745 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,751 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,756 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,760 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,766 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,773 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,780 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,786 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,792 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-2026-11-16 09:02:01,798 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
-.2026-11-16 09:02:01,934 level=WARNING logger=django.request msg=Unauthorized: /api/stores/create/
-........2026-11-16 09:02:04,026 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-roasters/account/
-.2026-11-16 09:02:04,133 level=WARNING logger=django.request msg=Unauthorized: /api/stores/ktm-roasters/account/
-2026-11-16 09:02:04,135 level=WARNING logger=django.request msg=Unauthorized: /api/stores/ktm-roasters/account/
-2026-11-16 09:02:04,137 level=WARNING logger=django.request msg=Unauthorized: /api/stores/ktm-roasters/account/orders/
-.......2026-11-16 09:02:11,281 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
-2026-11-16 09:02:11,320 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
-.2026-11-16 09:02:11,446 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
-....2026-11-16 09:02:12,043 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-artisans/overview/
-..2026-11-16 09:02:12,310 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
-2026-11-16 09:02:12,355 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
-.2026-11-16 09:02:12,517 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
-2026-11-16 09:02:12,529 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
-2026-11-16 09:02:12,540 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
-2026-11-16 09:02:12,553 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
-2026-11-16 09:02:12,566 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
-2026-11-16 09:02:12,577 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
-.s2026-11-16 09:02:13,126 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-s2026-11-16 09:02:13,214 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:02:13,444 level=WARNING logger=django.request msg=Not Found: /api/stores/does-not-exist-xyz/catalog/
-.2026-11-16 09:02:13,511 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-s2026-11-16 09:02:13,600 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:02:13,739 level=INFO logger=shopcraft.media msg=Successfully deleted old Cloudinary asset: public_id=shopcraft/stores/7_himalayan-teas/theme/old_banner store_id=7
-.2026-11-16 09:02:13,831 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-.2026-11-16 09:02:14,260 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:02:14,872 level=WARNING logger=django.request msg=Too Many Requests: /api/merchant/stores/himalayan-teas/media/theme/upload/
-.2026-11-16 09:02:14,932 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:02:15,719 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
-2026-11-16 09:02:15,725 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
-2026-11-16 09:02:15,734 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
-.2026-11-16 09:02:15,789 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:02:15,956 level=ERROR logger=django.request msg=Service Unavailable: /api/merchant/stores/himalayan-teas/media/theme/upload/
-.2026-11-16 09:02:16,011 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:02:16,875 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/settings/
-2026-11-16 09:02:16,882 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/settings/
-.2026-11-16 09:02:17,060 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:02:17,358 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
-2026-11-16 09:02:17,404 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
-.2026-11-16 09:02:17,473 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:02:17,603 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-teas/media/theme/upload/
-2026-11-16 09:02:17,701 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-teas/media/theme/upload/
-.2026-11-16 09:02:17,746 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-s2026-11-16 09:02:17,822 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-s2026-11-16 09:02:17,887 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-s2026-11-16 09:02:17,959 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-.2026-11-16 09:02:18,060 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-s2026-11-16 09:02:18,179 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
-2026-11-16 09:02:18,659 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:18,696 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:18,833 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:19,315 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:19,319 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:20,610 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:21,183 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:21,821 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:22,637 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:22,861 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:22,982 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:23,104 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-2026-11-16 09:02:23,865 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
-.2026-11-16 09:02:25,956 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:18,487 level=ERROR logger=django.request msg=Internal Server Error: /api/stores/brewmellow/checkout/place/
+..2026-11-16 21:34:18,616 level=WARNING logger=django.request msg=Bad Request: /api/stores/brewmellow/checkout/khalti-verify/
+.2026-11-16 21:34:18,714 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/media/upload/
+2026-11-16 21:34:18,720 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/media/upload/
+.2026-11-16 21:34:18,795 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/audit-logs/
+.2026-11-16 21:34:18,835 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/overview/
+2026-11-16 21:34:18,842 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
+2026-11-16 21:34:18,846 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/
+2026-11-16 21:34:18,851 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/
+2026-11-16 21:34:18,854 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/orders/
+2026-11-16 21:34:18,857 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/customers/
+2026-11-16 21:34:18,865 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/overview/
+2026-11-16 21:34:18,872 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/
+2026-11-16 21:34:18,876 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/
+2026-11-16 21:34:18,879 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/orders/
+2026-11-16 21:34:18,883 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/customers/
+.2026-11-16 21:34:18,940 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/customers/4/
+2026-11-16 21:34:18,944 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/customers/4/
+.2026-11-16 21:34:18,999 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/customers/
+..2026-11-16 21:34:19,121 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/overview/
+2026-11-16 21:34:19,122 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/settings/
+2026-11-16 21:34:19,123 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/orders/
+2026-11-16 21:34:19,124 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/products/
+2026-11-16 21:34:19,175 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
+2026-11-16 21:34:19,180 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/settings/
+2026-11-16 21:34:19,184 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/orders/
+2026-11-16 21:34:19,187 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/
+2026-11-16 21:34:19,189 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/overview/
+2026-11-16 21:34:19,192 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/settings/
+2026-11-16 21:34:19,196 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/orders/
+2026-11-16 21:34:19,200 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/products/
+.2026-11-16 21:34:19,243 level=WARNING logger=django.request msg=Unauthorized: /api/stores/my-stores/
+.2026-11-16 21:34:19,368 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/orders/5/
+2026-11-16 21:34:19,372 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/orders/5/transition/
+.2026-11-16 21:34:19,436 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/5/
+2026-11-16 21:34:19,442 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/5/
+.2026-11-16 21:34:19,515 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/settings/
+2026-11-16 21:34:19,521 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/settings/
+.2026-11-16 21:34:19,573 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/settings/
+.2026-11-16 21:34:19,644 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/1/variants/14/
+..ss2026-11-16 21:34:19,751 level=WARNING logger=django.request msg=Not Found: /api/stores/brewmellow/public-orders/5/pay/
+..2026-11-16 21:34:19,851 level=WARNING logger=django.request msg=Not Found: /api/stores/brewmellow/orders/5/
+2026-11-16 21:34:19,857 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
+.2026-11-16 21:34:19,908 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/analytics/
+.2026-11-16 21:34:19,980 level=WARNING logger=django.request msg=Bad Request: /api/stores/brewmellow/checkout/place/
+.2026-11-16 21:34:20,051 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/discounts/
+2026-11-16 21:34:20,057 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/discounts/1/
+2026-11-16 21:34:20,071 level=WARNING logger=django.request msg=Bad Request: /api/stores/pahadi-honey/checkout/quote/
+2026-11-16 21:34:20,100 level=WARNING logger=django.request msg=Bad Request: /api/stores/brewmellow/checkout/quote/
+.2026-11-16 21:34:20,159 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/brewmellow/staff/1/
+2026-11-16 21:34:20,168 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/brewmellow/staff/1/
+2026-11-16 21:34:20,200 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
+2026-11-16 21:34:20,204 level=WARNING logger=django.request msg=Forbidden: /api/merchant/stores/brewmellow/settings/
+2026-11-16 21:34:20,207 level=WARNING logger=django.request msg=Forbidden: /api/merchant/stores/brewmellow/staff/
+2026-11-16 21:34:20,211 level=WARNING logger=django.request msg=Forbidden: /api/merchant/stores/brewmellow/staff/1/
+.2026-11-16 21:34:20,279 level=WARNING logger=django.request msg=Not Found: /api/stores/brewmellow/public-orders/5/
+2026-11-16 21:34:20,297 level=WARNING logger=django.request msg=Not Found: /api/stores/himalayan-craft/public-orders/335a5d56-ae74-4549-b4c0-a3d650abfaf9/
+2026-11-16 21:34:20,310 level=WARNING logger=django.request msg=Not Found: /api/stores/himalayan-craft/checkout/khalti-verify/
+...2026-11-16 21:34:20,480 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:20,483 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+..s2026-11-16 21:34:20,606 level=WARNING logger=shopcraft.payments msg=Khalti initiate non-200 or incomplete response: status_code=500 store_id=1 mode=TEST
+2026-11-16 21:34:20,606 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+2026-11-16 21:34:20,616 level=WARNING logger=shopcraft.payments msg=Khalti initiate error: error_class=Timeout store_id=1 mode=TEST
+2026-11-16 21:34:20,616 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+2026-11-16 21:34:20,623 level=WARNING logger=shopcraft.payments msg=Khalti initiate non-200 or incomplete response: status_code=200 store_id=1 mode=TEST
+2026-11-16 21:34:20,624 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+2026-11-16 21:34:20,635 level=WARNING logger=shopcraft.payments msg=Khalti initiate non-200 or incomplete response: status_code=200 store_id=1 mode=TEST
+2026-11-16 21:34:20,636 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+.2026-11-16 21:34:20,682 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/place/
+..2026-11-16 21:34:20,797 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+2026-11-16 21:34:20,805 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+.2026-11-16 21:34:20,853 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+.2026-11-16 21:34:20,908 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/place/
+2026-11-16 21:34:20,913 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+2026-11-16 21:34:20,917 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+2026-11-16 21:34:20,919 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+2026-11-16 21:34:20,922 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+2026-11-16 21:34:20,924 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+..2026-11-16 21:34:21,034 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+..2026-11-16 21:34:21,088 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-16 21:34:21,093 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-16 21:34:21,101 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+.2026-11-16 21:34:21,156 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/place/
+.2026-11-16 21:34:21,206 level=WARNING logger=django.request msg=Not Found: /api/stores/ktm-craft/public-orders/1/pay/
+2026-11-16 21:34:21,209 level=WARNING logger=django.request msg=Not Found: /api/stores/ktm-craft/public-orders/1/pay/
+2026-11-16 21:34:21,220 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-16 21:34:21,226 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/public-orders/1/pay/
+..2026-11-16 21:34:21,355 level=WARNING logger=shopcraft.payments msg=Khalti payment amount mismatch: store_id=1 order_id=1 expected_paisa=130000 received_paisa=5000
+2026-11-16 21:34:21,356 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+.2026-11-16 21:34:21,401 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-16 21:34:21,407 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-16 21:34:21,414 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+..2026-11-16 21:34:21,508 level=WARNING logger=django.request msg=Not Found: /api/stores/pokhara-loom/checkout/khalti-verify/
+...2026-11-16 21:34:21,738 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-16 21:34:21,741 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+.2026-11-16 21:34:21,792 level=WARNING logger=shopcraft.payments msg=Khalti lookup error: error_class=Timeout store_id=1 mode=TEST
+2026-11-16 21:34:21,793 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-16 21:34:21,799 level=WARNING logger=shopcraft.payments msg=Khalti lookup non-200 response: status_code=502 store_id=1 mode=TEST
+2026-11-16 21:34:21,800 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-16 21:34:21,804 level=WARNING logger=shopcraft.payments msg=Khalti lookup error: error_class=ValueError store_id=1 mode=TEST
+2026-11-16 21:34:21,804 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-16 21:34:21,808 level=WARNING logger=shopcraft.payments msg=Khalti lookup returned unknown status='UnexpectedStatus' store_id=1 mode=TEST
+2026-11-16 21:34:21,809 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+....2026-11-16 21:34:22,189 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+.2026-11-16 21:34:22,313 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/check-slug/
+.2026-11-16 21:34:22,366 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/existing-store/products/
+2026-11-16 21:34:22,385 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/existing-store/products/
+.2026-11-16 21:34:22,440 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/existing-store/products/
+.2026-11-16 21:34:22,571 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/create/
+.2026-11-16 21:34:22,618 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,620 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,622 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,623 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,625 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,628 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,633 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,637 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,640 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,642 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,645 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-16 21:34:22,648 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+.2026-11-16 21:34:22,687 level=WARNING logger=django.request msg=Unauthorized: /api/stores/create/
+........2026-11-16 21:34:23,296 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-roasters/account/
+.2026-11-16 21:34:23,353 level=WARNING logger=django.request msg=Unauthorized: /api/stores/ktm-roasters/account/
+2026-11-16 21:34:23,354 level=WARNING logger=django.request msg=Unauthorized: /api/stores/ktm-roasters/account/
+2026-11-16 21:34:23,355 level=WARNING logger=django.request msg=Unauthorized: /api/stores/ktm-roasters/account/orders/
+.......2026-11-16 21:34:26,214 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+2026-11-16 21:34:26,225 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+.2026-11-16 21:34:26,272 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+....2026-11-16 21:34:26,444 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-artisans/overview/
+..2026-11-16 21:34:26,526 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+2026-11-16 21:34:26,539 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+.2026-11-16 21:34:26,589 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-16 21:34:26,593 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-16 21:34:26,599 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-16 21:34:26,603 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-16 21:34:26,607 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-16 21:34:26,610 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+.s2026-11-16 21:34:26,640 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+s2026-11-16 21:34:26,667 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:26,720 level=WARNING logger=django.request msg=Not Found: /api/stores/does-not-exist-xyz/catalog/
+.2026-11-16 21:34:26,747 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+s2026-11-16 21:34:26,769 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:26,819 level=INFO logger=shopcraft.media msg=Successfully deleted old Cloudinary asset: public_id=shopcraft/stores/7_himalayan-teas/theme/old_banner store_id=7
+.2026-11-16 21:34:26,845 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+.2026-11-16 21:34:27,006 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:27,170 level=WARNING logger=django.request msg=Too Many Requests: /api/merchant/stores/himalayan-teas/media/theme/upload/
+.2026-11-16 21:34:27,188 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:27,468 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+2026-11-16 21:34:27,472 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+2026-11-16 21:34:27,475 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+.2026-11-16 21:34:27,494 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:27,548 level=ERROR logger=django.request msg=Service Unavailable: /api/merchant/stores/himalayan-teas/media/theme/upload/
+.2026-11-16 21:34:27,567 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:27,679 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/settings/
+2026-11-16 21:34:27,681 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/settings/
+.2026-11-16 21:34:27,710 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:27,784 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+2026-11-16 21:34:27,802 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+.2026-11-16 21:34:27,819 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:27,868 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-teas/media/theme/upload/
+2026-11-16 21:34:27,907 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-teas/media/theme/upload/
+.2026-11-16 21:34:27,924 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+s2026-11-16 21:34:27,952 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+s2026-11-16 21:34:27,980 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+s2026-11-16 21:34:28,006 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+.2026-11-16 21:34:28,033 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+s2026-11-16 21:34:28,058 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-16 21:34:28,293 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:28,421 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:28,726 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:29,154 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:29,301 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:29,388 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:29,811 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:29,851 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:29,889 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:30,023 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:30,529 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:30,577 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:30,796 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:30,798 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:30,833 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:30,904 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:31,218 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:31,586 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:31,671 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:31,754 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-16 21:34:31,823 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+.2026-11-16 21:34:31,852 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
 
 ----------------------------------------------------------------------
-Ran 154 tests in 47.296s
+Ran 154 tests in 17.467s
 
 OK (skipped=10)
 Destroying test database for alias 'default'...

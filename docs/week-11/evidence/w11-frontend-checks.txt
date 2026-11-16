@@ -1,5 +1,6 @@
-﻿Commit: 07f1aeb105bc8b462cd5d0d9f1f76d6a5e0d6eee
+﻿Commit: 6559ea2c0b5b226e5b5a11f65739f935137e478c (merged main via PR #54)
 Date: 2026-11-16 (Asia/Kathmandu)
+Environment: Local Windows Node.js
 Commands: npm test && npm run typecheck && npm run check:surfaces
 ======================================================================
 
@@ -10,16 +11,16 @@ Commands: npm test && npm run typecheck && npm run check:surfaces
 
  RUN  v3.2.7 D:/Team2_Capstone_project/team_2_capstone_design/frontend
 
- ✓ src/lib/merchant-status.test.ts (19 tests) 29ms
- ✓ src/lib/merchant-guard.test.ts (18 tests) 20ms
- ✓ src/lib/theme-media-upload.test.ts (2 tests) 23ms
- ✓ src/lib/khalti-return.test.ts (6 tests) 47ms
- ✓ src/lib/storefront-placeholders.test.ts (18 tests) 709ms
+ ✓ src/lib/merchant-status.test.ts (19 tests) 10ms
+ ✓ src/lib/theme-media-upload.test.ts (2 tests) 8ms
+ ✓ src/lib/merchant-guard.test.ts (18 tests) 6ms
+ ✓ src/lib/khalti-return.test.ts (6 tests) 17ms
+ ✓ src/lib/storefront-placeholders.test.ts (18 tests) 173ms
 
  Test Files  5 passed (5)
       Tests  63 passed (63)
-   Start at  09:04:08
-   Duration  4.08s (transform 2.25s, setup 0ms, collect 3.91s, tests 828ms, environment 2ms, prepare 2.44s)
+   Start at  21:34:51
+   Duration  3.00s (transform 1.14s, setup 0ms, collect 2.10s, tests 213ms, environment 1ms, prepare 2.69s)
 
 
 > frontend@0.1.0 typecheck
