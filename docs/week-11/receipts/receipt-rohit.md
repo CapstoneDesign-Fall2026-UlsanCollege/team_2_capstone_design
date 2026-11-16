@@ -1,10 +1,9 @@
 # Individual Evidence Receipt — Week 11
 
 **Student:** Rohit Chhantyal ([`@Rohit-coder201`](https://github.com/Rohit-coder201))  
-*(Canonical GitHub identifier: `@Rohit-coder201`; display name standardized as Rohit Chhantyal, harmonizing with earlier Week 8 draft spelling "Chhantiyal")*  
 **Team:** Team 2 — ShopCraft  
 **Week:** Week 11 (Sprint 2: MVP and Freeze — Final Class)  
-**Date:** Thursday, November 12, 2026 (Submitted for Wednesday, November 18, 2026 EOD KST Deadline)  
+**Date:** Thursday, November 12, 2026 (Updated November 16, 2026 on merged `main` commit `6559ea2`)  
 
 This is supporting evidence, not a separate weekly report. Use it only when a weekly guide specifically asks for additional receipts; otherwise, enter your contribution and evidence in the one shared team Weekly Report. If this template is requested, each student completes their own copy.
 
@@ -28,9 +27,9 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **Area I helped steward or hand off (if relevant):** Area 4: DevOps, Backend Health & State Machine.
 - **Evidence link:** [w11-backend-tests.txt](../evidence/w11-backend-tests.txt) · [Commit `b53f520`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/b53f520) · [Health Check Log](../../week-10/evidence/rohit-resilience-health-handoff.md#health-probe-response).
 - **How I checked it:** 
-  - *Local Development Scope:* Verified `GET /api/health/` returns `HTTP 200 OK` with JSON `{"status": "ok"}` and executes zero DB queries (`test_health_check_zero_db_queries_ssl_exemption_hsts_and_cookies`).
+  - *Local Development Scope:* Verified `GET /api/health/` returns `HTTP 200 OK` with JSON `{"status": "ok"}` and executes zero DB queries (`test_health_check_zero_db_queries_ssl_exemption_hsts_and_cookies`) on merged `main` (`6559ea2`).
   - *Scope Distinction:* Local `/api/health/` (`127.0.0.1:8000`) verification is kept explicitly distinct from deployed production frontend `https://shopcraft.me` (documented in [`tested-by-note.md`](../tested-by-note.md)).
-  - *Canonical Name Spelling:* Canonical identifier is GitHub login [`@Rohit-coder201`](https://github.com/Rohit-coder201); full name standardized as **Rohit Chhantyal** (harmonizing with earlier Week 8 draft spelling "Chhantiyal").
+  - *Canonical Identity:* GitHub login [`@Rohit-coder201`](https://github.com/Rohit-coder201) — **Rohit Chhantyal**.
 - **What I learned or changed:** Having an explicit health probe is vital when running serverless PostgreSQL (Neon) to monitor and mitigate cold-start latency before the midterm demo. Local health testing must remain distinct from live multi-region production metrics.
 
 ---
