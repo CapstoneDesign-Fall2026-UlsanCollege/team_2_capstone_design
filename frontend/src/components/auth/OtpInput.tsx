@@ -7,6 +7,7 @@ import {
   sanitizeRedirectTarget,
   verifyEmailOtp,
 } from "@/lib/api";
+import { getEmailTypoSuggestion, validateEmailFormat } from "@/lib/email-validation";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 
 interface OtpInputProps {
@@ -134,18 +135,20 @@ export function PasswordlessAuthCard({
     }
   }, [onSuccess, nextParam, storeNameParam]);
 
+  const typoSuggestion = getEmailTypoSuggestion(email);
+
   const handleRequestOtp = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes("@")) {
-      setError("Enter a valid email address.");
+    const validation = validateEmailFormat(email);
+    if (!validation.valid) {
+      setError(validation.error);
       return;
     }
 
     setLoading(true);
     setError(null);
     try {
-      const res = await requestEmailOtp(cleanEmail);
+      const res = await requestEmailOtp(validation.cleanEmail);
       if (res.dev_otp_hint) {
         setDevOtpHint(res.dev_otp_hint);
       }
@@ -201,7 +204,7 @@ export function PasswordlessAuthCard({
   return (
     <div className="w-full max-w-md p-6 sm:p-8 bg-[var(--sc-surface)] border border-[var(--sc-line)] rounded-xl text-[var(--sc-ink)]">
       {step === "email" ? (
-        <form onSubmit={handleRequestOtp} className="space-y-4">
+        <form onSubmit={handleRequestOtp} noValidate className="space-y-4">
           <div className="space-y-1">
             <h2 className="text-xl font-bold tracking-tight">
               {title || "Sign in to ShopCraft"}
@@ -232,6 +235,11 @@ export function PasswordlessAuthCard({
               }}
               className="w-full h-12 px-3 text-sm rounded-lg border border-[var(--sc-line)] bg-[var(--sc-surface)] text-[var(--sc-ink)] focus:outline-none focus:border-[var(--sc-marigold)] focus:ring-1 focus:ring-[var(--sc-marigold)]"
             />
+            {typoSuggestion && !error && (
+              <p className="text-xs text-[var(--sc-ink-2)] mt-1">
+                Did you mean <span className="font-medium text-[var(--sc-ink)]">{typoSuggestion}</span>?
+              </p>
+            )}
             {error && <p className="text-xs text-[var(--sc-danger)] mt-1">{error}</p>}
           </div>
 
@@ -258,6 +266,9 @@ export function PasswordlessAuthCard({
             <p className="text-sm text-[var(--sc-ink-2)]">
               Enter the 6-digit code sent to{" "}
               <span className="font-mono text-[var(--sc-ink)]">{email}</span>.
+            </p>
+            <p className="text-xs text-[var(--sc-ink-2)]">
+              Can&apos;t find it? Check your spam folder.
             </p>
           </div>
 
@@ -299,7 +310,7 @@ export function PasswordlessAuthCard({
               }}
               className="text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)] underline transition-colors cursor-pointer"
             >
-              Use a different email
+              Wrong email? Change it
             </button>
 
             <button
