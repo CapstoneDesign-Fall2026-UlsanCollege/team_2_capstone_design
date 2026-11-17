@@ -21,6 +21,7 @@ import {
 } from "@/lib/api";
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { emitAuthChange, useStorefrontAuth } from "@/lib/auth";
+import { getEmailTypoSuggestion, validateEmailFormat } from "@/lib/email-validation";
 import { useAccount } from "./AccountContext";
 
 export interface AccountSheetProps {
@@ -83,19 +84,21 @@ export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: Acco
     }
   }, [step, otpDigits]);
 
+  const typoSuggestion = getEmailTypoSuggestion(email);
+
   // Request code
   const handleRequestCode = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
-    const cleanEmail = email.trim().toLowerCase();
-    if (!cleanEmail || !cleanEmail.includes("@")) {
-      setErrorMsg("Please enter a valid email address.");
+    const validation = validateEmailFormat(email);
+    if (!validation.valid) {
+      setErrorMsg(validation.error);
       return;
     }
 
     setLoading(true);
     setErrorMsg(null);
     try {
-      const res = await requestStorefrontOTP(storeSlug, cleanEmail);
+      const res = await requestStorefrontOTP(storeSlug, validation.cleanEmail);
       setCooldownSeconds(res.resend_in_seconds || 60);
       setOtpDigits(["", "", "", "", "", ""]);
       setStep("OTP");
@@ -250,7 +253,7 @@ export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: Acco
 
             {/* STEP 1: Email Form */}
             {step === "EMAIL" && (
-              <form onSubmit={handleRequestCode} className="space-y-5">
+              <form onSubmit={handleRequestCode} noValidate className="space-y-5">
                 <div className="space-y-1.5">
                   <h3 className="font-serif text-base sm:text-lg font-semibold text-[var(--ink)]">
                     Passwordless sign-in
@@ -271,10 +274,18 @@ export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: Acco
                     autoFocus
                     autoComplete="email"
                     value={email}
-                    onChange={(e) => setEmail(e.target.value)}
+                    onChange={(e) => {
+                      setEmail(e.target.value);
+                      if (errorMsg) setErrorMsg(null);
+                    }}
                     placeholder="name@example.com"
                     className="w-full min-h-[44px] px-3.5 py-2.5 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-sm text-[var(--ink)] placeholder:text-[var(--ink-2)] focus:outline-none focus:ring-1 focus:ring-[var(--ink)]"
                   />
+                  {typoSuggestion && (
+                    <p className="text-xs text-[var(--ink-2)]">
+                      Did you mean <span className="font-medium text-[var(--ink)]">{typoSuggestion}</span>?
+                    </p>
+                  )}
                 </div>
 
                 <button
@@ -321,15 +332,19 @@ export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: Acco
                     We sent a temporary sign-in code to{" "}
                     <strong className="text-[var(--ink)] font-semibold">{email}</strong>.
                   </p>
+                  <p className="text-xs text-[var(--ink-2)]">
+                    Can&apos;t find it? Check your spam folder.
+                  </p>
                   <button
                     type="button"
                     onClick={() => {
                       setStep("EMAIL");
+                      setOtpDigits(["", "", "", "", "", ""]);
                       setErrorMsg(null);
                     }}
                     className="text-xs text-[var(--ink)] underline hover:text-[var(--ink-2)] cursor-pointer"
                   >
-                    Change email
+                    Wrong email? Change it
                   </button>
                 </div>
 
