@@ -3,7 +3,7 @@
 **Student:** Aanchal Chand Thakuri ([`@jaasly07`](https://github.com/jaasly07))  
 **Team:** Team 2 — ShopCraft  
 **Week:** Week 11 (Sprint 2: MVP and Freeze — Final Class)  
-**Date:** Thursday, November 12, 2026 (Updated November 16, 2026 on merged `main` commit `6559ea2`)  
+**Date:** Thursday, November 12, 2026 (Updated November 18, 2026 on frozen `main` commit `8098426`)  
 
 This is supporting evidence, not a separate weekly report. Use it only when a weekly guide specifically asks for additional receipts; otherwise, enter your contribution and evidence in the one shared team Weekly Report. If this template is requested, each student completes their own copy.
 
@@ -11,12 +11,13 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 
 ## Receipt 1
 
-- **What I did:** Audited and verified responsive single-screen checkout with localized Nepal 7 Provinces dropdown and 10-digit mobile number validation, ensuring mobile-first ergonomics and accessibility standards.
-- **Roadmap slice / behavior (if relevant):** Localized Nepali Mobile Checkout Slice.
+- **What I did:** Audited and verified responsive single-screen checkout with localized Nepal 7 Provinces dropdown and 10-digit mobile number validation, and resolved the live `StorefrontHeader` *"Sign in to your account"* `MouseEvent.trim` crash ([Issue #56 (Closed)](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/56) / `aa62b2f` merged via [`PR #57`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/57)).
+- **Roadmap slice / behavior (if relevant):** Localized Nepali Mobile Checkout & Storefront Account Drawer Auth (`AccountContext.tsx`, `email-validation.ts`).
 - **Area I helped steward or hand off (if relevant):** Area 3: Storefront UI/UX, Mobile & Accessibility (Backup: Kushan Sunuwar).
-- **Evidence link:** [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52) · [PR #48](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/48) · [Tested-By Note](../tested-by-note.md) · [Commit `8835f43`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/8835f43) · [A11y Audit Matrix](../../week-10/evidence/aanchal-storefront-a11y-handoff.md).
+- **Evidence link:** [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52) · [Issue #56 (Closed)](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/56) · [PR #57](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/57) · [Tested-By Note](../tested-by-note.md) · [`w11-04` mobile screenshot](../evidence/screenshots/w11-04-mobile-390-checkout-phone-rejection.png) · [`w11-07` fixed sign-in](../evidence/screenshots/w11-07-issue-56-storefront-signin-fixed-live.png).
 - **How I checked it:** 
-  - *Frozen Build & Exact Test Environment:* Verified on merged `main` (`6559ea2`) / `PR #48` using Chrome 130 DevTools mobile device emulation across: (1) `360x800` (Samsung Galaxy S8/S21 compact Android), (2) `390x844` (iPhone 14 / mobile Safari), and (3) `412x915` (Google Pixel 7).
+  - *Frozen Build & Exact Test Environment:* Verified on frozen `main` (`8098426`) / live `https://shopcraft.me` across DevTools mobile device emulation (`360x800`, `390x844`, `412x915`) and live Nov 18 browser runs (`1440x900` & `390x844`).
+  - *Issue #56 Before/After Recovery:* Live click test on `/s/brewmellow` initially hit `TypeError: I.trim is not a function` (`w11-06` diagnostic screenshot); guarded `openAccount` with `normalizePrefillEmail` (`aa62b2f` / PR #57), added Vitest regression checks, and verified live post-deploy (`w11-07`, `0` crash errors).
   - *Boundary / Negative Note:* DevTools mobile emulation verifies responsive layout and client validation, **not** physical hardware iOS Safari keyboard behavior (scheduled for Sprint 3 Week 13 hardware QA in [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52)).
   - *Failure-Path Result:* Submitting with an invalid 8-digit phone (`98412345`) or unsupported prefix halts submission before POST; renders inline accessible error *"Please enter a valid 10-digit Nepali mobile number starting with 98 or 97"*; submit button disabled (`cursor-not-allowed`). All 7 provinces render cleanly in dropdown.
   - *Demo Promise Alignment:* Confirmed frozen checkout path strictly executes direct one-time retail purchases (`Storefront -> Cart -> Checkout -> Khalti Sandbox / COD -> Confirmation`), matching final demo promise with zero subscription dependencies.
@@ -30,7 +31,7 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **Roadmap slice / behavior (if relevant):** Mobile Accessibility & Ergonomics.
 - **Area I helped steward or hand off (if relevant):** Area 3: Storefront UI/UX, Mobile & Accessibility.
 - **Evidence link:** [w11-frontend-checks.txt](../evidence/w11-frontend-checks.txt) · [Commit `c1b48b1`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/c1b48b1) · [Surface Isolation Script](../../../frontend/scripts/check-surfaces.mjs).
-- **How I checked it:** Ran `npm test && npm run typecheck && npm run check:surfaces` confirming `63/63` Vitest unit tests (`storefront-placeholders.test.ts` `18/18`), `0` TypeScript errors, and `SURFACE_ISOLATION_OK`; inspected DOM elements in Chrome DevTools mobile simulator verifying $\ge 52\text{px}$ touch heights and $>4.5:1$ contrast. Negative boundary (`Chrome emulation vs. physical iOS Safari`) noted in [`tested-by-note.md`](../tested-by-note.md).
+- **How I checked it:** Ran `npm test && npm run typecheck && npm run check:surfaces` confirming `73/73` Vitest unit tests (`storefront-placeholders.test.ts` `18/18`, `email-validation.test.ts` `10/10`), `0` TypeScript errors, and `SURFACE_ISOLATION_OK`; verified live responsive mobile checkout & phone rejection (`w11-04`, `390x844`) and live Issue `#56` Account drawer fix (`w11-07`). Negative boundary (`Chrome emulation vs. physical iOS Safari`) noted in [`tested-by-note.md`](../tested-by-note.md).
 - **What I learned or changed:** Small screen viewports easily break when using desktop-proportioned padding. Explicit minimum touch target dimensions ensure touch accuracy on mobile devices.
 
 ---

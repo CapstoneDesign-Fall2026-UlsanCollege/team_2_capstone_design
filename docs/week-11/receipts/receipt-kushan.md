@@ -3,7 +3,7 @@
 **Student:** Kushan Sunuwar ([`@Kushan2191`](https://github.com/Kushan2191))  
 **Team:** Team 2 — ShopCraft  
 **Week:** Week 11 (Sprint 2: MVP and Freeze — Final Class)  
-**Date:** Thursday, November 12, 2026 (Updated November 16, 2026 on merged `main` commit `6559ea2`)  
+**Date:** Thursday, November 12, 2026 (Updated November 18, 2026 on frozen `main` commit `8098426`)  
 
 This is supporting evidence, not a separate weekly report. Use it only when a weekly guide specifically asks for additional receipts; otherwise, enter your contribution and evidence in the one shared team Weekly Report. If this template is requested, each student completes their own copy.
 
@@ -15,10 +15,10 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **Roadmap slice / behavior (if relevant):** Gateway Cancellation Recovery Slice & Non-Author QA.
 - **Area I helped steward or hand off (if relevant):** Area 2: QA, Non-Author Verification & Runbooks (Backup: Aanchal Chand Thakuri).
 - **Evidence link:** [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) · [Tested-By Note](../tested-by-note.md) · [Commit `76172af`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/76172af) · [Commit `d1aaf1c`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/d1aaf1c).
-- **How I checked it:** Tested both cancellation recovery and COD fallback without coaching on `https://shopcraft.me` (pre-merge candidate build; post-merge live browser repeat on merged `main` `6559ea2` scheduled before Wed Nov 18 EOD under [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51)):
+- **How I checked it:** Tested both cancellation recovery and COD fallback without coaching on `https://shopcraft.me` (pre-merge candidate build; Nov 18 live audit observed `Khalti Unavailable — Not configured by merchant` on prod DB `brewmellow` while `COD` rendered active; post-merge live Khalti gateway confirmation stays open under [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51)):
   - *Cancellation Recovery:* User cancels on Khalti portal (`status=User%20canceled`). **Expected:** Redirect back to `/s/brewmellow/checkout` with alert *"Payment was canceled. Your cart items have been saved"*; cart items, quantities, and addresses intact. **Actual: PASS.** Zero cart corruption; items preserved in session storage.
   - *COD Fallback:* User selects "Cash on Delivery" radio and places order. **Expected:** Instant order creation with zero external HTTP calls; status `CONFIRMED`; invoice token generated. **Actual: PASS.** Order created in 68ms with status `CONFIRMED`; inventory decremented.
-  - *Merged `main` (`6559ea2`) Automated Check:* Verified `154` backend tests (`144` pass on local SQLite in `17.467s`, `10` Postgres-only RLS tests execute in CI) and `63/63` Vitest unit tests (`khalti-return.test.ts` `6/6`) pass directly on `6559ea2`.
+  - *Frozen `main` (`8098426`) Automated Check:* Verified `154` backend tests (`144` pass on local SQLite in `15.06s`, `10` Postgres-only RLS tests execute in CI Run `#74`) and `73/73` Vitest unit tests (`khalti-return.test.ts` `6/6`) pass directly on `8098426`.
 - **What I learned or changed:** Handling gateway aborts gracefully protects e-commerce conversion rates; previously, canceling payment wiped the cart and caused user frustration.
 
 ---
@@ -29,7 +29,7 @@ This is supporting evidence, not a separate weekly report. Use it only when a we
 - **Roadmap slice / behavior (if relevant):** Clean-clone reproduction and automated test suite verification.
 - **Area I helped steward or hand off (if relevant):** Area 2: QA, Non-Author Verification & Runbooks.
 - **Evidence link:** [w11-backend-tests.txt](../evidence/w11-backend-tests.txt) · [w11-frontend-checks.txt](../evidence/w11-frontend-checks.txt) · [MVP Verification Checklist](../mvp-verification-checklist.md#2-verification-checklist).
-- **How I checked it:** Executed `python manage.py test accounts catalog orders stores` (`154` discovered: `144` pass on local SQLite, `10` Postgres-only RLS tests executed in CI) and frontend `npm test` (`63/63` Vitest unit tests passed). Recorded explicit negative boundaries in [`tested-by-note.md`](../tested-by-note.md).
+- **How I checked it:** Executed `python manage.py test accounts catalog orders stores` (`154` discovered: `144` pass on local SQLite, `10` Postgres-only RLS tests executed in CI `#74`) and frontend `npm test` (`73/73` Vitest unit tests passed). Recorded explicit negative boundaries in [`tested-by-note.md`](../tested-by-note.md) and [`w11-verification-checks.json`](../evidence/w11-verification-checks.json).
 - **What I learned or changed:** Keeping the test runner clean of dead code from cut features—and explicitly documenting what SQLite/mocked runs do not establish—keeps our release verification trustworthy.
 
 ---

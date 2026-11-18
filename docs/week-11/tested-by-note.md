@@ -1,6 +1,6 @@
-# Tested-By Note — Week 11 Frozen `main` Build (`6559ea2`)
+# Tested-By Note — Week 11 Frozen `main` Build (`8098426`)
 
-Use this whenever you claim something works. Every verification step below includes what it establishes **and what it does NOT establish**, keeping **candidate-branch (`07f1aeb` / `f76b6dd`)**, **local SQLite**, **PostgreSQL 16 CI (`43899189860`)**, and **live `https://shopcraft.me`** results explicitly distinct.
+Use this whenever you claim something works. Every verification step below includes what it establishes **and what it does NOT establish**, keeping **candidate-branch (`07f1aeb` / `f76b6dd`)**, **local SQLite**, **PostgreSQL 16 CI (`44248144770`)**, and **live `https://shopcraft.me`** results explicitly distinct.
 
 ---
 
@@ -10,7 +10,7 @@ Use this whenever you claim something works. Every verification step below inclu
 - **Behavior / related Issue:** Full checkout -> Khalti Sandbox v2 lookup -> retry/cancellation recovery -> COD fallback ([PR #54 Merged](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/54), [Issue #50 (Closed)](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/50), [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51), [Risk #31](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/31))
 - **Author:** Aditya Kumar Gupta (`@notyouradhee`)
 - **Tested by (a teammate other than the author):** Kushan Sunuwar (`@Kushan2191`)
-- **Date & Revision:** Pre-merge external-laptop check prior to Nov 16 (`main` updated to `6559ea2` via PR #54 on Nov 16; post-merge live browser repeat on `https://shopcraft.me` tracked in [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) before Wed Nov 18 EOD)
+- **Date & Revision:** Pre-merge external-laptop check prior to Nov 16 (`main` updated to `8098426` / `w11-mvp-freeze-2026-11-18`; **Nov 18 Live Observation:** `/s/brewmellow/checkout` showed `Khalti Unavailable — Not configured by merchant` while `Cash on Delivery` rendered active; post-merge live Khalti gateway confirmation by `@Kushan2191` stays tracked in [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51))
 
 ### Check steps
 1. Open `https://shopcraft.me/s/brewmellow` on an independent laptop without author coaching.
@@ -25,28 +25,28 @@ Use this whenever you claim something works. Every verification step below inclu
 - **Proof link:** [w11-backend-tests.txt](evidence/w11-backend-tests.txt) (`154` tests) · [w11-frontend-checks.txt](evidence/w11-frontend-checks.txt) (`khalti-return.test.ts`: `6/6`) · [Kushan QA Handoff](../week-10/evidence/kushan-independent-qa-handoff.md)
 
 ### What this check does NOT establish
-- Pre-merge browser runs and candidate-branch (`07f1aeb` / `f76b6dd`) results do not automatically establish post-merge live browser state on `https://shopcraft.me` (`6559ea2`); post-merge manual browser confirmation by `@Kushan2191` is tracked in [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) before Wed Nov 18 EOD.
+- Pre-merge browser runs and candidate-branch (`07f1aeb` / `f76b6dd`) results do not automatically establish post-merge live browser state on `https://shopcraft.me` (`8098426`). Specifically, Nov 18 live browser verification found `Cash on Delivery` active while `brewmellow` Khalti displayed `"Not configured by merchant"` in prod DB; post-merge live Khalti confirmation by `@Kushan2191` remains tracked in [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51).
 - Automated backend tests in `test_khalti.py` mock external Khalti API HTTP responses; passing `154` tests locally **does not guarantee** external Khalti sandbox portal uptime on demo day (mitigated by COD fallback).
-- Running `manage.py test` locally uses SQLite and **skips `10` PostgreSQL-only `FORCE ROW LEVEL SECURITY` tests**; database-engine RLS enforcement is verified in PostgreSQL 16 CI ([Run `43899189860`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/43899189860)).
+- Running `manage.py test` locally uses SQLite and **skips `10` PostgreSQL-only `FORCE ROW LEVEL SECURITY` tests**; database-engine RLS enforcement (including `0013_drop_legacy_rls_policies`) is verified in PostgreSQL 16 CI ([Run `44248144770`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44248144770)).
 
 ---
 
-## Check 2: Clean-Clone Verification & Automated Test Suite (`main` `6559ea2`)
+## Check 2: Clean-Clone Verification & Automated Test Suite (`main` `8098426`)
 
 ### What we checked
-- **Behavior / related Issue:** Clean-clone runbook reproducibility, `154` Django backend tests (`144` pass on local SQLite, `10` Postgres RLS tests execute in CI), and `63` frontend Vitest tests ([Issue #49](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/49), [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51))
+- **Behavior / related Issue:** Clean-clone runbook reproducibility, `154` Django backend tests (`144` pass on local SQLite, `10` Postgres RLS tests execute in CI), `73` frontend Vitest tests, & GitHub Actions Vitest step ([Issue #49](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/49), [PR #57](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/57))
 - **Author:** Kushan Sunuwar (`@Kushan2191` — Clean-Clone Runbook)
 - **Tested by (a teammate other than the author):** Aditya Kumar Gupta (`@notyouradhee`)
-- **Date:** November 16, 2026 (Re-executed directly on merged `main` commit `6559ea2`)
+- **Date:** November 18, 2026 (Re-executed directly on frozen `main` commit `8098426`)
 
 ### Check steps
-1. Run `.\venv\Scripts\python.exe manage.py test accounts catalog orders stores` inside `backend/`.
-2. Run `npm test && npm run typecheck && npm run check:surfaces` inside `frontend/`.
+1. Run `.\venv\Scripts\python.exe manage.py test accounts catalog orders stores --verbosity 2` inside `backend/`.
+2. Run `npm test && npm run typecheck && npm run check:surfaces` plus scoped ESLint inside `frontend/`.
 
 ### Result
-- **Expected result:** Zero test failures, zero TypeScript compilation errors, and `SURFACE_ISOLATION_OK`.
-- **Actual result:** **PASS on merged `main` (`6559ea2`).** Backend (local SQLite): `Ran 154 tests in 17.467s — OK (skipped=10)`. CI PostgreSQL 16 (`43899189860`): all `154` tests + Next.js build passed. Frontend (local): `5 test files passed, 63 tests passed` in `3.00s`, `tsc --noEmit` exited `0`, and `node scripts/check-surfaces.mjs` output `SURFACE_ISOLATION_OK`.
-- **Proof link:** [w11-backend-tests.txt](evidence/w11-backend-tests.txt) · [w11-frontend-checks.txt](evidence/w11-frontend-checks.txt) · [Main CI Run `43899189860`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/43899189860)
+- **Expected result:** Zero test failures, zero TypeScript/ESLint errors, and `SURFACE_ISOLATION_OK`.
+- **Actual result:** **PASS on frozen `main` (`8098426`).** Backend (local SQLite): `Ran 154 tests in 15.06s — OK (skipped=10)`. CI PostgreSQL 16 (`44248144770`): all `154` tests + `0013` RLS policy check + Next.js build + Vitest passed. Frontend (local): `6 test files passed, 73 tests passed` in `1.63s`, `tsc --noEmit` exited `0`, scoped ESLint `0` errors, and `node scripts/check-surfaces.mjs` output `SURFACE_ISOLATION_OK`.
+- **Proof link:** [w11-verification-checks.json](evidence/w11-verification-checks.json) · [w11-backend-tests.txt](evidence/w11-backend-tests.txt) · [w11-frontend-checks.txt](evidence/w11-frontend-checks.txt) · [Main CI Run `44248144770`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44248144770)
 
 ### What this check does NOT establish
 - Local SQLite test execution does not run the `10` skipped Postgres `FORCE RLS` policies (covered by CI job `Backend (Django + Postgres FORCE RLS)`).
@@ -100,5 +100,8 @@ Use this whenever you claim something works. Every verification step below inclu
 ---
 
 ## Problems found & Next action
-- **Problems resolved & merged to `main` (`6559ea2`):** Replaced legacy Khalti simulator modal (`KhaltiCheckoutSimulatorModal.tsx`) with hardened server-side `mode`-selected Khalti ePayment v2 verification + retry actions ([PR #54](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/54), `9629021`, `07f1aeb`), verified `main` CI ([Run `43899189860`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/43899189860)), reconciled test counts (`114` Week 10 baseline → `154` backend + `63` frontend Vitest post-PR #54), and re-verified directly on merged `main` (`6559ea2`).
-- **Next action (Before Wed Nov 18 EOD & Sprint 3):** `@Kushan2191` repeats the live external-laptop checkout & cancellation check on deployed `https://shopcraft.me` (`6559ea2`) under [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51), followed by physical hardware mobile QA (`360px` / `390px`) in Week 13 under [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52).
+- **Problems resolved & merged to `main` (`8098426`):**
+  1. Replaced legacy Khalti simulator modal (`KhaltiCheckoutSimulatorModal.tsx`) with hardened server-side `mode`-selected Khalti ePayment v2 verification + retry actions ([PR #54](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/54), `6559ea2`).
+  2. Added OTP client-side email validation, domain typo hint (`gmial.com`, etc.), `"Wrong email? Change it"` action, and spam folder note ([Issue #55 (Closed)](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/55), `0a0ec4d`), plus PostgreSQL `0013_drop_legacy_rls_policies` cleanup (`64a31f9`).
+  3. **Live Browser Bug Discovered & Fixed on Nov 18 ([Issue #56 (Closed)](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/56) / [PR #57](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/pull/57)):** Clicking *"Sign in to your account"* in `StorefrontHeader` crashed `AccountSheet` with `TypeError: I.trim is not a function` ([diagnostic capture](evidence/screenshots/w11-06-issue-56-storefront-signin-crash-diagnostic.png)). Fixed via `normalizePrefillEmail` and caller wrappers (`aa62b2f`), verified green in CI ([Run `44248144770`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44248144770)), and re-verified live on `https://shopcraft.me/s/brewmellow` ([verified capture](evidence/screenshots/w11-07-issue-56-storefront-signin-fixed-live.png)).
+- **Next action:** `@Kushan2191` confirms merchant Khalti sandbox key activation on live `https://shopcraft.me` (`brewmellow`) and completes live cancellation recovery repeat under [Issue #51](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51), followed by physical hardware mobile QA (`360px` / `390px`) in Week 13 under [Issue #52](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52).

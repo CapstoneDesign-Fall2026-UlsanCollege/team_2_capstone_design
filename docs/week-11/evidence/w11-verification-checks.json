@@ -1,0 +1,94 @@
+{
+  "week": 11,
+  "team": "Team 2 - ShopCraft",
+  "dateUTC": "2026-11-18",
+  "candidateSHA": "80984261d9ab698a27e8c8affa34766083af1ec0",
+  "githubActionsCIRun": {
+    "runNumber": 74,
+    "runId": 44248144770,
+    "url": "https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44248144770",
+    "conclusion": "success",
+    "jobs": [
+      "Backend (Django + Postgres FORCE RLS): success (all 154 tests incl. migration 0013 RLS enforcement)",
+      "Frontend (Next.js): success (check:surfaces, ESLint, tsc --noEmit, Vitest, next build)"
+    ]
+  },
+  "environment": {
+    "os": "Windows-11-10.0.26300-SP0",
+    "python": "Python 3.13.1",
+    "node": "v24.22.1",
+    "npm": "11.19.1",
+    "backendDatabase": "Local Windows SQLite (Postgres-only RLS tests skipped locally and executed in CI Run 44248144770)"
+  },
+  "checks": [
+    {
+      "name": "backend-tests-local-sqlite",
+      "command": "backend\\venv\\Scripts\\python.exe manage.py test accounts catalog orders stores --verbosity 2",
+      "cwd": "backend",
+      "startedAt": "2026-11-18T06:03:59.220704+00:00",
+      "finishedAt": "2026-11-18T06:04:14.285654+00:00",
+      "durationSeconds": 15.06,
+      "exitCode": 0,
+      "stdoutSHA256": "03a7edf614846cf33782132b0265039b13251345a1b1e27f3a94bc7fddaca89c",
+      "stderrSHA256": "983780c6dd6a6d5ce5c8ddbf2fb994e45dc1941f9c627b2ffd40155e62f585dc",
+      "counts": {
+        "discovered": 154,
+        "ran": 154,
+        "passed": 144,
+        "failed": 0,
+        "skipped": 10,
+        "skipReason": "PostgreSQL-only FORCE RLS checks skipped on local SQLite; executed in GitHub Actions Run #74 (postgres:16-alpine NOSUPERUSER NOBYPASSRLS)."
+      }
+    },
+    {
+      "name": "frontend-vitest",
+      "command": "npm test",
+      "cwd": "frontend",
+      "startedAt": "2026-11-18T06:04:14.287855+00:00",
+      "finishedAt": "2026-11-18T06:04:17.724806+00:00",
+      "durationSeconds": 3.44,
+      "exitCode": 0,
+      "stdoutSHA256": "ecc31f7850c924024a60e41514a09957a1e972b0946a1fd374969e923ed57176",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "counts": {
+        "filesPassed": 6,
+        "testsPassed": 73,
+        "failed": 0,
+        "skipped": 0
+      }
+    },
+    {
+      "name": "frontend-typecheck",
+      "command": "npm run typecheck",
+      "cwd": "frontend",
+      "startedAt": "2026-11-18T06:04:17.725211+00:00",
+      "finishedAt": "2026-11-18T06:04:21.087977+00:00",
+      "durationSeconds": 3.36,
+      "exitCode": 0,
+      "stdoutSHA256": "6395c2028d2efb2e4992400755df02dac270564d1495c7f1c6aa81f48f24e940",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "frontend-surface-isolation",
+      "command": "npm run check:surfaces",
+      "cwd": "frontend",
+      "startedAt": "2026-11-18T06:04:21.088115+00:00",
+      "finishedAt": "2026-11-18T06:04:21.608440+00:00",
+      "durationSeconds": 0.52,
+      "exitCode": 0,
+      "stdoutSHA256": "baaad798feb115c077ba2e322403087758557dfc47e1e183f8dab88a3d218ae2",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    },
+    {
+      "name": "frontend-eslint-app-dirs",
+      "command": "npx eslint \"src/app/(platform)\" \"src/app/merchant\" \"src/app/s\" \"src/components/account\" \"src/components/auth\" \"src/components/storefront\" \"src/lib\"",
+      "cwd": "frontend",
+      "startedAt": "2026-11-18T06:04:21.608534+00:00",
+      "finishedAt": "2026-11-18T06:04:39.810252+00:00",
+      "durationSeconds": 18.2,
+      "exitCode": 0,
+      "stdoutSHA256": "b6b70621fb49892135a0c55060f05bc8bfc370992899b3b003c500c135c164e5",
+      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
+    }
+  ]
+}

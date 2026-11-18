@@ -1,33 +1,79 @@
-﻿Commit: 6559ea2c0b5b226e5b5a11f65739f935137e478c (merged main via PR #54)
-Date: 2026-11-16 (Asia/Kathmandu)
-Environment: Local Windows Node.js
-Commands: npm test && npm run typecheck && npm run check:surfaces
-======================================================================
+# Commit SHA: 80984261d9ab698a27e8c8affa34766083af1ec0
+# Timestamp UTC: 2026-11-18T06:04:14.287855+00:00
+# Node: v24.22.1 | npm: 11.19.1
 
-
+## 1. Vitest (`npm test`)
 > frontend@0.1.0 test
 > vitest run
 
 
- RUN  v3.2.7 D:/Team2_Capstone_project/team_2_capstone_design/frontend
+ RUN  v3.2.7 d:/Team2_Capstone_project/team_2_capstone_design/frontend
 
- ✓ src/lib/merchant-status.test.ts (19 tests) 10ms
- ✓ src/lib/theme-media-upload.test.ts (2 tests) 8ms
- ✓ src/lib/merchant-guard.test.ts (18 tests) 6ms
- ✓ src/lib/khalti-return.test.ts (6 tests) 17ms
- ✓ src/lib/storefront-placeholders.test.ts (18 tests) 173ms
+ ✓ src/lib/merchant-status.test.ts (19 tests) 6ms
+ ✓ src/lib/email-validation.test.ts (10 tests) 12ms
+ ✓ src/lib/merchant-guard.test.ts (18 tests) 5ms
+ ✓ src/lib/theme-media-upload.test.ts (2 tests) 7ms
+ ✓ src/lib/khalti-return.test.ts (6 tests) 13ms
+ ✓ src/lib/storefront-placeholders.test.ts (18 tests) 148ms
 
- Test Files  5 passed (5)
-      Tests  63 passed (63)
-   Start at  21:34:51
-   Duration  3.00s (transform 1.14s, setup 0ms, collect 2.10s, tests 213ms, environment 1ms, prepare 2.69s)
+ Test Files  6 passed (6)
+      Tests  73 passed (73)
+   Start at  11:49:15
+   Duration  1.63s (transform 847ms, setup 0ms, collect 1.57s, tests 191ms, environment 1ms, prepare 1.36s)
 
-
+## 2. TypeScript (`npm run typecheck`)
+Exit code: 0 (tsc --noEmit, 0 errors)
 > frontend@0.1.0 typecheck
 > tsc --noEmit
 
-
+## 3. Surface Isolation (`npm run check:surfaces`)
 > frontend@0.1.0 check:surfaces
 > node scripts/check-surfaces.mjs
 
 SURFACE_ISOLATION_OK
+
+## 4. Scoped ESLint (matching .github/workflows/ci.yml)
+Exit code: 0
+frontend\src\app\(platform)\merchant\new\page.tsx
+  18:3  warning  'Store' is defined but never used  @typescript-eslint/no-unused-vars
+
+frontend\src\app\(platform)\page.tsx
+  5:22  warning  'ArrowUpRight' is defined but never used  @typescript-eslint/no-unused-vars
+  5:43  warning  'Sparkles' is defined but never used      @typescript-eslint/no-unused-vars
+  5:53  warning  'Store' is defined but never used         @typescript-eslint/no-unused-vars
+
+frontend\src\app\merchant\[storeSlug]\customers\page.tsx
+   9:3  warning  'ArrowUpDown' is defined but never used  @typescript-eslint/no-unused-vars
+  12:3  warning  'MapPin' is defined but never used       @typescript-eslint/no-unused-vars
+  13:3  warning  'Phone' is defined but never used        @typescript-eslint/no-unused-vars
+  14:3  warning  'Mail' is defined but never used         @typescript-eslint/no-unused-vars
+  16:3  warning  'Filter' is defined but never used       @typescript-eslint/no-unused-vars
+
+frontend\src\app\merchant\[storeSlug]\page.tsx
+   8:3   warning  'ArrowRight' is defined but never used         @typescript-eslint/no-unused-vars
+   9:3   warning  'ExternalLink' is defined but never used       @typescript-eslint/no-unused-vars
+  10:3   warning  'Package' is defined but never used            @typescript-eslint/no-unused-vars
+  11:3   warning  'Plus' is defined but never used               @typescript-eslint/no-unused-vars
+  13:3   warning  'ShoppingBag' is defined but never used        @typescript-eslint/no-unused-vars
+  21:3   warning  'formatNpr' is defined but never used          @typescript-eslint/no-unused-vars
+  29:10  warning  'Card' is defined but never used               @typescript-eslint/no-unused-vars
+  29:16  warning  'CardContent' is defined but never used        @typescript-eslint/no-unused-vars
+  30:10  warning  'Chip' is defined but never used               @typescript-eslint/no-unused-vars
+  45:9   warning  'baseHref' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  50:10  warning  'products' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+frontend\src\app\merchant\[storeSlug]\products\[productId]\page.tsx
+  79:9  warning  'samplePrice' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+frontend\src\app\s\[storeSlug]\account\StorefrontAccountClient.tsx
+   3:38  warning  'useTransition' is defined but never used  @typescript-eslint/no-unused-vars
+  11:3   warning  'Clock' is defined but never used          @typescript-eslint/no-unused-vars
+  15:3   warning  'Mail' is defined but never used           @typescript-eslint/no-unused-vars
+
+frontend\src\app\s\[storeSlug]\not-found.tsx
+  3:29  warning  'Store' is defined but never used  @typescript-eslint/no-unused-vars
+
+frontend\src\components\storefront\AccountContext.tsx
+  19:9  warning  'pathname' is assigned a value but never used  @typescript-eslint/no-unused-vars
+
+✖ 26 problems (0 errors, 26 warnings)

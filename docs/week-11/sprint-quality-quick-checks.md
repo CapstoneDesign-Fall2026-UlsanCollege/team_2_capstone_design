@@ -46,9 +46,9 @@ These are quick evidence checks across project milestones to ensure engineering 
   * Negative check boundaries (what local SQLite/mocked tests do *not* establish) explicitly recorded in [`tested-by-note.md`](tested-by-note.md).
 - [x] **AI-assisted or outside material is reviewed, explainable, and attributed where relevant:**
   * Documented in [`docs/week-10/ai-use-and-code-ownership-audit.md`](../week-10/ai-use-and-code-ownership-audit.md) and individual PR with AI Use notes in [`docs/week-10/slices/`](../week-10/slices/).
-- [x] **Current codebase areas, checks, and support/backup paths are linked in the ownership audit; a teammate outside a relevant area reproduces a key check:**
+- [x] **Area boundaries, checks, and support/backup paths are linked in the ownership audit; a teammate outside a relevant area reproduces a key check:**
   * 4 Codebase Areas mapped with primary stewards and designated backups.
-  * 4 cross-area independent non-author peer checks executed and documented in [`tested-by-note.md`](tested-by-note.md) alongside fresh logs [`w11-backend-tests.txt`](evidence/w11-backend-tests.txt) (`154` backend tests) and [`w11-frontend-checks.txt`](evidence/w11-frontend-checks.txt) (`63/63` Vitest, `0` TS errors, `SURFACE_ISOLATION_OK`).
+  * 4 cross-area independent non-author peer checks executed and documented in [`tested-by-note.md`](tested-by-note.md) alongside fresh logs [`w11-backend-tests.txt`](evidence/w11-backend-tests.txt) (`154` backend tests), [`w11-frontend-checks.txt`](evidence/w11-frontend-checks.txt) (`73/73` Vitest, `0` TS errors, `0` scoped ESLint errors, `SURFACE_ISOLATION_OK`), and [`w11-verification-checks.json`](evidence/w11-verification-checks.json) on frozen `8098426`.
 
 ---
 
