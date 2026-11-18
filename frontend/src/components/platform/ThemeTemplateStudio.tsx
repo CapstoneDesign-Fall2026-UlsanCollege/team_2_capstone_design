@@ -5,19 +5,7 @@ import Link from "next/link";
 import {
   ArrowRight,
   Check,
-  Coffee,
-  ExternalLink,
-  Flame,
-  Globe,
-  Layers,
-  Leaf,
-  Moon,
   Package,
-  Palette,
-  ShoppingBag,
-  Sparkles,
-  Sun,
-  Truck,
 } from "lucide-react";
 
 interface ThemePresetDef {
@@ -142,15 +130,11 @@ export function ThemeTemplateStudio() {
       <div id="demo-stores" className="scroll-mt-20">
         {/* Section Header */}
         <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16 space-y-3">
-          <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full text-xs font-mono font-bold bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-            <Palette className="w-3.5 h-3.5" />
-            <span>Pure Multi-Tenant Template Engine</span>
-          </div>
           <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-900 dark:text-white">
-            Pure Templates. Any Niche. Zero Code.
+            Pick a look. Your logo, your colors, your fonts.
           </h2>
           <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 font-sans max-w-xl mx-auto">
-            Choose a pre-tuned theme or customize tokens. Every store includes single-screen mobile checkout, native Khalti, COD verification, and 1-click Pathao dispatch.
+            Try the four looks below. This is what your customers will see.
           </p>
         </div>
 
@@ -186,29 +170,27 @@ export function ThemeTemplateStudio() {
           <div className="lg:col-span-5 p-6 sm:p-8 rounded-3xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#141416] flex flex-col justify-between shadow-xl shadow-black/5 dark:shadow-black/40 text-left">
             <div className="space-y-6">
               <div>
-                <span className="text-[11px] font-mono uppercase tracking-wider text-emerald-600 dark:text-emerald-400 font-bold block mb-1">
-                  Template Spec // {activePreset.id}
-                </span>
+                
                 <h3 className="text-2xl font-black text-zinc-900 dark:text-white">
                   {activePreset.name}
                 </h3>
                 <p className="text-xs text-zinc-600 dark:text-zinc-400 font-sans mt-1">
-                  Engineered for {activePreset.niche}.
+                  Good for {activePreset.niche}.
                 </p>
               </div>
 
               {/* Typography & Swatches */}
               <div className="space-y-3 pt-2 border-t border-zinc-200 dark:border-white/10">
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 font-mono">Display Typeface</span>
+                  <span className="text-zinc-500 font-mono">Headings font</span>
                   <span className="font-semibold text-zinc-900 dark:text-white">{activePreset.displayFont}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 font-mono">Body Typeface</span>
+                  <span className="text-zinc-500 font-mono">Text font</span>
                   <span className="font-semibold text-zinc-900 dark:text-white">{activePreset.bodyFont}</span>
                 </div>
                 <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 font-mono">Palette Tokens</span>
+                  <span className="text-zinc-500 font-mono">Colors</span>
                   <div className="flex items-center gap-1.5">
                     <span
                       title="Canvas"
@@ -238,30 +220,22 @@ export function ThemeTemplateStudio() {
               <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-white/10 text-xs text-zinc-600 dark:text-zinc-300">
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Single-screen mobile checkout drawer</span>
+                  <span>Checkout that works on a phone</span>
                 </div>
                 <div className="flex items-center gap-2">
                   <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Native Khalti ePayment &amp; Verified COD</span>
+                  <span>Khalti and cash on delivery</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>1-click Pathao 4x6&quot; thermal courier labels</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Automated WhatsApp order notifications</span>
-                </div>
-              </div>
             </div>
 
             {/* Launch Action */}
             <div className="pt-8">
               <Link
-                href={`/signup?theme=${encodeURIComponent(activePreset.id)}`}
+                href={`/signup?next=${encodeURIComponent(`/merchant/new?theme=${activePreset.id}`)}`}
                 className="w-full py-3.5 rounded-full bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer"
               >
-                <span>Launch Store With This Template</span>
+                <span>Use this look</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
             </div>
@@ -305,9 +279,6 @@ export function ThemeTemplateStudio() {
               >
                 <div className="text-center space-y-1 p-4">
                   <Package className="w-8 h-8 mx-auto opacity-60" style={{ color: activePreset.inkHex }} />
-                  <span className="text-[10px] font-mono uppercase tracking-wider block opacity-70">
-                    Product Image &amp; Gallery
-                  </span>
                 </div>
                 <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold"
                   style={{ backgroundColor: activePreset.accentHex, color: "#FFFFFF" }}
@@ -346,44 +317,11 @@ export function ThemeTemplateStudio() {
             </div>
 
             {/* Bottom Merchant Synchronization Strip */}
-            <div className="pt-4 border-t border-black/10 dark:border-white/10 flex flex-wrap items-center justify-between gap-2 text-[11px] font-mono opacity-70">
-              <div className="flex items-center gap-1.5">
-                <Check className="w-3.5 h-3.5 text-emerald-600" />
-                <span>Instant Merchant Sync: <code className="font-bold">/merchant/[storeSlug]</code></span>
-              </div>
-              <div>
-                Multi-Tenant CSS Isolated
-              </div>
-            </div>
+            <div className="pt-4 border-t border-black/10 dark:border-white/10 text-[11px] opacity-70">Your store looks like your brand, not ours.</div>
 
           </div>
 
         </div>
-
-        {/* 3. Create Store Directly From Homepage */}
-        <div className="mt-12 p-6 sm:p-8 rounded-3xl border border-zinc-200 dark:border-white/10 bg-zinc-100/60 dark:bg-white/[0.02] max-w-3xl mx-auto text-center space-y-4">
-          <h4 className="text-lg font-bold text-zinc-900 dark:text-white">
-            Have a brand ready? Launch your store now.
-          </h4>
-          <p className="text-xs text-zinc-600 dark:text-zinc-400 max-w-md mx-auto">
-            Choose any name, select your preferred theme preset, and get your hosted store and merchant console running in seconds.
-          </p>
-          <div className="pt-2 flex flex-col sm:flex-row items-center justify-center gap-3">
-            <Link
-              href="/merchant/new"
-              className="w-full sm:w-auto px-6 py-3 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-xs font-mono hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all shadow-md active:scale-95"
-            >
-              Open Store Creation Wizard →
-            </Link>
-            <Link
-              href="/signup?next=/merchant/new"
-              className="w-full sm:w-auto px-6 py-3 rounded-full border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white hover:bg-zinc-200 dark:hover:bg-white/5 font-semibold text-xs font-mono transition-colors"
-            >
-              Create Merchant Account
-            </Link>
-          </div>
-        </div>
-
       </div>
     </section>
   );

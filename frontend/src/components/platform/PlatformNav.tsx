@@ -14,11 +14,7 @@ interface NavItem {
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Features", href: "/#features" },
-  { label: "Workflow", href: "/#workflow" },
-  { label: "Capabilities", href: "/#capabilities" },
   { label: "Templates", href: "/#templates" },
-  { label: "Pricing", href: "/#pricing" },
   { label: "FAQ", href: "/#faq" },
 ];
 
@@ -159,7 +155,7 @@ export function PlatformNav() {
                 href="/signup?next=/merchant/new"
                 className="inline-flex items-center gap-1.5 bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs rounded-full px-4 py-2 transition-all active:scale-95 shadow-sm"
               >
-                <span>Start for Free</span>
+                <span>Create my store</span>
                 <ArrowRight className="w-3.5 h-3.5" />
               </Link>
             </>
@@ -249,7 +245,7 @@ export function PlatformNav() {
                     onClick={() => setMobileMenuOpen(false)}
                     className="w-full text-center py-2.5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
                   >
-                    Start for Free →
+                    Create my store →
                   </Link>
                 </>
               )}

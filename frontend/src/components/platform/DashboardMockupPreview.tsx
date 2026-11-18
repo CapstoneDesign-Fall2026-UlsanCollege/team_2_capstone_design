@@ -1,13 +1,9 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
 import {
-  BarChart3,
   Check,
-  ChevronDown,
-  Clock,
-  CreditCard,
   ExternalLink,
   Layers,
   LayoutDashboard,
@@ -15,14 +11,10 @@ import {
   Search,
   Settings,
   ShoppingBag,
-  Store,
-  Truck,
   Users,
 } from "lucide-react";
 
 export function DashboardMockupPreview() {
-  const [activeTab, setActiveTab] = useState<"orders" | "products">("orders");
-
   return (
     <div className="relative w-full max-w-5xl mx-auto mt-12 sm:mt-16 group">
       {/* Outer ambient glow behind the mockup */}
@@ -40,7 +32,7 @@ export function DashboardMockupPreview() {
               <div className="w-2.5 h-2.5 rounded-full bg-emerald-500/70" />
             </div>
             <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 pl-2 hidden sm:inline">
-              app.shopcraft.com.np/merchant/dashboard
+              shopcraft.me/merchant/himalayan-roasters
             </span>
           </div>
 
@@ -140,7 +132,7 @@ export function DashboardMockupPreview() {
                 <span className="text-[11px] font-mono text-zinc-500 dark:text-zinc-400 block">Dispatch Ready</span>
                 <div className="flex items-baseline justify-between">
                   <span className="text-lg sm:text-xl font-black font-mono text-zinc-900 dark:text-white">11 Slips</span>
-                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">Pathao Express</span>
+                  <span className="text-[10px] font-mono text-emerald-600 dark:text-emerald-400 font-bold">Packing slips</span>
                 </div>
               </div>
             </div>
@@ -181,7 +173,7 @@ export function DashboardMockupPreview() {
                   <div className="flex items-center gap-3">
                     <span className="font-bold text-zinc-900 dark:text-white">Rs. 1,850</span>
                     <span className="px-2 py-0.5 rounded text-[10px] font-bold bg-emerald-500/15 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
-                      Pathao Slips
+                      Packing Slip
                     </span>
                   </div>
                 </div>
@@ -207,7 +199,7 @@ export function DashboardMockupPreview() {
             <div className="flex flex-wrap items-center justify-between gap-2 pt-1 text-[11px] font-mono text-zinc-500">
               <div className="flex items-center gap-2">
                 <Check className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Hosted Storefront Active: <code className="text-zinc-800 dark:text-zinc-300 font-bold">himalayan-roasters.shopcraft.com.np</code></span>
+                <span>Hosted Storefront Active: <code className="text-zinc-800 dark:text-zinc-300 font-bold">shopcraft.me/s/himalayan-roasters</code></span>
               </div>
               <div className="text-emerald-600 dark:text-emerald-400 font-semibold">
                 ✓ 100% NPR Settlement
