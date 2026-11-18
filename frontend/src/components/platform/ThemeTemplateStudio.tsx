@@ -2,18 +2,13 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import {
-  ArrowRight,
-  Check,
-  Package,
-} from "lucide-react";
+import Image from "next/image";
+import { ArrowRight, Check, ExternalLink } from "lucide-react";
 
 interface ThemePresetDef {
   id: string;
   name: string;
   niche: string;
-  displayFont: string;
-  bodyFont: string;
   canvasHex: string;
   surfaceHex: string;
   inkHex: string;
@@ -25,18 +20,15 @@ interface ThemePresetDef {
     category: string;
     price: string;
     badge: string;
-    tagline: string;
+    imageSrc: string;
   };
-  sampleConsoleTag: string;
 }
 
 const TEMPLATE_PRESETS: ThemePresetDef[] = [
   {
     id: "editorial-warm",
     name: "Editorial Warm",
-    niche: "Roasteries, Teas, Bakeries & Artisan Food",
-    displayFont: "Fraunces Serif",
-    bodyFont: "Plus Jakarta Sans",
+    niche: "Coffee roasters, tea gardens, and bakeries",
     canvasHex: "#F5F2EB",
     surfaceHex: "#FFFFFF",
     inkHex: "#1A1512",
@@ -44,20 +36,17 @@ const TEMPLATE_PRESETS: ThemePresetDef[] = [
     ctaHex: "#A3432A",
     ctaTextHex: "#FFFFFF",
     cardPreview: {
-      title: "Handcrafted Terracotta Ceramic Mug",
-      category: "Artisan Living",
-      price: "Rs. 1,250",
-      badge: "Handmade Lot",
-      tagline: "Earthy warmth with rich editorial serif headings and tactile paper surfaces.",
+      title: "Gulmi Reserve Arabica (250g)",
+      category: "Single-Origin Coffee",
+      price: "Rs. 750",
+      badge: "Fresh Roast",
+      imageSrc: "/images/products/gulmi-reserve.svg",
     },
-    sampleConsoleTag: "Coffee / Consumables",
   },
   {
     id: "pahadi-sage",
     name: "Pahadi Botanical",
-    niche: "Wild Honey, Herbs, Ayurveda & Wellness",
-    displayFont: "Young Serif",
-    bodyFont: "Manrope",
+    niche: "Wild honey, herbs, and natural goods",
     canvasHex: "#F3F7F4",
     surfaceHex: "#FFFFFF",
     inkHex: "#14281D",
@@ -65,20 +54,17 @@ const TEMPLATE_PRESETS: ThemePresetDef[] = [
     ctaHex: "#1F6F4A",
     ctaTextHex: "#FFFFFF",
     cardPreview: {
-      title: "Wild Cliff Honey & Raw Herbal Elixir",
-      category: "Mountain Wellness",
+      title: "Himalayan Wild Cliff Honey (500g)",
+      category: "Mountain Harvest",
       price: "Rs. 1,650",
-      badge: "Organic Certified",
-      tagline: "Calming herbal greens, balanced botanical serifs, and high-trust organic certification badges.",
+      badge: "Raw & Cold Extracted",
+      imageSrc: "/images/products/himalayan-honey.svg",
     },
-    sampleConsoleTag: "Organic Organics",
   },
   {
     id: "midnight-obsidian",
     name: "Midnight Obsidian",
-    niche: "Streetwear, Apparel Drops, Leather & Tech",
-    displayFont: "Space Grotesk",
-    bodyFont: "Inter",
+    niche: "Dark theme for bold drops and specialty lots",
     canvasHex: "#0D0D0E",
     surfaceHex: "#161619",
     inkHex: "#F9FAFB",
@@ -86,20 +72,17 @@ const TEMPLATE_PRESETS: ThemePresetDef[] = [
     ctaHex: "#2563EB",
     ctaTextHex: "#FFFFFF",
     cardPreview: {
-      title: "Heavyweight 320GSM Boxy Drop Tee",
-      category: "Kathmandu Streetwear",
-      price: "Rs. 2,400",
-      badge: "Limited Drop",
-      tagline: "Ultra-sleek dark mode canvas with high-contrast electric accents and bold modern typography.",
+      title: "Ilam Gold Typica (250g)",
+      category: "Sandakphu · 1,750m",
+      price: "Rs. 820",
+      badge: "Light Roast",
+      imageSrc: "/images/products/ilam-gold.svg",
     },
-    sampleConsoleTag: "Streetwear Drops",
   },
   {
     id: "ktm-bold",
     name: "Modern Minimalist",
-    niche: "Contemporary Crafts, Design Goods & Jewelry",
-    displayFont: "Space Grotesk",
-    bodyFont: "Inter",
+    niche: "Clean monochrome for crafts and everyday goods",
     canvasHex: "#FAFAFA",
     surfaceHex: "#FFFFFF",
     inkHex: "#0B0B0B",
@@ -107,38 +90,55 @@ const TEMPLATE_PRESETS: ThemePresetDef[] = [
     ctaHex: "#0B0B0B",
     ctaTextHex: "#FFFFFF",
     cardPreview: {
-      title: "Minimalist Solid Brass Desk Compass",
-      category: "Studio Objects",
-      price: "Rs. 3,200",
-      badge: "Studio Edition",
-      tagline: "Swiss-inspired monochrome precision with crisp line dividers and high-legibility geometric type.",
+      title: "Nuwakot Heritage Roast (250g)",
+      category: "Kakani · 1,400m",
+      price: "Rs. 880",
+      badge: "Honey Process",
+      imageSrc: "/images/products/nuwakot-heritage.svg",
     },
-    sampleConsoleTag: "Modern Objects",
   },
 ];
 
-export function ThemeTemplateStudio() {
+interface ThemeTemplateStudioProps {
+  storeName?: string;
+}
+
+export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps) {
   const [selectedPresetId, setSelectedPresetId] = useState("editorial-warm");
+  const [bagCount, setBagCount] = useState(0);
+  const [justAdded, setJustAdded] = useState(false);
+
   const activePreset =
     TEMPLATE_PRESETS.find((p) => p.id === selectedPresetId) || TEMPLATE_PRESETS[0];
+
+  const previewStoreTitle = storeName.trim() || `${activePreset.name} Store`;
+  const trimmedName = storeName.trim();
+  const nextWizardPath = trimmedName
+    ? `/merchant/new?theme=${activePreset.id}&name=${encodeURIComponent(trimmedName)}`
+    : `/merchant/new?theme=${activePreset.id}`;
+
+  const handlePreviewAdd = () => {
+    setBagCount((c) => c + 1);
+    setJustAdded(true);
+    setTimeout(() => setJustAdded(false), 1200);
+  };
 
   return (
     <section
       id="templates"
-      className="py-20 sm:py-28 px-4 sm:px-6 lg:px-8 max-w-7xl mx-auto border-t border-zinc-200 dark:border-white/5 scroll-mt-20"
+      className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-zinc-200 dark:border-white/5 scroll-mt-20"
     >
       <div id="demo-stores" className="scroll-mt-20">
-        {/* Section Header */}
-        <div className="max-w-3xl mx-auto text-center mb-12 sm:mb-16 space-y-3">
-          <h2 className="text-3xl sm:text-5xl font-black tracking-tight text-zinc-900 dark:text-white">
+        <div className="max-w-2xl mx-auto text-center mb-10 space-y-3">
+          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white">
             Pick a look. Your logo, your colors, your fonts.
           </h2>
-          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 font-sans max-w-xl mx-auto">
-            Try the four looks below. This is what your customers will see.
+          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400">
+            Switch between the four looks below to see what your customers get.
           </p>
         </div>
 
-        {/* 1. Interactive Preset Selector Tabs */}
+        {/* Interactive Preset Selector Tabs */}
         <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
           {TEMPLATE_PRESETS.map((preset) => {
             const isSelected = preset.id === activePreset.id;
@@ -149,7 +149,7 @@ export function ThemeTemplateStudio() {
                 onClick={() => setSelectedPresetId(preset.id)}
                 className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold font-mono transition-all cursor-pointer ${
                   isSelected
-                    ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-md scale-105"
+                    ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-sm"
                     : "bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white border border-zinc-200 dark:border-white/10"
                 }`}
               >
@@ -163,164 +163,163 @@ export function ThemeTemplateStudio() {
           })}
         </div>
 
-        {/* 2. Interactive Template Live Preview Stage */}
+        {/* Preview Stage */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          
-          {/* Left Column (5 cols): Theme Specifications & Launch CTA */}
-          <div className="lg:col-span-5 p-6 sm:p-8 rounded-3xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#141416] flex flex-col justify-between shadow-xl shadow-black/5 dark:shadow-black/40 text-left">
+          {/* Left Column (5 cols): Plain summary & actions */}
+          <div className="lg:col-span-5 p-6 sm:p-8 rounded-3xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#141416] flex flex-col justify-between text-left">
             <div className="space-y-6">
               <div>
-                
                 <h3 className="text-2xl font-black text-zinc-900 dark:text-white">
                   {activePreset.name}
                 </h3>
-                <p className="text-xs text-zinc-600 dark:text-zinc-400 font-sans mt-1">
-                  Good for {activePreset.niche}.
+                <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
+                  {activePreset.niche}.
                 </p>
               </div>
 
-              {/* Typography & Swatches */}
-              <div className="space-y-3 pt-2 border-t border-zinc-200 dark:border-white/10">
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 font-mono">Headings font</span>
-                  <span className="font-semibold text-zinc-900 dark:text-white">{activePreset.displayFont}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 font-mono">Text font</span>
-                  <span className="font-semibold text-zinc-900 dark:text-white">{activePreset.bodyFont}</span>
-                </div>
-                <div className="flex items-center justify-between text-xs">
-                  <span className="text-zinc-500 font-mono">Colors</span>
-                  <div className="flex items-center gap-1.5">
-                    <span
-                      title="Canvas"
-                      className="w-4 h-4 rounded-full border border-zinc-300 dark:border-white/20"
-                      style={{ backgroundColor: activePreset.canvasHex }}
-                    />
-                    <span
-                      title="Surface"
-                      className="w-4 h-4 rounded-full border border-zinc-300 dark:border-white/20"
-                      style={{ backgroundColor: activePreset.surfaceHex }}
-                    />
-                    <span
-                      title="Accent"
-                      className="w-4 h-4 rounded-full border border-zinc-300 dark:border-white/20"
-                      style={{ backgroundColor: activePreset.accentHex }}
-                    />
-                    <span
-                      title="CTA"
-                      className="w-4 h-4 rounded-full border border-zinc-300 dark:border-white/20"
-                      style={{ backgroundColor: activePreset.ctaHex }}
-                    />
-                  </div>
-                </div>
+              <div className="flex items-center gap-2 pt-4 border-t border-zinc-200 dark:border-white/10">
+                <span className="text-xs text-zinc-500 mr-2">Colors:</span>
+                {[
+                  { label: "Background", hex: activePreset.canvasHex },
+                  { label: "Card", hex: activePreset.surfaceHex },
+                  { label: "Accent", hex: activePreset.accentHex },
+                  { label: "Button", hex: activePreset.ctaHex },
+                ].map((swatch) => (
+                  <span
+                    key={swatch.label}
+                    title={swatch.label}
+                    className="w-5 h-5 rounded-full border border-zinc-300 dark:border-white/20"
+                    style={{ backgroundColor: swatch.hex }}
+                  />
+                ))}
               </div>
 
-              {/* Built-in Features */}
-              <div className="space-y-2 pt-2 border-t border-zinc-200 dark:border-white/10 text-xs text-zinc-600 dark:text-zinc-300">
-                <div className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
-                  <span>Checkout that works on a phone</span>
-                </div>
-                <div className="flex items-center gap-2">
-                  <Check className="w-3.5 h-3.5 text-emerald-500 shrink-0" />
+              <ul className="space-y-2.5 pt-4 border-t border-zinc-200 dark:border-white/10 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300">
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Checkout built for mobile phones</span>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
                   <span>Khalti and cash on delivery</span>
-                </div>
-                </div>
+                </li>
+                <li className="flex items-center gap-2">
+                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
+                  <span>Your store looks like your brand, not ours</span>
+                </li>
+              </ul>
             </div>
 
-            {/* Launch Action */}
-            <div className="pt-8">
+            <div className="pt-8 space-y-3">
               <Link
-                href={`/signup?next=${encodeURIComponent(`/merchant/new?theme=${activePreset.id}`)}`}
-                className="w-full py-3.5 rounded-full bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 shadow-lg active:scale-95 cursor-pointer"
+                href={`/signup?next=${encodeURIComponent(nextWizardPath)}`}
+                className="w-full py-3.5 rounded-full bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 active:scale-95"
               >
                 <span>Use this look</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
+              <Link
+                href="/s/himalayan-roasters"
+                className="w-full py-2 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors flex items-center justify-center gap-1.5"
+              >
+                <span>See live example store</span>
+                <ExternalLink className="w-3 h-3" />
+              </Link>
             </div>
           </div>
 
-          {/* Right Column (7 cols): Live Responsive Preview Simulation */}
-          <div className="lg:col-span-7 rounded-3xl border border-zinc-200 dark:border-white/10 p-6 sm:p-8 flex flex-col justify-between shadow-xl shadow-black/5 dark:shadow-black/40 relative overflow-hidden"
+          {/* Right Column (7 cols): Live Storefront Preview */}
+          <div
+            className="lg:col-span-7 rounded-3xl border border-zinc-200 dark:border-white/10 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden transition-colors duration-200"
             style={{
               backgroundColor: activePreset.canvasHex,
               color: activePreset.inkHex,
             }}
           >
-            {/* Top Store Header Bar Simulation */}
+            {/* Store Header */}
             <div className="w-full pb-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2">
-                <span className="w-2.5 h-2.5 rounded-full" style={{ backgroundColor: activePreset.accentHex }} />
-                <span className="font-bold text-sm tracking-tight uppercase" style={{ color: activePreset.inkHex }}>
-                  {activePreset.name} Store
+              <div className="flex items-center gap-2 min-w-0">
+                <span
+                  className="w-2.5 h-2.5 rounded-full shrink-0"
+                  style={{ backgroundColor: activePreset.accentHex }}
+                />
+                <span
+                  className="font-bold text-sm tracking-tight truncate"
+                  style={{ color: activePreset.inkHex }}
+                >
+                  {previewStoreTitle}
                 </span>
               </div>
-              <div className="flex items-center gap-2 text-xs font-mono">
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: activePreset.surfaceHex, color: activePreset.inkHex }}>
-                  Khalti &amp; COD Active
-                </span>
-                <span className="px-2 py-0.5 rounded text-[10px] font-bold" style={{ backgroundColor: activePreset.ctaHex, color: activePreset.ctaTextHex }}>
-                  Bag (1)
-                </span>
-              </div>
+              <span
+                className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold shrink-0"
+                style={{
+                  backgroundColor: activePreset.ctaHex,
+                  color: activePreset.ctaTextHex,
+                }}
+              >
+                Bag ({bagCount})
+              </span>
             </div>
 
-            {/* Center: Live Product Card Simulation */}
-            <div className="my-8 max-w-sm mx-auto w-full p-5 rounded-2xl shadow-sm border border-black/5 dark:border-white/5 space-y-4"
+            {/* Product Card */}
+            <div
+              className="my-8 max-w-xs mx-auto w-full p-4 rounded-2xl border border-black/10 dark:border-white/10 space-y-4"
               style={{
                 backgroundColor: activePreset.surfaceHex,
               }}
             >
-              <div className="aspect-[4/3] rounded-xl overflow-hidden relative flex items-center justify-center"
-                style={{
-                  backgroundColor: activePreset.canvasHex,
-                }}
-              >
-                <div className="text-center space-y-1 p-4">
-                  <Package className="w-8 h-8 mx-auto opacity-60" style={{ color: activePreset.inkHex }} />
-                </div>
-                <div className="absolute top-2.5 left-2.5 px-2 py-0.5 rounded-full text-[10px] font-mono font-bold"
+              <div className="aspect-square rounded-xl overflow-hidden relative bg-black/5">
+                <Image
+                  src={activePreset.cardPreview.imageSrc}
+                  alt={activePreset.cardPreview.title}
+                  fill
+                  className="object-cover"
+                />
+                <span
+                  className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold"
                   style={{ backgroundColor: activePreset.accentHex, color: "#FFFFFF" }}
                 >
                   {activePreset.cardPreview.badge}
-                </div>
+                </span>
               </div>
 
-              <div className="space-y-1.5 text-left">
+              <div className="space-y-1 text-left">
                 <span className="text-[10px] font-mono uppercase tracking-wider opacity-60 block">
                   {activePreset.cardPreview.category}
                 </span>
-                <h4 className="text-base font-bold tracking-tight" style={{ color: activePreset.inkHex }}>
+                <h4
+                  className="text-base font-bold tracking-tight"
+                  style={{ color: activePreset.inkHex }}
+                >
                   {activePreset.cardPreview.title}
                 </h4>
-                <div className="flex items-baseline gap-2 pt-1">
-                  <span className="text-lg font-black font-mono" style={{ color: activePreset.inkHex }}>
+                <div className="flex items-baseline gap-2 pt-0.5">
+                  <span
+                    className="text-base font-black font-mono"
+                    style={{ color: activePreset.inkHex }}
+                  >
                     {activePreset.cardPreview.price}
-                  </span>
-                  <span className="text-[10px] font-mono text-emerald-600 font-semibold">
-                    In Stock
                   </span>
                 </div>
               </div>
 
               <button
                 type="button"
-                className="w-full py-2.5 rounded-lg text-xs font-bold font-mono transition-transform active:scale-95 cursor-pointer shadow-xs"
+                onClick={handlePreviewAdd}
+                className="w-full py-2.5 rounded-lg text-xs font-bold font-mono transition-transform active:scale-95 cursor-pointer"
                 style={{
                   backgroundColor: activePreset.ctaHex,
                   color: activePreset.ctaTextHex,
                 }}
               >
-                Add to Cart →
+                {justAdded ? "Added to bag ✓" : "Add to Cart →"}
               </button>
             </div>
 
-            {/* Bottom Merchant Synchronization Strip */}
-            <div className="pt-4 border-t border-black/10 dark:border-white/10 text-[11px] opacity-70">Your store looks like your brand, not ours.</div>
-
+            <div className="pt-4 border-t border-black/10 dark:border-white/10 text-[11px] opacity-70 text-left">
+              Your store looks like your brand, not ours.
+            </div>
           </div>
-
         </div>
       </div>
     </section>
