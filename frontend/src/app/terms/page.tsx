@@ -1,69 +1,72 @@
 import Link from "next/link";
-import { ArrowLeft, FileText, RotateCcw, Clock, Truck, ShieldAlert } from "lucide-react";
+import { ArrowLeft } from "lucide-react";
 
 export default function TermsPage() {
   return (
-    <div className="min-h-screen bg-[#F5F2EB] font-sans pb-32 text-[#2C2420]">
-      <div className="max-w-3xl mx-auto px-6 pt-16 pb-12">
-        <Link 
-          href="/" 
-          className="inline-flex items-center gap-2 text-[#8A7966] hover:text-[#2C2420] transition-colors mb-8 text-sm uppercase tracking-widest font-bold"
+    <div className="min-h-screen bg-[#FAF7F2] dark:bg-[#0d0d0e] text-zinc-900 dark:text-zinc-100 font-sans">
+      <div className="max-w-3xl mx-auto px-4 sm:px-6 py-16 space-y-10">
+        <Link
+          href="/"
+          className="inline-flex items-center gap-2 text-xs font-mono text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors"
         >
-          <ArrowLeft size={16} /> Back to Store
+          <ArrowLeft className="w-3.5 h-3.5" />
+          <span>Back to ShopCraft</span>
         </Link>
-        
-        <div className="inline-flex items-center gap-2 px-3 py-1 bg-white border border-[#E6DEC8] rounded-full text-[#A3432A] font-mono text-xs font-bold uppercase tracking-widest mb-3">
-          <FileText size={12} /> Customer Agreement
+
+        <header className="space-y-2">
+          <h1 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white">
+            Terms of Service
+          </h1>
+          <p className="text-xs font-mono text-zinc-500">
+            Last updated: November 2026 · ShopCraft (Capstone Beta)
+          </p>
+        </header>
+
+        <div className="space-y-8 text-sm text-zinc-700 dark:text-zinc-300 leading-relaxed border-t border-zinc-200 dark:border-white/10 pt-8">
+          <section className="space-y-2">
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+              1. Beta service
+            </h2>
+            <p>
+              ShopCraft is a student capstone project currently in beta and free to use. Features may change or be reset during development, so please do not rely on it as your sole accounting record yet.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+              2. Store owners and orders
+            </h2>
+            <p>
+              Each merchant is responsible for the products they list, their prices in NPR, and delivering orders placed through their storefront.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+              3. Payments and delivery
+            </h2>
+            <p>
+              Storefronts support Khalti and cash on delivery. Order cancellations, refunds, and courier hand-off are handled directly by the store you purchased from.
+            </p>
+          </section>
+
+          <section className="space-y-2">
+            <h2 className="text-base font-bold text-zinc-900 dark:text-white">
+              4. Contact
+            </h2>
+            <p>
+              If you have questions about these terms, email{" "}
+              <a href="mailto:hello@shopcraft.me" className="underline font-medium text-zinc-900 dark:text-white">
+                hello@shopcraft.me
+              </a>
+              .
+            </p>
+          </section>
         </div>
-        
-        <h1 className="text-4xl md:text-5xl font-serif font-bold text-[#1A1512] mb-3">
-          Terms of Service & Cancellation
-        </h1>
-        <p className="text-xs text-[#8A7966] mb-10">
-          BrewMellow Himalayan Roasters Pvt. Ltd. • Registered under Nepal Companies Act
+
+        <p className="text-xs text-zinc-500 border-t border-zinc-200 dark:border-white/10 pt-6">
+          See also our <Link href="/privacy" className="underline text-zinc-700 dark:text-zinc-300">Privacy Policy</Link>.
         </p>
-
-        <div className="bg-white border border-[#E6DEC8] rounded-2xl p-8 md:p-12 shadow-sm space-y-8 text-sm text-[#5C5042] leading-relaxed">
-          <section>
-            <h2 className="text-lg font-serif font-bold text-[#1A1512] mb-2 flex items-center gap-2">
-              <Clock size={18} className="text-[#A3432A]" /> 1. Freshness Guarantee & Doorstep Returns
-            </h2>
-            <p>
-              We commit to dispatching all single-origin lots within 48 hours of drum-roasting in Lalitpur. If your coffee arrives compromised, damaged in transit, or fails our specialty freshness standard, you are entitled to a free doorstep courier replacement or full refund requested within 7 days via your <Link href="/dashboard?tab=returns" className="text-[#A3432A] font-bold underline">Returns Portal</Link>.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-serif font-bold text-[#1A1512] mb-2 flex items-center gap-2">
-              <RotateCcw size={18} className="text-[#A3432A]" /> 2. Order Cancellation &amp; Changes
-            </h2>
-            <p>
-              Orders can be modified or cancelled directly prior to courier dispatch by contacting store support. Once dispatched with our courier partner, standard returns and exchanges apply upon arrival.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-serif font-bold text-[#1A1512] mb-2 flex items-center gap-2">
-              <Truck size={18} className="text-[#A3432A]" /> 3. Delivery Coverage & Logistics
-            </h2>
-            <p>
-              Free doorstep courier applies to all addresses within the Kathmandu Valley (Kathmandu, Lalitpur, Bhaktapur). Deliveries outside the valley are coordinated via express courier networks and dispatched with tracking notifications sent via SMS/email.
-            </p>
-          </section>
-
-          <section>
-            <h2 className="text-lg font-serif font-bold text-[#1A1512] mb-2 flex items-center gap-2">
-              <ShieldAlert size={18} className="text-[#A3432A]" /> 4. Pricing & Tax Invoicing
-            </h2>
-            <p>
-              All prices quoted on the store are in Nepalese Rupees (NPR) inclusive of all applicable domestic taxes. Official VAT invoices (PAN: 601928374) are generated digitally with every dispatched shipment and can be downloaded from your account portal.
-            </p>
-          </section>
-        </div>
-
-        <div className="mt-8 text-center text-xs text-[#8A7966]">
-          Questions regarding your order? Contact concierge at <a href="mailto:concierge@brewmellow.com" className="text-[#A3432A] font-bold underline">concierge@brewmellow.com</a>.
-        </div>
       </div>
     </div>
   );
