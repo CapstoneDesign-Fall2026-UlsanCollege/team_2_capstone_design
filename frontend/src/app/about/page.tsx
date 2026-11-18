@@ -1,5 +1,13 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { ArrowLeft, ArrowRight } from "lucide-react";
+
+export const metadata: Metadata = {
+  title: "About ShopCraft",
+  description:
+    "Why we built ShopCraft for Nepali sellers: NPR pricing, Khalti and cash on delivery, and ward-level delivery addresses.",
+  alternates: { canonical: "/about" },
+};
 
 export default function AboutPage() {
   return (

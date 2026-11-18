@@ -31,8 +31,37 @@ export const viewport: Viewport = {
 };
 
 export const metadata: Metadata = {
-  title: "ShopCraft | Multi-Tenant E-Commerce SaaS for Nepal",
-  description: "Launch your independent Nepali online store with Khalti and Cash on Delivery.",
+  metadataBase: new URL("https://shopcraft.me"),
+  title: {
+    default: "ShopCraft — Online Store Builder for Nepal (Khalti & COD)",
+    template: "%s | ShopCraft",
+  },
+  description:
+    "Create an online store in Nepal in minutes. Sell in NPR with Khalti, cash on delivery, and province, district, and ward addresses. Free while in beta.",
+  openGraph: {
+    type: "website",
+    locale: "en_US",
+    siteName: "ShopCraft",
+    title: "ShopCraft — Online Store Builder for Nepal (Khalti & COD)",
+    description:
+      "Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.",
+    url: "https://shopcraft.me",
+    images: [
+      {
+        url: "/images/merchant-dashboard-real.png",
+        width: 1280,
+        height: 800,
+        alt: "ShopCraft merchant dashboard for online stores in Nepal",
+      },
+    ],
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: "ShopCraft — Online Store Builder for Nepal (Khalti & COD)",
+    description:
+      "Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.",
+    images: ["/images/merchant-dashboard-real.png"],
+  },
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",

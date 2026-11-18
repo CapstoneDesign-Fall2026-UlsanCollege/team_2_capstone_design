@@ -5,7 +5,7 @@ interface FaqItem {
   a: string;
 }
 
-const FAQS: FaqItem[] = [
+export const FAQS: FaqItem[] = [
   {
     q: "What does it cost?",
     a: "Nothing right now. ShopCraft is in beta and free to use. No card needed.",
