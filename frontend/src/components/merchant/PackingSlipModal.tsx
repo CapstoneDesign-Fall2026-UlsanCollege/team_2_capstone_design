@@ -115,7 +115,7 @@ export function PackingSlipModal({
                   {storeName}
                 </h1>
                 <p className="text-[11px] font-mono text-zinc-600">
-                  shopcraft.com.np/s/{storeSlug}
+                  shopcraft.me/s/{storeSlug}
                 </p>
                 <p className="text-[10px] text-zinc-500 font-mono mt-0.5">
                   Fulfillment Slip · Powered by ShopCraft

@@ -270,7 +270,7 @@ function CreateStoreContent() {
 
   const handleCopyStoreLink = () => {
     if (!createdStore) return;
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://shopcraft.com.np";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://shopcraft.me";
     const fullUrl = `${origin}/s/${createdStore.slug}`;
     navigator.clipboard.writeText(fullUrl).then(() => {
       setCopiedLink(true);
@@ -292,7 +292,7 @@ function CreateStoreContent() {
   // Step 4: "Your Store is Ready!" Celebration Screen
   // ---------------------------------------------------------------------------
   if (currentStep === 4 && createdStore) {
-    const origin = typeof window !== "undefined" ? window.location.origin : "https://shopcraft.com.np";
+    const origin = typeof window !== "undefined" ? window.location.origin : "https://shopcraft.me";
     const storeUrl = `${origin}/s/${createdStore.slug}`;
 
     return (
@@ -479,7 +479,7 @@ function CreateStoreContent() {
               {isEditingSlug ? (
                 <div className="space-y-1.5 pt-1">
                   <div className="flex items-center gap-1.5">
-                    <span className="font-mono text-xs text-[var(--sc-ink-3,#8B90A0)]">shopcraft.com.np/s/</span>
+                    <span className="font-mono text-xs text-[var(--sc-ink-3,#8B90A0)]">shopcraft.me/s/</span>
                     <input
                       type="text"
                       value={customSlug || slugify(storeName)}
@@ -492,7 +492,7 @@ function CreateStoreContent() {
                       <span className="text-[var(--sc-ink-3,#8B90A0)] text-[11px]">Checking availability...</span>
                     ) : slugAvailable ? (
                       <span className="text-emerald-700 font-medium text-[11px]">
-                        ✓ Available: shopcraft.com.np/s/{activeSlug}
+                        ✓ Available: shopcraft.me/s/{activeSlug}
                       </span>
                     ) : slugError ? (
                       <span className="text-red-700 font-medium text-[11px]">
@@ -505,7 +505,7 @@ function CreateStoreContent() {
                 <div className="flex items-center gap-2 p-2.5 rounded bg-[var(--sc-paper,#FAFAF7)] border border-[var(--sc-line,#E8E8E1)] text-xs font-mono">
                   <span className="text-[var(--sc-ink-3,#8B90A0)]">URL:</span>
                   <span className="font-semibold text-[var(--sc-ink,#111318)]">
-                    shopcraft.com.np/s/{activeSlug}
+                    shopcraft.me/s/{activeSlug}
                   </span>
                   {slugChecking ? (
                     <span className="text-[var(--sc-ink-3,#8B90A0)] text-[11px] ml-auto">checking...</span>

@@ -38,7 +38,7 @@ function SignupContent() {
   const nextParam = searchParams.get("next");
   const storeNameParam = searchParams.get("name");
 
-  // Starting from /signup ("Start for Free") defaults to the 4-step Store Setup Wizard
+  // Starting from /signup defaults to the Store Setup Wizard
   const effectiveNext = nextParam || "/merchant/new";
   const destination = sanitizeRedirectTarget(effectiveNext, storeNameParam);
 
@@ -86,17 +86,17 @@ function SignupContent() {
 
   return (
     <div className="min-h-[calc(100dvh-4rem)] flex flex-col items-center justify-center p-4 sm:p-6 bg-[#FAF7F2] dark:bg-[#0d0d0e]">
-      {/* Trial Header Banner */}
+      {/* Header Banner */}
       <div className="mb-6 flex flex-col items-center text-center space-y-2 max-w-lg">
         <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-bold uppercase tracking-wider bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20">
           <Sparkles className="w-3.5 h-3.5" />
-          <span>14-Day Free Trial · Built for Nepal</span>
+          <span>Free while in beta · Built for Nepal</span>
         </div>
         <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
-          Start your free trial
+          Create your store
         </h1>
         <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-sans leading-relaxed">
-          Launch your online storefront, configure Nepal payments (Khalti &amp; COD), and sell in NPR with zero upfront cost.
+          Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.
         </p>
       </div>
 
@@ -175,16 +175,16 @@ function SignupContent() {
             nextParam={effectiveNext}
             storeNameParam={storeNameParam}
             title="Create your merchant account"
-            subtitle="Enter your email to verify your account and start your 14-day free trial."
-            submitButtonText="Create Account & Start Free →"
+            subtitle="Enter your email to verify your account and set up your store."
+            submitButtonText="Create account →"
             onSuccess={() => {
               window.location.href = destination;
             }}
             footerContent={
               <div className="space-y-3">
                 <div className="flex items-center justify-center gap-4 text-[11px] font-mono text-zinc-500 dark:text-zinc-400">
+                  <span>✓ Free in beta</span>
                   <span>✓ No card needed</span>
-                  <span>✓ 14-day trial</span>
                   <span>✓ Khalti &amp; COD</span>
                 </div>
                 <p className="text-zinc-600 dark:text-zinc-400 pt-1">

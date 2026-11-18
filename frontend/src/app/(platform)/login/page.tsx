@@ -232,7 +232,7 @@ function LoginContent() {
                   }
                   className="font-semibold text-zinc-950 dark:text-white underline underline-offset-2 hover:opacity-80"
                 >
-                  Start 14-day free trial →
+                  Create your store →
                 </Link>
               </p>
             }
