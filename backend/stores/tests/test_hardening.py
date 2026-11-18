@@ -12,7 +12,7 @@ from rest_framework.test import APIClient, APITransactionTestCase
 from PIL import Image
 import io
 
-from catalog.models import Product, Variant
+from catalog.models import Discount, Product, Variant
 from core.settings import (
     DEFAULT_DEV_FERNET_KEY,
     DEFAULT_DEV_SECRET_KEY,
@@ -25,8 +25,8 @@ from core.tenant_context import (
     _check_shopcraft_role,
     set_current_tenant_id,
 )
-from orders.models import Order
-from stores.models import Customer, Store, StoreMembership
+from orders.models import Order, OrderEvent, OrderItem
+from stores.models import Customer, MerchantAuditLog, Store, StoreMembership
 
 User = get_user_model()
 
@@ -187,6 +187,39 @@ class PostgresForceRLSAndPooledTransactionTests(APITransactionTestCase):
                 relrowsecurity, relforcerowsecurity = row
                 self.assertTrue(relrowsecurity, f"Table '{tbl}' lacks ENABLE ROW LEVEL SECURITY!")
                 self.assertTrue(relforcerowsecurity, f"Table '{tbl}' lacks FORCE ROW LEVEL SECURITY!")
+
+            # (a) Assert from pg_policies that NO policy anywhere references bypass_rls
+            cursor.execute("""
+                SELECT tablename, policyname
+                FROM pg_policies
+                WHERE schemaname = 'public'
+                  AND (
+                    LOWER(COALESCE(qual, '')) LIKE '%bypass_rls%'
+                    OR LOWER(COALESCE(with_check, '')) LIKE '%bypass_rls%'
+                  );
+            """)
+            bypass_policies = cursor.fetchall()
+            self.assertEqual(
+                bypass_policies,
+                [],
+                f"Found unexpected bypass_rls policies in pg_policies: {bypass_policies}",
+            )
+
+            # Assert each tenant table has exactly one policy ('tenant_isolation_policy')
+            cursor.execute("""
+                SELECT tablename, array_agg(policyname ORDER BY policyname)
+                FROM pg_policies
+                WHERE schemaname = 'public'
+                  AND tablename = ANY(%s)
+                GROUP BY tablename;
+            """, [list(db_fk_tables)])
+            policies_by_table = {tbl: names for tbl, names in cursor.fetchall()}
+            for tbl in db_fk_tables:
+                self.assertEqual(
+                    policies_by_table.get(tbl, []),
+                    ["tenant_isolation_policy"],
+                    f"Expected exactly ['tenant_isolation_policy'] on '{tbl}', got {policies_by_table.get(tbl, [])}",
+                )
 
     def test_set_local_atomic_guard_and_two_tenant_pooled_connection_isolation(self):
         with self.assertRaises(RuntimeError):
@@ -1082,30 +1115,91 @@ class UserMembershipContextAndPoolerLeakageTests(APITransactionTestCase):
 
     def test_set_local_bypass_rls_on_does_not_reveal_other_tenants_data(self):
         """
-        Critical test: executing SET LOCAL app.bypass_rls = 'on' must NOT reveal
-        any tenant rows, because app.bypass_rls has been completely removed from policies.
+        Critical test: executing SET LOCAL app.bypass_rls = 'on' as the runtime role
+        must NOT reveal another tenant's rows on ANY of the 9 tenant tables.
         """
         if connection.vendor != "postgresql":
             self.skipTest("PostgreSQL-specific RLS check.")
 
-        with transaction.atomic():
-            with connection.cursor() as cursor:
-                # Malicious or legacy attempt to set app.bypass_rls = 'on'
-                cursor.execute(
-                    "SET LOCAL ROLE shopcraft_app; "
-                    "SET LOCAL app.bypass_rls = 'on'; "
-                    "SELECT set_config('app.current_store_id', '', true); "
-                    "SELECT set_config('app.current_user_id', '', true);"
-                )
-                # Verify across tenant models that 0 rows are returned
-                for model in (StoreMembership, Customer, Product, Variant, Order):
-                    count = model.objects.count()
-                    self.assertEqual(
-                        count,
-                        0,
-                        f"Model {model._meta.db_table} revealed rows when app.bypass_rls='on' was set!",
+        # Seed 1 row in every one of the 9 tenant tables for Store B
+        with TenantDatabaseContext(self.store_b.id):
+            cust_b = Customer.objects.create(
+                store=self.store_b,
+                email="buyer.b@example.com",
+                full_name="Buyer B",
+            )
+            MerchantAuditLog.objects.create(
+                store=self.store_b,
+                actor=self.user_b,
+                action="TEST_EVENT",
+            )
+            prod_b = Product.objects.create(
+                store=self.store_b,
+                name="Store B Secret Tea",
+                slug="store-b-secret-tea",
+                description="Secret",
+            )
+            var_b = Variant.objects.create(
+                store=self.store_b,
+                product=prod_b,
+                sku="SKU-SECRET-B1",
+                label="250g",
+                price_minor=10000,
+            )
+            Discount.objects.create(
+                store=self.store_b,
+                code="SECRETB10",
+                discount_type="PERCENTAGE",
+                value=10,
+                is_active=True,
+            )
+            order_b = Order.objects.create(
+                store=self.store_b,
+                customer=cust_b,
+                order_number="ORD-SECRET-B1",
+                subtotal_minor=10000,
+                total_minor=10000,
+            )
+            OrderItem.objects.create(
+                store=self.store_b,
+                order=order_b,
+                variant=var_b,
+                product_name_snapshot="Store B Secret Tea",
+                variant_label_snapshot="250g",
+                unit_price_minor=10000,
+                quantity=1,
+                line_total_minor=10000,
+            )
+            OrderEvent.objects.create(
+                store=self.store_b,
+                order=order_b,
+                to_status="PENDING_PAYMENT",
+            )
+
+        # Query EACH of the 9 tenant tables directly as runtime role with app.bypass_rls = 'on'
+        # while scoped to Store A (and also with empty store_id) -> Store B rows must stay 0.
+        for store_ctx in ("", str(self.store_a.id)):
+            with transaction.atomic():
+                with connection.cursor() as cursor:
+                    cursor.execute(
+                        "SET LOCAL ROLE shopcraft_app; "
+                        "SET LOCAL app.bypass_rls = 'on'; "
+                        "SELECT set_config('app.current_store_id', %s, true); "
+                        "SELECT set_config('app.current_user_id', '', true);",
+                        [store_ctx],
                     )
-                cursor.execute("SET LOCAL ROLE NONE;")
+                    for tbl in TENANT_TABLES:
+                        cursor.execute(
+                            f"SELECT COUNT(*) FROM {tbl} WHERE store_id = %s;",
+                            [self.store_b.id],
+                        )
+                        visible_count = cursor.fetchone()[0]
+                        self.assertEqual(
+                            visible_count,
+                            0,
+                            f"Table {tbl} revealed Store B rows when app.bypass_rls='on' was set (store_ctx={store_ctx!r})!",
+                        )
+                    cursor.execute("SET LOCAL ROLE NONE;")
 
 
 class StoreCreationConcurrencyTests(APITransactionTestCase):

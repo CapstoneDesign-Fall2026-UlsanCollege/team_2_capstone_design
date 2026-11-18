@@ -2,6 +2,7 @@
 
 import React, { createContext, useContext, useState, useCallback } from "react";
 import { usePathname } from "next/navigation";
+import { normalizePrefillEmail } from "@/lib/email-validation";
 
 export interface AccountContextValue {
   isAccountOpen: boolean;
@@ -18,8 +19,9 @@ export function AccountProvider({ children }: { children: React.ReactNode }) {
   const pathname = usePathname();
 
   const openAccount = useCallback((email?: string) => {
-    if (email) {
-      setPrefillEmail(email);
+    const cleanEmail = normalizePrefillEmail(email);
+    if (cleanEmail) {
+      setPrefillEmail(cleanEmail);
     }
     setIsAccountOpen(true);
   }, []);

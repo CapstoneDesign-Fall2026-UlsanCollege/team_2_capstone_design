@@ -177,7 +177,7 @@ export function ProductDetailView({
           claims.shippingConfigured ? store.free_shipping_threshold_minor : null
         }
         onOpenCart={openCart}
-        onOpenAccount={openAccount}
+        onOpenAccount={() => openAccount()}
         isAuthenticated={accountBadge.isStorefrontCustomer}
         userInitial={accountBadge.userInitial}
         showDeliveryLink={claims.shippingConfigured || claims.hasKhalti || claims.codEnabled}

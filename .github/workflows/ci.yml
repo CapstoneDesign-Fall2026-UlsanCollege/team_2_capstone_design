@@ -126,6 +126,10 @@ jobs:
         run: |
           npm --prefix frontend run typecheck
 
+      - name: Frontend Unit Tests (Vitest)
+        run: |
+          npm --prefix frontend test
+
       - name: Next.js Build
         run: |
           npm --prefix frontend run build
