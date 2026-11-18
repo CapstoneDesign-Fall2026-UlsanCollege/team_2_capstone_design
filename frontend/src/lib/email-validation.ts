@@ -20,11 +20,28 @@ export interface EmailValidationResult {
 }
 
 /**
+ * Coerces unknown input (e.g., accidental MouseEvent objects) safely into a string.
+ */
+function coerceEmailString(rawEmail: unknown): string {
+  return typeof rawEmail === "string" ? rawEmail : "";
+}
+
+/**
+ * Normalizes an optional email argument used to prefill account forms,
+ * ignoring non-string values such as synthetic React click events.
+ */
+export function normalizePrefillEmail(rawEmail?: unknown): string | null {
+  if (typeof rawEmail !== "string") return null;
+  const trimmed = rawEmail.trim();
+  return trimmed.length > 0 ? trimmed : null;
+}
+
+/**
  * Validates that an email string has a valid basic structure before
  * triggering an OTP request.
  */
 export function validateEmailFormat(rawEmail: string): EmailValidationResult {
-  const cleanEmail = rawEmail.trim().toLowerCase();
+  const cleanEmail = coerceEmailString(rawEmail).trim().toLowerCase();
   if (!cleanEmail) {
     return {
       valid: false,
@@ -65,7 +82,7 @@ export function validateEmailFormat(rawEmail: string): EmailValidationResult {
  * common typo, or null otherwise. Never modifies the caller's input.
  */
 export function getEmailTypoSuggestion(rawEmail: string): string | null {
-  const clean = rawEmail.trim().toLowerCase();
+  const clean = coerceEmailString(rawEmail).trim().toLowerCase();
   const atIndex = clean.indexOf("@");
   if (atIndex <= 0) return null;
 

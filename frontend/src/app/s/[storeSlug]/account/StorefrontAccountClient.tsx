@@ -346,7 +346,7 @@ export function StorefrontAccountClient({ store }: StorefrontAccountClientProps)
         cartCount={itemCount}
         freeShippingThresholdMinor={store.shipping_configured ? store.free_shipping_threshold_minor : null}
         onOpenCart={openCart}
-        onOpenAccount={openAccount}
+        onOpenAccount={() => openAccount()}
         isAuthenticated={isStorefrontCustomer}
         userInitial={userInitial}
         showDeliveryLink={claims.shippingConfigured || claims.hasKhalti || claims.codEnabled}

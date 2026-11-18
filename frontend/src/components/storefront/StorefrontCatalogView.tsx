@@ -348,7 +348,7 @@ export function StorefrontCatalogView({
         freeShippingThresholdMinor={claims.shippingConfigured ? store.free_shipping_threshold_minor : null}
         categories={availableCategories}
         onOpenCart={openCart}
-        onOpenAccount={openAccount}
+        onOpenAccount={() => openAccount()}
         isAuthenticated={accountBadge.isStorefrontCustomer}
         userInitial={accountBadge.userInitial}
         showDeliveryLink={claims.shippingConfigured || claims.hasKhalti || claims.codEnabled}

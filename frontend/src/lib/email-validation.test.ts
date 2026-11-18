@@ -1,7 +1,11 @@
 import { describe, expect, it } from "vitest";
 import fs from "node:fs";
 import path from "node:path";
-import { getEmailTypoSuggestion, validateEmailFormat } from "./email-validation";
+import {
+  getEmailTypoSuggestion,
+  normalizePrefillEmail,
+  validateEmailFormat,
+} from "./email-validation";
 
 describe("validateEmailFormat", () => {
   it("accepts valid email addresses and normalizes whitespace and case", () => {
@@ -95,5 +99,42 @@ describe("OTP components integrate validation, typo hint, change-email link, and
     expect(accountSheetSource).toContain("Did you mean");
     expect(accountSheetSource).toContain("Wrong email? Change it");
     expect(accountSheetSource).toContain("spam folder");
+  });
+});
+
+describe("Issue #56 regression: guards prefill email against synthetic click events", () => {
+  it("ignores non-string or empty prefill arguments cleanly", () => {
+    const syntheticClickEvent = { type: "click", target: {} };
+    expect(normalizePrefillEmail(syntheticClickEvent)).toBeNull();
+    expect(normalizePrefillEmail(123)).toBeNull();
+    expect(normalizePrefillEmail(null)).toBeNull();
+    expect(normalizePrefillEmail("   ")).toBeNull();
+    expect(normalizePrefillEmail("  buyer@gmial.com ")).toBe("buyer@gmial.com");
+
+    expect(
+      validateEmailFormat(syntheticClickEvent as unknown as string).valid
+    ).toBe(false);
+    expect(
+      getEmailTypoSuggestion(syntheticClickEvent as unknown as string)
+    ).toBeNull();
+  });
+
+  it("uses normalizePrefillEmail in AccountContext and avoids direct onOpenAccount={openAccount} forwarding", () => {
+    const accountContextSource = fs.readFileSync(
+      path.resolve(__dirname, "../components/storefront/AccountContext.tsx"),
+      "utf8"
+    );
+    const catalogViewSource = fs.readFileSync(
+      path.resolve(__dirname, "../components/storefront/StorefrontCatalogView.tsx"),
+      "utf8"
+    );
+    const productDetailSource = fs.readFileSync(
+      path.resolve(__dirname, "../components/storefront/ProductDetailView.tsx"),
+      "utf8"
+    );
+
+    expect(accountContextSource).toContain("normalizePrefillEmail");
+    expect(catalogViewSource).not.toContain("onOpenAccount={openAccount}");
+    expect(productDetailSource).not.toContain("onOpenAccount={openAccount}");
   });
 });
