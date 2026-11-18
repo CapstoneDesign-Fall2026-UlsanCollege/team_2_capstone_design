@@ -86,12 +86,9 @@ export function PlatformNav() {
             <ShoppingBag className="w-4 h-4" />
           </div>
 
-          <div className="flex items-center gap-1.5">
-            <span className="font-sans font-bold tracking-tight text-xl text-zinc-900 dark:text-white">
-              ShopCraft
-            </span>
-            <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 animate-pulse ml-0.5" />
-          </div>
+          <span className="font-sans font-bold tracking-tight text-xl text-zinc-900 dark:text-white">
+            ShopCraft
+          </span>
         </Link>
 
         {/* Center: Minimalist Navigation Links */}
