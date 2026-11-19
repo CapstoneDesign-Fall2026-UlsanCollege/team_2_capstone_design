@@ -3,22 +3,8 @@ import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, ShieldCheck } from "lucide-react";
 import { CheckoutForm, CheckoutSkeleton } from "@/components/storefront/CheckoutForm";
-import { StorePublicMetadata } from "@/lib/api";
-import { getServerApiOrigin } from "@/lib/env";
+import { fetchPublicStoreOutcome } from "@/lib/storefront-fetch";
 import { getStorefrontPaymentAndDeliveryClaims } from "@/lib/storefront-helpers";
-
-async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null> {
-  const origin = getServerApiOrigin();
-  try {
-    const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-      cache: "no-store",
-    });
-    if (res.status === 404 || !res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
-  }
-}
 
 export default async function StorefrontCheckoutPage({
   params,
@@ -26,11 +12,12 @@ export default async function StorefrontCheckoutPage({
   params: Promise<{ storeSlug: string }>;
 }) {
   const { storeSlug } = await params;
-  const store = await fetchStore(storeSlug);
+  const result = await fetchPublicStoreOutcome(storeSlug, true);
 
-  if (!store) {
+  if (result.status !== "ok") {
     notFound();
   }
+  const store = result.store;
 
   return (
     <div className="min-h-dvh bg-[var(--canvas)] text-[var(--ink)] flex flex-col font-sans">

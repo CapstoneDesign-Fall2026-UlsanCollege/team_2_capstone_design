@@ -1,6 +1,6 @@
 import React from "react";
 import Link from "next/link";
-import { ArrowLeft, Search, Store } from "lucide-react";
+import { ArrowLeft, Search } from "lucide-react";
 import { Chip } from "@/components/ui/chip";
 
 export default function StorefrontNotFound() {
@@ -20,7 +20,7 @@ export default function StorefrontNotFound() {
 
         <div className="space-y-2">
           <h1 className="font-serif text-2xl font-semibold tracking-tight text-[var(--ink)]">
-            Store Not Found
+            This store isn&apos;t here
           </h1>
           <p className="text-xs sm:text-sm text-[var(--ink-2)] max-w-sm mx-auto leading-relaxed">
             The store you are looking for does not exist, may have moved, or is currently unavailable.
