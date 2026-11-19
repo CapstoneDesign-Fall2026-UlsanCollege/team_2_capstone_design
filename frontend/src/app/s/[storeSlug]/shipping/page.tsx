@@ -1,22 +1,36 @@
+import type { Metadata } from "next";
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Banknote, CreditCard, MapPin, Truck } from "lucide-react";
 import { formatNpr, StorePublicMetadata } from "@/lib/api";
-import { getServerApiOrigin } from "@/lib/env";
+import { fetchPublicStoreOutcome } from "@/lib/storefront-fetch";
 import { getStorefrontPaymentAndDeliveryClaims } from "@/lib/storefront-helpers";
 
 async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null> {
-  const origin = getServerApiOrigin();
-  try {
-    const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-      next: { revalidate: 60 },
-    });
-    if (res.status === 404 || !res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+  const res = await fetchPublicStoreOutcome(storeSlug);
+  return res.status === "ok" ? res.store : null;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ storeSlug: string }>;
+}): Promise<Metadata> {
+  const { storeSlug } = await params;
+  const store = await fetchStore(storeSlug);
+  const slug = encodeURIComponent(store?.slug || storeSlug);
+  if (!store) {
+    return {
+      title: "Shipping & Delivery",
+      alternates: { canonical: `/s/${slug}/shipping` },
+    };
   }
+  return {
+    title: `Shipping & Delivery — ${store.name}`,
+    description: `Kathmandu Valley and nationwide delivery rates and payment options for ${store.name}.`,
+    alternates: { canonical: `/s/${slug}/shipping` },
+  };
 }
 
 export default async function StorefrontShippingPage({

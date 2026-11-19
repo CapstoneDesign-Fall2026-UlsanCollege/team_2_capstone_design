@@ -1,22 +1,36 @@
+import type { Metadata } from "next";
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { ArrowLeft, Mail, MapPin, MessageCircle, Phone } from "lucide-react";
 import { StorePublicMetadata } from "@/lib/api";
-import { getServerApiOrigin } from "@/lib/env";
+import { fetchPublicStoreOutcome } from "@/lib/storefront-fetch";
 import { resolveStorefrontContactDetails } from "@/lib/storefront-helpers";
 
 async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null> {
-  const origin = getServerApiOrigin();
-  try {
-    const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-      next: { revalidate: 60 },
-    });
-    if (res.status === 404 || !res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+  const res = await fetchPublicStoreOutcome(storeSlug);
+  return res.status === "ok" ? res.store : null;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ storeSlug: string }>;
+}): Promise<Metadata> {
+  const { storeSlug } = await params;
+  const store = await fetchStore(storeSlug);
+  const slug = encodeURIComponent(store?.slug || storeSlug);
+  if (!store) {
+    return {
+      title: "Contact Store",
+      alternates: { canonical: `/s/${slug}/contact` },
+    };
   }
+  return {
+    title: `Contact ${store.name}`,
+    description: `Customer support contact details and store location for ${store.name}.`,
+    alternates: { canonical: `/s/${slug}/contact` },
+  };
 }
 
 export default async function StorefrontContactPage({

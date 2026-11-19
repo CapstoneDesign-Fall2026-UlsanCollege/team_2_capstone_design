@@ -17,17 +17,25 @@ export async function generateMetadata({
 }): Promise<Metadata> {
   const { storeSlug } = await params;
   const result = await fetchPublicStoreOutcome(storeSlug);
+  const encodedSlug = encodeURIComponent(storeSlug);
   if (result.status !== "ok") {
     return {
       title: result.status === "not_found" ? "This store isn't here" : "Store Unavailable",
+      alternates: { canonical: `/s/${encodedSlug}` },
     };
   }
   const storeName = result.store.name?.trim() || "Online Store";
   const cleanTagline = result.store.tagline?.trim();
 
   return {
-    title: storeName,
-    description: cleanTagline || `${storeName} online storefront.`,
+    title: {
+      default: storeName,
+      template: `%s | ShopCraft`,
+    },
+    description:
+      cleanTagline ||
+      `${storeName} online storefront. Pay in NPR with Khalti or cash on delivery.`,
+    alternates: { canonical: `/s/${encodeURIComponent(result.store.slug || storeSlug)}` },
   };
 }
 
