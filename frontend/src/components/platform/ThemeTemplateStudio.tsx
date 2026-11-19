@@ -273,6 +273,7 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
                   src={activePreset.cardPreview.imageSrc}
                   alt={activePreset.cardPreview.title}
                   fill
+                  sizes="(max-width: 1024px) 288px, 320px"
                   className="object-cover"
                 />
                 <span

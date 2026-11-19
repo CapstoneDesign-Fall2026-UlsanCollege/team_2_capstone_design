@@ -64,6 +64,7 @@ export function DashboardMockupPreview() {
           alt={activeView.alt}
           width={2560}
           height={1600}
+          sizes="(max-width: 1024px) 100vw, 1024px"
           className="w-full h-auto block"
           priority={false}
         />
