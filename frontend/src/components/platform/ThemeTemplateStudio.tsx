@@ -2,100 +2,88 @@
 
 import React, { useState } from "react";
 import Link from "next/link";
-import Image from "next/image";
-import { ArrowRight, Check, ExternalLink } from "lucide-react";
 
 interface ThemePresetDef {
   id: string;
   name: string;
   niche: string;
+  displayFont: string;
+  bodyFont: string;
+  aaFont: string;
   canvasHex: string;
   surfaceHex: string;
   inkHex: string;
   accentHex: string;
-  ctaHex: string;
   ctaTextHex: string;
-  cardPreview: {
-    title: string;
-    category: string;
-    price: string;
-    badge: string;
-    imageSrc: string;
-  };
+  productTitle: string;
+  productPrice: string;
+  colors: string[];
 }
 
 const TEMPLATE_PRESETS: ThemePresetDef[] = [
   {
     id: "editorial-warm",
     name: "Editorial Warm",
-    niche: "Coffee roasters, tea gardens, and bakeries",
+    niche: "Roasteries, bakeries, and tea gardens.",
+    displayFont: "Fraunces",
+    bodyFont: "Plus Jakarta Sans",
+    aaFont: "var(--font-fraunces), Georgia, serif",
     canvasHex: "#F5F2EB",
     surfaceHex: "#FFFFFF",
     inkHex: "#1A1512",
     accentHex: "#A3432A",
-    ctaHex: "#A3432A",
     ctaTextHex: "#FFFFFF",
-    cardPreview: {
-      title: "Gulmi Reserve Arabica (250g)",
-      category: "Single-Origin Coffee",
-      price: "Rs. 750",
-      badge: "Fresh Roast",
-      imageSrc: "/images/products/gulmi-reserve.svg",
-    },
+    productTitle: "Gulmi Bourbon Roast (250g)",
+    productPrice: "Rs. 750",
+    colors: ["#F5F2EB", "#FFFFFF", "#A3432A", "#1A1512"],
   },
   {
     id: "pahadi-sage",
     name: "Pahadi Botanical",
-    niche: "Wild honey, herbs, and natural goods",
+    niche: "Wild honey, herbs, and mountain wellness.",
+    displayFont: "Fraunces",
+    bodyFont: "Plus Jakarta Sans",
+    aaFont: "var(--font-fraunces), Georgia, serif",
     canvasHex: "#F3F7F4",
     surfaceHex: "#FFFFFF",
     inkHex: "#14281D",
     accentHex: "#1F6F4A",
-    ctaHex: "#1F6F4A",
     ctaTextHex: "#FFFFFF",
-    cardPreview: {
-      title: "Himalayan Wild Cliff Honey (500g)",
-      category: "Mountain Harvest",
-      price: "Rs. 1,650",
-      badge: "Raw & Cold Extracted",
-      imageSrc: "/images/products/himalayan-honey.svg",
-    },
+    productTitle: "Wild Cliff Honey (500g)",
+    productPrice: "Rs. 1,650",
+    colors: ["#F3F7F4", "#FFFFFF", "#1F6F4A", "#14281D"],
   },
   {
     id: "midnight-obsidian",
     name: "Midnight Obsidian",
-    niche: "Dark theme for bold drops and specialty lots",
-    canvasHex: "#0D0D0E",
-    surfaceHex: "#161619",
-    inkHex: "#F9FAFB",
-    accentHex: "#F59E0B",
-    ctaHex: "#2563EB",
+    niche: "Apparel drops, leather goods, and gear.",
+    displayFont: "Plus Jakarta Sans",
+    bodyFont: "Plus Jakarta Sans",
+    aaFont: "var(--font-plus-jakarta), sans-serif",
+    canvasHex: "#0E0F12",
+    surfaceHex: "#17191E",
+    inkHex: "#ECECE9",
+    accentHex: "#2563EB",
     ctaTextHex: "#FFFFFF",
-    cardPreview: {
-      title: "Ilam Gold Typica (250g)",
-      category: "Sandakphu · 1,750m",
-      price: "Rs. 820",
-      badge: "Light Roast",
-      imageSrc: "/images/products/ilam-gold.svg",
-    },
+    productTitle: "Heavyweight Boxy Tee (L)",
+    productPrice: "Rs. 2,350",
+    colors: ["#0E0F12", "#17191E", "#2563EB", "#ECECE9"],
   },
   {
     id: "ktm-bold",
     name: "Modern Minimalist",
-    niche: "Clean monochrome for crafts and everyday goods",
+    niche: "Contemporary crafts and studio objects.",
+    displayFont: "Plus Jakarta Sans",
+    bodyFont: "Plus Jakarta Sans",
+    aaFont: "var(--font-plus-jakarta), sans-serif",
     canvasHex: "#FAFAFA",
     surfaceHex: "#FFFFFF",
-    inkHex: "#0B0B0B",
-    accentHex: "#2B3BFF",
-    ctaHex: "#0B0B0B",
+    inkHex: "#111318",
+    accentHex: "#111318",
     ctaTextHex: "#FFFFFF",
-    cardPreview: {
-      title: "Nuwakot Heritage Roast (250g)",
-      category: "Kakani · 1,400m",
-      price: "Rs. 880",
-      badge: "Honey Process",
-      imageSrc: "/images/products/nuwakot-heritage.svg",
-    },
+    productTitle: "Nuwakot Heritage Roast (250g)",
+    productPrice: "Rs. 880",
+    colors: ["#FAFAFA", "#FFFFFF", "#2B3BFF", "#111318"],
   },
 ];
 
@@ -106,7 +94,6 @@ interface ThemeTemplateStudioProps {
 export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps) {
   const [selectedPresetId, setSelectedPresetId] = useState("editorial-warm");
   const [bagCount, setBagCount] = useState(0);
-  const [justAdded, setJustAdded] = useState(false);
 
   const activePreset =
     TEMPLATE_PRESETS.find((p) => p.id === selectedPresetId) || TEMPLATE_PRESETS[0];
@@ -117,29 +104,21 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
     ? `/merchant/new?theme=${activePreset.id}&name=${encodeURIComponent(trimmedName)}`
     : `/merchant/new?theme=${activePreset.id}`;
 
-  const handlePreviewAdd = () => {
-    setBagCount((c) => c + 1);
-    setJustAdded(true);
-    setTimeout(() => setJustAdded(false), 1200);
-  };
-
   return (
     <section
-      id="templates"
-      className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-6xl mx-auto border-t border-zinc-200 dark:border-white/5 scroll-mt-20"
+      id="looks"
+      className="py-14 sm:py-18 px-5 border-b border-[#E2E2DC] dark:border-white/10 scroll-mt-20"
     >
-      <div id="demo-stores" className="scroll-mt-20">
-        <div className="max-w-2xl mx-auto text-center mb-10 space-y-3">
-          <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white">
-            Pick a look. Your logo, your colors, your fonts.
-          </h2>
-          <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400">
-            Switch between the four looks below to see what your customers get.
-          </p>
-        </div>
+      <div id="templates" className="max-w-[1040px] mx-auto scroll-mt-20">
+        <h2
+          className="text-[28px] sm:text-[36px] font-semibold tracking-[-0.01em] leading-[1.18] text-left text-[#161614] dark:text-[#ECECE9] mb-6"
+          style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+        >
+          Four store looks, ready to customize.
+        </h2>
 
-        {/* Interactive Preset Selector Tabs */}
-        <div className="flex flex-wrap items-center justify-center gap-2 mb-10">
+        {/* Softly rounded rectangle look tabs */}
+        <div className="flex flex-wrap gap-2 mb-6">
           {TEMPLATE_PRESETS.map((preset) => {
             const isSelected = preset.id === activePreset.id;
             return (
@@ -147,14 +126,14 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
                 key={preset.id}
                 type="button"
                 onClick={() => setSelectedPresetId(preset.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold font-mono transition-all cursor-pointer ${
+                className={`inline-flex items-center gap-2 min-h-[44px] px-3.5 rounded-lg border text-[13px] font-semibold cursor-pointer transition-colors ${
                   isSelected
-                    ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-sm"
-                    : "bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white border border-zinc-200 dark:border-white/10"
+                    ? "bg-[#161614] dark:bg-[#ECECE9] text-[#F9F9F7] dark:text-[#0E0F12] border-[#161614] dark:border-[#ECECE9]"
+                    : "bg-white dark:bg-[#15171B] text-[#4A4A45] dark:text-[#B4B6BD] border-[#E2E2DC] dark:border-white/10 hover:text-[#161614] dark:hover:text-[#ECECE9]"
                 }`}
               >
                 <span
-                  className="w-3 h-3 rounded-full border border-black/10 shrink-0"
+                  className="w-2.5 h-2.5 rounded-[3px] border border-black/15 dark:border-white/20 shrink-0"
                   style={{ backgroundColor: preset.accentHex }}
                 />
                 <span>{preset.name}</span>
@@ -163,97 +142,84 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
           })}
         </div>
 
-        {/* Preview Stage */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
-          {/* Left Column (5 cols): Plain summary & actions */}
-          <div className="lg:col-span-5 p-6 sm:p-8 rounded-3xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#141416] flex flex-col justify-between text-left">
-            <div className="space-y-6">
-              <div>
-                <h3 className="text-2xl font-black text-zinc-900 dark:text-white">
-                  {activePreset.name}
-                </h3>
-                <p className="text-sm text-zinc-600 dark:text-zinc-400 mt-1.5 leading-relaxed">
-                  {activePreset.niche}.
-                </p>
-              </div>
+        {/* Left Info Card + Right Storefront Preview */}
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-5 items-stretch">
+          <div className="lg:col-span-5 rounded-xl border border-[#E2E2DC] dark:border-white/10 bg-white dark:bg-[#15171B] p-6 flex flex-col justify-between text-left">
+            <div>
+              <h3
+                className="text-[24px] font-semibold text-[#161614] dark:text-[#ECECE9]"
+                style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+              >
+                {activePreset.name}
+              </h3>
+              <p className="mt-1.5 text-[14px] text-[#4A4A45] dark:text-[#B4B6BD]">
+                {activePreset.niche}
+              </p>
 
-              <div className="flex items-center gap-2 pt-4 border-t border-zinc-200 dark:border-white/10">
-                <span className="text-xs text-zinc-500 mr-2">Colors:</span>
-                {[
-                  { label: "Background", hex: activePreset.canvasHex },
-                  { label: "Card", hex: activePreset.surfaceHex },
-                  { label: "Accent", hex: activePreset.accentHex },
-                  { label: "Button", hex: activePreset.ctaHex },
-                ].map((swatch) => (
+              {/* Type specimen & hex palette */}
+              <div className="mt-5 p-4 rounded-[10px] border border-[#E2E2DC] dark:border-white/10 bg-[#F2F2EE] dark:bg-[#1A1D23]">
+                <div className="flex items-baseline justify-between gap-3">
                   <span
-                    key={swatch.label}
-                    title={swatch.label}
-                    className="w-5 h-5 rounded-full border border-zinc-300 dark:border-white/20"
-                    style={{ backgroundColor: swatch.hex }}
-                  />
-                ))}
+                    className="text-[42px] leading-none font-semibold text-[#161614] dark:text-[#ECECE9]"
+                    style={{ fontFamily: activePreset.aaFont }}
+                  >
+                    Aa
+                  </span>
+                  <div className="text-right text-[12px] text-[#4A4A45] dark:text-[#B4B6BD] leading-relaxed">
+                    <div>
+                      Display:{" "}
+                      <strong className="text-[#161614] dark:text-[#ECECE9] font-semibold">
+                        {activePreset.displayFont}
+                      </strong>
+                    </div>
+                    <div>
+                      Body:{" "}
+                      <strong className="text-[#161614] dark:text-[#ECECE9] font-semibold">
+                        {activePreset.bodyFont}
+                      </strong>
+                    </div>
+                  </div>
+                </div>
+
+                <div className="mt-3.5 pt-3 border-t border-[#E2E2DC] dark:border-white/10 grid grid-cols-2 sm:grid-cols-4 gap-2">
+                  {activePreset.colors.map((hex) => (
+                    <div
+                      key={hex}
+                      className="flex items-center gap-1.5 text-[11px] text-[#4A4A45] dark:text-[#B4B6BD]"
+                    >
+                      <span
+                        className="w-3.5 h-3.5 rounded-[4px] border border-black/15 dark:border-white/20 shrink-0"
+                        style={{ backgroundColor: hex }}
+                      />
+                      <span>{hex}</span>
+                    </div>
+                  ))}
+                </div>
               </div>
-
-              <ul className="space-y-2.5 pt-4 border-t border-zinc-200 dark:border-white/10 text-xs sm:text-sm text-zinc-700 dark:text-zinc-300">
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Checkout built for mobile phones</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Khalti and cash on delivery</span>
-                </li>
-                <li className="flex items-center gap-2">
-                  <Check className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
-                  <span>Your store looks like your brand, not ours</span>
-                </li>
-              </ul>
             </div>
 
-            <div className="pt-8 space-y-3">
-              <Link
-                href={`/signup?next=${encodeURIComponent(nextWizardPath)}`}
-                className="w-full py-3.5 rounded-full bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 active:scale-95"
-              >
-                <span>Use this look</span>
-                <ArrowRight className="w-4 h-4" />
-              </Link>
-              <Link
-                href="/s/himalayan-roasters"
-                className="w-full py-2 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors flex items-center justify-center gap-1.5"
-              >
-                <span>See live example store</span>
-                <ExternalLink className="w-3 h-3" />
-              </Link>
-            </div>
+            <Link
+              href={`/signup?next=${encodeURIComponent(nextWizardPath)}`}
+              className="mt-5 w-full min-h-[44px] rounded-lg border border-[#161614] dark:border-[#ECECE9] bg-[#161614] dark:bg-[#ECECE9] text-[#F9F9F7] dark:text-[#0E0F12] text-[14px] font-semibold inline-flex items-center justify-center hover:opacity-90 transition-opacity"
+            >
+              Use this look
+            </Link>
           </div>
 
-          {/* Right Column (7 cols): Live Storefront Preview */}
+          {/* Right: Storefront Preview with plain marked photo placeholder */}
           <div
-            className="lg:col-span-7 rounded-3xl border border-zinc-200 dark:border-white/10 p-6 sm:p-8 flex flex-col justify-between relative overflow-hidden transition-colors duration-200"
+            className="lg:col-span-7 rounded-xl border border-[#E2E2DC] dark:border-white/10 p-5 flex flex-col justify-between gap-5"
             style={{
               backgroundColor: activePreset.canvasHex,
               color: activePreset.inkHex,
             }}
           >
-            {/* Store Header */}
-            <div className="w-full pb-4 border-b border-black/10 dark:border-white/10 flex items-center justify-between gap-4">
-              <div className="flex items-center gap-2 min-w-0">
-                <span
-                  className="w-2.5 h-2.5 rounded-full shrink-0"
-                  style={{ backgroundColor: activePreset.accentHex }}
-                />
-                <span
-                  className="font-bold text-sm tracking-tight truncate"
-                  style={{ color: activePreset.inkHex }}
-                >
-                  {previewStoreTitle}
-                </span>
-              </div>
+            <div className="flex items-center justify-between gap-3 pb-3.5 border-b border-black/15 dark:border-white/15 text-[14px] font-bold">
+              <span className="truncate">{previewStoreTitle}</span>
               <span
-                className="px-2.5 py-1 rounded-full text-[11px] font-mono font-bold shrink-0"
+                className="px-2.5 py-1 rounded-[6px] text-[12px] font-semibold shrink-0"
                 style={{
-                  backgroundColor: activePreset.ctaHex,
+                  backgroundColor: activePreset.accentHex,
                   color: activePreset.ctaTextHex,
                 }}
               >
@@ -261,62 +227,35 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
               </span>
             </div>
 
-            {/* Product Card */}
             <div
-              className="my-8 max-w-xs mx-auto w-full p-4 rounded-2xl border border-black/10 dark:border-white/10 space-y-4"
-              style={{
-                backgroundColor: activePreset.surfaceHex,
-              }}
+              className="max-w-[310px] w-full mx-auto rounded-[10px] p-4 border border-black/15 dark:border-white/15"
+              style={{ backgroundColor: activePreset.surfaceHex }}
             >
-              <div className="aspect-square rounded-xl overflow-hidden relative bg-black/5">
-                <Image
-                  src={activePreset.cardPreview.imageSrc}
-                  alt={activePreset.cardPreview.title}
-                  fill
-                  className="object-cover"
-                />
-                <span
-                  className="absolute top-2.5 left-2.5 px-2.5 py-0.5 rounded-full text-[10px] font-mono font-bold"
-                  style={{ backgroundColor: activePreset.accentHex, color: "#FFFFFF" }}
-                >
-                  {activePreset.cardPreview.badge}
-                </span>
+              <div className="aspect-[4/3] rounded-lg border border-dashed border-black/35 dark:border-white/30 flex items-center justify-center p-4 text-center text-[12px] font-medium opacity-75">
+                Photo: your product here
               </div>
 
-              <div className="space-y-1 text-left">
-                <span className="text-[10px] font-mono uppercase tracking-wider opacity-60 block">
-                  {activePreset.cardPreview.category}
-                </span>
-                <h4
-                  className="text-base font-bold tracking-tight"
-                  style={{ color: activePreset.inkHex }}
-                >
-                  {activePreset.cardPreview.title}
-                </h4>
-                <div className="flex items-baseline gap-2 pt-0.5">
-                  <span
-                    className="text-base font-black font-mono"
-                    style={{ color: activePreset.inkHex }}
-                  >
-                    {activePreset.cardPreview.price}
-                  </span>
-                </div>
-              </div>
+              <p className="mt-3 text-[16px] font-bold text-left">
+                {activePreset.productTitle}
+              </p>
+              <p className="mt-1 mb-3.5 text-[15px] font-semibold sc-mono text-left">
+                {activePreset.productPrice}
+              </p>
 
               <button
                 type="button"
-                onClick={handlePreviewAdd}
-                className="w-full py-2.5 rounded-lg text-xs font-bold font-mono transition-transform active:scale-95 cursor-pointer"
+                onClick={() => setBagCount((c) => c + 1)}
+                className="w-full min-h-[44px] rounded-lg text-[13px] font-bold cursor-pointer"
                 style={{
-                  backgroundColor: activePreset.ctaHex,
+                  backgroundColor: activePreset.accentHex,
                   color: activePreset.ctaTextHex,
                 }}
               >
-                {justAdded ? "Added to bag ✓" : "Add to Cart →"}
+                Add to Bag
               </button>
             </div>
 
-            <div className="pt-4 border-t border-black/10 dark:border-white/10 text-[11px] opacity-70 text-left">
+            <div className="text-[12px] opacity-75 text-left">
               Your store looks like your brand, not ours.
             </div>
           </div>
