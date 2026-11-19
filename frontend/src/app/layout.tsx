@@ -32,6 +32,11 @@ export const viewport: Viewport = {
 
 export const metadata: Metadata = {
   metadataBase: new URL("https://shopcraft.me"),
+  manifest: "/manifest.json",
+  icons: {
+    icon: "/favicon.ico",
+    apple: [{ url: "/apple-touch-icon.png", sizes: "180x180", type: "image/png" }],
+  },
   title: {
     default: "ShopCraft — Online Store Builder for Nepal (Khalti & COD)",
     template: "%s | ShopCraft",
