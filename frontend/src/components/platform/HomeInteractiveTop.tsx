@@ -33,7 +33,7 @@ export function HomeInteractiveTop() {
           Your shop, online, before your chiya cools.
         </h1>
         <p className="mt-6 text-base sm:text-xl text-zinc-600 dark:text-zinc-400 max-w-xl mx-auto leading-relaxed">
-          Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.
+          Set up your online store in Nepal and add your products. Customers pay with Khalti or cash on delivery.
         </p>
 
         <form onSubmit={handleCreate} className="mt-10 max-w-lg mx-auto">

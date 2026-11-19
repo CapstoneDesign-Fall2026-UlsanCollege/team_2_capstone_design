@@ -3,9 +3,9 @@ import { Check } from "lucide-react";
 
 const WORKS_TODAY = [
   "Your store is live at shopcraft.me/s/your-name.",
-  "Four looks to pick from. Your logo, your colors, your fonts.",
+  "Pick a look and add your logo.",
   "Products with sizes and variants, in rupees.",
-  "Customers pay with Khalti or cash on delivery.",
+  "Khalti payments (test mode until you add your live key), or cash on delivery.",
   "Delivery addresses by province, district and ward.",
   "Printable packing slip showing PAID or cash to collect.",
 ];

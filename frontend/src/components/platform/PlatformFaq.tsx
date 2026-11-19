@@ -12,7 +12,7 @@ export const FAQS: FaqItem[] = [
   },
   {
     q: "How do my customers pay?",
-    a: "With Khalti, or cash on delivery. For cash on delivery we check the phone number before the order goes through.",
+    a: "With Khalti, or with cash when the order arrives. For cash orders we check that the number is a valid Nepali mobile number (98 or 97). We don't confirm it by SMS yet.",
   },
   {
     q: "Where does my store live?",
@@ -20,7 +20,7 @@ export const FAQS: FaqItem[] = [
   },
   {
     q: "Can I change how my store looks?",
-    a: "Yes. Pick one of four looks, then set your logo, colors and fonts. You can switch later.",
+    a: "Yes. Pick one of four looks and add your logo. You can switch later.",
   },
   {
     q: "How do I get orders to customers?",

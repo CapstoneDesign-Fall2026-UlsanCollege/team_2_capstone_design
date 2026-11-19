@@ -2,8 +2,8 @@ import React from "react";
 
 const STEPS = [
   { num: "1", title: "Name your store", desc: "Type a name. Your store address is made for you." },
-  { num: "2", title: "Pick a look", desc: "Choose a theme, then add your logo, colors and fonts." },
-  { num: "3", title: "Add products, get paid", desc: "Customers pay with Khalti or cash on delivery." },
+  { num: "2", title: "Pick a look", desc: "Choose one of four looks and add your logo." },
+  { num: "3", title: "Add products, get paid", desc: "Customers pay via Khalti or pay cash at delivery." },
 ];
 
 export function WorkflowSection() {

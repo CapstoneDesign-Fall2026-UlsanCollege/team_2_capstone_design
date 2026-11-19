@@ -131,7 +131,7 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
       <div id="demo-stores" className="scroll-mt-20">
         <div className="max-w-2xl mx-auto text-center mb-10 space-y-3">
           <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white">
-            Pick a look. Your logo, your colors, your fonts.
+            Pick a look. Add your logo.
           </h2>
           <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400">
             Switch between the four looks below to see what your customers get.
