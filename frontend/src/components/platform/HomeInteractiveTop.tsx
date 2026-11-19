@@ -44,11 +44,11 @@ export function HomeInteractiveTop() {
               onChange={(e) => setStoreName(e.target.value)}
               placeholder="Store name, e.g. Himalayan Roasters"
               aria-label="Store name"
-              className="flex-1 px-5 py-3.5 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 text-sm focus:outline-none focus:border-zinc-500 dark:focus:border-white/40"
+              className="flex-1 min-h-[48px] px-5 py-3 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 text-sm focus:outline-none focus:border-zinc-500 dark:focus:border-white/40"
             />
             <button
               type="submit"
-              className="px-6 py-3.5 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all active:scale-95 cursor-pointer inline-flex items-center justify-center gap-2"
+              className="min-h-[48px] px-6 py-3 rounded-full bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 font-bold text-sm hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-all active:scale-95 cursor-pointer inline-flex items-center justify-center gap-2"
             >
               <span>Create my store</span>
               <ArrowRight className="w-4 h-4" />
@@ -59,10 +59,10 @@ export function HomeInteractiveTop() {
           </p>
         </form>
 
-        <div className="mt-6">
+        <div className="mt-4">
           <Link
             href="/s/himalayan-roasters"
-            className="text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white underline underline-offset-4 transition-colors"
+            className="inline-flex items-center min-h-[44px] px-3 py-2.5 text-xs font-medium text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white underline underline-offset-4 transition-colors"
           >
             Or browse a live example store →
           </Link>

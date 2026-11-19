@@ -79,7 +79,7 @@ export function PlatformNav() {
         {/* Left: Brand logo */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 group focus:outline-none"
+          className="inline-flex items-center gap-2.5 min-h-[44px] py-1.5 group focus:outline-none"
         >
           <div
             aria-hidden="true"
@@ -94,12 +94,12 @@ export function PlatformNav() {
         </Link>
 
         {/* Center: Minimalist Navigation Links */}
-        <nav className="hidden md:flex items-center gap-7 text-xs font-medium font-sans text-zinc-600 dark:text-zinc-400">
+        <nav className="hidden md:flex items-center gap-4 text-xs font-medium font-sans text-zinc-600 dark:text-zinc-400">
           {NAV_ITEMS.map((item) => (
             <a
               key={item.label}
               href={item.href}
-              className="hover:text-zinc-900 dark:hover:text-white transition-colors"
+              className="inline-flex items-center min-h-[44px] px-3 py-2.5 hover:text-zinc-900 dark:hover:text-white transition-colors"
             >
               {item.label}
             </a>
@@ -111,9 +111,9 @@ export function PlatformNav() {
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            title={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            className="w-8 h-8 rounded-full flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-white/10 cursor-pointer"
+            aria-label={theme === "dark" ? "Light theme" : "Dark theme"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-white/10 transition-colors border border-transparent hover:border-zinc-200 dark:hover:border-white/10 cursor-pointer"
           >
             {theme === "dark" ? (
               <Sun className="w-4 h-4 text-amber-400" />
@@ -127,7 +127,7 @@ export function PlatformNav() {
               {hasStores && (
                 <Link
                   href="/merchant"
-                  className="inline-flex items-center gap-1.5 text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors px-3 py-1.5"
+                  className="inline-flex items-center gap-1.5 min-h-[44px] text-xs font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors px-3 py-2.5"
                 >
                   <LayoutDashboard className="w-3.5 h-3.5" />
                   <span>Merchant Console</span>
@@ -135,7 +135,7 @@ export function PlatformNav() {
               )}
               <Link
                 href="/merchant/new"
-                className="inline-flex items-center gap-1.5 bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs rounded-full px-4 py-2 transition-all active:scale-95 shadow-sm"
+                className="inline-flex items-center gap-1.5 min-h-[44px] bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs rounded-full px-4 py-2.5 transition-all active:scale-95 shadow-sm"
               >
                 <span>{hasStores ? "New Store" : "Create Your Store"}</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -145,14 +145,14 @@ export function PlatformNav() {
             <>
               <Link
                 href="/login?next=/merchant"
-                className="text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors px-3 py-1.5"
+                className="inline-flex items-center min-h-[44px] text-xs font-medium text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white transition-colors px-3 py-2.5"
               >
                 Login
               </Link>
 
               <Link
                 href="/signup?next=/merchant/new"
-                className="inline-flex items-center gap-1.5 bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs rounded-full px-4 py-2 transition-all active:scale-95 shadow-sm"
+                className="inline-flex items-center gap-1.5 min-h-[44px] bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-semibold text-xs rounded-full px-4 py-2.5 transition-all active:scale-95 shadow-sm"
               >
                 <span>Create my store</span>
                 <ArrowRight className="w-3.5 h-3.5" />
@@ -167,7 +167,7 @@ export function PlatformNav() {
             type="button"
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Light theme" : "Dark theme"}
-            className="p-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white focus:outline-none cursor-pointer"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white focus:outline-none cursor-pointer"
           >
             {theme === "dark" ? (
               <Sun className="w-4 h-4 text-amber-400" />
@@ -179,7 +179,7 @@ export function PlatformNav() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
-            className="p-2 rounded-lg text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none cursor-pointer"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none cursor-pointer"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
@@ -197,13 +197,13 @@ export function PlatformNav() {
             transition={{ duration: 0.15 }}
             className="md:hidden border-b border-zinc-200 dark:border-white/10 bg-white/95 dark:bg-[#0d0d0e]/95 backdrop-blur-xl px-5 py-6 space-y-4 shadow-2xl text-left"
           >
-            <div className="flex flex-col space-y-3.5">
+            <div className="flex flex-col space-y-1">
               {NAV_ITEMS.map((item) => (
                 <a
                   key={item.label}
                   href={item.href}
                   onClick={() => setMobileMenuOpen(false)}
-                  className="text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors"
+                  className="min-h-[44px] flex items-center py-2.5 text-sm font-medium text-zinc-700 dark:text-zinc-300 hover:text-zinc-950 dark:hover:text-white transition-colors"
                 >
                   {item.label}
                 </a>
@@ -217,7 +217,7 @@ export function PlatformNav() {
                     <Link
                       href="/merchant"
                       onClick={() => setMobileMenuOpen(false)}
-                      className="w-full text-center py-2.5 rounded-lg border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                      className="w-full min-h-[44px] flex items-center justify-center py-2.5 rounded-lg border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
                     >
                       Merchant Console
                     </Link>
@@ -225,7 +225,7 @@ export function PlatformNav() {
                   <Link
                     href="/merchant/new"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2.5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
+                    className="w-full min-h-[44px] flex items-center justify-center py-2.5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
                   >
                     {hasStores ? "Create Another Store →" : "Create Your Store →"}
                   </Link>
@@ -235,14 +235,14 @@ export function PlatformNav() {
                   <Link
                     href="/login?next=/merchant"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2.5 rounded-lg border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
+                    className="w-full min-h-[44px] flex items-center justify-center py-2.5 rounded-lg border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white text-xs font-semibold hover:bg-zinc-50 dark:hover:bg-white/5 transition-colors"
                   >
                     Login
                   </Link>
                   <Link
                     href="/signup?next=/merchant/new"
                     onClick={() => setMobileMenuOpen(false)}
-                    className="w-full text-center py-2.5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
+                    className="w-full min-h-[44px] flex items-center justify-center py-2.5 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold hover:bg-zinc-800 dark:hover:bg-zinc-100 transition-colors shadow-sm"
                   >
                     Create my store →
                   </Link>

@@ -4,7 +4,8 @@ import React from "react";
 import Link from "next/link";
 import { ShoppingBag } from "lucide-react";
 
-const linkClass = "hover:text-zinc-900 dark:hover:text-white transition-colors";
+const linkClass =
+  "inline-flex items-center min-h-[44px] px-2.5 py-2.5 hover:text-zinc-900 dark:hover:text-white transition-colors";
 
 export function PlatformFooter() {
   return (

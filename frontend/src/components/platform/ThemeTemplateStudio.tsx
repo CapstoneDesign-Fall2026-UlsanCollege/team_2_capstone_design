@@ -147,7 +147,7 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
                 key={preset.id}
                 type="button"
                 onClick={() => setSelectedPresetId(preset.id)}
-                className={`flex items-center gap-2 px-4 py-2.5 rounded-full text-xs font-semibold font-mono transition-all cursor-pointer ${
+                className={`flex items-center gap-2 min-h-[44px] px-4 py-2.5 rounded-full text-xs font-semibold font-mono transition-all cursor-pointer ${
                   isSelected
                     ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 shadow-sm"
                     : "bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white border border-zinc-200 dark:border-white/10"
@@ -210,17 +210,17 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
               </ul>
             </div>
 
-            <div className="pt-8 space-y-3">
+            <div className="pt-8 space-y-2">
               <Link
                 href={`/signup?next=${encodeURIComponent(nextWizardPath)}`}
-                className="w-full py-3.5 rounded-full bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 active:scale-95"
+                className="w-full min-h-[44px] py-3 rounded-full bg-zinc-950 dark:bg-white hover:bg-zinc-800 dark:hover:bg-zinc-100 text-white dark:text-zinc-950 font-bold text-xs font-mono transition-all flex items-center justify-center gap-2 active:scale-95"
               >
                 <span>Use this look</span>
                 <ArrowRight className="w-4 h-4" />
               </Link>
               <Link
                 href="/s/himalayan-roasters"
-                className="w-full py-2 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors flex items-center justify-center gap-1.5"
+                className="w-full min-h-[44px] py-2.5 text-xs text-zinc-500 hover:text-zinc-900 dark:hover:text-white transition-colors flex items-center justify-center gap-1.5"
               >
                 <span>See live example store</span>
                 <ExternalLink className="w-3 h-3" />
@@ -307,7 +307,7 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
               <button
                 type="button"
                 onClick={handlePreviewAdd}
-                className="w-full py-2.5 rounded-lg text-xs font-bold font-mono transition-transform active:scale-95 cursor-pointer"
+                className="w-full min-h-[44px] py-2.5 rounded-lg text-xs font-bold font-mono transition-transform active:scale-95 cursor-pointer"
                 style={{
                   backgroundColor: activePreset.ctaHex,
                   color: activePreset.ctaTextHex,

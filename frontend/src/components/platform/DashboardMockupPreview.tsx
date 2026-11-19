@@ -37,7 +37,7 @@ export function DashboardMockupPreview() {
                 key={view.id}
                 type="button"
                 onClick={() => setActiveId(view.id)}
-                className={`px-3.5 py-1.5 rounded-full text-xs font-mono font-semibold cursor-pointer transition-colors ${
+                className={`min-h-[44px] px-4 py-2.5 rounded-full text-xs font-mono font-semibold cursor-pointer transition-colors ${
                   selected
                     ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950"
                     : "bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white border border-zinc-200 dark:border-white/10"
@@ -51,7 +51,7 @@ export function DashboardMockupPreview() {
 
         <Link
           href="/s/himalayan-roasters"
-          className="inline-flex items-center gap-1.5 text-xs font-mono text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition-colors"
+          className="inline-flex items-center gap-1.5 min-h-[44px] px-2.5 py-2.5 text-xs font-mono text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition-colors"
         >
           <span>Open Himalayan Coffee Roasters storefront</span>
           <ExternalLink className="w-3.5 h-3.5" />
