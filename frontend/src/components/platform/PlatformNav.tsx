@@ -79,7 +79,7 @@ export function PlatformNav() {
         {/* Left: Brand logo */}
         <Link
           href="/"
-          className="inline-flex items-center gap-2.5 min-h-[44px] py-1.5 group focus:outline-none"
+          className="inline-flex items-center gap-2.5 min-h-[44px] py-1.5 group"
         >
           <div
             aria-hidden="true"
@@ -167,7 +167,7 @@ export function PlatformNav() {
             type="button"
             onClick={toggleTheme}
             aria-label={theme === "dark" ? "Light theme" : "Dark theme"}
-            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white focus:outline-none cursor-pointer"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white cursor-pointer"
           >
             {theme === "dark" ? (
               <Sun className="w-4 h-4 text-amber-400" />
@@ -179,7 +179,7 @@ export function PlatformNav() {
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
-            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 focus:outline-none cursor-pointer"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-zinc-600 dark:text-zinc-300 hover:text-zinc-900 dark:hover:text-white hover:bg-zinc-100 dark:hover:bg-zinc-800 cursor-pointer"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
           >
             {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}

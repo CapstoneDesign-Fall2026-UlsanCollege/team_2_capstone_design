@@ -124,6 +124,11 @@
 }
 
 @layer base {
+  .platform-shell :focus-visible {
+    outline: 2px solid #F2A900;
+    outline-offset: 2px;
+  }
+
   .console :focus-visible {
     outline: 2px solid var(--ink);
     outline-offset: 2px;

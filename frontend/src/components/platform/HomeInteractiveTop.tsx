@@ -44,7 +44,7 @@ export function HomeInteractiveTop() {
               onChange={(e) => setStoreName(e.target.value)}
               placeholder="Store name, e.g. Himalayan Roasters"
               aria-label="Store name"
-              className="flex-1 min-h-[48px] px-5 py-3 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 text-sm focus:outline-none focus:border-zinc-500 dark:focus:border-white/40"
+              className="flex-1 min-h-[48px] px-5 py-3 rounded-full bg-white dark:bg-zinc-900 border border-zinc-200 dark:border-white/10 text-zinc-900 dark:text-white placeholder:text-zinc-400 dark:placeholder:text-zinc-500 text-sm focus:border-zinc-500 dark:focus:border-white/40"
             />
             <button
               type="submit"
