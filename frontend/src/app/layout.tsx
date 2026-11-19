@@ -24,7 +24,10 @@ const fraunces = Fraunces({
 });
 
 export const viewport: Viewport = {
-  themeColor: "#111318",
+  themeColor: [
+    { media: "(prefers-color-scheme: dark)", color: "#0B0C0E" },
+    { media: "(prefers-color-scheme: light)", color: "#F7F5F0" },
+  ],
   width: "device-width",
   initialScale: 1,
   viewportFit: "cover",

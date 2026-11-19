@@ -1,8 +1,13 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, { createContext, useCallback, useContext, useEffect, useState } from "react";
 
 export type ThemeMode = "light" | "dark";
+
+const THEME_COLOR_HEX: Record<ThemeMode, string> = {
+  dark: "#0B0C0E",
+  light: "#F7F5F0",
+};
 
 interface ThemeContextType {
   theme: ThemeMode;
@@ -15,6 +20,34 @@ const ThemeContext = createContext<ThemeContextType>({
   toggleTheme: () => {},
   setTheme: () => {},
 });
+
+function syncThemeColorMeta(mode: ThemeMode) {
+  const color = THEME_COLOR_HEX[mode];
+  const metas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
+  if (metas.length === 0) {
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = color;
+    document.head.appendChild(meta);
+    return;
+  }
+  metas.forEach((meta) => {
+    meta.setAttribute("content", color);
+  });
+}
+
+function applyDocumentTheme(mode: ThemeMode, syncMeta = false) {
+  if (mode === "dark") {
+    document.documentElement.classList.add("dark");
+    document.documentElement.setAttribute("data-platform-theme", "dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.setAttribute("data-platform-theme", "light");
+  }
+  if (syncMeta) {
+    syncThemeColorMeta(mode);
+  }
+}
 
 export function PlatformThemeProvider({ children }: { children: React.ReactNode }) {
   const [theme, setThemeState] = useState<ThemeMode>(() => {
@@ -32,57 +65,43 @@ export function PlatformThemeProvider({ children }: { children: React.ReactNode 
   useEffect(() => {
     try {
       const stored = localStorage.getItem("shopcraft-platform-theme") as ThemeMode | null;
-      const active = stored === "dark" ? "dark" : "light";
-      if (active === "dark") {
-        document.documentElement.classList.add("dark");
-        document.documentElement.setAttribute("data-platform-theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        document.documentElement.setAttribute("data-platform-theme", "light");
-      }
+      const active: ThemeMode = stored === "dark" ? "dark" : "light";
+      applyDocumentTheme(active, stored === "dark" || stored === "light");
     } catch {
       // Ignore SSR / localStorage errors
     }
   }, []);
 
-  const toggleTheme = () => {
+  const setTheme = useCallback((mode: ThemeMode) => {
+    setThemeState(mode);
+    try {
+      localStorage.setItem("shopcraft-platform-theme", mode);
+      applyDocumentTheme(mode, true);
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
     setThemeState((prev) => {
-      const nextTheme = prev === "light" ? "dark" : "light";
+      const nextTheme: ThemeMode = prev === "light" ? "dark" : "light";
       try {
         localStorage.setItem("shopcraft-platform-theme", nextTheme);
-        if (nextTheme === "dark") {
-          document.documentElement.classList.add("dark");
-          document.documentElement.setAttribute("data-platform-theme", "dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-          document.documentElement.setAttribute("data-platform-theme", "light");
-        }
+        applyDocumentTheme(nextTheme, true);
       } catch {
         // Ignore
       }
       return nextTheme;
     });
-  };
-
-  const setTheme = (mode: ThemeMode) => {
-    setThemeState(mode);
-    try {
-      localStorage.setItem("shopcraft-platform-theme", mode);
-      if (mode === "dark") {
-        document.documentElement.classList.add("dark");
-        document.documentElement.setAttribute("data-platform-theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        document.documentElement.setAttribute("data-platform-theme", "light");
-      }
-    } catch {
-      // Ignore
-    }
-  };
+  }, []);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
-      <div data-platform-theme={theme} className={theme === "dark" ? "dark" : ""}>
+      <div
+        suppressHydrationWarning
+        data-platform-theme={theme}
+        className={theme === "dark" ? "dark" : ""}
+      >
         {children}
       </div>
     </ThemeContext.Provider>
