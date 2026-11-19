@@ -80,9 +80,11 @@ export function PlatformNav() {
         <Link
           href="/"
           className="flex items-center gap-2.5 group focus:outline-none"
-          aria-label="ShopCraft Home"
         >
-          <div className="w-8 h-8 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold shadow-xs transition-transform group-hover:scale-105">
+          <div
+            aria-hidden="true"
+            className="w-8 h-8 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 flex items-center justify-center font-bold shadow-xs transition-transform group-hover:scale-105"
+          >
             <ShoppingBag className="w-4 h-4" />
           </div>
 
@@ -164,7 +166,7 @@ export function PlatformNav() {
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label="Toggle theme"
+            aria-label={theme === "dark" ? "Light theme" : "Dark theme"}
             className="p-2 rounded-lg text-zinc-600 dark:text-zinc-400 hover:text-zinc-900 dark:hover:text-white focus:outline-none cursor-pointer"
           >
             {theme === "dark" ? (
