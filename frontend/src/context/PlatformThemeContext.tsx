@@ -1,6 +1,12 @@
 "use client";
 
-import React, { createContext, useContext, useEffect, useState } from "react";
+import React, {
+  createContext,
+  useCallback,
+  useContext,
+  useEffect,
+  useSyncExternalStore,
+} from "react";
 
 export type ThemeMode = "light" | "dark";
 
@@ -10,65 +16,52 @@ interface ThemeContextType {
   setTheme: (mode: ThemeMode) => void;
 }
 
+const STORAGE_KEY = "shopcraft-platform-theme";
+const THEME_EVENT = "shopcraft-theme-change";
+
 const ThemeContext = createContext<ThemeContextType>({
   theme: "light",
   toggleTheme: () => {},
   setTheme: () => {},
 });
 
-export function PlatformThemeProvider({ children }: { children: React.ReactNode }) {
-  const [theme, setThemeState] = useState<ThemeMode>(() => {
-    if (typeof window !== "undefined") {
+function subscribeTheme(onStoreChange: () => void) {
+  if (typeof window === "undefined") return () => {};
+  const handler = () => onStoreChange();
+  window.addEventListener("storage", handler);
+  window.addEventListener(THEME_EVENT, handler);
+  return () => {
+    window.removeEventListener("storage", handler);
+    window.removeEventListener(THEME_EVENT, handler);
+  };
+}
+
+interface PlatformThemeProviderProps {
+  children: React.ReactNode;
+  defaultTheme?: ThemeMode;
+}
+
+export function PlatformThemeProvider({
+  children,
+  defaultTheme = "light",
+}: PlatformThemeProviderProps) {
+  const theme = useSyncExternalStore<ThemeMode>(
+    subscribeTheme,
+    () => {
       try {
-        const stored = localStorage.getItem("shopcraft-platform-theme");
-        if (stored === "dark") return "dark";
+        const stored = localStorage.getItem(STORAGE_KEY);
+        if (stored === "dark" || stored === "light") return stored;
       } catch {
-        // ignore
+        // Ignore storage restrictions
       }
-    }
-    return "light";
-  });
+      return defaultTheme;
+    },
+    () => defaultTheme
+  );
 
   useEffect(() => {
     try {
-      const stored = localStorage.getItem("shopcraft-platform-theme") as ThemeMode | null;
-      const active = stored === "dark" ? "dark" : "light";
-      if (active === "dark") {
-        document.documentElement.classList.add("dark");
-        document.documentElement.setAttribute("data-platform-theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        document.documentElement.setAttribute("data-platform-theme", "light");
-      }
-    } catch {
-      // Ignore SSR / localStorage errors
-    }
-  }, []);
-
-  const toggleTheme = () => {
-    setThemeState((prev) => {
-      const nextTheme = prev === "light" ? "dark" : "light";
-      try {
-        localStorage.setItem("shopcraft-platform-theme", nextTheme);
-        if (nextTheme === "dark") {
-          document.documentElement.classList.add("dark");
-          document.documentElement.setAttribute("data-platform-theme", "dark");
-        } else {
-          document.documentElement.classList.remove("dark");
-          document.documentElement.setAttribute("data-platform-theme", "light");
-        }
-      } catch {
-        // Ignore
-      }
-      return nextTheme;
-    });
-  };
-
-  const setTheme = (mode: ThemeMode) => {
-    setThemeState(mode);
-    try {
-      localStorage.setItem("shopcraft-platform-theme", mode);
-      if (mode === "dark") {
+      if (theme === "dark") {
         document.documentElement.classList.add("dark");
         document.documentElement.setAttribute("data-platform-theme", "dark");
       } else {
@@ -78,11 +71,28 @@ export function PlatformThemeProvider({ children }: { children: React.ReactNode 
     } catch {
       // Ignore
     }
-  };
+  }, [theme]);
+
+  const setTheme = useCallback((mode: ThemeMode) => {
+    try {
+      localStorage.setItem(STORAGE_KEY, mode);
+      window.dispatchEvent(new Event(THEME_EVENT));
+    } catch {
+      // Ignore
+    }
+  }, []);
+
+  const toggleTheme = useCallback(() => {
+    setTheme(theme === "light" ? "dark" : "light");
+  }, [theme, setTheme]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
-      <div data-platform-theme={theme} className={theme === "dark" ? "dark" : ""}>
+      <div
+        suppressHydrationWarning
+        data-platform-theme={theme}
+        className={theme === "dark" ? "dark" : ""}
+      >
         {children}
       </div>
     </ThemeContext.Provider>

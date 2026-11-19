@@ -1,11 +1,17 @@
 import type { Metadata } from "next";
-import { Plus_Jakarta_Sans } from "next/font/google";
+import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
 import { PlatformNav } from "@/components/platform/PlatformNav";
 import { PlatformThemeProvider } from "@/context/PlatformThemeContext";
 
 const plusJakarta = Plus_Jakarta_Sans({
   subsets: ["latin"],
   variable: "--font-plus-jakarta",
+  display: "swap",
+});
+
+const jetbrainsMono = JetBrains_Mono({
+  subsets: ["latin"],
+  variable: "--font-jetbrains-mono",
   display: "swap",
 });
 
@@ -55,14 +61,14 @@ export default function PlatformLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <PlatformThemeProvider>
+    <PlatformThemeProvider defaultTheme="dark">
       <div
-        className={`${plusJakarta.variable} font-sans min-h-dvh flex flex-col bg-white dark:bg-[#0A0B0E] text-[#121212] dark:text-zinc-100 selection:bg-[#121212] selection:text-white transition-colors duration-200`}
+        className={`${plusJakarta.variable} ${jetbrainsMono.variable} font-sans min-h-dvh flex flex-col bg-[#F9F9F7] dark:bg-[#0E0F12] text-[#161614] dark:text-[#ECECE9] selection:bg-[#161614] dark:selection:bg-[#ECECE9] selection:text-[#F9F9F7] dark:selection:text-[#0E0F12]`}
+        style={{
+          fontFamily: 'var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, sans-serif',
+        }}
       >
-        {/* 1. Fixed Sticky Minimalist Shopify-Grade SaaS Nav with Dark Mode Toggle */}
         <PlatformNav />
-
-        {/* Main SaaS Platform Content */}
         <main className="flex-1 w-full pt-16">{children}</main>
       </div>
     </PlatformThemeProvider>
