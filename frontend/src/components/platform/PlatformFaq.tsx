@@ -39,7 +39,7 @@ export function PlatformFaq() {
       className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto border-t border-zinc-200 dark:border-white/5 scroll-mt-20"
     >
       <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white text-center mb-12">
-        Questions
+        Questions before you start
       </h2>
 
       <dl className="space-y-8 text-left">

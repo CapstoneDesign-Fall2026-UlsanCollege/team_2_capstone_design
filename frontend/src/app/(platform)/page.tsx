@@ -65,7 +65,7 @@ export default function PlatformHomePage() {
       {/* Real merchant dashboard & orders screenshots */}
       <section className="px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto pb-20 border-t border-zinc-200 dark:border-white/5 pt-20">
         <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white text-center mb-3">
-          Your dashboard
+          See every order, paid or cash to collect
         </h2>
         <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 text-center max-w-lg mx-auto mb-10">
           See orders as they come in and print a packing slip with Khalti or cash-to-collect status.
