@@ -28,10 +28,10 @@ export const metadata: Metadata = {
       "Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.",
     images: [
       {
-        url: "/images/merchant-dashboard-real.png",
-        width: 1280,
-        height: 800,
-        alt: "ShopCraft merchant dashboard",
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "ShopCraft — Your shop, online, before your chiya cools.",
       },
     ],
   },
@@ -42,8 +42,10 @@ export const metadata: Metadata = {
       "Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.",
     images: [
       {
-        url: "/images/merchant-dashboard-real.png",
-        alt: "ShopCraft merchant dashboard",
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "ShopCraft — Your shop, online, before your chiya cools.",
       },
     ],
   },

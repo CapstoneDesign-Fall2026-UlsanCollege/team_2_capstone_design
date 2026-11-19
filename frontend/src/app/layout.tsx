@@ -48,10 +48,10 @@ export const metadata: Metadata = {
     url: "https://shopcraft.me",
     images: [
       {
-        url: "/images/merchant-dashboard-real.png",
-        width: 1280,
-        height: 800,
-        alt: "ShopCraft merchant dashboard for online stores in Nepal",
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "ShopCraft — Your shop, online, before your chiya cools.",
       },
     ],
   },
@@ -60,7 +60,14 @@ export const metadata: Metadata = {
     title: "ShopCraft — Online Store Builder for Nepal (Khalti & COD)",
     description:
       "Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.",
-    images: ["/images/merchant-dashboard-real.png"],
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "ShopCraft — Your shop, online, before your chiya cools.",
+      },
+    ],
   },
   appleWebApp: {
     capable: true,
