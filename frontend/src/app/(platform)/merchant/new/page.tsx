@@ -8,6 +8,7 @@ import {
   ArrowRight,
   Check,
   CheckCircle2,
+  ChevronDown,
   Copy,
   ExternalLink,
   Loader2,
@@ -15,7 +16,6 @@ import {
   PartyPopper,
   Phone,
   Sparkles,
-  Store,
 } from "lucide-react";
 import {
   ApiError,
@@ -90,8 +90,9 @@ function CreateStoreContent() {
   const initialName = searchParams.get("name") || "";
   const initialTheme = searchParams.get("theme") || "editorial-warm";
 
-  // Navigation & Step state: 1: Basics, 2: Location/Contact, 3: Theme, 4: Celebration
-  const [currentStep, setCurrentStep] = useState<1 | 2 | 3 | 4>(1);
+  // Navigation & Step state: 1: Your store, 2: Pick a look, 3: Celebration
+  const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
+  const [showMoreDetails, setShowMoreDetails] = useState(false);
 
   // Form State
   const [loadingSession, setLoadingSession] = useState(true);
@@ -188,6 +189,17 @@ function CreateStoreContent() {
       return;
     }
 
+    const cleanPhone = contactPhone.trim();
+    if (!cleanPhone || !/^9[78]\d{8}$/.test(cleanPhone)) {
+      setFormError("Enter a valid 10-digit Nepali mobile number starting with 98 or 97.");
+      return;
+    }
+
+    if (!city.trim()) {
+      setFormError("Please specify your business city or district.");
+      return;
+    }
+
     // Guard against race condition if debounced slug check is in flight
     if (slugChecking || slugAvailable === null) {
       try {
@@ -212,24 +224,6 @@ function CreateStoreContent() {
     setCurrentStep(2);
   };
 
-  const handleNextStep2 = (e: React.FormEvent) => {
-    e.preventDefault();
-    setFormError(null);
-
-    const cleanPhone = contactPhone.trim();
-    if (cleanPhone && !/^9[78]\d{8}$/.test(cleanPhone)) {
-      setFormError("Enter a valid 10-digit Nepali mobile number starting with 98 or 97.");
-      return;
-    }
-
-    if (!city.trim()) {
-      setFormError("Please specify your business city or district.");
-      return;
-    }
-
-    setCurrentStep(3);
-  };
-
   const handleLaunchStore = async () => {
     setFormError(null);
     setSubmitting(true);
@@ -252,7 +246,7 @@ function CreateStoreContent() {
       }
 
       setCreatedStore(created);
-      setCurrentStep(4);
+      setCurrentStep(3);
     } catch (err: unknown) {
       if (err instanceof ApiError && err.fieldErrors) {
         const firstKey = Object.keys(err.fieldErrors)[0];
@@ -289,9 +283,9 @@ function CreateStoreContent() {
   }
 
   // ---------------------------------------------------------------------------
-  // Step 4: "Your Store is Ready!" Celebration Screen
+  // Step 3: "Your Store is Ready!" Celebration Screen
   // ---------------------------------------------------------------------------
-  if (currentStep === 4 && createdStore) {
+  if (currentStep === 3 && createdStore) {
     const origin = typeof window !== "undefined" ? window.location.origin : "https://shopcraft.me";
     const storeUrl = `${origin}/s/${createdStore.slug}`;
 
@@ -392,7 +386,7 @@ function CreateStoreContent() {
   }
 
   // ---------------------------------------------------------------------------
-  // Wizard Steps 1, 2, 3
+  // Wizard Steps 1, 2
   // ---------------------------------------------------------------------------
   return (
     <div className="max-w-3xl mx-auto px-4 sm:px-6 py-12 text-[var(--sc-ink,#111318)]">
@@ -402,32 +396,25 @@ function CreateStoreContent() {
           <div className="inline-flex items-center gap-2 px-2.5 py-0.5 rounded-full border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)]">
             <span className="w-2 h-2 rounded-full bg-emerald-500" />
             <span className="font-mono">
-              Step {currentStep} of 3 · {currentStep === 1 ? "Store Basics" : currentStep === 2 ? "Location & Contact" : "Theme Preset"}
+              Step {currentStep} of 2 · {currentStep === 1 ? "Your store" : "Pick a look"}
             </span>
           </div>
-
-          <span className="font-mono text-[11px] text-[var(--sc-ink-3,#8B90A0)]">
-            Shopify-Equivalent Parity
-          </span>
         </div>
 
-        {/* 3-Step Progress Indicator */}
-        <div className="grid grid-cols-3 gap-2">
+        {/* 2-Step Progress Indicator */}
+        <div className="grid grid-cols-2 gap-2">
           <div className={`h-1.5 rounded-full transition-colors ${currentStep >= 1 ? "bg-[var(--sc-ink,#111318)]" : "bg-[var(--sc-line,#E8E8E1)]"}`} />
           <div className={`h-1.5 rounded-full transition-colors ${currentStep >= 2 ? "bg-[var(--sc-ink,#111318)]" : "bg-[var(--sc-line,#E8E8E1)]"}`} />
-          <div className={`h-1.5 rounded-full transition-colors ${currentStep >= 3 ? "bg-[var(--sc-ink,#111318)]" : "bg-[var(--sc-line,#E8E8E1)]"}`} />
         </div>
 
         <div>
           <h1 className="text-2xl sm:text-3xl font-extrabold tracking-tight">
-            {currentStep === 1 && "Create your ShopCraft store"}
-            {currentStep === 2 && "Where is your business located?"}
-            {currentStep === 3 && "Pick your store's visual theme"}
+            {currentStep === 1 ? "Your store" : "Pick a look"}
           </h1>
           <p className="text-xs sm:text-sm text-[var(--sc-ink-2,#4B5060)] mt-1">
-            {currentStep === 1 && "Start by naming your brand and choosing what you plan to sell."}
-            {currentStep === 2 && "Configure your courier dispatch origin and customer support details."}
-            {currentStep === 3 && "Choose a typography and color palette tailored for your product niche."}
+            {currentStep === 1
+              ? "Name your store and enter your Nepal contact and dispatch location."
+              : "Choose a visual theme preset for your storefront."}
           </p>
         </div>
       </div>
@@ -438,7 +425,7 @@ function CreateStoreContent() {
         </div>
       )}
 
-      {/* STEP 1: Store Basics & Category */}
+      {/* SCREEN 1: Your store (Name, Slug, Required Phone & Location, Collapsed Optional Details) */}
       {currentStep === 1 && (
         <form onSubmit={handleNextStep1} className="space-y-6">
           <div className="p-6 rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] space-y-5 shadow-xs">
@@ -447,7 +434,7 @@ function CreateStoreContent() {
                 htmlFor="wizard-name"
                 className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1.5 font-semibold"
               >
-                1. Store Name *
+                Store Name *
               </label>
               <input
                 id="wizard-name"
@@ -522,55 +509,164 @@ function CreateStoreContent() {
               )}
             </div>
 
-            {/* Category Selector: "What are you selling?" */}
-            <div className="space-y-2 pt-2">
-              <label className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-semibold">
-                2. What will you be selling? (Optional)
-              </label>
-              <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                {CATEGORY_OPTIONS.map((cat) => {
-                  const isSelected = category === cat.id;
-                  return (
-                    <div
-                      key={cat.id}
-                      onClick={() => setCategory(isSelected ? "" : cat.id)}
-                      className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
-                        isSelected
-                          ? "border-[var(--sc-ink,#111318)] bg-[var(--sc-paper,#FAFAF7)] shadow-2xs"
-                          : "border-[var(--sc-line,#E8E8E1)] hover:border-zinc-400 bg-[var(--sc-surface,#FFFFFF)]"
-                      }`}
-                    >
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs font-bold text-[var(--sc-ink,#111318)]">
-                          {cat.label}
-                        </span>
-                        {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                      </div>
-                      <p className="text-[11px] text-[var(--sc-ink-2,#4B5060)] mt-0.5">
-                        {cat.desc}
-                      </p>
-                    </div>
-                  );
-                })}
+            {/* Required Phone, Province & City/District */}
+            <div className="pt-3 border-t border-[var(--sc-line,#E8E8E1)] space-y-4">
+              <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-semibold">
+                <MapPin className="w-4 h-4 text-emerald-600" />
+                <span>Contact &amp; Location</span>
               </div>
+
+              <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+                <div>
+                  <label
+                    htmlFor="wizard-phone"
+                    className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
+                  >
+                    Customer Support Phone *
+                  </label>
+                  <div className="relative">
+                    <input
+                      id="wizard-phone"
+                      type="tel"
+                      required
+                      value={contactPhone}
+                      onChange={(e) => setContactPhone(e.target.value)}
+                      placeholder="9801234567"
+                      className="w-full h-11 pl-8 pr-3 text-xs font-mono rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
+                    />
+                    <Phone className="w-3.5 h-3.5 text-[var(--sc-ink-3,#8B90A0)] absolute left-2.5 top-3.5" />
+                  </div>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="wizard-province"
+                    className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
+                  >
+                    Province *
+                  </label>
+                  <select
+                    id="wizard-province"
+                    required
+                    value={province}
+                    onChange={(e) => setProvince(e.target.value)}
+                    className="w-full h-11 px-3 text-xs rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
+                  >
+                    {PROVINCE_OPTIONS.map((p) => (
+                      <option key={p} value={p}>{p}</option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label
+                    htmlFor="wizard-city"
+                    className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
+                  >
+                    City / District *
+                  </label>
+                  <input
+                    id="wizard-city"
+                    type="text"
+                    required
+                    value={city}
+                    onChange={(e) => setCity(e.target.value)}
+                    placeholder="e.g. Kathmandu, Lalitpur, Pokhara..."
+                    className="w-full h-11 px-3 text-xs rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
+                  />
+                </div>
+              </div>
+
+              <p className="text-xs text-[var(--sc-ink-2,#4B5060)]">
+                We ask for your phone and location so shoppers can trust your store is real.
+              </p>
             </div>
 
-            {/* Tagline */}
-            <div>
-              <label
-                htmlFor="wizard-tagline"
-                className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
+            {/* Collapsed Optional Details */}
+            <div className="pt-3 border-t border-[var(--sc-line,#E8E8E1)]">
+              <button
+                type="button"
+                aria-expanded={showMoreDetails}
+                onClick={() => setShowMoreDetails((prev) => !prev)}
+                className="w-full min-h-[44px] flex items-center justify-between text-xs font-mono font-semibold text-[var(--sc-ink-2,#4B5060)] hover:text-[var(--sc-ink,#111318)] cursor-pointer"
               >
-                Short Brand Tagline (Optional)
-              </label>
-              <input
-                id="wizard-tagline"
-                type="text"
-                value={tagline}
-                onChange={(e) => setTagline(e.target.value)}
-                placeholder="e.g. Handcrafted specialty goods sourced across Nepal."
-                className="w-full h-11 px-3 text-xs rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
-              />
+                <span>Add more details (optional)</span>
+                <ChevronDown
+                  className={`w-4 h-4 transition-transform ${showMoreDetails ? "rotate-180" : ""}`}
+                />
+              </button>
+
+              {showMoreDetails && (
+                <div className="pt-4 space-y-5">
+                  <div className="space-y-2">
+                    <label className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-semibold">
+                      What will you be selling? (Optional)
+                    </label>
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                      {CATEGORY_OPTIONS.map((cat) => {
+                        const isSelected = category === cat.id;
+                        return (
+                          <div
+                            key={cat.id}
+                            onClick={() => setCategory(isSelected ? "" : cat.id)}
+                            className={`p-3 rounded-lg border text-left cursor-pointer transition-all ${
+                              isSelected
+                                ? "border-[var(--sc-ink,#111318)] bg-[var(--sc-paper,#FAFAF7)] shadow-2xs"
+                                : "border-[var(--sc-line,#E8E8E1)] hover:border-zinc-400 bg-[var(--sc-surface,#FFFFFF)]"
+                            }`}
+                          >
+                            <div className="flex items-center justify-between">
+                              <span className="text-xs font-bold text-[var(--sc-ink,#111318)]">
+                                {cat.label}
+                              </span>
+                              {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
+                            </div>
+                            <p className="text-[11px] text-[var(--sc-ink-2,#4B5060)] mt-0.5">
+                              {cat.desc}
+                            </p>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    <div>
+                      <label
+                        htmlFor="wizard-tagline"
+                        className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
+                      >
+                        Short Brand Tagline (Optional)
+                      </label>
+                      <input
+                        id="wizard-tagline"
+                        type="text"
+                        value={tagline}
+                        onChange={(e) => setTagline(e.target.value)}
+                        placeholder="e.g. Handcrafted specialty goods sourced across Nepal."
+                        className="w-full h-11 px-3 text-xs rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
+                      />
+                    </div>
+
+                    <div>
+                      <label
+                        htmlFor="wizard-address"
+                        className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
+                      >
+                        Street / Nearest Chowk (Optional)
+                      </label>
+                      <input
+                        id="wizard-address"
+                        type="text"
+                        value={streetAddress}
+                        onChange={(e) => setStreetAddress(e.target.value)}
+                        placeholder="e.g. Jhamsikhel Road, Ward 3"
+                        className="w-full h-11 px-3 text-xs rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
+                      />
+                    </div>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 
@@ -579,124 +675,14 @@ function CreateStoreContent() {
             disabled={!storeName.trim() || slugAvailable === false || slugChecking}
             className="w-full h-12 flex items-center justify-center gap-2 font-semibold rounded-xl bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] hover:opacity-90 disabled:opacity-50 transition-opacity text-sm shadow-xs cursor-pointer"
           >
-            <span>Continue to Business Location</span>
+            <span>Continue to Pick a look</span>
             <ArrowRight className="w-4 h-4" />
           </button>
         </form>
       )}
 
-      {/* STEP 2: Location & Contact */}
+      {/* SCREEN 2: Pick a look & Launch */}
       {currentStep === 2 && (
-        <form onSubmit={handleNextStep2} className="space-y-6">
-          <div className="p-6 rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] space-y-4 shadow-xs">
-            <div className="flex items-center gap-2 text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] font-semibold">
-              <MapPin className="w-4 h-4 text-emerald-600" />
-              <span>Courier Dispatch Origin & Customer Support</span>
-            </div>
-
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-              <div>
-                <label
-                  htmlFor="wizard-phone"
-                  className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
-                >
-                  Customer Support Phone *
-                </label>
-                <div className="relative">
-                  <input
-                    id="wizard-phone"
-                    type="tel"
-                    required
-                    value={contactPhone}
-                    onChange={(e) => setContactPhone(e.target.value)}
-                    placeholder="9801234567"
-                    className="w-full h-11 pl-8 pr-3 text-xs font-mono rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
-                  />
-                  <Phone className="w-3.5 h-3.5 text-[var(--sc-ink-3,#8B90A0)] absolute left-2.5 top-3.5" />
-                </div>
-                <p className="text-[10px] text-[var(--sc-ink-3,#8B90A0)] font-mono mt-1">
-                  10 digits starting with 98 or 97
-                </p>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="wizard-province"
-                  className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
-                >
-                  Province *
-                </label>
-                <select
-                  id="wizard-province"
-                  value={province}
-                  onChange={(e) => setProvince(e.target.value)}
-                  className="w-full h-11 px-3 text-xs rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
-                >
-                  {PROVINCE_OPTIONS.map((p) => (
-                    <option key={p} value={p}>{p}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="wizard-city"
-                  className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
-                >
-                  City / District *
-                </label>
-                <input
-                  id="wizard-city"
-                  type="text"
-                  required
-                  value={city}
-                  onChange={(e) => setCity(e.target.value)}
-                  placeholder="e.g. Kathmandu, Lalitpur, Pokhara..."
-                  className="w-full h-11 px-3 text-xs rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
-                />
-              </div>
-
-              <div>
-                <label
-                  htmlFor="wizard-address"
-                  className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2,#4B5060)] mb-1"
-                >
-                  Street / Nearest Chowk (Optional)
-                </label>
-                <input
-                  id="wizard-address"
-                  type="text"
-                  value={streetAddress}
-                  onChange={(e) => setStreetAddress(e.target.value)}
-                  placeholder="e.g. Jhamsikhel Road, Ward 3"
-                  className="w-full h-11 px-3 text-xs rounded-lg border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-[var(--sc-ink,#111318)] focus:outline-none focus:border-zinc-800"
-                />
-              </div>
-            </div>
-          </div>
-
-          <div className="flex items-center gap-3">
-            <button
-              type="button"
-              onClick={() => setCurrentStep(1)}
-              className="h-12 px-5 rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-xs font-semibold text-[var(--sc-ink,#111318)] hover:bg-[var(--sc-paper,#FAFAF7)] transition-colors flex items-center gap-1.5 cursor-pointer"
-            >
-              <ArrowLeft className="w-3.5 h-3.5" />
-              <span>Back</span>
-            </button>
-            <button
-              type="submit"
-              className="flex-1 h-12 flex items-center justify-center gap-2 font-semibold rounded-xl bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] hover:opacity-90 transition-opacity text-sm shadow-xs cursor-pointer"
-            >
-              <span>Continue to Theme Selection</span>
-              <ArrowRight className="w-4 h-4" />
-            </button>
-          </div>
-        </form>
-      )}
-
-      {/* STEP 3: Theme Preset Selector & Launch */}
-      {currentStep === 3 && (
         <div className="space-y-6">
           <div className="p-6 rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] space-y-4 shadow-xs">
             <div>
@@ -704,7 +690,7 @@ function CreateStoreContent() {
                 Choose Visual Preset
               </span>
               <p className="text-xs text-[var(--sc-ink-2,#4B5060)]">
-                You can fully customize colors, typography tokens, and header announcement banners later in the Theme Editor.
+                You can add your logo, banner, and brand story later in Theme Settings.
               </p>
             </div>
 
@@ -748,7 +734,7 @@ function CreateStoreContent() {
           <div className="flex items-center gap-3">
             <button
               type="button"
-              onClick={() => setCurrentStep(2)}
+              onClick={() => setCurrentStep(1)}
               disabled={submitting}
               className="h-12 px-5 rounded-xl border border-[var(--sc-line,#E8E8E1)] bg-[var(--sc-surface,#FFFFFF)] text-xs font-semibold text-[var(--sc-ink,#111318)] hover:bg-[var(--sc-paper,#FAFAF7)] transition-colors flex items-center gap-1.5 cursor-pointer disabled:opacity-50"
             >
