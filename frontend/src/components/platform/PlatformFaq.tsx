@@ -8,27 +8,19 @@ interface FaqItem {
 export const FAQS: FaqItem[] = [
   {
     q: "What does it cost?",
-    a: "Nothing right now. ShopCraft is in beta and free to use. No card needed.",
+    a: "Nothing during beta. You can create a store and list products without a card.",
   },
   {
-    q: "How do my customers pay?",
-    a: "With Khalti, or cash on delivery. For cash on delivery we check the phone number before the order goes through.",
+    q: "How do shoppers pay?",
+    a: "Online via wallet checkout or in person when the rider drops off the parcel. Phone numbers are checked on arrival orders.",
   },
   {
     q: "Where does my store live?",
-    a: "At shopcraft.me/s/your-store-name. You choose the name when you sign up.",
+    a: "At shopcraft.me/s/your-store-name. You pick the handle when you sign up.",
   },
   {
-    q: "Can I change how my store looks?",
-    a: "Yes. Pick one of four looks, then set your logo, colors and fonts. You can switch later.",
-  },
-  {
-    q: "How do I get orders to customers?",
-    a: "Customers pick their province, district and ward at checkout. You print a packing slip for each order that shows whether it is paid or cash to collect.",
-  },
-  {
-    q: "What is coming next?",
-    a: "SMS and WhatsApp order updates, courier labels, and your own domain name. None of these work yet.",
+    q: "How do I prepare deliveries?",
+    a: "Shoppers choose their province and ward at checkout. You print a packing slip showing whether payment is cleared or due in cash.",
   },
 ];
 
@@ -36,24 +28,29 @@ export function PlatformFaq() {
   return (
     <section
       id="faq"
-      className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto border-t border-zinc-200 dark:border-white/5 scroll-mt-20"
+      className="py-14 sm:py-18 px-5 border-b border-[#E2E2DC] dark:border-white/10 scroll-mt-20"
     >
-      <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white text-center mb-12">
-        Questions
-      </h2>
+      <div className="max-w-[1040px] mx-auto">
+        <h2
+          className="text-[28px] sm:text-[36px] font-semibold tracking-[-0.01em] leading-[1.18] text-left text-[#161614] dark:text-[#ECECE9] mb-6"
+          style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+        >
+          Questions
+        </h2>
 
-      <dl className="space-y-8 text-left">
-        {FAQS.map((faq) => (
-          <div key={faq.q}>
-            <dt className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white">
-              {faq.q}
-            </dt>
-            <dd className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              {faq.a}
-            </dd>
-          </div>
-        ))}
-      </dl>
+        <dl className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-x-10 md:gap-y-6 text-left">
+          {FAQS.map((faq) => (
+            <div key={faq.q}>
+              <dt className="text-[16px] font-bold text-[#161614] dark:text-[#ECECE9]">
+                {faq.q}
+              </dt>
+              <dd className="mt-1.5 text-[14px] text-[#4A4A45] dark:text-[#B4B6BD] leading-relaxed">
+                {faq.a}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </section>
   );
 }
