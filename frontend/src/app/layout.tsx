@@ -1,27 +1,6 @@
 import type { Metadata, Viewport } from "next";
-import { Noto_Sans_Devanagari, Inter, Fraunces } from "next/font/google";
 import { ServiceWorkerCleanup } from "@/components/ServiceWorkerCleanup";
 import "./globals.css";
-
-const notoSansDevanagari = Noto_Sans_Devanagari({
-  subsets: ["devanagari"],
-  variable: "--font-devanagari",
-  display: "swap",
-  preload: false,
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  display: "swap",
-  weight: ["600", "700"],
-});
 
 export const viewport: Viewport = {
   themeColor: [
@@ -90,11 +69,7 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html
-      lang="en"
-      suppressHydrationWarning
-      className={`${notoSansDevanagari.variable} ${inter.variable} ${fraunces.variable}`}
-    >
+    <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
         className="min-h-dvh antialiased bg-[var(--sc-paper)] text-[var(--sc-ink)] font-sans"

@@ -164,9 +164,9 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
         </div>
 
         {/* Preview Stage */}
-        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch">
+        <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 items-stretch min-h-[500px]">
           {/* Left Column (5 cols): Plain summary & actions */}
-          <div className="lg:col-span-5 p-6 sm:p-8 rounded-3xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#141416] flex flex-col justify-between text-left">
+          <div className="lg:col-span-5 min-h-[440px] p-6 sm:p-8 rounded-3xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#141416] flex flex-col justify-between text-left">
             <div className="space-y-6">
               <div>
                 <h3 className="text-2xl font-black text-zinc-900 dark:text-white">

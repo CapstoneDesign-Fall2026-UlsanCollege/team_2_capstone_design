@@ -162,8 +162,8 @@
 
   /* Typography defaults */
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --font-sans: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  --font-sans: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
 
   /* Backward-compatible storefront aliases mapped to standard tokens */
   --sf-canvas: var(--canvas);
@@ -233,7 +233,7 @@
   --radius-control: 8px;
   --radius-card: 12px;
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 [data-store-theme="pahadi-sage"], :root[data-store-theme="pahadi-sage"] {
@@ -247,7 +247,7 @@
   --radius-control: 8px;
   --radius-card: 12px;
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 [data-store-theme="ktm-bold"], :root[data-store-theme="ktm-bold"] {
@@ -261,7 +261,7 @@
   --radius-control: 4px;
   --radius-card: 8px;
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 [data-store-theme="midnight-obsidian"], :root[data-store-theme="midnight-obsidian"] {
@@ -275,7 +275,7 @@
   --radius-control: 8px;
   --radius-card: 12px;
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --font-ui: var(--font-inter), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Storefront Typography & Anti-Monospace Enforcement */
