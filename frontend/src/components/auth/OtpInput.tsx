@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useEffect, useRef, useState } from "react";
+import { usePathname } from "next/navigation";
 import {
   authenticateWithGoogle,
   requestEmailOtp,
@@ -107,9 +108,15 @@ export function PasswordlessAuthCard({
   onSuccess,
   title,
   subtitle,
-  submitButtonText = "Send 6-digit code",
+  submitButtonText,
   footerContent,
 }: PasswordlessAuthCardProps) {
+  const pathname = usePathname();
+  const isCreateStoreContext =
+    pathname === "/signup" || Boolean(nextParam?.includes("/merchant/new"));
+  const resolvedTitle =
+    title || (isCreateStoreContext ? "Create your store" : "Log in to ShopCraft");
+  const resolvedSubmitText = submitButtonText || "Email me a code";
   const [step, setStep] = useState<"email" | "otp">(initialEmail ? "otp" : "email");
   const [email, setEmail] = useState(initialEmail);
   const [otpCode, setOtpCode] = useState("");
@@ -206,9 +213,9 @@ export function PasswordlessAuthCard({
       {step === "email" ? (
         <form onSubmit={handleRequestOtp} noValidate className="space-y-4">
           <div className="space-y-1">
-            <h2 className="text-xl font-bold tracking-tight">
-              {title || "Sign in to ShopCraft"}
-            </h2>
+            <h1 className="text-xl font-bold tracking-tight">
+              {resolvedTitle}
+            </h1>
             <p className="text-sm text-[var(--sc-ink-2)]">
               {subtitle || "Enter your email to receive a 6-digit sign-in code."}
             </p>
@@ -248,7 +255,7 @@ export function PasswordlessAuthCard({
             disabled={loading}
             className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-[var(--sc-ink)] text-[var(--sc-paper)] hover:opacity-95 disabled:opacity-50 transition-opacity cursor-pointer"
           >
-            {loading ? "Sending code..." : submitButtonText}
+            {loading ? "Sending code..." : resolvedSubmitText}
           </button>
 
           <GoogleSignInButton

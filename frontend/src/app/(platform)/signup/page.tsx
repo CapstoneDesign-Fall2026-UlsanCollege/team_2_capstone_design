@@ -92,9 +92,6 @@ function SignupContent() {
           <Sparkles className="w-3.5 h-3.5" />
           <span>Free while in beta · Built for Nepal</span>
         </div>
-        <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-zinc-900 dark:text-white">
-          Create your store
-        </h1>
         <p className="text-xs sm:text-sm text-zinc-600 dark:text-zinc-400 font-sans leading-relaxed">
           Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.
         </p>
@@ -109,9 +106,9 @@ function SignupContent() {
             <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border border-emerald-500/20 font-bold uppercase">
               Account Active
             </span>
-            <h2 className="text-xl font-bold tracking-tight pt-1">
-              Ready to launch your store?
-            </h2>
+            <h1 className="text-xl font-bold tracking-tight pt-1">
+              Create your store
+            </h1>
             <p className="text-xs text-zinc-500 dark:text-zinc-400 font-mono truncate">
               Signed in as {currentUser.email}
             </p>
@@ -174,9 +171,9 @@ function SignupContent() {
           <PasswordlessAuthCard
             nextParam={effectiveNext}
             storeNameParam={storeNameParam}
-            title="Create your merchant account"
+            title="Create your store"
             subtitle="Enter your email to verify your account and set up your store."
-            submitButtonText="Create account →"
+            submitButtonText="Email me a code"
             onSuccess={() => {
               window.location.href = destination;
             }}
@@ -191,7 +188,11 @@ function SignupContent() {
                   Already have a ShopCraft account?{" "}
                   <Link
                     href={
-                      nextParam
+                      storeNameParam
+                        ? `/login?name=${encodeURIComponent(storeNameParam)}&next=${encodeURIComponent(
+                            nextParam || "/merchant/new"
+                          )}`
+                        : nextParam
                         ? `/login?next=${encodeURIComponent(nextParam)}`
                         : "/login?next=/merchant"
                     }

@@ -101,12 +101,7 @@ const nextConfig: NextConfig = {
   },
   async rewrites() {
     return {
-      beforeFiles: [
-        {
-          source: "/signup",
-          destination: "/login",
-        },
-      ],
+      beforeFiles: [],
       afterFiles: configuredApiOrigin
         ? [
             {

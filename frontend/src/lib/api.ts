@@ -110,24 +110,27 @@ export function sanitizeRedirectTarget(
   nextParam?: string | null,
   storeNameParam?: string | null
 ): string {
-  if (storeNameParam && storeNameParam.trim()) {
-    return `/merchant/new?name=${encodeURIComponent(storeNameParam.trim())}`;
+  const isSafeRelative = (target: string): boolean =>
+    (/^\/[^\/\\]/.test(target) || target === "/") &&
+    !target.includes("\\") &&
+    !/[\r\n\t]/.test(target) &&
+    !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(target);
+
+  const trimmedName = storeNameParam?.trim() || "";
+  const cleanNext = nextParam?.trim() || "";
+  const safeNext = cleanNext && isSafeRelative(cleanNext) ? cleanNext : "";
+
+  if (trimmedName) {
+    if (safeNext.startsWith("/merchant/new")) {
+      const [pathPart, queryPart = ""] = safeNext.split("?");
+      const params = new URLSearchParams(queryPart);
+      params.set("name", trimmedName);
+      return `${pathPart}?${params.toString()}`;
+    }
+    return `/merchant/new?name=${encodeURIComponent(trimmedName)}`;
   }
-  if (!nextParam) {
-    return "/merchant";
-  }
-  const clean = nextParam.trim();
-  // Strictly allow only relative paths starting with a single '/'
-  // Reject protocol-relative '//', backslashes '/\', URL schemes, control chars
-  if (
-    (/^\/[^\/\\]/.test(clean) || clean === "/") &&
-    !clean.includes("\\") &&
-    !/[\r\n\t]/.test(clean) &&
-    !/^[a-zA-Z][a-zA-Z0-9+.-]*:/.test(clean)
-  ) {
-    return clean;
-  }
-  return "/merchant";
+
+  return safeNext || "/merchant";
 }
 
 function getCookie(name: string): string | null {

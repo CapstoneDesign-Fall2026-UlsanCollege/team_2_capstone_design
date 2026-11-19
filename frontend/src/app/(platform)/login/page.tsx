@@ -49,6 +49,9 @@ function LoginContent() {
   const [loggingOut, setLoggingOut] = useState(false);
 
   const destination = sanitizeRedirectTarget(nextParam || "/merchant", storeNameParam);
+  const wizardHref = nextParam?.startsWith("/merchant/new")
+    ? destination
+    : sanitizeRedirectTarget("/merchant/new", storeNameParam);
 
   useEffect(() => {
     let mounted = true;
@@ -167,7 +170,7 @@ function LoginContent() {
 
               <div className="pt-2 flex flex-col gap-2">
                 <Link
-                  href="/merchant/new"
+                  href={wizardHref}
                   className="w-full h-11 rounded-lg border border-dashed border-zinc-300 dark:border-white/20 text-xs font-semibold font-mono text-zinc-700 dark:text-zinc-300 hover:bg-zinc-100 dark:hover:bg-white/5 transition-colors flex items-center justify-center gap-1.5"
                 >
                   <Plus className="w-3.5 h-3.5" />
@@ -181,7 +184,7 @@ function LoginContent() {
                 You don&apos;t have an active store yet.
               </p>
               <Link
-                href="/merchant/new"
+                href={wizardHref}
                 className="w-full h-11 rounded-lg bg-zinc-950 dark:bg-white text-white dark:text-zinc-950 text-xs font-bold font-mono transition-all hover:opacity-90 flex items-center justify-center gap-2"
               >
                 <span>Launch Your First Store</span>
@@ -215,9 +218,12 @@ function LoginContent() {
           <PasswordlessAuthCard
             nextParam={nextParam || "/merchant"}
             storeNameParam={storeNameParam}
-            title="Log in to ShopCraft"
-            subtitle="Enter your email to sign in to your merchant console and manage your online stores."
-            submitButtonText="Sign in with 6-digit code →"
+            subtitle={
+              (nextParam || "").includes("/merchant/new")
+                ? "Enter your email to verify your account and set up your store."
+                : "Enter your email to sign in to your merchant console and manage your online stores."
+            }
+            submitButtonText="Email me a code"
             onSuccess={() => {
               window.location.href = destination;
             }}
@@ -226,7 +232,11 @@ function LoginContent() {
                 Don&apos;t have a store yet?{" "}
                 <Link
                   href={
-                    nextParam
+                    storeNameParam
+                      ? `/signup?name=${encodeURIComponent(storeNameParam)}&next=${encodeURIComponent(
+                          nextParam || "/merchant/new"
+                        )}`
+                      : nextParam
                       ? `/signup?next=${encodeURIComponent(nextParam)}`
                       : "/signup?next=/merchant/new"
                   }
