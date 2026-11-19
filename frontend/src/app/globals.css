@@ -417,3 +417,17 @@ body {
     animation: scSlideOutRight 200ms ease-in forwards;
   }
 }
+
+@keyframes scCursorBlink {
+  0%, 49% { opacity: 1; }
+  50%, 100% { opacity: 0; }
+}
+
+.sc-cursor-blink {
+  animation: scCursorBlink 1.1s steps(2, start) infinite;
+}
+
+.sc-mono {
+  font-family: var(--font-jetbrains-mono), ui-monospace, SFMono-Regular, Menlo, monospace;
+  font-variant-numeric: tabular-nums;
+}

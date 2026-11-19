@@ -1,8 +1,7 @@
 import React from "react";
 import { HomeInteractiveTop } from "@/components/platform/HomeInteractiveTop";
-import { DashboardMockupPreview } from "@/components/platform/DashboardMockupPreview";
-import { WorkflowSection } from "@/components/platform/WorkflowSection";
 import { CapabilityMatrix } from "@/components/platform/CapabilityMatrix";
+import { DashboardMockupPreview } from "@/components/platform/DashboardMockupPreview";
 import { FAQS, PlatformFaq } from "@/components/platform/PlatformFaq";
 import { PlatformFooter } from "@/components/platform/PlatformFooter";
 
@@ -51,32 +50,22 @@ const structuredData = [
 
 export default function PlatformHomePage() {
   return (
-    <div className="relative w-full min-h-screen bg-[#FAF7F2] dark:bg-[#0d0d0e] text-zinc-900 dark:text-zinc-100 font-sans overflow-x-hidden transition-colors duration-200">
+    <div className="relative w-full min-h-screen bg-[#F9F9F7] dark:bg-[#0E0F12] text-[#161614] dark:text-[#ECECE9] overflow-x-hidden">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
+      {/* 1. Hero + 2. Four store looks */}
       <HomeInteractiveTop />
 
       {/* 3. What works today */}
       <CapabilityMatrix />
 
-      {/* Real merchant dashboard & orders screenshots */}
-      <section className="px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto pb-20 border-t border-zinc-200 dark:border-white/5 pt-20">
-        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white text-center mb-3">
-          Your dashboard
-        </h2>
-        <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 text-center max-w-lg mx-auto mb-10">
-          See orders as they come in and print a packing slip with Khalti or cash-to-collect status.
-        </p>
-        <DashboardMockupPreview />
-      </section>
+      {/* 4. Full-width 6-order Nepali dashboard preview */}
+      <DashboardMockupPreview />
 
-      {/* 4. How it works */}
-      <WorkflowSection />
-
-      {/* 5. FAQ */}
+      {/* 5. Questions */}
       <PlatformFaq />
 
       {/* 6. Footer */}
