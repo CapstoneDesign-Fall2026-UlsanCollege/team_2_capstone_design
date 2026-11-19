@@ -10,22 +10,17 @@ const plusJakarta = Plus_Jakarta_Sans({
 });
 
 export const metadata: Metadata = {
-  title: "ShopCraft — Create an Online Store in Nepal with Khalti & COD",
+  title: {
+    absolute: "Online Store Builder for Nepal – Khalti & COD | ShopCraft",
+  },
   description:
-    "Name your store, pick a look, and sell in NPR with Khalti, cash on delivery, and Nepal province, district, and ward checkout. Free while in beta.",
-  keywords: [
-    "online store Nepal",
-    "ecommerce website Nepal",
-    "Khalti online store",
-    "cash on delivery Nepal",
-    "ShopCraft Nepal",
-    "sell online in NPR",
-  ],
+    "Create an online store in Nepal in minutes. Sell in rupees with Khalti and cash on delivery, with province, district and ward checkout. Free during beta.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
+    locale: "en_US",
     url: "https://shopcraft.me",
     siteName: "ShopCraft",
     title: "ShopCraft — Your shop, online, before your chiya cools.",
@@ -42,10 +37,15 @@ export const metadata: Metadata = {
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShopCraft — Create an Online Store in Nepal with Khalti & COD",
+    title: "Online Store Builder for Nepal – Khalti & COD | ShopCraft",
     description:
       "Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.",
-    images: ["/images/merchant-dashboard-real.png"],
+    images: [
+      {
+        url: "/images/merchant-dashboard-real.png",
+        alt: "ShopCraft merchant dashboard",
+      },
+    ],
   },
 };
 
