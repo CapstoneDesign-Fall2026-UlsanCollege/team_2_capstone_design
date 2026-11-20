@@ -264,8 +264,8 @@
   --error-bd: var(--status-error-border);
   --radius-control: 8px;
   --radius-card: 12px;
-  --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: var(--font-fraunces), "Fraunces", var(--font-devanagari), "Noto Sans Devanagari", Georgia, serif;
+  --font-ui: var(--font-plus-jakarta), "Plus Jakarta Sans", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 [data-store-theme="pahadi-sage"], :root[data-store-theme="pahadi-sage"] {
@@ -301,7 +301,7 @@
   --error-bd: var(--status-error-border);
   --radius-control: 12px;
   --radius-card: 16px;
-  --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-serif: var(--font-fraunces), "Fraunces", var(--font-devanagari), "Noto Sans Devanagari", Georgia, serif;
   --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -338,7 +338,7 @@
   --error-bd: var(--status-error-border);
   --radius-control: 4px;
   --radius-card: 6px;
-  --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
+  --font-serif: var(--font-space-grotesk), "Space Grotesk", var(--font-devanagari), "Noto Sans Devanagari", sans-serif;
   --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
@@ -375,14 +375,14 @@
   --error-bd: var(--status-error-border);
   --radius-control: 8px;
   --radius-card: 12px;
-  --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
-  --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
+  --font-serif: var(--font-fraunces), "Fraunces", var(--font-devanagari), "Noto Sans Devanagari", Georgia, serif;
+  --font-ui: var(--font-plus-jakarta), "Plus Jakarta Sans", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 /* Storefront Typography & Anti-Monospace Enforcement */
 .storefront,
 [data-store-theme] {
-  font-family: var(--font-ui), "Inter", -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: var(--font-ui);
   font-variant-numeric: tabular-nums;
   background-color: var(--canvas);
   color: var(--ink);
@@ -390,7 +390,7 @@
 
 [data-store-theme] .font-mono,
 [data-store-theme] .font-sf-mono {
-  font-family: var(--font-ui), "Inter", -apple-system, BlinkMacSystemFont, sans-serif !important;
+  font-family: var(--font-ui) !important;
   letter-spacing: normal !important;
   text-transform: none;
 }

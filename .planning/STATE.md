@@ -52,3 +52,4 @@ Progress: [==========] 100%
 | ID | Description | Branch | Date | Status | Directory |
 |----|-------------|--------|------|--------|-----------|
 | `261120-vme` | Phase A — Storefront theme correctness, contrast, token cleanup, and banner priority | `feature/storefront-template-system` | 2026-11-20 | complete | [.planning/quick/261120-vme-phase-a-storefront-theme-correctness-con](.planning/quick/261120-vme-phase-a-storefront-theme-correctness-con) |
+| `261120-wbu` | Phase B — Single theme registry used by all 5 surfaces & loaded Google fonts | `feature/storefront-template-system` | 2026-11-20 | complete | [.planning/quick/261120-wbu-phase-b-single-theme-registry-used-by-al](.planning/quick/261120-wbu-phase-b-single-theme-registry-used-by-al) |

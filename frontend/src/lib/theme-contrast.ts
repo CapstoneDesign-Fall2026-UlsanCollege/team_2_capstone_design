@@ -9,134 +9,24 @@
  * 4. Invalid or failing tenant overrides automatically fall back to design token defaults.
  */
 
-export const VALID_STOREFRONT_THEME_PRESETS = [
-  "editorial-warm",
-  "pahadi-sage",
-  "ktm-bold",
-  "midnight-obsidian",
-] as const;
+import {
+  VALID_STOREFRONT_THEME_PRESETS,
+  type StorefrontThemePresetId,
+  type PresetTokenSet,
+  STOREFRONT_PRESET_TOKENS,
+  isValidStorefrontThemePreset,
+  normalizeStorefrontThemePreset,
+  getStorefrontTheme,
+} from "./storefront-themes";
 
-export type StorefrontThemePresetId = (typeof VALID_STOREFRONT_THEME_PRESETS)[number];
-
-export function isValidStorefrontThemePreset(
-  value?: string | null
-): value is StorefrontThemePresetId {
-  return (
-    typeof value === "string" &&
-    (VALID_STOREFRONT_THEME_PRESETS as readonly string[]).includes(value.trim())
-  );
-}
-
-export function normalizeStorefrontThemePreset(
-  value?: string | null
-): StorefrontThemePresetId {
-  const trimmed = typeof value === "string" ? value.trim() : "";
-  return isValidStorefrontThemePreset(trimmed) ? trimmed : "editorial-warm";
-}
-
-export interface PresetTokenSet {
-  canvas: string;
-  surface: string;
-  border: string;
-  borderSubtle: string;
-  ink: string;
-  ink2: string;
-  primary: string;
-  primaryHover: string;
-  primaryForeground: string;
-  navActive: string;
-  statusSuccessBg: string;
-  statusSuccessFg: string;
-  statusSuccessBorder: string;
-  statusWarningBg: string;
-  statusWarningFg: string;
-  statusWarningBorder: string;
-  statusErrorBg: string;
-  statusErrorFg: string;
-  statusErrorBorder: string;
-}
-
-const LIGHT_STATUS_TOKENS = {
-  statusSuccessBg: "#E6F3EC",
-  statusSuccessFg: "#1B5E3A",
-  statusSuccessBorder: "#5B9574",
-  statusWarningBg: "#FBF1DA",
-  statusWarningFg: "#734D10",
-  statusWarningBorder: "#9C7327",
-  statusErrorBg: "#FCEAEA",
-  statusErrorFg: "#992620",
-  statusErrorBorder: "#B85651",
-} as const;
-
-const DARK_STATUS_TOKENS = {
-  statusSuccessBg: "#112B20",
-  statusSuccessFg: "#7CE3AE",
-  statusSuccessBorder: "#4BA87A",
-  statusWarningBg: "#2E230E",
-  statusWarningFg: "#F5CE75",
-  statusWarningBorder: "#BD9038",
-  statusErrorBg: "#311418",
-  statusErrorFg: "#FCA5A5",
-  statusErrorBorder: "#C9666B",
-} as const;
-
-/**
- * Temporary Phase A token fixture matching globals.css [data-store-theme] rules.
- * Unified into the storefront theme registry in Phase B.
- */
-export const STOREFRONT_PRESET_TOKENS: Record<StorefrontThemePresetId, PresetTokenSet> = {
-  "editorial-warm": {
-    canvas: "#F5F2EB",
-    surface: "#FFFDF9",
-    border: "#857C70",
-    borderSubtle: "#DDD6C9",
-    ink: "#1A1512",
-    ink2: "#594F47",
-    primary: "#9A3D26",
-    primaryHover: "#7F311E",
-    primaryForeground: "#FFFDF9",
-    navActive: "#EAE4D8",
-    ...LIGHT_STATUS_TOKENS,
-  },
-  "pahadi-sage": {
-    canvas: "#F2F7F4",
-    surface: "#FFFFFF",
-    border: "#6A8275",
-    borderSubtle: "#D5E2DA",
-    ink: "#14281D",
-    ink2: "#3E5749",
-    primary: "#1C6342",
-    primaryHover: "#154D33",
-    primaryForeground: "#FFFFFF",
-    navActive: "#E2EEE7",
-    ...LIGHT_STATUS_TOKENS,
-  },
-  "ktm-bold": {
-    canvas: "#F4F4F0",
-    surface: "#FFFFFF",
-    border: "#5C5C57",
-    borderSubtle: "#D6D6CE",
-    ink: "#0B0B0B",
-    ink2: "#4A4A46",
-    primary: "#1D31E0",
-    primaryHover: "#1625B5",
-    primaryForeground: "#FFFFFF",
-    navActive: "#E6E6E0",
-    ...LIGHT_STATUS_TOKENS,
-  },
-  "midnight-obsidian": {
-    canvas: "#0B0D11",
-    surface: "#141821",
-    border: "#66738A",
-    borderSubtle: "#262D3D",
-    ink: "#F8FAFC",
-    ink2: "#A8B3C7",
-    primary: "#E5B143",
-    primaryHover: "#F0C362",
-    primaryForeground: "#0B0D11",
-    navActive: "#1F2533",
-    ...DARK_STATUS_TOKENS,
-  },
+export {
+  VALID_STOREFRONT_THEME_PRESETS,
+  type StorefrontThemePresetId,
+  type PresetTokenSet,
+  STOREFRONT_PRESET_TOKENS,
+  isValidStorefrontThemePreset,
+  normalizeStorefrontThemePreset,
+  getStorefrontTheme,
 };
 
 /**

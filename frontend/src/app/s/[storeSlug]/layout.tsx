@@ -1,6 +1,5 @@
 import React, { Suspense } from "react";
 import type { Metadata } from "next";
-import { Fraunces, Inter, Noto_Sans_Devanagari } from "next/font/google";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import { AlertCircle, ArrowLeft, RotateCw } from "lucide-react";
@@ -9,31 +8,12 @@ import { AccountSheet } from "@/components/storefront/AccountSheet";
 import { CartProvider } from "@/components/storefront/CartContext";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { ThemePreviewWatcher } from "@/components/storefront/ThemePreviewWatcher";
+import { storefrontFontVariablesClass } from "@/lib/storefront-fonts";
 import {
   normalizeStorefrontThemePreset,
   resolveSafeAccentOverride,
 } from "@/lib/theme-contrast";
 import { fetchPublicStoreOutcome } from "@/lib/storefront-fetch";
-
-const notoSansDevanagari = Noto_Sans_Devanagari({
-  subsets: ["devanagari"],
-  variable: "--font-devanagari",
-  display: "swap",
-  preload: false,
-});
-
-const inter = Inter({
-  subsets: ["latin"],
-  variable: "--font-inter",
-  display: "swap",
-});
-
-const fraunces = Fraunces({
-  subsets: ["latin"],
-  variable: "--font-fraunces",
-  display: "swap",
-  weight: ["600", "700"],
-});
 
 export async function generateMetadata({
   params,
@@ -138,7 +118,7 @@ export default async function StorefrontLayout({
       data-storefront-root="true"
       data-store-theme={themePreset}
       style={customStyle}
-      className={`${notoSansDevanagari.variable} ${inter.variable} ${fraunces.variable} storefront min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans flex flex-col`}
+      className={`${storefrontFontVariablesClass} storefront min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans flex flex-col`}
     >
       <ThemePreviewWatcher initialPreset={themePreset} />
       <AccountProvider>

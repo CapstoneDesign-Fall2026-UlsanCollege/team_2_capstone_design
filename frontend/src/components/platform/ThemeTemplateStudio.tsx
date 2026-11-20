@@ -3,66 +3,7 @@
 import React from "react";
 import Link from "next/link";
 import Image from "next/image";
-
-interface LookCardDef {
-  id: string;
-  label: string;
-  niche: string;
-  tag: string;
-  storeNamePlaceholder?: string;
-  productTitle: string;
-  price: string;
-  imageSrc: string;
-  cardClass: string;
-  staggered?: boolean;
-  outlineCta?: boolean;
-}
-
-const LOOK_CARDS: LookCardDef[] = [
-  {
-    id: "editorial-warm",
-    label: "Warm editorial",
-    niche: "Coffee, ceramics, craft",
-    tag: "Roastery",
-    productTitle: "Gulmi Reserve",
-    price: "Rs. 750",
-    imageSrc: "/images/products/gulmi-reserve.svg",
-    cardClass: "platform-screen-editorial",
-    outlineCta: true,
-  },
-  {
-    id: "pahadi-sage",
-    label: "Botanical",
-    niche: "Tea, honey, wellness",
-    tag: "Harvest",
-    productTitle: "Wild Cliff Honey",
-    price: "Rs. 1,650",
-    imageSrc: "/images/products/himalayan-honey.svg",
-    cardClass: "platform-look-botanical",
-    staggered: true,
-  },
-  {
-    id: "midnight-obsidian",
-    label: "Dark craft",
-    niche: "Studio drops, limited runs",
-    tag: "Limited run",
-    productTitle: "Ilam Gold",
-    price: "Rs. 2,350",
-    imageSrc: "/images/products/ilam-gold.svg",
-    cardClass: "platform-look-darkcraft",
-  },
-  {
-    id: "ktm-bold",
-    label: "Clean cotton",
-    niche: "Everyday retail",
-    tag: "Daily goods",
-    productTitle: "Nuwakot Heritage",
-    price: "Rs. 1,450",
-    imageSrc: "/images/products/nuwakot-heritage.svg",
-    cardClass: "platform-look-cotton",
-    staggered: true,
-  },
-];
+import { STOREFRONT_THEMES } from "@/lib/storefront-themes";
 
 interface ThemeTemplateStudioProps {
   storeName?: string;
@@ -93,34 +34,59 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
 
         {/* Mobile horizontal snap peek carousel; Desktop 4-col staggered grid */}
         <div className="mt-10 sm:mt-16 flex overflow-x-auto snap-x snap-mandatory gap-4 px-4 -mx-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5 no-scrollbar pb-2 lg:pb-8">
-          {LOOK_CARDS.map((card) => {
+          {STOREFRONT_THEMES.map((theme) => {
             const nextWizard = trimmedName
-              ? `/merchant/new?theme=${encodeURIComponent(card.id)}&name=${encodeURIComponent(trimmedName)}`
-              : `/merchant/new?theme=${encodeURIComponent(card.id)}`;
+              ? `/merchant/new?theme=${encodeURIComponent(theme.id)}&name=${encodeURIComponent(trimmedName)}`
+              : `/merchant/new?theme=${encodeURIComponent(theme.id)}`;
             const href = `/signup?next=${encodeURIComponent(nextWizard)}`;
+            const isOutline = theme.preview.outlineCtaInShowcase;
 
             return (
               <div
-                key={card.id}
+                key={theme.id}
                 className={`w-[74%] shrink-0 snap-start sm:w-auto flex flex-col ${
-                  card.staggered ? "lg:translate-y-7" : ""
+                  theme.preview.staggeredInShowcase ? "lg:translate-y-7" : ""
                 }`}
               >
                 <div
-                  className={`flex-1 rounded-[26px] p-5 border border-line flex flex-col justify-between ${card.cardClass}`}
+                  className="flex-1 p-5 border flex flex-col justify-between"
+                  style={{
+                    backgroundColor: theme.tokens.canvas,
+                    color: theme.tokens.ink,
+                    borderColor: theme.tokens.borderSubtle,
+                    borderRadius: theme.radius.card,
+                    fontFamily: theme.fontPairing.uiCssStack,
+                  }}
                 >
                   <div>
                     <div className="flex items-center justify-between gap-2 text-base">
-                      <span className="font-semibold truncate">{displayStoreName}</span>
-                      <span className="font-mono text-[10px] px-2.5 py-0.5 rounded-full screen-badge shrink-0">
+                      <span
+                        className="font-semibold truncate"
+                        style={{ fontFamily: theme.fontPairing.displayCssStack }}
+                      >
+                        {displayStoreName}
+                      </span>
+                      <span
+                        className="text-[10px] font-semibold px-2.5 py-0.5 rounded-full shrink-0"
+                        style={{
+                          backgroundColor: theme.tokens.primary,
+                          color: theme.tokens.primaryForeground,
+                        }}
+                      >
                         Bag (1)
                       </span>
                     </div>
 
-                    <div className="my-4 rounded-2xl overflow-hidden aspect-[1/0.88] screen-photo">
+                    <div
+                      className="my-4 overflow-hidden aspect-[1/0.88]"
+                      style={{
+                        backgroundColor: theme.preview.photoBackdropHex,
+                        borderRadius: theme.radius.control,
+                      }}
+                    >
                       <Image
-                        src={card.imageSrc}
-                        alt={card.productTitle}
+                        src={theme.preview.sampleImageSrc}
+                        alt={theme.preview.sampleProductTitle}
                         width={800}
                         height={800}
                         unoptimized
@@ -128,28 +94,53 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
                       />
                     </div>
 
-                    <p className="font-mono text-[10px] uppercase tracking-[0.08em] screen-muted">
-                      {card.tag}
+                    <p
+                      className="text-[10px] uppercase tracking-[0.08em] font-semibold"
+                      style={{ color: theme.tokens.ink2 }}
+                    >
+                      {theme.preview.sampleTag}
                     </p>
-                    <h3 className="text-[19px] font-medium mt-0.5 leading-snug">
-                      {card.productTitle}
+                    <h3
+                      className="text-[19px] font-semibold mt-0.5 leading-snug"
+                      style={{ fontFamily: theme.fontPairing.displayCssStack }}
+                    >
+                      {theme.preview.sampleProductTitle}
                     </h3>
-                    <p className="font-mono text-[13px] mt-1 screen-muted">{card.price}</p>
+                    <p
+                      className="text-[13px] mt-1 font-medium tabular-nums"
+                      style={{ color: theme.tokens.ink2 }}
+                    >
+                      {theme.preview.samplePrice}
+                    </p>
                   </div>
 
                   <Link
                     href={href}
-                    className={`mt-4 min-h-[44px] rounded-[10px] grid place-items-center text-[13px] font-medium transition-opacity hover:opacity-90 ${
-                      card.outlineCta ? "screen-cta-outline" : "screen-cta"
-                    }`}
+                    className="mt-4 min-h-[44px] px-3 grid place-items-center text-[13px] font-semibold transition-opacity hover:opacity-90 border"
+                    style={
+                      isOutline
+                        ? {
+                            backgroundColor: "transparent",
+                            color: theme.tokens.ink,
+                            borderColor: theme.tokens.ink,
+                            borderRadius: theme.radius.control,
+                          }
+                        : {
+                            backgroundColor: theme.tokens.primary,
+                            color: theme.tokens.primaryForeground,
+                            borderColor: theme.tokens.primary,
+                            borderRadius: theme.radius.control,
+                          }
+                    }
                   >
-                    Add to bag
+                    Use {theme.displayName}
                   </Link>
                 </div>
 
-                <div className="mt-4 text-center">
-                  <p className="text-[15px] font-semibold text-ink">{card.label}</p>
-                  <p className="text-[13.5px] text-ink-3">{card.niche}</p>
+                <div className="mt-4 text-center space-y-0.5">
+                  <p className="text-[15px] font-semibold text-ink">{theme.displayName}</p>
+                  <p className="text-[13px] text-ink-2">{theme.bestForLabel}</p>
+                  <p className="font-mono text-[11px] text-ink-3">{theme.fontPairing.label}</p>
                 </div>
               </div>
             );

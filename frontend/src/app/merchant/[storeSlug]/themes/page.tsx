@@ -18,69 +18,11 @@ import {
   ApiError,
 } from "@/lib/api";
 import { ThemeMediaUpload } from "@/components/merchant/ThemeMediaUpload";
+import { STOREFRONT_THEMES, getStorefrontTheme } from "@/lib/storefront-themes";
 
 interface PageProps {
   params: Promise<{ storeSlug: string }>;
 }
-
-interface PresetThemeOption {
-  id: string;
-  name: string;
-  niche: string;
-  fonts: string;
-  canvasHex: string;
-  ctaHex: string;
-  accentHex: string;
-  inkHex: string;
-  description: string;
-}
-
-const THEME_PRESETS: PresetThemeOption[] = [
-  {
-    id: "editorial-warm",
-    name: "Editorial Warm",
-    niche: "Roasteries, Specialty Coffee & Artisanal Food",
-    fonts: "Fraunces Serif + Plus Jakarta Sans",
-    canvasHex: "#F5F2EB",
-    ctaHex: "#A3432A",
-    accentHex: "#2E6B34",
-    inkHex: "#1A1512",
-    description: "Refined editorial typography with warm parchment tones, inspired by artisanal roasteries and slow food.",
-  },
-  {
-    id: "pahadi-sage",
-    name: "Pahadi Sage",
-    niche: "Mountain Teas, Wild Honey, Botanicals & Crafts",
-    fonts: "Young Serif + Manrope",
-    canvasHex: "#F3F7F4",
-    ctaHex: "#1F6F4A",
-    accentHex: "#C2410C",
-    inkHex: "#14281D",
-    description: "Earthy botanical sage tones designed for organic growers, natural herbs, and Himalayan honey cooperatives.",
-  },
-  {
-    id: "ktm-bold",
-    name: "KTM Bold",
-    niche: "Kathmandu Streetwear, Apparel & Urban Tech",
-    fonts: "Space Grotesk + Inter",
-    canvasHex: "#F4F4F0",
-    ctaHex: "#2B3BFF",
-    accentHex: "#D7FF3A",
-    inkHex: "#0B0B0B",
-    description: "High-contrast brutalist lines with electric cobalt accents, tailored for contemporary streetwear and tech drops.",
-  },
-  {
-    id: "midnight-obsidian",
-    name: "Midnight Obsidian",
-    niche: "Luxury Dark Mode, Night Roasts & Leather",
-    fonts: "Fraunces Serif + Plus Jakarta Sans",
-    canvasHex: "#0B0D11",
-    ctaHex: "#F2A900",
-    accentHex: "#10B981",
-    inkHex: "#F9FAFB",
-    description: "Sleek obsidian black luxury aesthetic with warm amber gold highlights for high-ticket artisanal craft.",
-  },
-];
 
 export default function MerchantThemesPage({ params }: PageProps) {
   const { storeSlug } = use(params);
@@ -178,7 +120,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
   };
 
   const currentPresetDef = useMemo(
-    () => THEME_PRESETS.find((p) => p.id === themePreset) || THEME_PRESETS[0],
+    () => getStorefrontTheme(themePreset),
     [themePreset]
   );
 
@@ -204,7 +146,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
               <span>Online Store · Themes</span>
             </h1>
             <span className="text-[11px] font-mono px-2 py-0.5 rounded-full bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 font-semibold border border-emerald-500/20">
-              {currentPresetDef.name}
+              {currentPresetDef.displayName}
             </span>
           </div>
           <p className="text-xs text-[var(--muted-foreground)]">
@@ -309,13 +251,14 @@ export default function MerchantThemesPage({ params }: PageProps) {
               </div>
 
               <div className="space-y-2.5">
-                {THEME_PRESETS.map((p) => {
+                {STOREFRONT_THEMES.map((p) => {
                   const isSelected = themePreset === p.id;
                   return (
-                    <div
+                    <button
                       key={p.id}
+                      type="button"
                       onClick={() => setThemePreset(p.id)}
-                      className={`p-3 rounded-lg border text-left transition-all cursor-pointer space-y-2 ${
+                      className={`w-full p-3 rounded-lg border text-left transition-all cursor-pointer space-y-2 ${
                         isSelected
                           ? "border-emerald-500 bg-emerald-500/5 ring-1 ring-emerald-500"
                           : "border-[var(--border)] bg-[var(--secondary)]/20 hover:border-[var(--border)]/80"
@@ -324,43 +267,43 @@ export default function MerchantThemesPage({ params }: PageProps) {
                       <div className="flex items-center justify-between">
                         <span className="text-xs font-bold text-[var(--foreground)] flex items-center gap-1.5">
                           {isSelected && <Check className="w-3.5 h-3.5 text-emerald-500" />}
-                          <span>{p.name}</span>
+                          <span>{p.displayName}</span>
                         </span>
 
                         {/* Palette Swatches */}
                         <div className="flex items-center gap-1 bg-white/10 dark:bg-black/20 p-1 rounded border border-[var(--border)]">
                           <span
                             className="w-3 h-3 rounded-full border border-black/10 shrink-0"
-                            style={{ backgroundColor: p.canvasHex }}
+                            style={{ backgroundColor: p.tokens.canvas }}
                             title="Canvas"
                           />
                           <span
                             className="w-3 h-3 rounded-full border border-black/10 shrink-0"
-                            style={{ backgroundColor: p.ctaHex }}
-                            title="CTA Button"
+                            style={{ backgroundColor: p.tokens.primary }}
+                            title="Primary CTA"
                           />
                           <span
                             className="w-3 h-3 rounded-full border border-black/10 shrink-0"
-                            style={{ backgroundColor: p.accentHex }}
-                            title="Accent"
+                            style={{ backgroundColor: p.tokens.surface }}
+                            title="Surface"
                           />
                           <span
                             className="w-3 h-3 rounded-full border border-black/10 shrink-0"
-                            style={{ backgroundColor: p.inkHex }}
+                            style={{ backgroundColor: p.tokens.ink }}
                             title="Ink Text"
                           />
                         </div>
                       </div>
 
                       <p className="text-[11px] text-[var(--muted-foreground)] leading-snug">
-                        {p.description}
+                        {p.shortDescription}
                       </p>
 
-                      <div className="pt-1 flex items-center justify-between text-[10px] font-mono text-[var(--muted-foreground)] border-t border-[var(--border)]/40">
-                        <span>Niche: {p.niche.split(",")[0]}</span>
-                        <span className="italic">{p.fonts.split("+")[0].trim()}</span>
+                      <div className="pt-1 flex items-center justify-between gap-2 text-[10px] font-mono text-[var(--muted-foreground)] border-t border-[var(--border)]/40">
+                        <span className="truncate">Best for: {p.bestForLabel}</span>
+                        <span className="shrink-0">{p.fontPairing.label}</span>
                       </div>
-                    </div>
+                    </button>
                   );
                 })}
               </div>
@@ -462,7 +405,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
           <div className="flex items-center justify-between bg-[var(--card)] p-2 rounded-lg border border-[var(--border)]">
             <div className="flex items-center gap-2 text-xs font-mono text-[var(--muted-foreground)]">
               <Eye className="w-3.5 h-3.5 text-emerald-500" />
-              <span>Preview: {currentPresetDef.name}</span>
+              <span>Preview: {currentPresetDef.displayName}</span>
             </div>
 
             {/* Viewport Toggles */}

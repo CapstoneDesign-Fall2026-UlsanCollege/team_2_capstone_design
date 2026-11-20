@@ -132,30 +132,6 @@
 .platform-screen-editorial .screen-cta { background-color: #1E1813; color: #FAF8F3; }
 .platform-screen-editorial .screen-cta-outline { border: 1px solid #1E1813; color: #1E1813; background-color: transparent; }
 
-.platform-look-botanical {
-  background-color: #F5F2E4;
-  color: #13291D;
-}
-.platform-look-botanical .screen-muted { color: #3E5547; }
-.platform-look-botanical .screen-badge { background-color: #1F6D3F; color: #F5F2E4; }
-.platform-look-botanical .screen-cta { background-color: #1F6D3F; color: #F5F2E4; }
-
-.platform-look-darkcraft {
-  background-color: #141210;
-  color: #F2EAE0;
-}
-.platform-look-darkcraft .screen-muted { color: #C2B6AB; }
-.platform-look-darkcraft .screen-badge { background-color: #E27D28; color: #141210; }
-.platform-look-darkcraft .screen-cta { background-color: #E27D28; color: #141210; }
-
-.platform-look-cotton {
-  background-color: #FCFBF9;
-  color: #1C1917;
-}
-.platform-look-cotton .screen-muted { color: #57514C; }
-.platform-look-cotton .screen-badge { background-color: #A83E28; color: #FFFFFF; }
-.platform-look-cotton .screen-cta { background-color: #1C1917; color: #FCFBF9; }
-
 .platform-phone-shell {
   background-color: #14171F;
 }
