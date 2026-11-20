@@ -73,7 +73,7 @@ export function StorefrontHeader({
 
   return (
     <div className="w-full">
-      {/* 1. Announcement Bar: 36px, charcoal (#171716), single static merchant message. Hidden if empty. */}
+      {/* 1. Announcement Bar: 36px, theme ink surface, single static merchant message. Hidden if empty. */}
       {announcementText && (
         <aside
           aria-label="Store announcement"
@@ -92,7 +92,7 @@ export function StorefrontHeader({
           {/* Left: Brand Identity */}
           <Link
             href={`/s/${encodeURIComponent(storeSlug)}`}
-            className="flex items-center gap-3 min-w-0 group shrink-0"
+            className="flex items-center gap-3 min-w-0 flex-1 md:flex-initial group"
           >
             {logoUrl ? (
               <Image
@@ -105,8 +105,8 @@ export function StorefrontHeader({
                 className="h-8 sm:h-9 w-auto max-w-[150px] object-contain rounded"
               />
             ) : (
-              <div className="flex flex-col text-left">
-                <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-[var(--ink)] leading-tight group-hover:opacity-85 transition-opacity">
+              <div className="flex flex-col text-left min-w-0">
+                <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-[var(--ink)] leading-tight truncate group-hover:opacity-85 transition-opacity">
                   {storeName}
                 </span>
                 {cleanTagline && (
@@ -162,7 +162,7 @@ export function StorefrontHeader({
           </nav>
 
           {/* Right: Actions (Search, Account, Bag) with min 44px tap targets */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Search Trigger */}
             {onOpenSearch ? (
               <button

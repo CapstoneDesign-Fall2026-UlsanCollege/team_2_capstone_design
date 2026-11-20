@@ -1,3 +1,4 @@
+import React, { Suspense } from "react";
 import type { Metadata } from "next";
 import { Fraunces, Inter, Noto_Sans_Devanagari } from "next/font/google";
 import Link from "next/link";
@@ -8,7 +9,10 @@ import { AccountSheet } from "@/components/storefront/AccountSheet";
 import { CartProvider } from "@/components/storefront/CartContext";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { ThemePreviewWatcher } from "@/components/storefront/ThemePreviewWatcher";
-import { resolveSafeTenantTokens } from "@/lib/theme-contrast";
+import {
+  normalizeStorefrontThemePreset,
+  resolveSafeAccentOverride,
+} from "@/lib/theme-contrast";
 import { fetchPublicStoreOutcome } from "@/lib/storefront-fetch";
 
 const notoSansDevanagari = Noto_Sans_Devanagari({
@@ -81,7 +85,7 @@ export default async function StorefrontLayout({
         className="storefront min-h-dvh bg-[var(--canvas)] text-[var(--ink)] flex flex-col items-center justify-center p-4 font-sans"
       >
         <div className="w-full max-w-md p-6 sm:p-8 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-center space-y-6">
-          <div className="w-14 h-14 rounded-full bg-[var(--error-bg)] border border-[var(--error-bd)] text-[var(--error-fg)] mx-auto flex items-center justify-center">
+          <div className="w-14 h-14 rounded-full bg-[var(--status-error-bg)] border border-[var(--status-error-border)] text-[var(--status-error-fg)] mx-auto flex items-center justify-center">
             <AlertCircle className="w-7 h-7" aria-hidden="true" />
           </div>
 
@@ -97,7 +101,7 @@ export default async function StorefrontLayout({
           <div className="pt-2 flex flex-col gap-2.5 max-w-xs mx-auto">
             <Link
               href={`/s/${encodeURIComponent(storeSlug)}`}
-              className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+              className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2"
             >
               <RotateCw className="w-4 h-4" aria-hidden="true" />
               <span>Try Again</span>
@@ -117,25 +121,21 @@ export default async function StorefrontLayout({
   }
 
   const store = result.store;
-  const themePreset = store.theme_preset || "editorial-warm";
+  const themePreset = normalizeStorefrontThemePreset(store.theme_preset);
+  const safeAccent = resolveSafeAccentOverride(store.accent_color, themePreset);
 
-  // Validate tenant overrides against WCAG AA contrast and prohibited status hues
-  const safeTokens = resolveSafeTenantTokens({
-    accentColor: store.accent_color,
-  });
-
-  const customStyle: React.CSSProperties = {
-    ["--canvas" as string]: safeTokens.tokens.canvas,
-    ["--surface" as string]: safeTokens.tokens.surface,
-    ["--border" as string]: safeTokens.tokens.border,
-    ["--ink" as string]: safeTokens.tokens.ink,
-    ["--ink-2" as string]: safeTokens.tokens.ink2,
-    ["--primary" as string]: safeTokens.tokens.primary,
-    ["--primary-hover" as string]: safeTokens.tokens.primaryHover,
-  };
+  // Only inject an optional safe merchant accent override; [data-store-theme] CSS tokens remain authoritative.
+  const customStyle: React.CSSProperties | undefined = safeAccent
+    ? ({
+        "--primary": safeAccent.primary,
+        "--primary-hover": safeAccent.primaryHover,
+        "--primary-foreground": safeAccent.primaryForeground,
+      } as React.CSSProperties)
+    : undefined;
 
   return (
     <div
+      data-storefront-root="true"
       data-store-theme={themePreset}
       style={customStyle}
       className={`${notoSansDevanagari.variable} ${inter.variable} ${fraunces.variable} storefront min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans flex flex-col`}
@@ -154,8 +154,10 @@ export default async function StorefrontLayout({
           }
         >
           {children}
-          <CartDrawer />
-          <AccountSheet storeSlug={store.slug} themePreset={themePreset} />
+          <Suspense fallback={null}>
+            <CartDrawer />
+            <AccountSheet storeSlug={store.slug} themePreset={themePreset} />
+          </Suspense>
         </CartProvider>
       </AccountProvider>
     </div>

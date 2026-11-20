@@ -30,7 +30,7 @@ export default function StorefrontNotFound() {
         <div className="pt-2 flex flex-col gap-2.5 max-w-xs mx-auto">
           <Link
             href="/"
-            className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2"
+            className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2"
           >
             <ArrowLeft className="w-4 h-4" />
             <span>Return to ShopCraft Home</span>

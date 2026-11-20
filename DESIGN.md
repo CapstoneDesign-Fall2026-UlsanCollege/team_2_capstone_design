@@ -82,18 +82,17 @@ ShopCraft is an independent **Multi-Tenant E-Commerce & Subscription SaaS for Ne
 
 ## 2. Design Tokens & Visual Hierarchy
 
-### A. Customer Storefront (Shopify Dawn Standard)
-- **Canvas:** `#FFFFFF` (pure white, zero dirty gray or dark mode in shopper view).
-- **Surface:** `#FFFFFF` with `#FAFAFA` subtle hover state.
-- **Ink / Headings:** `#121212` (Shopify Dawn primary ink).
-- **Secondary Ink:** `#555555` to `#707070` (readable, accessible contrast).
-- **Hairline Borders:** `1px solid #E5E5E5` (crisp, precise, zero fuzzy drop shadows).
-- **Primary CTA Buttons:** Solid black `#121212` with pure white `#FFFFFF` text, radius `6px`.
-- **Secondary CTA Buttons:** Pure white `#FFFFFF` with `1.5px solid #121212` border, black text.
-- **Badges:**
-  - `Subscription Save 10%`: Solid black `#121212` or Emerald `#065F46` / `#ECFDF5`.
-  - `Direct-Trade Origin`: White `#FFFFFF` with `#E5E5E5` border.
-- **Typography:** Modern `Plus Jakarta Sans` with fallback `Noto Sans Devanagari`. Monospaced numbers via `JetBrains Mono` with `tabular-nums`.
+### A. Customer Storefront (4 Curated Theme Presets)
+Storefronts render exclusively through `[data-store-theme]` CSS custom properties (`editorial-warm`, `pahadi-sage`, `ktm-bold`, and dark-mode `midnight-obsidian`), never raw `#hex`, `rgb()`/`hsl()`, or hardcoded Tailwind palette utilities (`check:surfaces` enforced):
+- **Core Surface & CTA Tokens:** `--canvas`, `--surface`, `--border` (`>= 3:1` UI contrast), `--border-subtle`, `--ink`, `--ink-2` (`>= 4.5:1` text contrast), `--primary`, `--primary-hover`, `--primary-foreground` (`>= 4.5:1` button contrast across both light and dark presets), `--nav-active`, `--overlay-scrim`, `--radius-control`, `--radius-card`.
+- **Preset Identities:**
+  - `editorial-warm`: Parchment canvas `#F5F2EB`, ivory surface `#FFFDF9`, espresso ink `#1A1512`, terracotta primary `#9A3D26` (`#FFFDF9` foreground).
+  - `pahadi-sage`: Mist sage canvas `#F2F7F4`, crisp white surface `#FFFFFF`, pine ink `#14281D`, forest primary `#1C6342` (`#FFFFFF` foreground).
+  - `ktm-bold`: Off-white canvas `#F4F4F0`, white surface `#FFFFFF`, stark black ink `#0B0B0B`, cobalt primary `#1D31E0` (`#FFFFFF` foreground).
+  - `midnight-obsidian` *(Dark Mode)*: Obsidian canvas `#0B0D11`, elevated slate surface `#141821`, ivory ink `#F8FAFC`, warm gold primary `#E5B143` (`#0B0D11` dark foreground).
+- **Independent Semantic Status Tokens:** `--status-success-{bg,fg,border}`, `--status-warning-{bg,fg,border}`, and `--status-error-{bg,fg,border}` (never overridden by merchant `accent_color`).
+- **Merchant Accent Override Rule:** Optional `Store.accent_color` only applies to `--primary` / `--primary-hover` / `--primary-foreground` if it passes `isForbiddenStatusHue` and WCAG AA contrast (`>= 4.5:1` button text, `>= 3:1` against preset canvas and surface); otherwise it falls back to the preset primary.
+- **Typography:** Storefront display (`Fraunces`) + UI (`Inter` with `Noto Sans Devanagari` fallback and `tabular-nums`), expanded in Phase B with up to 2 additional curated font families via `next/font/google`.
 
 ### B. Merchant Admin (Shopify Polaris Standard)
 - **Background:** `#F6F6F7` (Polaris canvas background).

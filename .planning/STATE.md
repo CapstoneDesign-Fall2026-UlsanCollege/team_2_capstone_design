@@ -46,3 +46,9 @@ Progress: [==========] 100%
 4. `Slice 4`: Theme system + Story page + storefront + cart drawer + checkout (COMPLETED)
 5. `Slice 5`: Subscriptions [FORMALLY CUT IN PR #45 — OUT OF MVP SCOPE]
 6. `Slice 6`: Dashboard home, analytics, discounts, settings, staff RBAC & polish (COMPLETED)
+
+## Quick Tasks Completed
+
+| ID | Description | Branch | Date | Status | Directory |
+|----|-------------|--------|------|--------|-----------|
+| `261120-vme` | Phase A — Storefront theme correctness, contrast, token cleanup, and banner priority | `feature/storefront-template-system` | 2026-11-20 | complete | [.planning/quick/261120-vme-phase-a-storefront-theme-correctness-con](.planning/quick/261120-vme-phase-a-storefront-theme-correctness-con) |

@@ -43,15 +43,25 @@
   --nav-active: #E9E7E3;
 
   /* Status colors: ONLY for statuses. Always icon + text + tint. */
-  --success-fg: #2F6B4F;
-  --success-bg: #E8F1EC;
-  --success-bd: #C5DACE;
-  --warning-fg: #7A5A1E;
-  --warning-bg: #F6EEDB;
-  --warning-bd: #E6D5A8;
-  --error-fg: #A3342B;
-  --error-bg: #F9E9E7;
-  --error-bd: #EBC4BF;
+  --status-success-fg: #2F6B4F;
+  --status-success-bg: #E8F1EC;
+  --status-success-border: #C5DACE;
+  --status-warning-fg: #7A5A1E;
+  --status-warning-bg: #F6EEDB;
+  --status-warning-border: #E6D5A8;
+  --status-error-fg: #A3342B;
+  --status-error-bg: #F9E9E7;
+  --status-error-border: #EBC4BF;
+
+  --success-fg: var(--status-success-fg);
+  --success-bg: var(--status-success-bg);
+  --success-bd: var(--status-success-border);
+  --warning-fg: var(--status-warning-fg);
+  --warning-bg: var(--status-warning-bg);
+  --warning-bd: var(--status-warning-border);
+  --error-fg: var(--status-error-fg);
+  --error-bg: var(--status-error-bg);
+  --error-bd: var(--status-error-border);
 
   /* Radii: 8px controls, 12px cards */
   --radius-control: 8px;
@@ -108,27 +118,42 @@
  * Surface 3: Storefront Design Tokens & Presets (Tailwind v4 @theme inline)
  * -------------------------------------------------------------------------- */
 :root {
-  /* Default Storefront Palette */
-  --canvas: #F4F3F1;
-  --surface: #FBFAF9;
-  --border: #E2DFDA;
-  --ink: #171716;
-  --ink-2: #5C5954; /* all small text uses ink-2 or darker */
-  --primary: #171716; /* primary button fill */
-  --primary-hover: #2E2D2B;
+  /* Default Storefront Palette (Editorial Warm baseline) */
+  --canvas: #F5F2EB;
+  --surface: #FFFDF9;
+  --border: #857C70;
+  --border-subtle: #DDD6C9;
+  --ink: #1A1512;
+  --ink-2: #594F47; /* all small text uses ink-2 or darker */
+  --primary: #9A3D26; /* primary button fill */
+  --primary-hover: #7F311E;
+  --primary-foreground: #FFFDF9;
+  --nav-active: #EAE4D8;
+  --overlay-scrim: rgba(11, 13, 17, 0.56);
 
-  /* Status Tokens (Used STRICTLY for statuses, never decoration) */
-  --success-fg: #2F6B4F;
-  --success-bg: #E8F1EC;
-  --success-bd: #C5DACE;
+  /* Canonical Status Tokens (Used STRICTLY for statuses, never decoration) */
+  --status-success-fg: #1B5E3A;
+  --status-success-bg: #E6F3EC;
+  --status-success-border: #5B9574;
 
-  --warning-fg: #7A5A1E;
-  --warning-bg: #F6EEDB;
-  --warning-bd: #E6D5A8;
+  --status-warning-fg: #734D10;
+  --status-warning-bg: #FBF1DA;
+  --status-warning-border: #9C7327;
 
-  --error-fg: #A3342B;
-  --error-bg: #F9E9E7;
-  --error-bd: #EBC4BF;
+  --status-error-fg: #992620;
+  --status-error-bg: #FCEAEA;
+  --status-error-border: #B85651;
+
+  /* Backward-compatible status aliases */
+  --success-fg: var(--status-success-fg);
+  --success-bg: var(--status-success-bg);
+  --success-bd: var(--status-success-border);
+  --warning-fg: var(--status-warning-fg);
+  --warning-bg: var(--status-warning-bg);
+  --warning-bd: var(--status-warning-border);
+  --error-fg: var(--status-error-fg);
+  --error-bg: var(--status-error-bg);
+  --error-bd: var(--status-error-border);
 
   /* Radii: 8px controls, 12px cards */
   --radius-control: 8px;
@@ -146,8 +171,8 @@
   --sf-muted: var(--ink-2);
   --sf-line: var(--border);
   --sf-cta: var(--primary);
-  --sf-cta-ink: #FFFFFF;
-  --sf-accent: var(--ink);
+  --sf-cta-ink: var(--primary-foreground);
+  --sf-accent: var(--primary);
   --sf-radius: var(--radius-control);
   --sf-display: var(--font-serif);
   --sf-body: var(--font-ui);
@@ -158,19 +183,31 @@
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-border: var(--border);
+  --color-border-subtle: var(--border-subtle);
   --color-nav-active: var(--nav-active);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);
+  --color-primary-foreground: var(--primary-foreground);
 
-  --color-success-fg: var(--success-fg);
-  --color-success-bg: var(--success-bg);
-  --color-success-bd: var(--success-bd);
-  --color-warning-fg: var(--warning-fg);
-  --color-warning-bg: var(--warning-bg);
-  --color-warning-bd: var(--warning-bd);
-  --color-error-fg: var(--error-fg);
-  --color-error-bg: var(--error-bg);
-  --color-error-bd: var(--error-bd);
+  --color-status-success-fg: var(--status-success-fg);
+  --color-status-success-bg: var(--status-success-bg);
+  --color-status-success-border: var(--status-success-border);
+  --color-status-warning-fg: var(--status-warning-fg);
+  --color-status-warning-bg: var(--status-warning-bg);
+  --color-status-warning-border: var(--status-warning-border);
+  --color-status-error-fg: var(--status-error-fg);
+  --color-status-error-bg: var(--status-error-bg);
+  --color-status-error-border: var(--status-error-border);
+
+  --color-success-fg: var(--status-success-fg);
+  --color-success-bg: var(--status-success-bg);
+  --color-success-bd: var(--status-success-border);
+  --color-warning-fg: var(--status-warning-fg);
+  --color-warning-bg: var(--status-warning-bg);
+  --color-warning-bd: var(--status-warning-border);
+  --color-error-fg: var(--status-error-fg);
+  --color-error-bg: var(--status-error-bg);
+  --color-error-bd: var(--status-error-border);
 
   --radius-control: var(--radius-control);
   --radius-card: var(--radius-card);
@@ -185,23 +222,46 @@
   --color-sf-muted: var(--ink-2);
   --color-sf-line: var(--border);
   --color-sf-cta: var(--primary);
-  --color-sf-cta-ink: #FFFFFF;
-  --color-sf-accent: var(--ink);
+  --color-sf-cta-ink: var(--primary-foreground);
+  --color-sf-accent: var(--primary);
   --radius-sf: var(--radius-control);
   --font-sf-display: var(--font-serif);
   --font-sf-body: var(--font-ui);
   --font-sf-mono: var(--font-ui);
 }
 
-/* Tenant Overrides (via CSS variables only; accents cannot be green, amber, or red) */
+/* Tenant Overrides (via CSS variables only; status tokens remain independent of merchant accent) */
 [data-store-theme="editorial-warm"], :root[data-store-theme="editorial-warm"] {
-  --canvas: #F4F3F1;
-  --surface: #FBFAF9;
-  --border: #E2DFDA;
-  --ink: #171716;
-  --ink-2: #5C5954;
-  --primary: #171716;
-  --primary-hover: #2E2D2B;
+  --canvas: #F5F2EB;
+  --surface: #FFFDF9;
+  --border: #857C70;
+  --border-subtle: #DDD6C9;
+  --ink: #1A1512;
+  --ink-2: #594F47;
+  --primary: #9A3D26;
+  --primary-hover: #7F311E;
+  --primary-foreground: #FFFDF9;
+  --nav-active: #EAE4D8;
+  --accent: var(--nav-active);
+  --overlay-scrim: rgba(11, 13, 17, 0.56);
+  --status-success-fg: #1B5E3A;
+  --status-success-bg: #E6F3EC;
+  --status-success-border: #5B9574;
+  --status-warning-fg: #734D10;
+  --status-warning-bg: #FBF1DA;
+  --status-warning-border: #9C7327;
+  --status-error-fg: #992620;
+  --status-error-bg: #FCEAEA;
+  --status-error-border: #B85651;
+  --success-fg: var(--status-success-fg);
+  --success-bg: var(--status-success-bg);
+  --success-bd: var(--status-success-border);
+  --warning-fg: var(--status-warning-fg);
+  --warning-bg: var(--status-warning-bg);
+  --warning-bd: var(--status-warning-border);
+  --error-fg: var(--status-error-fg);
+  --error-bg: var(--status-error-bg);
+  --error-bd: var(--status-error-border);
   --radius-control: 8px;
   --radius-card: 12px;
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
@@ -209,15 +269,38 @@
 }
 
 [data-store-theme="pahadi-sage"], :root[data-store-theme="pahadi-sage"] {
-  --canvas: #F3F7F4;
+  --canvas: #F2F7F4;
   --surface: #FFFFFF;
-  --border: #DCE7E1;
+  --border: #6A8275;
+  --border-subtle: #D5E2DA;
   --ink: #14281D;
-  --ink-2: #4E6558;
-  --primary: #14281D;
-  --primary-hover: #243D2F;
-  --radius-control: 8px;
-  --radius-card: 12px;
+  --ink-2: #3E5749;
+  --primary: #1C6342;
+  --primary-hover: #154D33;
+  --primary-foreground: #FFFFFF;
+  --nav-active: #E2EEE7;
+  --accent: var(--nav-active);
+  --overlay-scrim: rgba(11, 13, 17, 0.56);
+  --status-success-fg: #1B5E3A;
+  --status-success-bg: #E6F3EC;
+  --status-success-border: #5B9574;
+  --status-warning-fg: #734D10;
+  --status-warning-bg: #FBF1DA;
+  --status-warning-border: #9C7327;
+  --status-error-fg: #992620;
+  --status-error-bg: #FCEAEA;
+  --status-error-border: #B85651;
+  --success-fg: var(--status-success-fg);
+  --success-bg: var(--status-success-bg);
+  --success-bd: var(--status-success-border);
+  --warning-fg: var(--status-warning-fg);
+  --warning-bg: var(--status-warning-bg);
+  --warning-bd: var(--status-warning-border);
+  --error-fg: var(--status-error-fg);
+  --error-bg: var(--status-error-bg);
+  --error-bd: var(--status-error-border);
+  --radius-control: 12px;
+  --radius-card: 16px;
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
   --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -225,25 +308,71 @@
 [data-store-theme="ktm-bold"], :root[data-store-theme="ktm-bold"] {
   --canvas: #F4F4F0;
   --surface: #FFFFFF;
-  --border: #171716;
+  --border: #5C5C57;
+  --border-subtle: #D6D6CE;
   --ink: #0B0B0B;
-  --ink-2: #5E5E5A;
-  --primary: #0B0B0B;
-  --primary-hover: #2B2B2B;
+  --ink-2: #4A4A46;
+  --primary: #1D31E0;
+  --primary-hover: #1625B5;
+  --primary-foreground: #FFFFFF;
+  --nav-active: #E6E6E0;
+  --accent: var(--nav-active);
+  --overlay-scrim: rgba(11, 13, 17, 0.56);
+  --status-success-fg: #1B5E3A;
+  --status-success-bg: #E6F3EC;
+  --status-success-border: #5B9574;
+  --status-warning-fg: #734D10;
+  --status-warning-bg: #FBF1DA;
+  --status-warning-border: #9C7327;
+  --status-error-fg: #992620;
+  --status-error-bg: #FCEAEA;
+  --status-error-border: #B85651;
+  --success-fg: var(--status-success-fg);
+  --success-bg: var(--status-success-bg);
+  --success-bd: var(--status-success-border);
+  --warning-fg: var(--status-warning-fg);
+  --warning-bg: var(--status-warning-bg);
+  --warning-bd: var(--status-warning-border);
+  --error-fg: var(--status-error-fg);
+  --error-bg: var(--status-error-bg);
+  --error-bd: var(--status-error-border);
   --radius-control: 4px;
-  --radius-card: 8px;
+  --radius-card: 6px;
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
   --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
 
 [data-store-theme="midnight-obsidian"], :root[data-store-theme="midnight-obsidian"] {
   --canvas: #0B0D11;
-  --surface: #141720;
-  --border: #222733;
-  --ink: #F9FAFB;
-  --ink-2: #94A3B8;
-  --primary: #FFFFFF;
-  --primary-hover: #E5E7EB;
+  --surface: #141821;
+  --border: #66738A;
+  --border-subtle: #262D3D;
+  --ink: #F8FAFC;
+  --ink-2: #A8B3C7;
+  --primary: #E5B143;
+  --primary-hover: #F0C362;
+  --primary-foreground: #0B0D11;
+  --nav-active: #1F2533;
+  --accent: var(--nav-active);
+  --overlay-scrim: rgba(4, 6, 10, 0.72);
+  --status-success-fg: #7CE3AE;
+  --status-success-bg: #112B20;
+  --status-success-border: #4BA87A;
+  --status-warning-fg: #F5CE75;
+  --status-warning-bg: #2E230E;
+  --status-warning-border: #BD9038;
+  --status-error-fg: #FCA5A5;
+  --status-error-bg: #311418;
+  --status-error-border: #C9666B;
+  --success-fg: var(--status-success-fg);
+  --success-bg: var(--status-success-bg);
+  --success-bd: var(--status-success-border);
+  --warning-fg: var(--status-warning-fg);
+  --warning-bg: var(--status-warning-bg);
+  --warning-bd: var(--status-warning-border);
+  --error-fg: var(--status-error-fg);
+  --error-bg: var(--status-error-bg);
+  --error-bd: var(--status-error-border);
   --radius-control: 8px;
   --radius-card: 12px;
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
@@ -359,7 +488,7 @@ body {
 }
 
 .cart-drawer-overlay {
-  background-color: rgba(0, 0, 0, 0.6) !important;
+  background-color: var(--overlay-scrim) !important;
 }
 
 .cart-drawer-overlay[data-state="open"] {

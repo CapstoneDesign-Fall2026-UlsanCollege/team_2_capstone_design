@@ -191,10 +191,10 @@ export default async function StorefrontOrderDetailPage({
           <div
             className={`w-14 h-14 rounded-full mx-auto flex items-center justify-center ${
               chipTone === "success"
-                ? "bg-[var(--success-bg)] border border-[var(--success-bd)] text-[var(--success-fg)]"
+                ? "bg-[var(--status-success-bg)] border border-[var(--status-success-border)] text-[var(--status-success-fg)]"
                 : chipTone === "error"
-                ? "bg-[var(--error-bg)] border border-[var(--error-bd)] text-[var(--error-fg)]"
-                : "bg-[var(--warning-bg)] border border-[var(--warning-bd)] text-[var(--warning-fg)]"
+                ? "bg-[var(--status-error-bg)] border border-[var(--status-error-border)] text-[var(--status-error-fg)]"
+                : "bg-[var(--status-warning-bg)] border border-[var(--status-warning-border)] text-[var(--status-warning-fg)]"
             }`}
           >
             {chipTone === "success" ? (
@@ -262,7 +262,7 @@ export default async function StorefrontOrderDetailPage({
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center text-xs font-semibold transition-colors ${
                     step.done
-                      ? "bg-[var(--primary)] text-[var(--surface)]"
+                      ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
                       : step.current
                       ? "border-2 border-[var(--ink)] bg-[var(--surface)] text-[var(--ink)]"
                       : "border border-[var(--border)] bg-[var(--canvas)] text-[var(--ink-2)]"
@@ -347,7 +347,7 @@ export default async function StorefrontOrderDetailPage({
               </span>
             </div>
             {order.discount_minor > 0 && (
-              <div className="flex justify-between text-[var(--success-fg)] font-medium">
+              <div className="flex justify-between text-[var(--status-success-fg)] font-medium">
                 <span>Discount</span>
                 <span className="tabular-nums">-{formatNpr(order.discount_minor)}</span>
               </div>
@@ -386,7 +386,7 @@ export default async function StorefrontOrderDetailPage({
         <div className="pt-2 text-center">
           <Link
             href={`/s/${encodeURIComponent(store.slug)}`}
-            className="inline-flex items-center gap-2 min-h-[44px] px-6 py-2.5 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-xs font-semibold transition-colors"
+            className="inline-flex items-center gap-2 min-h-[44px] px-6 py-2.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] text-xs font-semibold transition-colors"
           >
             <ShoppingBag className="w-4 h-4" aria-hidden="true" />
             <span>Continue Shopping</span>

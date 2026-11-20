@@ -13,11 +13,11 @@ const chipVariants = cva(
     variants: {
       tone: {
         success:
-          "bg-[var(--success-bg)] text-[var(--success-fg)] border-[var(--success-bd)]",
+          "bg-[var(--status-success-bg)] text-[var(--status-success-fg)] border-[var(--status-success-border)]",
         warning:
-          "bg-[var(--warning-bg)] text-[var(--warning-fg)] border-[var(--warning-bd)]",
+          "bg-[var(--status-warning-bg)] text-[var(--status-warning-fg)] border-[var(--status-warning-border)]",
         error:
-          "bg-[var(--error-bg)] text-[var(--error-fg)] border-[var(--error-bd)]",
+          "bg-[var(--status-error-bg)] text-[var(--status-error-fg)] border-[var(--status-error-border)]",
         neutral:
           "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)]",
       },

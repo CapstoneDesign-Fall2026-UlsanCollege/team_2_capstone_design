@@ -284,6 +284,47 @@ describe("StorefrontCatalogView placeholder removal", () => {
     expect(html).not.toContain("/images/products/placeholder.svg");
   });
 
+  it("prioritizes store.banner_url over featured product image in storefront hero", () => {
+    const withBannerHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({
+          name: "Banner Roasters",
+          banner_url: "https://res.cloudinary.com/demo/image/upload/hero-banner.jpg",
+        }),
+        products: [
+          makeProduct({
+            image_url: "https://res.cloudinary.com/demo/image/upload/product-item.jpg",
+          }),
+        ],
+      })
+    );
+
+    expect(withBannerHtml).toContain(
+      "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/hero-banner.jpg"
+    );
+    expect(withBannerHtml).toContain('alt="Banner Roasters cover banner"');
+
+    const fallbackToProductHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({
+          name: "Product Hero Roasters",
+          banner_url: "/images/banners/placeholder.jpg",
+        }),
+        products: [
+          makeProduct({
+            name: "Single Origin Bag",
+            image_url: "https://res.cloudinary.com/demo/image/upload/product-item.jpg",
+          }),
+        ],
+      })
+    );
+
+    expect(fallbackToProductHtml).toContain(
+      "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/product-item.jpg"
+    );
+    expect(fallbackToProductHtml).toContain('alt="Single Origin Bag"');
+  });
+
   it("uses merchant category label and Shop <Category> only when set", () => {
     const html = renderToStaticMarkup(
       React.createElement(StorefrontCatalogView, {

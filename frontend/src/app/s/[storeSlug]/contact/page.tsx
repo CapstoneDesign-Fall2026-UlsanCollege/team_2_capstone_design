@@ -48,24 +48,24 @@ export default async function StorefrontContactPage({
   const contact = resolveStorefrontContactDetails(store);
 
   return (
-    <div className="min-h-dvh bg-sf-canvas text-sf-ink flex flex-col font-sf-body">
+    <div className="min-h-dvh bg-[var(--canvas)] text-[var(--ink)] flex flex-col font-sans">
       {/* Header */}
-      <header className="sticky top-0 z-30 w-full border-b border-sf-line bg-sf-surface/90 backdrop-blur-xs">
+      <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--surface)]">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 h-14 flex items-center justify-between gap-2">
           <Link
             href={`/s/${encodeURIComponent(store.slug)}`}
-            className="inline-flex items-center gap-1.5 text-xs font-sf-mono text-sf-muted hover:text-sf-ink transition-colors min-h-[44px] shrink-0"
+            className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-2)] hover:text-[var(--ink)] transition-colors min-h-[44px] shrink-0"
           >
             <ArrowLeft className="w-3.5 h-3.5" aria-hidden="true" />
             <span>Back to Store</span>
           </Link>
 
-          <span className="font-sf-display text-sm sm:text-base font-bold text-sf-ink truncate min-w-0">
+          <span className="font-serif text-sm sm:text-base font-bold text-[var(--ink)] truncate min-w-0">
             Contact {store.name}
           </span>
 
-          <div className="inline-flex items-center gap-1 text-[11px] font-sf-mono text-sf-muted shrink-0">
-            <Phone className="w-3.5 h-3.5 text-sf-accent" aria-hidden="true" />
+          <div className="inline-flex items-center gap-1 text-[11px] text-[var(--ink-2)] shrink-0">
+            <Phone className="w-3.5 h-3.5 text-[var(--primary)]" aria-hidden="true" />
             <span>Support</span>
           </div>
         </div>
@@ -73,21 +73,21 @@ export default async function StorefrontContactPage({
 
       {/* Main Content */}
       <main className="flex-1 w-full max-w-4xl mx-auto px-4 sm:px-6 py-8 sm:py-12 space-y-8 text-left">
-        <div className="space-y-2 border-b border-sf-line pb-6">
-          <h1 className="font-sf-display text-2xl sm:text-4xl font-bold tracking-tight text-sf-ink">
+        <div className="space-y-2 border-b border-[var(--border)] pb-6">
+          <h1 className="font-serif text-2xl sm:text-4xl font-bold tracking-tight text-[var(--ink)]">
             Get in Touch with {store.name}
           </h1>
-          <p className="text-xs sm:text-sm text-sf-muted font-sf-mono leading-relaxed">
+          <p className="text-xs sm:text-sm text-[var(--ink-2)] leading-relaxed">
             Have questions about an order, product details, or delivery in your ward? Reach out directly below.
           </p>
         </div>
 
         {!contact.hasAnyContact ? (
-          <div className="p-6 rounded-sf border border-sf-line bg-sf-surface text-center space-y-2 shadow-2xs">
-            <h2 className="font-sf-display text-lg font-bold text-sf-ink">
+          <div className="p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-center space-y-2">
+            <h2 className="font-serif text-lg font-bold text-[var(--ink)]">
               Contact details coming soon
             </h2>
-            <p className="text-xs font-sf-mono text-sf-muted leading-relaxed">
+            <p className="text-xs text-[var(--ink-2)] leading-relaxed">
               {store.name} hasn&apos;t added direct contact details yet. Please check back soon.
             </p>
           </div>
@@ -97,22 +97,22 @@ export default async function StorefrontContactPage({
               <div
                 className={`${
                   contact.hasAnyDetail ? "md:col-span-6" : "md:col-span-12"
-                } p-5 sm:p-6 rounded-sf border border-sf-line bg-sf-surface space-y-3 shadow-2xs`}
+                } p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-3`}
               >
-                <div className="flex items-center gap-2 text-emerald-800 font-bold text-xs font-sf-mono uppercase">
-                  <MessageCircle className="w-4 h-4 fill-emerald-600 text-emerald-600" />
+                <div className="flex items-center gap-2 text-[var(--status-success-fg)] font-bold text-xs uppercase">
+                  <MessageCircle className="w-4 h-4 text-[var(--status-success-fg)]" />
                   <span>Instant WhatsApp Support</span>
                 </div>
-                <p className="text-xs text-sf-muted leading-relaxed">
+                <p className="text-xs text-[var(--ink-2)] leading-relaxed">
                   Connect directly with {store.name} on WhatsApp for quick order updates, product inquiries, or doorstep delivery details.
                 </p>
                 <a
                   href={contact.whatsappUrl}
                   target="_blank"
                   rel="noopener noreferrer"
-                  className="w-full min-h-[44px] h-11 px-4 rounded-sf bg-emerald-600 hover:bg-emerald-700 text-white text-xs font-sf-mono font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer shadow-xs"
+                  className="w-full min-h-[44px] h-11 px-4 rounded-lg bg-[var(--primary)] hover:bg-[var(--primary-hover)] text-[var(--primary-foreground)] text-xs font-bold flex items-center justify-center gap-2 transition-colors cursor-pointer"
                 >
-                  <MessageCircle className="w-4 h-4 fill-white text-emerald-600" />
+                  <MessageCircle className="w-4 h-4 text-[var(--primary-foreground)]" />
                   <span>Open WhatsApp Chat</span>
                 </a>
               </div>
@@ -122,16 +122,16 @@ export default async function StorefrontContactPage({
               <div
                 className={`${
                   contact.whatsappUrl ? "md:col-span-6" : "md:col-span-12"
-                } p-5 sm:p-6 rounded-sf border border-sf-line bg-sf-surface space-y-3 text-xs font-sf-mono shadow-2xs`}
+                } p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-3 text-xs`}
               >
                 {contact.telHref && contact.phoneDisplay && (
-                  <div className="flex items-start gap-3 text-sf-ink">
-                    <Phone className="w-4 h-4 text-sf-muted shrink-0 mt-3" aria-hidden="true" />
+                  <div className="flex items-start gap-3 text-[var(--ink)]">
+                    <Phone className="w-4 h-4 text-[var(--ink-2)] shrink-0 mt-3" aria-hidden="true" />
                     <div className="min-w-0">
                       <p className="font-bold">Direct Phone</p>
                       <a
                         href={contact.telHref}
-                        className="text-sf-muted hover:underline text-[11px] min-h-[44px] inline-flex items-center"
+                        className="text-[var(--ink-2)] hover:underline text-[11px] min-h-[44px] inline-flex items-center tabular-nums"
                       >
                         {contact.phoneDisplay}
                       </a>
@@ -140,13 +140,13 @@ export default async function StorefrontContactPage({
                 )}
 
                 {contact.mailtoHref && contact.email && (
-                  <div className="flex items-start gap-3 text-sf-ink">
-                    <Mail className="w-4 h-4 text-sf-muted shrink-0 mt-3" aria-hidden="true" />
+                  <div className="flex items-start gap-3 text-[var(--ink)]">
+                    <Mail className="w-4 h-4 text-[var(--ink-2)] shrink-0 mt-3" aria-hidden="true" />
                     <div className="min-w-0">
                       <p className="font-bold">Email Support</p>
                       <a
                         href={contact.mailtoHref}
-                        className="text-sf-muted hover:underline text-[11px] min-h-[44px] inline-flex items-center break-all"
+                        className="text-[var(--ink-2)] hover:underline text-[11px] min-h-[44px] inline-flex items-center break-all"
                       >
                         {contact.email}
                       </a>
@@ -155,11 +155,11 @@ export default async function StorefrontContactPage({
                 )}
 
                 {contact.address && (
-                  <div className="flex items-start gap-3 text-sf-ink">
-                    <MapPin className="w-4 h-4 text-sf-cta shrink-0 mt-0.5" aria-hidden="true" />
+                  <div className="flex items-start gap-3 text-[var(--ink)]">
+                    <MapPin className="w-4 h-4 text-[var(--primary)] shrink-0 mt-0.5" aria-hidden="true" />
                     <div className="min-w-0">
                       <p className="font-bold">Location &amp; Dispatch Studio</p>
-                      <p className="text-sf-muted text-[11px] break-words">{contact.address}</p>
+                      <p className="text-[var(--ink-2)] text-[11px] break-words">{contact.address}</p>
                     </div>
                   </div>
                 )}

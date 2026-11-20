@@ -40,7 +40,7 @@ export function ProductDetailSheet({
       role="dialog"
       aria-modal="true"
       aria-labelledby="sheet-title"
-      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-black/50 animate-in fade-in duration-200"
+      className="fixed inset-0 z-50 flex items-end sm:items-center justify-center p-0 sm:p-4 bg-[var(--overlay-scrim)] animate-in fade-in duration-200"
       onClick={() => onOpenChange(false)}
     >
       <div
@@ -257,7 +257,7 @@ function ProductDetailSheetContent({
         >
           {justAdded ? (
             <>
-              <Check className="w-4 h-4 text-[var(--surface)]" />
+              <Check className="w-4 h-4 text-[var(--primary-foreground)]" />
               <span>Added to Bag</span>
             </>
           ) : isDemoProduct ? (

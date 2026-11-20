@@ -274,7 +274,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
         <div className="pt-2">
           <Link
             href={`/s/${encodeURIComponent(store.slug)}`}
-            className="inline-flex items-center min-h-[44px] px-5 py-2.5 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-xs font-semibold transition-colors"
+            className="inline-flex items-center min-h-[44px] px-5 py-2.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] text-xs font-semibold transition-colors"
           >
             Browse Products
           </Link>
@@ -417,7 +417,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   return (
     <form onSubmit={handlePlaceOrder} noValidate className="space-y-6 pb-28">
       {errorMessage && (
-        <div role="alert" className="p-4 rounded-xl border border-[var(--error-bd)] bg-[var(--error-bg)] text-[var(--error-fg)] flex items-start gap-2.5 text-xs font-medium">
+        <div role="alert" className="p-4 rounded-xl border border-[var(--status-error-border)] bg-[var(--status-error-bg)] text-[var(--status-error-fg)] flex items-start gap-2.5 text-xs font-medium">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
           <span>{errorMessage}</span>
         </div>
@@ -483,11 +483,11 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                 if (fieldErrors.phone) setFieldErrors((p) => ({ ...p, phone: "" }));
               }}
               className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none tabular-nums ${
-                fieldErrors.phone ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+                fieldErrors.phone ? "border-[var(--status-error-border)] focus:border-[var(--status-error-border)]" : "border-[var(--border)] focus:border-[var(--ink)]"
               }`}
             />
             {fieldErrors.phone && (
-              <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.phone}</p>
+              <p className="text-xs text-[var(--status-error-fg)] font-medium">{fieldErrors.phone}</p>
             )}
           </div>
 
@@ -512,11 +512,11 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                 if (fieldErrors.recipientName) setFieldErrors((p) => ({ ...p, recipientName: "" }));
               }}
               className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none ${
-                fieldErrors.recipientName ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+                fieldErrors.recipientName ? "border-[var(--status-error-border)] focus:border-[var(--status-error-border)]" : "border-[var(--border)] focus:border-[var(--ink)]"
               }`}
             />
             {fieldErrors.recipientName && (
-              <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.recipientName}</p>
+              <p className="text-xs text-[var(--status-error-fg)] font-medium">{fieldErrors.recipientName}</p>
             )}
           </div>
 
@@ -542,11 +542,11 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                 if (fieldErrors.email) setFieldErrors((p) => ({ ...p, email: "" }));
               }}
               className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none ${
-                fieldErrors.email ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+                fieldErrors.email ? "border-[var(--status-error-border)] focus:border-[var(--status-error-border)]" : "border-[var(--border)] focus:border-[var(--ink)]"
               }`}
             />
             {fieldErrors.email && (
-              <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.email}</p>
+              <p className="text-xs text-[var(--status-error-fg)] font-medium">{fieldErrors.email}</p>
             )}
           </div>
         </div>
@@ -720,11 +720,11 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                     if (fieldErrors.municipality) setFieldErrors((p) => ({ ...p, municipality: "" }));
                   }}
                   className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none ${
-                    fieldErrors.municipality ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+                    fieldErrors.municipality ? "border-[var(--status-error-border)] focus:border-[var(--status-error-border)]" : "border-[var(--border)] focus:border-[var(--ink)]"
                   }`}
                 />
                 {fieldErrors.municipality && (
-                  <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.municipality}</p>
+                  <p className="text-xs text-[var(--status-error-fg)] font-medium">{fieldErrors.municipality}</p>
                 )}
               </div>
 
@@ -750,11 +750,11 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                     if (fieldErrors.ward) setFieldErrors((p) => ({ ...p, ward: "" }));
                   }}
                   className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none tabular-nums ${
-                    fieldErrors.ward ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+                    fieldErrors.ward ? "border-[var(--status-error-border)] focus:border-[var(--status-error-border)]" : "border-[var(--border)] focus:border-[var(--ink)]"
                   }`}
                 />
                 {fieldErrors.ward && (
-                  <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.ward}</p>
+                  <p className="text-xs text-[var(--status-error-fg)] font-medium">{fieldErrors.ward}</p>
                 )}
               </div>
 
@@ -778,11 +778,11 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
                     if (fieldErrors.streetLandmark) setFieldErrors((p) => ({ ...p, streetLandmark: "" }));
                   }}
                   className={`w-full h-11 px-3.5 rounded-lg border bg-[var(--canvas)] text-[var(--ink)] text-sm focus:outline-none ${
-                    fieldErrors.streetLandmark ? "border-[var(--error-bd)] focus:border-[var(--error-bd)]" : "border-[var(--border)] focus:border-[var(--ink)]"
+                    fieldErrors.streetLandmark ? "border-[var(--status-error-border)] focus:border-[var(--status-error-border)]" : "border-[var(--border)] focus:border-[var(--ink)]"
                   }`}
                 />
                 {fieldErrors.streetLandmark && (
-                  <p className="text-xs text-[var(--error-fg)] font-medium">{fieldErrors.streetLandmark}</p>
+                  <p className="text-xs text-[var(--status-error-fg)] font-medium">{fieldErrors.streetLandmark}</p>
                 )}
               </div>
             </div>
@@ -893,7 +893,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
             <div
               className={`w-5 h-5 rounded-full border flex items-center justify-center ${
                 paymentMethod === "KHALTI"
-                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--surface)]"
+                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
                   : "border-[var(--border)] bg-[var(--surface)]"
               }`}
             >
@@ -950,7 +950,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
             <div
               className={`w-5 h-5 rounded-full border flex items-center justify-center ${
                 paymentMethod === "COD"
-                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--surface)]"
+                  ? "border-[var(--primary)] bg-[var(--primary)] text-[var(--primary-foreground)]"
                   : "border-[var(--border)] bg-[var(--surface)]"
               }`}
             >
@@ -1039,12 +1039,12 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
               </div>
 
               {appliedPromoCode && computedDiscount > 0 && (
-                <p className="text-xs text-[var(--success-fg)] font-medium">
+                <p className="text-xs text-[var(--status-success-fg)] font-medium">
                   Promo code applied: -{formatNpr(computedDiscount)}
                 </p>
               )}
               {promoError && (
-                <p className="text-xs text-[var(--error-fg)] font-medium">{promoError}</p>
+                <p className="text-xs text-[var(--status-error-fg)] font-medium">{promoError}</p>
               )}
             </div>
           )}
@@ -1058,7 +1058,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
           </div>
 
           {computedDiscount > 0 && (
-            <div className="flex justify-between text-[var(--success-fg)] font-medium">
+            <div className="flex justify-between text-[var(--status-success-fg)] font-medium">
               <span>Discount ({appliedPromoCode})</span>
               <span className="tabular-nums">-{formatNpr(computedDiscount)}</span>
             </div>
@@ -1091,7 +1091,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
           <button
             type="submit"
             disabled={isSubmitting}
-            className="flex-1 max-w-sm min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
+            className="flex-1 max-w-sm min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer disabled:opacity-50 disabled:cursor-not-allowed"
           >
             {isSubmitting ? (
               <span>Processing Order...</span>

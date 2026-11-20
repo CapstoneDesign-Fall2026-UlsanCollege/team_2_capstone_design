@@ -246,13 +246,18 @@ export function StorefrontCatalogView({
     return null;
   }, [store.tagline]);
 
+  const safeBannerUrl = useMemo(
+    () => sanitizeStorefrontImageUrl(store.banner_url),
+    [store.banner_url]
+  );
+
   const heroImageUrl = useMemo(() => {
-    return (
-      sanitizeStorefrontImageUrl(featuredProduct?.image_url) ||
-      sanitizeStorefrontImageUrl(store.banner_url) ||
-      null
-    );
-  }, [featuredProduct, store.banner_url]);
+    return safeBannerUrl || sanitizeStorefrontImageUrl(featuredProduct?.image_url) || null;
+  }, [safeBannerUrl, featuredProduct]);
+
+  const heroImageAlt = safeBannerUrl
+    ? `${store.name} cover banner`
+    : featuredProduct?.name || store.name;
 
   const claims = useMemo(() => {
     return getStorefrontPaymentAndDeliveryClaims(store);
@@ -449,7 +454,7 @@ export function StorefrontCatalogView({
               <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
                 <StoreImage
                   src={heroImageUrl || ""}
-                  alt={featuredProduct?.name || store.name}
+                  alt={heroImageAlt}
                   sizes="(max-width: 768px) 100vw, 50vw"
                   priority
                   fallback={
@@ -504,7 +509,7 @@ export function StorefrontCatalogView({
             <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
               <StoreImage
                 src={heroImageUrl || ""}
-                alt={featuredProduct?.name || store.name}
+                alt={heroImageAlt}
                 sizes="(max-width: 768px) 100vw, 50vw"
                 priority
                 fallback={
@@ -859,7 +864,7 @@ export function StorefrontCatalogView({
           role="dialog"
           aria-modal="true"
           aria-labelledby="mobile-filter-title"
-          className="fixed inset-0 z-50 flex items-end justify-center bg-black/50 sm:hidden animate-in fade-in duration-200"
+          className="fixed inset-0 z-50 flex items-end justify-center bg-[var(--overlay-scrim)] sm:hidden animate-in fade-in duration-200"
           onClick={() => setIsMobileFilterOpen(false)}
         >
           <div
