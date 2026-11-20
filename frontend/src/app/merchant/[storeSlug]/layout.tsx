@@ -1,6 +1,13 @@
 import type { Metadata } from "next";
+import { Inter } from "next/font/google";
 import { MerchantStoreGuard } from "@/components/merchant/MerchantStoreGuard";
 import { PlatformThemeProvider } from "@/context/PlatformThemeContext";
+
+const inter = Inter({
+  subsets: ["latin"],
+  variable: "--font-inter",
+  display: "swap",
+});
 
 export const metadata: Metadata = {
   title: "Merchant Console | ShopCraft",
@@ -19,7 +26,7 @@ export default async function MerchantLayout({
   return (
     <PlatformThemeProvider>
       <div
-        className="console min-h-dvh bg-[var(--background)] text-[var(--foreground)] text-[13px] antialiased"
+        className={`${inter.variable} console min-h-dvh bg-[var(--background)] text-[var(--foreground)] text-[13px] antialiased`}
       >
         <MerchantStoreGuard storeSlug={storeSlug}>{children}</MerchantStoreGuard>
       </div>

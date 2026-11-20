@@ -3,7 +3,7 @@
 import React, { useState, useEffect } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { Menu, X, LayoutDashboard } from "lucide-react";
+import { Menu, X, Sun, Moon, LayoutDashboard } from "lucide-react";
 import { usePlatformTheme } from "@/context/PlatformThemeContext";
 import { fetchMyStores, fetchSession } from "@/lib/api";
 
@@ -14,8 +14,9 @@ interface NavItem {
 
 const NAV_ITEMS: NavItem[] = [
   { label: "Looks", href: "/#looks" },
+  { label: "Made for Nepal", href: "/#made-for-nepal" },
   { label: "Orders", href: "/#orders" },
-  { label: "FAQ", href: "/#faq" },
+  { label: "Questions", href: "/#faq" },
 ];
 
 export function PlatformNav() {
@@ -58,163 +59,156 @@ export function PlatformNav() {
     };
   }, [pathname]);
 
-  const themeLabel = theme === "dark" ? "Light" : "Dark";
+  const primaryHref = isAuthenticated ? "/merchant/new" : "/signup?next=/merchant/new";
+  const primaryLabel = isAuthenticated
+    ? hasStores
+      ? "New store"
+      : "Create my store"
+    : "Create my store";
 
   return (
-    <header className="fixed top-0 left-0 right-0 z-50 bg-[#F9F9F7] dark:bg-[#0E0F12] border-b border-[#E2E2DC] dark:border-white/10">
-      <div className="max-w-[1040px] mx-auto px-5 h-16 flex items-center justify-between gap-3">
-        {/* Brand */}
+    <header className="sticky top-0 left-0 right-0 z-50 bg-paper border-b border-line">
+      <div className="max-w-[1180px] mx-auto px-4 sm:px-7 h-16 grid grid-cols-[1fr_auto] md:grid-cols-[1fr_auto_1fr] items-center gap-4">
+        {/* Left: Brand logo */}
         <Link
           href="/"
-          className="flex items-center gap-2.5 shrink-0 focus:outline-none"
-          aria-label="ShopCraft Home"
+          className="justify-self-start inline-flex items-center gap-2.5 min-h-[44px] py-1.5"
         >
           <span
-            className="w-7 h-7 rounded-[7px] bg-[#161614] dark:bg-[#ECECE9] text-[#F9F9F7] dark:text-[#0E0F12] flex items-center justify-center font-bold text-[15px]"
-            style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
+            aria-hidden="true"
+            className="w-7 h-7 rounded-lg bg-btn text-btn-ink grid place-items-center font-serif-brand text-[17px]"
           >
             S
           </span>
-          <span className="font-bold tracking-tight text-[17px] text-[#161614] dark:text-[#ECECE9]">
+          <span className="font-semibold tracking-tight text-base text-ink">
             ShopCraft
           </span>
         </Link>
 
-        {/* Center Nav Links */}
-        <nav className="hidden md:flex items-center gap-6 text-[13px] font-medium text-[#4A4A45] dark:text-[#B4B6BD]">
+        {/* Center: Minimalist Navigation Links */}
+        <nav
+          aria-label="Main navigation"
+          className="hidden md:flex items-center gap-7 text-[13.5px] font-medium text-ink-2"
+        >
           {NAV_ITEMS.map((item) => (
             <a
               key={item.label}
               href={item.href}
-              className="hover:text-[#161614] dark:hover:text-[#ECECE9] transition-colors"
+              className="inline-flex items-center min-h-[44px] px-1 hover:text-ink transition-colors whitespace-nowrap"
             >
               {item.label}
             </a>
           ))}
         </nav>
 
-        {/* Desktop Actions (rounded-lg controls, no pills in nav) */}
-        <div className="hidden md:flex items-center gap-2.5">
+        {/* Right: Desktop Action Buttons + Theme Toggle */}
+        <div className="hidden md:flex items-center justify-self-end gap-3">
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label={`Switch to ${theme === "dark" ? "light" : "dark"} mode`}
-            className="min-h-[38px] px-3.5 rounded-lg border border-[#E2E2DC] dark:border-white/15 bg-white dark:bg-[#15171B] text-[#161614] dark:text-[#ECECE9] text-[13px] font-semibold whitespace-nowrap cursor-pointer hover:border-[#C6C6BE] dark:hover:border-white/30 transition-colors"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            title={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="min-h-[44px] min-w-[44px] rounded-full flex items-center justify-center text-ink-2 hover:text-ink hover:bg-paper-2 transition-colors cursor-pointer"
           >
-            {themeLabel}
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4 text-gold" />
+            ) : (
+              <Moon className="w-4 h-4 text-ink-2" />
+            )}
           </button>
 
-          {isAuthenticated ? (
-            <>
-              {hasStores && (
-                <Link
-                  href="/merchant"
-                  className="inline-flex items-center gap-1.5 min-h-[38px] px-3.5 rounded-lg border border-[#E2E2DC] dark:border-white/15 bg-white dark:bg-[#15171B] text-[#161614] dark:text-[#ECECE9] text-[13px] font-semibold whitespace-nowrap hover:border-[#C6C6BE] dark:hover:border-white/30 transition-colors"
-                >
-                  <LayoutDashboard className="w-3.5 h-3.5" />
-                  <span>Console</span>
-                </Link>
-              )}
-              <Link
-                href="/merchant/new"
-                className="inline-flex items-center min-h-[38px] px-3.5 rounded-lg bg-[#161614] dark:bg-[#ECECE9] text-[#F9F9F7] dark:text-[#0E0F12] text-[13px] font-semibold whitespace-nowrap hover:opacity-90 transition-opacity"
-              >
-                {hasStores ? "New store" : "Create my store"}
-              </Link>
-            </>
+          {isAuthenticated && hasStores ? (
+            <Link
+              href="/merchant"
+              className="inline-flex items-center gap-1.5 min-h-[44px] text-[13.5px] font-medium text-ink-2 hover:text-ink transition-colors px-2"
+            >
+              <LayoutDashboard className="w-3.5 h-3.5" />
+              <span>Console</span>
+            </Link>
           ) : (
-            <>
-              <Link
-                href="/login?next=/merchant"
-                className="inline-flex items-center min-h-[38px] px-3.5 rounded-lg border border-[#E2E2DC] dark:border-white/15 bg-white dark:bg-[#15171B] text-[#161614] dark:text-[#ECECE9] text-[13px] font-semibold whitespace-nowrap hover:border-[#C6C6BE] dark:hover:border-white/30 transition-colors"
-              >
-                Login
-              </Link>
-              <Link
-                href="/signup?next=/merchant/new"
-                className="inline-flex items-center min-h-[38px] px-3.5 rounded-lg bg-[#161614] dark:bg-[#ECECE9] text-[#F9F9F7] dark:text-[#0E0F12] text-[13px] font-semibold whitespace-nowrap hover:opacity-90 transition-opacity"
-              >
-                Create my store
-              </Link>
-            </>
+            <Link
+              href="/login?next=/merchant"
+              className="inline-flex items-center min-h-[44px] text-[13.5px] font-medium text-ink-2 hover:text-ink transition-colors px-2"
+            >
+              Log in
+            </Link>
           )}
+
+          <Link
+            href={primaryHref}
+            className="inline-flex items-center min-h-[44px] rounded-full bg-btn hover:bg-btn-hover text-btn-ink font-semibold text-[13.5px] px-[18px] transition-colors whitespace-nowrap"
+          >
+            {primaryLabel}
+          </Link>
         </div>
 
-        {/* Mobile Actions (single crisp row, >=40px tap targets) */}
-        <div className="flex md:hidden items-center gap-2 shrink-0">
+        {/* Mobile: Theme Toggle + CTA + Hamburger */}
+        <div className="flex md:hidden items-center justify-self-end gap-1.5">
           <button
             type="button"
             onClick={toggleTheme}
-            aria-label="Toggle theme"
-            className="min-h-[40px] px-3 rounded-lg border border-[#E2E2DC] dark:border-white/15 bg-white dark:bg-[#15171B] text-[#161614] dark:text-[#ECECE9] text-xs font-semibold whitespace-nowrap cursor-pointer"
+            aria-label={theme === "dark" ? "Switch to light mode" : "Switch to dark mode"}
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-full text-ink-2 hover:text-ink cursor-pointer"
           >
-            {themeLabel}
+            {theme === "dark" ? (
+              <Sun className="w-4 h-4 text-gold" />
+            ) : (
+              <Moon className="w-4 h-4 text-ink-2" />
+            )}
           </button>
+
+          <Link
+            href={primaryHref}
+            className="inline-flex items-center min-h-[44px] rounded-full bg-btn hover:bg-btn-hover text-btn-ink font-semibold text-xs px-3.5 transition-colors whitespace-nowrap"
+          >
+            {primaryLabel}
+          </Link>
 
           <button
             type="button"
             onClick={() => setMobileMenuOpen((prev) => !prev)}
-            className="min-h-[40px] min-w-[40px] rounded-lg border border-[#E2E2DC] dark:border-white/15 bg-white dark:bg-[#15171B] text-[#161614] dark:text-[#ECECE9] inline-flex items-center justify-center cursor-pointer"
+            className="min-h-[44px] min-w-[44px] inline-flex items-center justify-center rounded-lg text-ink-2 hover:text-ink hover:bg-paper-2 cursor-pointer"
             aria-label={mobileMenuOpen ? "Close menu" : "Open menu"}
+            aria-expanded={mobileMenuOpen}
           >
-            {mobileMenuOpen ? <X className="w-4 h-4" /> : <Menu className="w-4 h-4" />}
+            {mobileMenuOpen ? <X className="w-5 h-5" /> : <Menu className="w-5 h-5" />}
           </button>
         </div>
       </div>
 
-      {/* Flat Mobile Menu */}
+      {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-t border-[#E2E2DC] dark:border-white/10 bg-[#F9F9F7] dark:bg-[#0E0F12] px-5 py-5 space-y-4">
-          <nav className="flex flex-col gap-3 text-sm font-medium text-[#4A4A45] dark:text-[#B4B6BD]">
+        <div className="md:hidden border-b border-line bg-paper px-5 py-5 space-y-3 text-left">
+          <div className="flex flex-col space-y-1">
             {NAV_ITEMS.map((item) => (
               <a
                 key={item.label}
                 href={item.href}
                 onClick={() => setMobileMenuOpen(false)}
-                className="py-1 hover:text-[#161614] dark:hover:text-[#ECECE9]"
+                className="min-h-[44px] flex items-center text-sm font-medium text-ink-2 hover:text-ink transition-colors"
               >
                 {item.label}
               </a>
             ))}
-          </nav>
+          </div>
 
-          <div className="pt-3 border-t border-[#E2E2DC] dark:border-white/10 flex flex-col gap-2.5">
-            {isAuthenticated ? (
-              <>
-                {hasStores && (
-                  <Link
-                    href="/merchant"
-                    onClick={() => setMobileMenuOpen(false)}
-                    className="min-h-[44px] w-full rounded-lg border border-[#E2E2DC] dark:border-white/15 bg-white dark:bg-[#15171B] text-[#161614] dark:text-[#ECECE9] text-sm font-semibold inline-flex items-center justify-center"
-                  >
-                    Merchant Console
-                  </Link>
-                )}
-                <Link
-                  href="/merchant/new"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="min-h-[44px] w-full rounded-lg bg-[#161614] dark:bg-[#ECECE9] text-[#F9F9F7] dark:text-[#0E0F12] text-sm font-semibold inline-flex items-center justify-center"
-                >
-                  {hasStores ? "New store" : "Create my store"}
-                </Link>
-              </>
+          <div className="pt-3 border-t border-line flex flex-col gap-2">
+            {isAuthenticated && hasStores ? (
+              <Link
+                href="/merchant"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full min-h-[44px] flex items-center justify-center rounded-lg border border-line-strong text-ink text-xs font-semibold hover:bg-paper-2 transition-colors"
+              >
+                Merchant Console
+              </Link>
             ) : (
-              <>
-                <Link
-                  href="/login?next=/merchant"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="min-h-[44px] w-full rounded-lg border border-[#E2E2DC] dark:border-white/15 bg-white dark:bg-[#15171B] text-[#161614] dark:text-[#ECECE9] text-sm font-semibold inline-flex items-center justify-center"
-                >
-                  Login
-                </Link>
-                <Link
-                  href="/signup?next=/merchant/new"
-                  onClick={() => setMobileMenuOpen(false)}
-                  className="min-h-[44px] w-full rounded-lg bg-[#161614] dark:bg-[#ECECE9] text-[#F9F9F7] dark:text-[#0E0F12] text-sm font-semibold inline-flex items-center justify-center"
-                >
-                  Create my store
-                </Link>
-              </>
+              <Link
+                href="/login?next=/merchant"
+                onClick={() => setMobileMenuOpen(false)}
+                className="w-full min-h-[44px] flex items-center justify-center rounded-lg border border-line-strong text-ink text-xs font-semibold hover:bg-paper-2 transition-colors"
+              >
+                Log in
+              </Link>
             )}
           </div>
         </div>

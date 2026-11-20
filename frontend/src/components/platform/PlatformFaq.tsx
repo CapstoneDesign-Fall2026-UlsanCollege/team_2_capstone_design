@@ -8,19 +8,19 @@ interface FaqItem {
 export const FAQS: FaqItem[] = [
   {
     q: "What does it cost?",
-    a: "Nothing during beta. You can create a store and list products without a card.",
+    a: "Nothing right now. ShopCraft is in beta and free to use. No card needed.",
   },
   {
     q: "How do shoppers pay?",
-    a: "Online via wallet checkout or in person when the rider drops off the parcel. Phone numbers are checked on arrival orders.",
+    a: "With Khalti, or with cash when the order arrives. For cash orders we check that the number is a valid Nepali mobile number (98 or 97). We don't confirm it by SMS yet.",
   },
   {
     q: "Where does my store live?",
-    a: "At shopcraft.me/s/your-store-name. You pick the handle when you sign up.",
+    a: "At shopcraft.me/s/your-store-name. You choose the name when you sign up.",
   },
   {
-    q: "How do I prepare deliveries?",
-    a: "Shoppers choose their province and ward at checkout. You print a packing slip showing whether payment is cleared or due in cash.",
+    q: "Can I change how my store looks?",
+    a: "Yes. Pick one of four looks and add your logo. You can switch later.",
   },
 ];
 
@@ -28,23 +28,28 @@ export function PlatformFaq() {
   return (
     <section
       id="faq"
-      className="py-14 sm:py-18 px-5 border-b border-[#E2E2DC] dark:border-white/10 scroll-mt-20"
+      className="py-20 sm:py-28 bg-paper-2 border-t border-line scroll-mt-16"
     >
-      <div className="max-w-[1040px] mx-auto">
-        <h2
-          className="text-[28px] sm:text-[36px] font-semibold tracking-[-0.01em] leading-[1.18] text-left text-[#161614] dark:text-[#ECECE9] mb-6"
-          style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
-        >
-          Questions
-        </h2>
+      <div className="max-w-[1180px] mx-auto px-4 sm:px-7 grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-10 lg:gap-20 items-start">
+        <div>
+          <p className="font-mono text-[11.5px] uppercase tracking-[0.12em] text-ink-3 font-medium">
+            Questions
+          </p>
+          <h2 className="mt-3.5 font-display font-semibold tracking-[-0.048em] leading-none text-ink text-[36px] sm:text-[54px] lg:text-[66px]">
+            Questions before <span className="text-accent">you start.</span>
+          </h2>
+        </div>
 
-        <dl className="grid grid-cols-1 md:grid-cols-2 gap-6 md:gap-x-10 md:gap-y-6 text-left">
+        <dl>
           {FAQS.map((faq) => (
-            <div key={faq.q}>
-              <dt className="text-[16px] font-bold text-[#161614] dark:text-[#ECECE9]">
+            <div
+              key={faq.q}
+              className="py-6 sm:py-7 border-t border-line last:border-b"
+            >
+              <dt className="text-lg sm:text-[19px] font-semibold tracking-[-0.01em] text-ink">
                 {faq.q}
               </dt>
-              <dd className="mt-1.5 text-[14px] text-[#4A4A45] dark:text-[#B4B6BD] leading-relaxed">
+              <dd className="mt-2 text-[15.5px] text-ink-2 leading-relaxed max-w-[580px]">
                 {faq.a}
               </dd>
             </div>

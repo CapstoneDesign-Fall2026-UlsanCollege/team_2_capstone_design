@@ -1,37 +1,58 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Instrument_Serif,
+  Inter_Tight,
+  Tiro_Devanagari_Hindi,
+} from "next/font/google";
 import { PlatformNav } from "@/components/platform/PlatformNav";
 import { PlatformThemeProvider } from "@/context/PlatformThemeContext";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-plus-jakarta",
+  variable: "--font-geist",
   display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  variable: "--font-inter-tight",
+  display: "swap",
+});
+
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-instrument-serif",
+  display: "swap",
+});
+
+const tiroDevanagari = Tiro_Devanagari_Hindi({
+  weight: "400",
+  subsets: ["devanagari", "latin"],
+  variable: "--font-devanagari",
   display: "swap",
 });
 
 export const metadata: Metadata = {
-  title: "ShopCraft — Create an Online Store in Nepal with Khalti & COD",
+  title: {
+    absolute: "Online Store Builder for Nepal – Khalti & COD | ShopCraft",
+  },
   description:
-    "Name your store, pick a look, and sell in NPR with Khalti, cash on delivery, and Nepal province, district, and ward checkout. Free while in beta.",
-  keywords: [
-    "online store Nepal",
-    "ecommerce website Nepal",
-    "Khalti online store",
-    "cash on delivery Nepal",
-    "ShopCraft Nepal",
-    "sell online in NPR",
-  ],
+    "Create an online store in Nepal in minutes. Sell in rupees with Khalti and cash on delivery, with province, district and ward checkout. Free during beta.",
   alternates: {
     canonical: "/",
   },
   openGraph: {
     type: "website",
+    locale: "en_US",
     url: "https://shopcraft.me",
     siteName: "ShopCraft",
     title: "ShopCraft — Your shop, online, before your chiya cools.",
@@ -39,19 +60,26 @@ export const metadata: Metadata = {
       "Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.",
     images: [
       {
-        url: "/images/merchant-dashboard-real.png",
-        width: 1280,
-        height: 800,
-        alt: "ShopCraft merchant dashboard",
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "ShopCraft — Your shop, online, before your chiya cools.",
       },
     ],
   },
   twitter: {
     card: "summary_large_image",
-    title: "ShopCraft — Create an Online Store in Nepal with Khalti & COD",
+    title: "Online Store Builder for Nepal – Khalti & COD | ShopCraft",
     description:
       "Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.",
-    images: ["/images/merchant-dashboard-real.png"],
+    images: [
+      {
+        url: "/opengraph-image",
+        width: 1200,
+        height: 630,
+        alt: "ShopCraft — Your shop, online, before your chiya cools.",
+      },
+    ],
   },
 };
 
@@ -61,15 +89,22 @@ export default function PlatformLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <PlatformThemeProvider defaultTheme="dark">
+    <PlatformThemeProvider>
       <div
-        className={`${plusJakarta.variable} ${jetbrainsMono.variable} font-sans min-h-dvh flex flex-col bg-[#F9F9F7] dark:bg-[#0E0F12] text-[#161614] dark:text-[#ECECE9] selection:bg-[#161614] dark:selection:bg-[#ECECE9] selection:text-[#F9F9F7] dark:selection:text-[#0E0F12]`}
-        style={{
-          fontFamily: 'var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, sans-serif',
-        }}
+        className={`${geist.variable} ${geistMono.variable} ${interTight.variable} ${instrumentSerif.variable} ${tiroDevanagari.variable} platform-shell min-h-dvh flex flex-col bg-paper text-ink transition-colors duration-200`}
       >
+        <a
+          href="#main"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-lg focus:bg-btn focus:text-btn-ink focus:text-sm focus:font-semibold"
+        >
+          Skip to content
+        </a>
+
         <PlatformNav />
-        <main className="flex-1 w-full pt-16">{children}</main>
+
+        <main id="main" className="flex-1 w-full">
+          {children}
+        </main>
       </div>
     </PlatformThemeProvider>
   );

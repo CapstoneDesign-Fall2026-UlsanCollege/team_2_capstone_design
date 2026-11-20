@@ -1,14 +1,15 @@
 "use client";
 
-import React, {
-  createContext,
-  useCallback,
-  useContext,
-  useEffect,
-  useSyncExternalStore,
-} from "react";
+import React, { createContext, useCallback, useContext, useEffect, useSyncExternalStore } from "react";
 
 export type ThemeMode = "light" | "dark";
+
+const STORAGE_KEY = "shopcraft-platform-theme";
+
+const THEME_COLOR_HEX: Record<ThemeMode, string> = {
+  dark: "#0C111C",
+  light: "#F5F7FA",
+};
 
 interface ThemeContextType {
   theme: ThemeMode;
@@ -16,80 +17,117 @@ interface ThemeContextType {
   setTheme: (mode: ThemeMode) => void;
 }
 
-const STORAGE_KEY = "shopcraft-platform-theme";
-const THEME_EVENT = "shopcraft-theme-change";
-
 const ThemeContext = createContext<ThemeContextType>({
   theme: "light",
   toggleTheme: () => {},
   setTheme: () => {},
 });
 
-function subscribeTheme(onStoreChange: () => void) {
-  if (typeof window === "undefined") return () => {};
-  const handler = () => onStoreChange();
-  window.addEventListener("storage", handler);
-  window.addEventListener(THEME_EVENT, handler);
+const listeners = new Set<() => void>();
+
+function notifyThemeListeners() {
+  listeners.forEach((listener) => listener());
+}
+
+function subscribeTheme(listener: () => void): () => void {
+  listeners.add(listener);
+  if (typeof window === "undefined") {
+    return () => listeners.delete(listener);
+  }
+  const onStorage = (e: StorageEvent) => {
+    if (e.key === STORAGE_KEY) listener();
+  };
+  window.addEventListener("storage", onStorage);
   return () => {
-    window.removeEventListener("storage", handler);
-    window.removeEventListener(THEME_EVENT, handler);
+    listeners.delete(listener);
+    window.removeEventListener("storage", onStorage);
   };
 }
 
-interface PlatformThemeProviderProps {
-  children: React.ReactNode;
-  defaultTheme?: ThemeMode;
+function getThemeSnapshot(): ThemeMode {
+  try {
+    return localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light";
+  } catch {
+    return "light";
+  }
 }
 
-export function PlatformThemeProvider({
-  children,
-  defaultTheme = "light",
-}: PlatformThemeProviderProps) {
-  const theme = useSyncExternalStore<ThemeMode>(
+function getServerThemeSnapshot(): ThemeMode {
+  return "light";
+}
+
+function syncThemeColorMeta(mode: ThemeMode) {
+  const color = THEME_COLOR_HEX[mode];
+  const metas = document.querySelectorAll<HTMLMetaElement>('meta[name="theme-color"]');
+  if (metas.length === 0) {
+    const meta = document.createElement("meta");
+    meta.name = "theme-color";
+    meta.content = color;
+    document.head.appendChild(meta);
+    return;
+  }
+  metas.forEach((meta) => {
+    meta.setAttribute("content", color);
+  });
+}
+
+function applyDocumentTheme(mode: ThemeMode, syncMeta = false) {
+  if (mode === "dark") {
+    document.documentElement.classList.add("dark");
+    document.documentElement.setAttribute("data-theme", "dark");
+    document.documentElement.setAttribute("data-platform-theme", "dark");
+  } else {
+    document.documentElement.classList.remove("dark");
+    document.documentElement.setAttribute("data-theme", "light");
+    document.documentElement.setAttribute("data-platform-theme", "light");
+  }
+  if (syncMeta) {
+    syncThemeColorMeta(mode);
+  }
+}
+
+export function PlatformThemeProvider({ children }: { children: React.ReactNode }) {
+  const theme = useSyncExternalStore(
     subscribeTheme,
-    () => {
-      try {
-        const stored = localStorage.getItem(STORAGE_KEY);
-        if (stored === "dark" || stored === "light") return stored;
-      } catch {
-        // Ignore storage restrictions
-      }
-      return defaultTheme;
-    },
-    () => defaultTheme
+    getThemeSnapshot,
+    getServerThemeSnapshot
   );
 
   useEffect(() => {
     try {
-      if (theme === "dark") {
-        document.documentElement.classList.add("dark");
-        document.documentElement.setAttribute("data-platform-theme", "dark");
-      } else {
-        document.documentElement.classList.remove("dark");
-        document.documentElement.setAttribute("data-platform-theme", "light");
-      }
+      const stored = localStorage.getItem(STORAGE_KEY);
+      const hasStored = stored === "dark" || stored === "light";
+      applyDocumentTheme(theme, hasStored);
     } catch {
-      // Ignore
+      // Ignore SSR / localStorage errors
     }
+    return () => {
+      document.documentElement.classList.remove("dark");
+      document.documentElement.removeAttribute("data-theme");
+      document.documentElement.removeAttribute("data-platform-theme");
+    };
   }, [theme]);
 
   const setTheme = useCallback((mode: ThemeMode) => {
     try {
       localStorage.setItem(STORAGE_KEY, mode);
-      window.dispatchEvent(new Event(THEME_EVENT));
+      applyDocumentTheme(mode, true);
+      notifyThemeListeners();
     } catch {
       // Ignore
     }
   }, []);
 
   const toggleTheme = useCallback(() => {
-    setTheme(theme === "light" ? "dark" : "light");
-  }, [theme, setTheme]);
+    const nextTheme: ThemeMode = getThemeSnapshot() === "light" ? "dark" : "light";
+    setTheme(nextTheme);
+  }, [setTheme]);
 
   return (
     <ThemeContext.Provider value={{ theme, toggleTheme, setTheme }}>
       <div
         suppressHydrationWarning
+        data-theme={theme}
         data-platform-theme={theme}
         className={theme === "dark" ? "dark" : ""}
       >

@@ -1,128 +1,215 @@
 "use client";
 
-import React, { useState } from "react";
-import Link from "next/link";
+import React, { useMemo, useState } from "react";
+import Image from "next/image";
+import { StoreNameForm, slugifyStoreName } from "@/components/platform/StoreNameForm";
 import { ThemeTemplateStudio } from "@/components/platform/ThemeTemplateStudio";
 
-function slugify(value: string): string {
-  return value
-    .toLowerCase()
-    .trim()
-    .replace(/[^a-z0-9]+/g, "-")
-    .replace(/^-+|-+$/g, "");
+const PRAYER_FLAG_COLORS = [
+  "var(--sc-flag-blue)",
+  "var(--sc-card)",
+  "var(--sc-flag-red)",
+  "var(--sc-flag-green)",
+  "var(--sc-flag-yellow)",
+];
+
+function buildPrayerFlagPoints() {
+  const p0 = [-20, 14];
+  const p1 = [720, 62];
+  const p2 = [1460, 14];
+  const count = 44;
+  const items: { x: number; y: number; angle: number; color: string }[] = [];
+
+  for (let i = 1; i < count; i++) {
+    const t = i / count;
+    const oneMinus = 1 - t;
+    const x = oneMinus * oneMinus * p0[0] + 2 * oneMinus * t * p1[0] + t * t * p2[0];
+    const y = oneMinus * oneMinus * p0[1] + 2 * oneMinus * t * p1[1] + t * t * p2[1];
+    const dx = 2 * oneMinus * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0]);
+    const dy = 2 * oneMinus * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1]);
+    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
+    items.push({
+      x,
+      y,
+      angle,
+      color: PRAYER_FLAG_COLORS[i % PRAYER_FLAG_COLORS.length],
+    });
+  }
+
+  return items;
 }
 
 export function HomeInteractiveTop() {
   const [storeName, setStoreName] = useState("");
-  const slug = slugify(storeName) || "your-store";
-
-  const handleCreate = (e: React.FormEvent) => {
-    e.preventDefault();
-    const name = storeName.trim();
-    window.location.href = name
-      ? `/signup?name=${encodeURIComponent(name)}&next=/merchant/new`
-      : "/signup?next=/merchant/new";
-  };
+  const [bagCount, setBagCount] = useState(1);
+  const prayerFlags = useMemo(() => buildPrayerFlagPoints(), []);
+  const resolvedSlug = slugifyStoreName(storeName);
+  const previewBrand = storeName.trim() || "Himalayan Roasters";
 
   return (
     <>
-      {/* 1. HERO (Centered, flat dusk/white mountain dissolving cleanly into background) */}
-      <section className="relative overflow-hidden border-b border-[#E2E2DC] dark:border-white/10 bg-[#F9F9F7] dark:bg-[#0E0F12] px-5 pt-16 pb-16 sm:pt-24 sm:pb-22 text-center">
-        {/* Dark-mode dusk backdrop tint dissolving into #0E0F12 */}
+      {/* 1. Hero: Mountain silhouette, prayer flags, one input, storefront peek above the fold */}
+      <section className="relative pt-6 sm:pt-8 pb-0 overflow-hidden bg-paper text-center">
         <div
           aria-hidden="true"
-          className="hidden dark:block absolute inset-0 pointer-events-none bg-[#1B1E24]"
-          style={{
-            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 92%)",
-            maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.85) 0%, rgba(0,0,0,0) 92%)",
-          }}
-        />
+          className="pointer-events-none absolute top-0 left-0 right-0 h-[560px] sm:h-[740px] platform-mtn-wrap"
+        >
+          <Image
+            src="/images/hero-mountain.jpg"
+            alt=""
+            width={1024}
+            height={572}
+            priority
+            fetchPriority="high"
+            sizes="100vw"
+            className="w-full h-full object-cover object-[center_22%] platform-mtn-img"
+          />
+        </div>
 
-        {/* Mountain image dissolving cleanly into background */}
-        <div
+        {/* Lungta Prayer Flag String (decorative only) */}
+        <svg
           aria-hidden="true"
-          className="absolute inset-0 bg-cover bg-[center_30%] bg-no-repeat pointer-events-none opacity-72 dark:opacity-90 mix-blend-multiply dark:mix-blend-soft-light [filter:brightness(0.64)_contrast(5.4)_grayscale(1)] dark:[filter:brightness(0.95)_contrast(1.28)_grayscale(1)]"
-          style={{
-            backgroundImage: "url('/images/hero-mountain.jpg')",
-            WebkitMaskImage: "linear-gradient(to bottom, rgba(0,0,0,0.95) 45%, rgba(0,0,0,0) 96%)",
-            maskImage: "linear-gradient(to bottom, rgba(0,0,0,0.95) 45%, rgba(0,0,0,0) 96%)",
-          }}
-        />
+          viewBox="0 0 1440 96"
+          preserveAspectRatio="xMidYMin slice"
+          className="pointer-events-none absolute top-0 left-0 w-full h-11 sm:h-20 z-[2]"
+        >
+          <path
+            d="M-20,14 Q720,62 1460,14"
+            fill="none"
+            stroke="var(--sc-line-strong)"
+            strokeWidth="1.2"
+          />
+          {prayerFlags.map((flag, idx) => (
+            <g
+              key={idx}
+              transform={`translate(${flag.x.toFixed(1)},${flag.y.toFixed(1)}) rotate(${flag.angle.toFixed(1)})`}
+            >
+              <rect
+                x="-8"
+                y="0"
+                width="16"
+                height="20"
+                rx="1"
+                fill={flag.color}
+                fillOpacity="0.92"
+              />
+            </g>
+          ))}
+        </svg>
 
-        <div className="relative z-10 max-w-[660px] mx-auto">
-          <h1
-            className="text-[34px] sm:text-[54px] font-semibold tracking-[-0.015em] leading-[1.12] sm:leading-[1.08] text-[#161614] dark:text-[#ECECE9]"
-            style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
-          >
-            Your shop, online, before your{" "}
-            <span className="relative inline-block whitespace-nowrap">
-              chiya cools.
-              <svg
-                aria-hidden="true"
-                viewBox="0 0 220 12"
-                fill="none"
-                preserveAspectRatio="none"
-                className="absolute -left-0.5 -right-0.5 -bottom-1.5 w-[calc(100%+4px)] h-[10px] pointer-events-none"
-              >
-                <path
-                  d="M2 8.5C58 3.5 142 2.5 218 7.5"
-                  stroke="#F2A900"
-                  strokeWidth="3.2"
-                  strokeLinecap="round"
-                />
-              </svg>
+        <div className="relative z-10 max-w-[1180px] mx-auto px-4 sm:px-7 pt-6 sm:pt-5">
+          <div className="inline-flex items-center gap-3 text-[13.5px] font-medium text-ink-2">
+            <span className="font-devanagari text-[22px] text-accent leading-none">
+              नमस्ते
             </span>
+            <span aria-hidden="true" className="w-6 h-px bg-line-strong" />
+            <span>Welcome to ShopCraft</span>
+          </div>
+
+          <h1 className="mt-4 mx-auto max-w-[1040px] font-display font-semibold tracking-[-0.048em] leading-none text-ink text-[38px] sm:text-[64px] lg:text-[82px]">
+            Your shop, online, before your{" "}
+            <span className="text-accent">chiya</span> cools.
           </h1>
 
-          <p className="mt-4.5 sm:mt-5 text-[16px] sm:text-[18px] leading-[1.55] text-[#4A4A45] dark:text-[#B4B6BD] max-w-[500px] mx-auto">
-            Set up your store and add your products. Customers pay with Khalti or cash on delivery.
+          <p className="mt-4 sm:mt-5 mx-auto max-w-[560px] text-base sm:text-[19px] text-ink-2 leading-relaxed">
+            Set up your online store in Nepal and add your products. Customers pay with Khalti or cash on delivery.
           </p>
 
-          {/* Pill shape reserved strictly for main input and CTA */}
-          <form onSubmit={handleCreate} className="mt-7.5 max-w-[500px] mx-auto">
-            <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-2">
-              <input
-                type="text"
-                value={storeName}
-                onChange={(e) => setStoreName(e.target.value)}
-                placeholder="Store name, e.g. Himalayan Roasters"
-                aria-label="Store name"
-                className="flex-1 min-h-[48px] px-5 rounded-full border border-[#C6C6BE] dark:border-white/25 bg-white dark:bg-[#15171B] text-[#161614] dark:text-[#ECECE9] placeholder:text-[#4A4A45] dark:placeholder:text-[#B4B6BD] text-[15px] focus:outline-none focus:border-[#161614] dark:focus:border-[#ECECE9]"
-              />
-              <button
-                type="submit"
-                className="min-h-[48px] px-6 rounded-full border border-[#161614] dark:border-[#ECECE9] bg-[#161614] dark:bg-[#ECECE9] text-[#F9F9F7] dark:text-[#0E0F12] font-bold text-[15px] whitespace-nowrap cursor-pointer hover:opacity-90 transition-opacity"
-              >
-                Create my store →
-              </button>
+          <StoreNameForm
+            value={storeName}
+            onChange={setStoreName}
+            showMeta
+            inputId="hero-store-name"
+          />
+
+          {/* Compact Storefront Preview Rising Into the First Fold */}
+          <div className="relative z-10 w-full max-w-[340px] sm:max-w-[320px] mx-auto mt-5">
+            {/* Desktop floating sample badges */}
+            <div className="hidden xl:block absolute -left-[256px] top-[76px] min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line">
+              <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
+                Sample order
+              </p>
+              <p className="text-[14.5px] font-semibold text-ink mt-1">
+                #HR-1044 · Rs. 1,450
+              </p>
+              <span className="inline-block mt-2 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-cash-bg text-cash-ink">
+                Cash to collect
+              </span>
             </div>
 
-            <p
-              className="mt-3.5 text-[13px] sc-mono text-[#4A4A45] dark:text-[#B4B6BD]"
-              aria-live="polite"
-            >
-              shopcraft.me/s/
-              <strong className="font-semibold text-[#161614] dark:text-[#ECECE9]">
-                {slug}
-              </strong>
-              <span
-                aria-hidden="true"
-                className="inline-block w-[2px] h-[14px] bg-[#F2A900] align-[-2px] ml-[2px] sc-cursor-blink"
-              />
-            </p>
-          </form>
+            <div className="hidden xl:block absolute -right-[262px] top-4 min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line">
+              <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
+                Deliver to
+              </p>
+              <p className="text-[14.5px] font-semibold text-ink mt-1">
+                Ward 04, Kathmandu
+              </p>
+              <p className="text-xs text-ink-2 mt-0.5">Bagmati Province</p>
+            </div>
 
-          <Link
-            href="/s/himalayan-roasters"
-            className="inline-block mt-4 text-[13px] font-medium text-[#4A4A45] dark:text-[#B4B6BD] hover:text-[#161614] dark:hover:text-[#ECECE9] underline underline-offset-4 transition-colors"
-          >
-            See how a live store runs →
-          </Link>
+            <div className="hidden xl:block absolute -right-[236px] top-[146px] min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line">
+              <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
+                Payment
+              </p>
+              <p className="text-[14.5px] font-semibold text-ink mt-1">
+                Khalti · test mode
+              </p>
+              <p className="text-xs text-ink-2 mt-0.5">Until you add your live key</p>
+            </div>
+
+            {/* Hardware bezel on sm+, borderless native store card on <640px */}
+            <div className="sm:rounded-t-[42px] sm:p-2.5 sm:pb-0 sm:platform-phone-shell sm:border sm:border-line-strong sm:border-b-0">
+              <div className="relative rounded-t-[18px] sm:rounded-t-[33px] border border-line sm:border-0 border-b-0 platform-screen-editorial px-[18px] pt-5 sm:pt-10 pb-7 text-left overflow-hidden">
+                <div
+                  aria-hidden="true"
+                  className="hidden sm:block absolute top-2.5 left-1/2 -translate-x-1/2 w-[84px] h-[22px] rounded-full platform-phone-island"
+                />
+
+                <div className="flex items-center justify-between gap-2">
+                  <span className="font-serif-brand text-[18px] truncate">
+                    {previewBrand}
+                  </span>
+                  <span className="font-mono text-[10.5px] px-2.5 py-1 rounded-full screen-badge shrink-0">
+                    Bag ({bagCount})
+                  </span>
+                </div>
+
+                <div className="mt-3 rounded-[14px] overflow-hidden aspect-[16/9] screen-photo">
+                  <Image
+                    src="/images/products/gulmi-reserve.svg"
+                    alt="Gulmi Reserve Bourbon"
+                    width={800}
+                    height={800}
+                    unoptimized
+                    className="w-full h-full object-cover block"
+                  />
+                </div>
+
+                <p className="text-[11px] screen-muted mt-3">
+                  Single-origin coffee · 250g
+                </p>
+                <p className="font-serif-brand text-[20px] leading-tight mt-0.5">
+                  Gulmi Reserve Bourbon
+                </p>
+
+                <div className="mt-2.5 flex items-center justify-between gap-3">
+                  <span className="font-mono text-sm font-medium">Rs. 750</span>
+                  <button
+                    type="button"
+                    onClick={() => setBagCount((c) => c + 1)}
+                    className="min-h-[44px] sm:min-h-[36px] px-4 rounded-full text-xs font-medium screen-cta cursor-pointer"
+                  >
+                    Add to bag
+                  </button>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </section>
 
-      {/* 2. FOUR STORE LOOKS */}
-      <ThemeTemplateStudio storeName={storeName} />
+      {/* 2. Staggered Desktop / Swipeable Mobile Storefront Looks */}
+      <ThemeTemplateStudio storeName={storeName} slug={resolvedSlug} />
     </>
   );
 }

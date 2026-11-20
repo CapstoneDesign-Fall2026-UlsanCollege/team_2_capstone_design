@@ -1,137 +1,66 @@
 import React from "react";
-
-interface OrderRow {
-  id: string;
-  customer: string;
-  itemAndWard: string;
-  price: string;
-  statusLabel: string;
-  dotColorClass: string;
-}
-
-const SAMPLE_ORDERS: OrderRow[] = [
-  {
-    id: "#HR-1048",
-    customer: "Aarav Shrestha",
-    itemAndWard: "Gulmi Bourbon (500g) · Lalitpur Ward 3",
-    price: "Rs. 1,450",
-    statusLabel: "Paid · Khalti",
-    dotColorClass: "bg-[#22C55E]",
-  },
-  {
-    id: "#HR-1047",
-    customer: "Sabina Gurung",
-    itemAndWard: "Ilam First Flush (250g) · Pokhara Ward 6",
-    price: "Rs. 890",
-    statusLabel: "Collect cash · COD",
-    dotColorClass: "bg-[#F59E0B]",
-  },
-  {
-    id: "#HR-1046",
-    customer: "Bikesh Maharjan",
-    itemAndWard: "Nuwakot Typica (250g) · Patan Ward 11",
-    price: "Rs. 780",
-    statusLabel: "Paid · Khalti",
-    dotColorClass: "bg-[#22C55E]",
-  },
-  {
-    id: "#HR-1045",
-    customer: "Prativa Tamang",
-    itemAndWard: "Wild Cliff Honey (500g) · Kathmandu Ward 10",
-    price: "Rs. 1,650",
-    statusLabel: "Collect cash · COD",
-    dotColorClass: "bg-[#F59E0B]",
-  },
-  {
-    id: "#HR-1044",
-    customer: "Roshan Adhikari",
-    itemAndWard: "Kakani Roast + V60 Filters · Bhaktapur Ward 4",
-    price: "Rs. 2,130",
-    statusLabel: "Packed · Khalti",
-    dotColorClass: "bg-[#3B82F6]",
-  },
-  {
-    id: "#HR-1043",
-    customer: "Nisha Karki",
-    itemAndWard: "Dhaulagiri Blend (1kg) · Kathmandu Ward 16",
-    price: "Rs. 2,580",
-    statusLabel: "Delivered · COD",
-    dotColorClass: "bg-[#94A3B8]",
-  },
-];
+import Image from "next/image";
 
 export function DashboardMockupPreview() {
   return (
     <section
       id="orders"
-      className="py-14 px-5 bg-[#F2F2EE] dark:bg-[#1A1D23] border-b border-[#E2E2DC] dark:border-white/10 scroll-mt-20"
+      className="py-20 sm:py-32 bg-paper-2 border-y border-line scroll-mt-16"
     >
-      <div className="max-w-[1040px] mx-auto">
-        <div className="flex flex-wrap items-baseline justify-between gap-3 mb-5">
-          <h2
-            className="text-[28px] sm:text-[36px] font-semibold tracking-[-0.01em] leading-[1.18] text-left text-[#161614] dark:text-[#ECECE9]"
-            style={{ fontFamily: "var(--font-fraunces), Georgia, serif" }}
-          >
-            Recent store orders
+      <div className="max-w-[1180px] mx-auto px-4 sm:px-7">
+        <div className="max-w-[820px] mx-auto text-center">
+          <p className="font-mono text-[11.5px] uppercase tracking-[0.12em] text-ink-3 font-medium">
+            Merchant console
+          </p>
+          <h2 className="mt-4 font-display font-semibold tracking-[-0.048em] leading-none text-ink text-[36px] sm:text-[60px] lg:text-[76px]">
+            See every order,{" "}
+            <span className="text-accent">paid or cash to collect.</span>
           </h2>
-          <span className="text-[13px] sc-mono text-[#4A4A45] dark:text-[#B4B6BD]">
-            shopcraft.me/merchant/himalayan-roasters/orders
-          </span>
+          <p className="mt-5 mx-auto max-w-[560px] text-base sm:text-lg text-ink-2 leading-relaxed">
+            Orders arrive in one calm list. Open one, print the packing slip, and send it out.
+          </p>
         </div>
 
-        <div className="rounded-xl border border-[#E2E2DC] dark:border-white/10 bg-white dark:bg-[#15171B] overflow-hidden">
-          {/* Summary bar */}
-          <div className="px-4 py-3 border-b border-[#E2E2DC] dark:border-white/10 flex flex-wrap items-center justify-between gap-2.5 text-[13px]">
-            <div className="flex flex-wrap gap-x-4 gap-y-1 text-[#4A4A45] dark:text-[#B4B6BD]">
-              <span>
-                <strong className="text-[#161614] dark:text-[#ECECE9]">6</strong> orders today
-              </span>
-              <span>
-                Paid online:{" "}
-                <strong className="sc-mono text-[#161614] dark:text-[#ECECE9]">Rs. 4,360</strong>
-              </span>
-              <span>
-                Cash to collect:{" "}
-                <strong className="sc-mono text-[#161614] dark:text-[#ECECE9]">Rs. 5,120</strong>
-              </span>
+        <div className="relative max-w-[1080px] mx-auto mt-12 sm:mt-16">
+          <div className="relative aspect-[16/9.2] sm:aspect-[16/5.9] overflow-hidden rounded-2xl sm:rounded-3xl bg-card border border-line">
+            <Image
+              src="/images/merchant-orders-real.png"
+              alt="ShopCraft merchant orders fulfillment table showing sample order #HR-2026-0001 paid via Khalti"
+              width={2560}
+              height={1600}
+              loading="eager"
+              sizes="(max-width: 1080px) 100vw, 1080px"
+              className="absolute max-w-none w-[174%] -left-[27%] -top-[15.5%] sm:w-[140%] sm:-left-[29.5%] sm:-top-[16%]"
+            />
+          </div>
+
+          <div className="mt-3.5 lg:mt-0 lg:absolute lg:-right-6 lg:-bottom-12 w-full lg:w-[320px] rounded-xl bg-card text-ink p-5 border border-line-strong lg:rotate-[1.8deg]">
+            <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
+              <span>Packing slip</span>
+              <span>Sample</span>
             </div>
-            <span className="text-[12px] text-[#686862] dark:text-[#8C9099]">
-              Himalayan Coffee Roasters
-            </span>
-          </div>
-
-          {/* 6 Realistic Order Rows */}
-          <div>
-            {SAMPLE_ORDERS.map((order) => (
-              <div
-                key={order.id}
-                className="px-4 py-3.5 border-b last:border-b-0 border-[#E2E2DC] dark:border-white/10 flex flex-col md:flex-row md:items-center justify-between gap-2 text-left"
-              >
-                <div className="flex flex-wrap items-baseline gap-x-2.5 gap-y-1 text-[14px]">
-                  <span className="text-[13px] sc-mono font-semibold text-[#686862] dark:text-[#8C9099]">
-                    {order.id}
-                  </span>
-                  <span className="font-semibold text-[#161614] dark:text-[#ECECE9]">
-                    {order.customer}
-                  </span>
-                  <span className="text-[#4A4A45] dark:text-[#B4B6BD]">
-                    {order.itemAndWard}
-                  </span>
-                </div>
-
-                <div className="flex items-center justify-between md:justify-end gap-3.5 shrink-0">
-                  <span className="text-[14px] sc-mono font-semibold text-[#161614] dark:text-[#ECECE9]">
-                    {order.price}
-                  </span>
-                  <span className="inline-flex items-center gap-[7px] px-2.5 py-1 rounded-[6px] border border-[#E2E2DC] dark:border-white/10 bg-[#F9F9F7] dark:bg-[#0E0F12] text-[12px] font-semibold text-[#161614] dark:text-[#ECECE9] whitespace-nowrap">
-                    <span className={`w-[7px] h-[7px] rounded-full shrink-0 ${order.dotColorClass}`} />
-                    <span>{order.statusLabel}</span>
-                  </span>
-                </div>
-              </div>
-            ))}
+            <p className="font-mono text-[15px] font-semibold text-ink mt-2.5">
+              #HR-2026-0001
+            </p>
+            <hr className="border-0 border-t border-dashed border-line-strong my-3.5" />
+            <div className="text-[12.5px] text-ink-2 leading-relaxed">
+              <p className="font-semibold text-ink">Aarav Shrestha</p>
+              <p>Ward 04, Kathmandu</p>
+              <p>Bagmati Province</p>
+            </div>
+            <hr className="border-0 border-t border-dashed border-line-strong my-3.5" />
+            <p className="text-[12.5px] text-ink-2">
+              2 × Gulmi Reserve Bourbon (250g)
+            </p>
+            <div className="mt-3.5 inline-block rounded-lg bg-paid-bg text-paid-ink px-3 py-1.5 font-mono text-[11.5px] font-semibold tracking-[0.04em]">
+              PAID VIA KHALTI · Rs. 1,450
+            </div>
           </div>
         </div>
+
+        <p className="mt-6 lg:mt-20 text-center text-[13px] text-ink-3">
+          Screenshot of the live merchant console. Packing slip matches sample order #HR-2026-0001.
+        </p>
       </div>
     </section>
   );

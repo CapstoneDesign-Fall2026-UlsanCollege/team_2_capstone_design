@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import React from "react";
 import Link from "next/link";
 import { notFound } from "next/navigation";
@@ -14,23 +15,38 @@ import {
 } from "lucide-react";
 import { StoreImage } from "@/components/storefront/StoreImage";
 import { StorePublicMetadata } from "@/lib/api";
-import { getServerApiOrigin } from "@/lib/env";
+import { fetchPublicStoreOutcome } from "@/lib/storefront-fetch";
 import {
   buildWhatsAppUrl,
   sanitizeStorefrontImageUrl,
 } from "@/lib/storefront-helpers";
 
 async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null> {
-  const origin = getServerApiOrigin();
-  try {
-    const res = await fetch(`${origin}/api/stores/${encodeURIComponent(storeSlug)}/`, {
-      next: { revalidate: 60 },
-    });
-    if (res.status === 404 || !res.ok) return null;
-    return await res.json();
-  } catch {
-    return null;
+  const res = await fetchPublicStoreOutcome(storeSlug);
+  return res.status === "ok" ? res.store : null;
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ storeSlug: string }>;
+}): Promise<Metadata> {
+  const { storeSlug } = await params;
+  const store = await fetchStore(storeSlug);
+  const slug = encodeURIComponent(store?.slug || storeSlug);
+  if (!store) {
+    return {
+      title: "About Store",
+      alternates: { canonical: `/s/${slug}/about` },
+    };
   }
+  return {
+    title: `About ${store.name}`,
+    description:
+      store.story_headline?.trim() ||
+      `Learn more about ${store.name} on ShopCraft.`,
+    alternates: { canonical: `/s/${slug}/about` },
+  };
 }
 
 export default async function StorefrontAboutPage({

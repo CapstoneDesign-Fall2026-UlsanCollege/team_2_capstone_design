@@ -1,3 +1,4 @@
+import type { Metadata } from "next";
 import React from "react";
 import { notFound } from "next/navigation";
 import { ProductItem, StorePublicMetadata } from "@/lib/api";
@@ -56,6 +57,31 @@ async function fetchStoreAndProduct(
       relatedProducts: [],
     };
   }
+}
+
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ storeSlug: string; productId: string }>;
+}): Promise<Metadata> {
+  const { storeSlug, productId } = await params;
+  const { store, product } = await fetchStoreAndProduct(storeSlug, productId);
+  const slug = encodeURIComponent(store?.slug || storeSlug);
+  const prodSlug = encodeURIComponent(product?.slug || productId);
+
+  if (!store || !product) {
+    return {
+      title: "Product Not Found",
+      alternates: { canonical: `/s/${slug}/products/${prodSlug}` },
+    };
+  }
+
+  const cleanDesc = (product.description || "").trim().slice(0, 155);
+  return {
+    title: `${product.name} — ${store.name}`,
+    description: cleanDesc || `Order ${product.name} from ${store.name} in NPR.`,
+    alternates: { canonical: `/s/${slug}/products/${prodSlug}` },
+  };
 }
 
 export default async function StorefrontProductDetailPage({

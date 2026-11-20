@@ -392,6 +392,28 @@ class OrderSerializer(serializers.ModelSerializer):
 # Public Store Views
 # -----------------------------------------------------------------------------
 
+class StorePublicSitemapView(APIView):
+    authentication_classes = []
+    permission_classes = [permissions.AllowAny]
+
+    def get(self, request):
+        stores = (
+            Store.objects.filter(is_active=True)
+            .only("slug", "updated_at")
+            .order_by("id")
+        )
+        data = [
+            {
+                "slug": s.slug,
+                "updated_at": s.updated_at.isoformat() if s.updated_at else None,
+            }
+            for s in stores
+        ]
+        response = Response({"stores": data})
+        response["Cache-Control"] = PUBLIC_STOREFRONT_CACHE_CONTROL
+        return response
+
+
 class StoreDetailView(StorePublicMixin, APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
@@ -2674,6 +2696,7 @@ urlpatterns = [
     path("merchant/my-stores/", MerchantMyStoresView.as_view(), name="merchant_my_stores_alt"),
 
     # Public Storefront
+    path("stores/sitemap/", StorePublicSitemapView.as_view(), name="store_public_sitemap"),
     path("stores/<slug:store_slug>/", StoreDetailView.as_view(), name="store_public_detail"),
     path("stores/<slug:store_slug>/catalog/", StoreCatalogView.as_view(), name="store_public_catalog"),
     path("stores/<slug:store_slug>/products/<str:product_ref>/", StorePublicProductDetailView.as_view(), name="store_public_product_detail"),

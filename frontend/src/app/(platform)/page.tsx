@@ -2,7 +2,9 @@ import React from "react";
 import { HomeInteractiveTop } from "@/components/platform/HomeInteractiveTop";
 import { CapabilityMatrix } from "@/components/platform/CapabilityMatrix";
 import { DashboardMockupPreview } from "@/components/platform/DashboardMockupPreview";
-import { FAQS, PlatformFaq } from "@/components/platform/PlatformFaq";
+import { WorkflowSection } from "@/components/platform/WorkflowSection";
+import { PlatformFaq, FAQS } from "@/components/platform/PlatformFaq";
+import { ClosingCtaSection } from "@/components/platform/ClosingCtaSection";
 import { PlatformFooter } from "@/components/platform/PlatformFooter";
 
 const structuredData = [
@@ -50,25 +52,31 @@ const structuredData = [
 
 export default function PlatformHomePage() {
   return (
-    <div className="relative w-full min-h-screen bg-[#F9F9F7] dark:bg-[#0E0F12] text-[#161614] dark:text-[#ECECE9] overflow-x-hidden">
+    <div className="relative w-full min-h-screen bg-paper text-ink overflow-x-clip transition-colors duration-200">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
-      {/* 1. Hero + 2. Four store looks */}
+      {/* 1. Hero & 2. Storefront Looks */}
       <HomeInteractiveTop />
 
-      {/* 3. What works today */}
+      {/* 3. Built for the way Nepal sells */}
       <CapabilityMatrix />
 
-      {/* 4. Full-width 6-order Nepali dashboard preview */}
+      {/* 4. Merchant Console Orders & Packing Slip */}
       <DashboardMockupPreview />
 
-      {/* 5. Questions */}
+      {/* 5. Three steps to open */}
+      <WorkflowSection />
+
+      {/* 6. FAQ */}
       <PlatformFaq />
 
-      {/* 6. Footer */}
+      {/* 7. Closing CTA */}
+      <ClosingCtaSection />
+
+      {/* 8. Footer */}
       <PlatformFooter />
     </div>
   );
