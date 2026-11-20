@@ -136,7 +136,7 @@ export const STOREFRONT_THEMES: readonly StorefrontThemeDefinition[] = [
     id: "editorial-warm",
     displayName: "Editorial Warm",
     shortDescription:
-      "Warm paper canvas, editorial serif headlines, and terracotta CTAs crafted for story-driven Nepali brands.",
+      "Warm paper magazine layout with a roomy 2-column gallery grid, double-rule hero mat, full-bleed story bands, and terracotta CTAs.",
     bestForLabel: "Coffee, Tea, Bakeries & Slow Food",
     bestForCategories: [
       "Specialty Coffee & Tea",
@@ -146,8 +146,8 @@ export const STOREFRONT_THEMES: readonly StorefrontThemeDefinition[] = [
     tokenGroupId: "editorial-light",
     surfaceMode: "light",
     radius: {
-      control: "8px",
-      card: "12px",
+      control: "2px",
+      card: "4px",
     },
     fontPairing: {
       id: "fraunces-plus-jakarta",
@@ -198,7 +198,7 @@ export const STOREFRONT_THEMES: readonly StorefrontThemeDefinition[] = [
     id: "pahadi-sage",
     displayName: "Pahadi Sage",
     shortDescription:
-      "Botanical sage surfaces, soft rounded frames, and pine-green buttons built for mountain harvests and heritage crafts.",
+      "Soft botanical boutique with 24px framed cards, pill controls, centered serif titles, and pine-green accents for mountain harvests.",
     bestForLabel: "Mountain Teas, Honey, Herbs & Handloom",
     bestForCategories: [
       "Organic Honey, Herbs & Spices",
@@ -207,8 +207,8 @@ export const STOREFRONT_THEMES: readonly StorefrontThemeDefinition[] = [
     tokenGroupId: "botanical-light",
     surfaceMode: "light",
     radius: {
-      control: "12px",
-      card: "16px",
+      control: "22px",
+      card: "24px",
     },
     fontPairing: {
       id: "fraunces-inter",
@@ -259,14 +259,14 @@ export const STOREFRONT_THEMES: readonly StorefrontThemeDefinition[] = [
     id: "ktm-bold",
     displayName: "KTM Bold",
     shortDescription:
-      "Crisp monochrome bone canvas, sharp 4px corners, and high-voltage cobalt CTAs made for Kathmandu drops and urban gear.",
+      "Poster-bold streetwear layout with 0px square edges, thick 3px ink borders, solid cobalt offset blocks, and uppercase Space Grotesk display type.",
     bestForLabel: "Streetwear, Sneakers & Urban Tech",
     bestForCategories: ["Nepali Streetwear & Fashion"],
     tokenGroupId: "brutalist-light",
     surfaceMode: "light",
     radius: {
-      control: "4px",
-      card: "6px",
+      control: "0px",
+      card: "0px",
     },
     fontPairing: {
       id: "space-grotesk-inter",
@@ -317,14 +317,14 @@ export const STOREFRONT_THEMES: readonly StorefrontThemeDefinition[] = [
     id: "midnight-obsidian",
     displayName: "Midnight Obsidian",
     shortDescription:
-      "Deep obsidian night canvas paired with warm marigold-gold buttons and crisp slate surfaces for limited-edition drops.",
+      "Dark obsidian gallery wall with flush hairline-divided cards and sections, left-framed square hero stage, and marigold-gold CTAs.",
     bestForLabel: "Studio Drops, Tech Gear & Night Roasts",
     bestForCategories: ["Electronics & Tech Accessories"],
     tokenGroupId: "obsidian-dark",
     surfaceMode: "dark",
     radius: {
-      control: "8px",
-      card: "12px",
+      control: "6px",
+      card: "0px",
     },
     fontPairing: {
       id: "fraunces-plus-jakarta",

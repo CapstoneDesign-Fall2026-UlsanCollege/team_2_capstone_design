@@ -182,14 +182,23 @@ describe("Storefront Theme Registry (Single Source of Truth)", () => {
       const block = parseCssThemeBlock(globalsCss, theme.id);
       const aspectVar = getCssVar(block, "--product-card-aspect");
       expect(aspectVar.replace(/\s+/g, "")).toBe(`${w}/${h}`);
+      expect(getCssVar(block, "--radius-control")).toBe(theme.radius.control);
+      expect(getCssVar(block, "--radius-card")).toBe(theme.radius.card);
     }
 
-    // 2. Centered header alignment + distinct desktop hero compositions in globals.css
+    // 2. Centered header alignment + distinct desktop hero compositions + section chrome in globals.css
     expect(globalsCss).toContain('[data-store-theme="pahadi-sage"] .sf-header-inner');
     expect(globalsCss).toContain('[data-store-theme="midnight-obsidian"] .sf-header-inner');
     expect(globalsCss).toContain('[data-store-theme="pahadi-sage"] .sf-hero-grid');
     expect(globalsCss).toContain('[data-store-theme="ktm-bold"] .sf-hero-grid');
     expect(globalsCss).toContain('[data-store-theme="midnight-obsidian"] .sf-hero-media');
+    expect(globalsCss).toContain('[data-store-theme="editorial-warm"] #collection-section > .grid');
+    expect(globalsCss).toContain('[data-store-theme="ktm-bold"] #collection-section > .grid > *::after');
+    expect(globalsCss).toContain('[data-store-theme="midnight-obsidian"] #collection-section > .grid');
+    expect(globalsCss).toContain(":is(:lang(ne), :lang(hi), :lang(mai), :lang(sa))");
+    expect(globalsCss).toContain("prefers-reduced-motion: reduce");
+    expect(globalsCss).not.toMatch(/box-shadow\s*:/);
+    expect(globalsCss).not.toMatch(/(linear|radial|conic)-gradient\s*\(/);
     expect(globalsCss).toContain(".sf-product-media");
 
     // 3. Shared storefront components attach CSS hook classes without branching on themePreset

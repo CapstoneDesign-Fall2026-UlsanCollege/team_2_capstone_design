@@ -264,8 +264,12 @@
   --error-fg: var(--status-error-fg);
   --error-bg: var(--status-error-bg);
   --error-bd: var(--status-error-border);
-  --radius-control: 8px;
-  --radius-card: 12px;
+  --radius-control: 2px;
+  --radius-card: 4px;
+  --radius-field: 2px;
+  --bw: 1px;
+  --bw-field: 1px;
+  --space-section: clamp(3.5rem, 8vw, 6.5rem);
   --product-card-aspect: 4 / 5;
   --font-serif: var(--font-fraunces), "Fraunces", var(--font-devanagari), "Noto Sans Devanagari", Georgia, serif;
   --font-ui: var(--font-plus-jakarta), "Plus Jakarta Sans", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -302,8 +306,12 @@
   --error-fg: var(--status-error-fg);
   --error-bg: var(--status-error-bg);
   --error-bd: var(--status-error-border);
-  --radius-control: 12px;
-  --radius-card: 16px;
+  --radius-control: 22px;
+  --radius-card: 24px;
+  --radius-field: 14px;
+  --bw: 2px;
+  --bw-field: 2px;
+  --space-section: clamp(2.75rem, 6vw, 4.5rem);
   --product-card-aspect: 1 / 1;
   --font-serif: var(--font-fraunces), "Fraunces", var(--font-devanagari), "Noto Sans Devanagari", Georgia, serif;
   --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -340,8 +348,12 @@
   --error-fg: var(--status-error-fg);
   --error-bg: var(--status-error-bg);
   --error-bd: var(--status-error-border);
-  --radius-control: 4px;
-  --radius-card: 6px;
+  --radius-control: 0px;
+  --radius-card: 0px;
+  --radius-field: 0px;
+  --bw: 3px;
+  --bw-field: 2px;
+  --space-section: clamp(1.75rem, 3.5vw, 2.5rem);
   --product-card-aspect: 3 / 4;
   --font-serif: var(--font-space-grotesk), "Space Grotesk", var(--font-devanagari), "Noto Sans Devanagari", sans-serif;
   --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -378,8 +390,12 @@
   --error-fg: var(--status-error-fg);
   --error-bg: var(--status-error-bg);
   --error-bd: var(--status-error-border);
-  --radius-control: 8px;
-  --radius-card: 12px;
+  --radius-control: 6px;
+  --radius-card: 0px;
+  --radius-field: 6px;
+  --bw: 1px;
+  --bw-field: 1px;
+  --space-section: clamp(3rem, 7vw, 5.5rem);
   --product-card-aspect: 4 / 5;
   --font-serif: var(--font-fraunces), "Fraunces", var(--font-devanagari), "Noto Sans Devanagari", Georgia, serif;
   --font-ui: var(--font-plus-jakarta), "Plus Jakarta Sans", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
@@ -498,9 +514,427 @@
     order: -1;
   }
 
-  [data-store-theme="midnight-obsidian"] .sf-hero-frame {
-    box-shadow: 0 24px 60px -24px var(--overlay-scrim), 0 0 0 1px var(--border-subtle);
+}
+
+/* ===== Storefront Personality (Phase C2): CSS only, no DOM changes, no box-shadow, no gradients ===== */
+
+/* Shared: visible focus ring, tap targets, reduced motion, Devanagari safety */
+[data-store-theme] :focus-visible {
+  outline: 3px solid var(--primary);
+  outline-offset: 2px;
+}
+
+[data-store-theme] :is(:lang(ne), :lang(hi), :lang(mai), :lang(sa)) {
+  letter-spacing: normal !important;
+  text-transform: none !important;
+}
+
+[data-store-theme] header {
+  border-bottom-width: var(--bw);
+}
+
+[data-store-theme] .rounded-lg { border-radius: var(--radius-control); }
+[data-store-theme] .rounded-xl { border-radius: var(--radius-card); }
+[data-store-theme] .rounded-t-xl {
+  border-top-left-radius: var(--radius-card);
+  border-top-right-radius: var(--radius-card);
+}
+[data-store-theme] :is(input:not([type="checkbox"]):not([type="radio"]), select, textarea) {
+  border-radius: var(--radius-field);
+  border-width: var(--bw-field);
+}
+[data-store-theme] button.border { border-width: var(--bw-field); }
+
+[data-store-theme] section:has(> div > .sf-hero-grid) {
+  padding-block: var(--space-section);
+  border-bottom-width: var(--bw);
+}
+[data-store-theme] #collection-section,
+[data-store-theme] #collection-section + section,
+[data-store-theme] #collection-section + section + section {
+  padding-block: var(--space-section);
+}
+[data-store-theme] .sf-hero-frame,
+[data-store-theme] .sf-mobile-hero-frame {
+  border-width: var(--bw);
+}
+[data-store-theme] #collection-section .sf-card-radius {
+  border-width: var(--bw);
+}
+[data-store-theme] #collection-section .sf-product-media {
+  border-bottom-width: var(--bw);
+}
+
+@media (max-width: 767px) {
+  [data-store-theme] #collection-section .sf-card-radius button,
+  [data-store-theme] .sf-hero-media button,
+  [data-store-theme] .sf-mobile-hero button {
+    min-height: 44px;
+    min-width: 44px;
   }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  [data-store-theme] *,
+  [data-store-theme] *::before,
+  [data-store-theme] *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+}
+
+/* ---------- editorial-warm: magazine on paper (roomy 2-col grid, full-bleed bands, 2px corners) ---------- */
+[data-store-theme="editorial-warm"] .sf-hero-copy h1,
+[data-store-theme="editorial-warm"] .sf-mobile-hero h1 {
+  font-weight: 600;
+  line-height: 1.02;
+  overflow-wrap: break-word;
+}
+[data-store-theme="editorial-warm"] .sf-hero-copy h1 { font-size: clamp(2.6rem, 5vw, 4.25rem); }
+[data-store-theme="editorial-warm"] .sf-mobile-hero h1 { font-size: 2.5rem; }
+[data-store-theme="editorial-warm"] :is(.sf-hero-copy h1, .sf-mobile-hero h1):not(:lang(ne)):not(:lang(hi)):not(:lang(mai)) {
+  letter-spacing: -0.02em;
+}
+[data-store-theme="editorial-warm"] .sf-hero-frame {
+  outline: 1px solid var(--border);
+  outline-offset: 10px;
+  margin: 10px;
+}
+[data-store-theme="editorial-warm"] .sf-mobile-hero-frame {
+  outline: 1px solid var(--border);
+  outline-offset: 6px;
+  margin: 6px;
+}
+[data-store-theme="editorial-warm"] #collection-section > .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: clamp(1rem, 3vw, 2.5rem);
+  max-width: 56rem;
+  margin-inline: auto;
+}
+[data-store-theme="editorial-warm"] #collection-section .sf-card-radius {
+  background: transparent;
+  border-width: 0 0 var(--bw) 0;
+  border-color: var(--border);
+}
+[data-store-theme="editorial-warm"] #collection-section .sf-product-media {
+  border: var(--bw) solid var(--border-subtle);
+}
+[data-store-theme="editorial-warm"] #collection-section .sf-card-radius h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1.05rem;
+}
+[data-store-theme="editorial-warm"] #collection-section .sf-card-radius button {
+  background: transparent;
+  border-width: 0 0 var(--bw) 0;
+  border-color: var(--ink);
+  border-radius: 0;
+  padding-inline: 0.25rem;
+}
+[data-store-theme="editorial-warm"] #collection-section + section {
+  background: var(--surface);
+  border-top: 0;
+}
+[data-store-theme="editorial-warm"] #collection-section + section > div {
+  background: transparent;
+  border: 0;
+  padding-inline: 0;
+}
+[data-store-theme="editorial-warm"] #collection-section + section h2,
+[data-store-theme="editorial-warm"] #collection-section + section + section h2 {
+  font-size: clamp(2rem, 4vw, 3rem);
+  font-weight: 600;
+  line-height: 1.05;
+}
+[data-store-theme="editorial-warm"] #collection-section + section + section {
+  background: var(--canvas);
+}
+[data-store-theme="editorial-warm"] #collection-section + section + section .grid > div {
+  background: transparent;
+  border-width: var(--bw) 0 0 0;
+  border-color: var(--ink);
+  border-radius: 0;
+  padding-inline: 0;
+}
+[data-store-theme="editorial-warm"] footer {
+  background: var(--nav-active);
+  border-top-width: var(--bw);
+  border-color: var(--ink);
+}
+
+/* ---------- pahadi-sage: soft botanical boutique (pill controls, centered type, framed soft cards) ---------- */
+[data-store-theme="pahadi-sage"] .sf-hero-copy h1,
+[data-store-theme="pahadi-sage"] .sf-mobile-hero h1 {
+  font-weight: 600;
+  line-height: 1.1;
+  overflow-wrap: break-word;
+}
+[data-store-theme="pahadi-sage"] .sf-hero-copy h1 { font-size: clamp(2.4rem, 4.4vw, 3.5rem); }
+[data-store-theme="pahadi-sage"] .sf-mobile-hero h1 { font-size: 2rem; }
+[data-store-theme="pahadi-sage"] .sf-hero-frame,
+[data-store-theme="pahadi-sage"] .sf-mobile-hero-frame {
+  border-color: var(--border-subtle);
+}
+[data-store-theme="pahadi-sage"] #collection-section > .grid {
+  gap: 0.875rem;
+}
+@media (min-width: 768px) {
+  [data-store-theme="pahadi-sage"] #collection-section > .grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 1.25rem;
+  }
+}
+@media (min-width: 1024px) {
+  [data-store-theme="pahadi-sage"] #collection-section > .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius {
+  border-color: var(--border-subtle);
+}
+[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius > div:last-child {
+  align-items: center;
+  text-align: center;
+}
+[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius > div:last-child > div:last-child {
+  justify-content: center;
+  gap: 0.75rem;
+}
+[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1rem;
+}
+[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius button {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: transparent;
+}
+[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius button:hover {
+  background: var(--primary-hover);
+}
+[data-store-theme="pahadi-sage"] #collection-section + section > div {
+  background: var(--surface);
+  border: var(--bw) solid var(--border-subtle);
+  border-radius: 28px;
+  text-align: center;
+  padding: clamp(1.75rem, 5vw, 3.5rem);
+}
+[data-store-theme="pahadi-sage"] #collection-section + section > div > div {
+  margin-inline: auto;
+}
+[data-store-theme="pahadi-sage"] #collection-section + section > div > div:last-child {
+  justify-content: center;
+}
+[data-store-theme="pahadi-sage"] #collection-section + section h2,
+[data-store-theme="pahadi-sage"] #collection-section + section + section h2 {
+  font-size: clamp(1.75rem, 3.4vw, 2.5rem);
+  font-weight: 600;
+}
+[data-store-theme="pahadi-sage"] #collection-section + section + section {
+  background: var(--canvas);
+  border-top: 0;
+}
+[data-store-theme="pahadi-sage"] #collection-section + section + section p.uppercase {
+  text-transform: none;
+  letter-spacing: 0;
+  font-size: 0.8rem;
+}
+[data-store-theme="pahadi-sage"] #collection-section + section + section .grid > div {
+  background: var(--surface);
+  border: var(--bw) solid var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+[data-store-theme="pahadi-sage"] footer {
+  width: auto;
+  margin: 2rem 1rem 1rem;
+  border: var(--bw) solid var(--border-subtle);
+  border-radius: 28px;
+}
+
+/* ---------- ktm-bold: poster-bold streetwear (thick borders, solid offset blocks, square, uppercase display) ---------- */
+[data-store-theme="ktm-bold"] .sf-hero-copy h1,
+[data-store-theme="ktm-bold"] .sf-mobile-hero h1 {
+  font-weight: 700;
+  line-height: 0.95;
+  overflow-wrap: break-word;
+  text-transform: uppercase;
+}
+[data-store-theme="ktm-bold"] .sf-hero-copy h1 { font-size: clamp(2.5rem, 6.5vw, 5rem); }
+[data-store-theme="ktm-bold"] .sf-mobile-hero h1 { font-size: 2.25rem; }
+[data-store-theme="ktm-bold"] :is(.sf-hero-copy h1, .sf-mobile-hero h1, #collection-section ~ section h2):not(:lang(ne)):not(:lang(hi)):not(:lang(mai)) {
+  letter-spacing: 0.03em;
+}
+[data-store-theme="ktm-bold"] :is(.sf-hero-copy h1, .sf-mobile-hero h1, #collection-section ~ section h2, #collection-section .sf-card-radius h3, .sf-header-brand-text span:first-child) {
+  text-transform: uppercase;
+}
+[data-store-theme="ktm-bold"] :is(.sf-hero-frame, .sf-mobile-hero-frame) {
+  border-style: solid;
+  border-width: 3px 9px 9px 3px;
+  border-color: var(--ink);
+}
+[data-store-theme="ktm-bold"] #collection-section > .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 1.25rem;
+  padding-right: 8px;
+  padding-bottom: 8px;
+}
+@media (min-width: 768px) {
+  [data-store-theme="ktm-bold"] #collection-section > .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+    gap: 1.5rem;
+  }
+}
+[data-store-theme="ktm-bold"] #collection-section > .grid > * {
+  position: relative;
+  isolation: isolate;
+}
+[data-store-theme="ktm-bold"] #collection-section > .grid > *::after {
+  content: "";
+  position: absolute;
+  inset: 0;
+  transform: translate(7px, 7px);
+  background: var(--primary);
+  border: var(--bw) solid var(--ink);
+  z-index: -1;
+  pointer-events: none;
+}
+[data-store-theme="ktm-bold"] #collection-section .sf-card-radius {
+  border-color: var(--ink);
+}
+[data-store-theme="ktm-bold"] #collection-section .sf-product-media {
+  border-color: var(--ink);
+}
+[data-store-theme="ktm-bold"] #collection-section .sf-card-radius h3 {
+  font-family: var(--font-serif);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+[data-store-theme="ktm-bold"] #collection-section .sf-card-radius button {
+  background: var(--ink);
+  color: var(--surface);
+  border-color: var(--ink);
+}
+[data-store-theme="ktm-bold"] #collection-section .sf-card-radius button:hover {
+  background: var(--primary);
+  color: var(--primary-foreground);
+}
+[data-store-theme="ktm-bold"] #collection-section + section {
+  border-top: var(--bw) solid var(--ink);
+}
+[data-store-theme="ktm-bold"] #collection-section + section > div {
+  background: var(--surface);
+  border-style: solid;
+  border-width: 3px 9px 9px 3px;
+  border-color: var(--ink);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+[data-store-theme="ktm-bold"] #collection-section + section h2,
+[data-store-theme="ktm-bold"] #collection-section + section + section h2 {
+  font-size: clamp(1.6rem, 3.6vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1;
+}
+[data-store-theme="ktm-bold"] #collection-section + section + section {
+  background: var(--canvas);
+  border-top: var(--bw) solid var(--ink);
+}
+[data-store-theme="ktm-bold"] #collection-section + section + section .grid > div {
+  background: var(--surface);
+  border-style: solid;
+  border-width: 3px 9px 9px 3px;
+  border-color: var(--ink);
+  outline: 2px solid var(--primary);
+  outline-offset: 2px;
+  border-radius: 0;
+}
+[data-store-theme="ktm-bold"] #collection-section + section + section .divide-y {
+  border-color: var(--ink);
+}
+[data-store-theme="ktm-bold"] footer {
+  border-top: var(--bw) solid var(--ink);
+  font-weight: 600;
+}
+
+/* ---------- midnight-obsidian: dark gallery wall (hairline-divided grid and sections, square cards) ---------- */
+[data-store-theme="midnight-obsidian"] .sf-hero-copy h1,
+[data-store-theme="midnight-obsidian"] .sf-mobile-hero h1 {
+  font-weight: 600;
+  line-height: 1.1;
+  overflow-wrap: break-word;
+}
+[data-store-theme="midnight-obsidian"] .sf-hero-copy h1 { font-size: clamp(2.2rem, 4vw, 3.25rem); }
+[data-store-theme="midnight-obsidian"] .sf-mobile-hero h1 { font-size: 1.875rem; }
+[data-store-theme="midnight-obsidian"] .sf-hero-frame { aspect-ratio: 1 / 1; border-color: var(--border-subtle); }
+[data-store-theme="midnight-obsidian"] .sf-mobile-hero-frame { border-color: var(--border-subtle); }
+[data-store-theme="midnight-obsidian"] .sf-hero-copy {
+  border-left: var(--bw) solid var(--border-subtle);
+  padding-left: 2.5rem;
+}
+[data-store-theme="midnight-obsidian"] #collection-section > .grid {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 0;
+  padding-right: 1px;
+  padding-bottom: 1px;
+}
+@media (min-width: 1024px) {
+  [data-store-theme="midnight-obsidian"] #collection-section > .grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+[data-store-theme="midnight-obsidian"] #collection-section > .grid > * {
+  margin: 0 -1px -1px 0;
+}
+[data-store-theme="midnight-obsidian"] #collection-section .sf-card-radius {
+  border-color: var(--border-subtle);
+  border-radius: 0;
+}
+[data-store-theme="midnight-obsidian"] #collection-section .sf-card-radius h3 {
+  font-family: var(--font-serif);
+  font-weight: 600;
+  font-size: 1rem;
+}
+[data-store-theme="midnight-obsidian"] #collection-section .sf-card-radius button {
+  background: transparent;
+  border-color: var(--ink-2);
+  color: var(--ink);
+}
+[data-store-theme="midnight-obsidian"] #collection-section + section {
+  background: var(--canvas);
+  border-top: var(--bw) solid var(--border-subtle);
+}
+[data-store-theme="midnight-obsidian"] #collection-section + section > div {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  padding-inline: 0;
+}
+[data-store-theme="midnight-obsidian"] #collection-section + section h2,
+[data-store-theme="midnight-obsidian"] #collection-section + section + section h2 {
+  font-size: clamp(1.6rem, 3vw, 2.25rem);
+  font-weight: 600;
+}
+[data-store-theme="midnight-obsidian"] #collection-section + section + section {
+  background: var(--canvas);
+  border-top: var(--bw) solid var(--border-subtle);
+}
+[data-store-theme="midnight-obsidian"] #collection-section + section + section p.uppercase:not(:lang(ne)):not(:lang(hi)):not(:lang(mai)) {
+  letter-spacing: 0.2em;
+}
+[data-store-theme="midnight-obsidian"] #collection-section + section + section .grid > div {
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  border-top: var(--bw) solid var(--border-subtle);
+  padding-inline: 0;
+}
+[data-store-theme="midnight-obsidian"] footer {
+  background: var(--canvas);
+  border-top: var(--bw) solid var(--border-subtle);
 }
 
 /* Storefront Typography & Anti-Monospace Enforcement */
