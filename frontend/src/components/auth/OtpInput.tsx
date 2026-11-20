@@ -83,7 +83,7 @@ export function OtpInput({ value, onChange, onComplete, disabled = false }: OtpI
           value={digits[i] || ""}
           onChange={(e) => handleChange(i, e)}
           onKeyDown={(e) => handleKeyDown(i, e)}
-          className="w-12 h-12 text-center text-lg font-mono font-medium rounded-lg border border-[var(--sc-line)] bg-[var(--sc-surface)] text-[var(--sc-ink)] tabular-nums transition-colors focus:outline-none focus:border-[var(--sc-marigold)] focus:ring-1 focus:ring-[var(--sc-marigold)] disabled:opacity-50"
+          className="w-12 h-12 text-center text-lg font-mono font-medium rounded-lg border border-line-strong bg-card text-ink tabular-nums transition-colors focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent disabled:opacity-50"
         />
       ))}
     </div>
@@ -209,14 +209,14 @@ export function PasswordlessAuthCard({
   );
 
   return (
-    <div className="w-full max-w-md p-6 sm:p-8 bg-[var(--sc-surface)] border border-[var(--sc-line)] rounded-xl text-[var(--sc-ink)]">
+    <div className="w-full max-w-md p-6 sm:p-8 bg-card border border-line rounded-2xl text-ink">
       {step === "email" ? (
         <form onSubmit={handleRequestOtp} noValidate className="space-y-4">
           <div className="space-y-1">
-            <h1 className="text-xl font-bold tracking-tight">
+            <h1 className="text-xl font-bold tracking-tight text-ink">
               {resolvedTitle}
             </h1>
-            <p className="text-sm text-[var(--sc-ink-2)]">
+            <p className="text-sm text-ink-2">
               {subtitle || "Enter your email to receive a 6-digit sign-in code."}
             </p>
           </div>
@@ -224,7 +224,7 @@ export function PasswordlessAuthCard({
           <div className="space-y-1 pt-2">
             <label
               htmlFor="auth-email"
-              className="block text-xs font-mono uppercase tracking-wider text-[var(--sc-ink-2)]"
+              className="block text-xs font-mono uppercase tracking-wider text-ink-2"
             >
               Email address
             </label>
@@ -240,11 +240,11 @@ export function PasswordlessAuthCard({
                 setEmail(e.target.value);
                 if (error) setError(null);
               }}
-              className="w-full h-12 px-3 text-sm rounded-lg border border-[var(--sc-line)] bg-[var(--sc-surface)] text-[var(--sc-ink)] focus:outline-none focus:border-[var(--sc-marigold)] focus:ring-1 focus:ring-[var(--sc-marigold)]"
+              className="w-full h-12 px-3 text-sm rounded-lg border border-line-strong bg-card text-ink placeholder:text-ink-3 focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent"
             />
             {typoSuggestion && !error && (
-              <p className="text-xs text-[var(--sc-ink-2)] mt-1">
-                Did you mean <span className="font-medium text-[var(--sc-ink)]">{typoSuggestion}</span>?
+              <p className="text-xs text-ink-2 mt-1">
+                Did you mean <span className="font-medium text-ink">{typoSuggestion}</span>?
               </p>
             )}
             {error && <p className="text-xs text-[var(--sc-danger)] mt-1">{error}</p>}
@@ -253,7 +253,7 @@ export function PasswordlessAuthCard({
           <button
             type="submit"
             disabled={loading}
-            className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-[var(--sc-ink)] text-[var(--sc-paper)] hover:opacity-95 disabled:opacity-50 transition-opacity cursor-pointer"
+            className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-btn hover:bg-btn-hover text-btn-ink disabled:opacity-50 transition-colors cursor-pointer"
           >
             {loading ? "Sending code..." : resolvedSubmitText}
           </button>
@@ -269,18 +269,18 @@ export function PasswordlessAuthCard({
       ) : (
         <div className="space-y-5">
           <div className="space-y-1">
-            <h2 className="text-xl font-bold tracking-tight">Check your email</h2>
-            <p className="text-sm text-[var(--sc-ink-2)]">
+            <h1 className="text-xl font-bold tracking-tight text-ink">Check your email</h1>
+            <p className="text-sm text-ink-2">
               Enter the 6-digit code sent to{" "}
-              <span className="font-mono text-[var(--sc-ink)]">{email}</span>.
+              <span className="font-mono text-ink">{email}</span>.
             </p>
-            <p className="text-xs text-[var(--sc-ink-2)]">
+            <p className="text-xs text-ink-3">
               Can&apos;t find it? Check your spam folder.
             </p>
           </div>
 
           {devOtpHint && (
-            <div className="p-3 text-xs font-mono rounded-lg bg-[var(--sc-marigold-soft)] border border-[var(--sc-marigold)] text-[var(--sc-ink)]">
+            <div className="p-3 text-xs font-mono rounded-lg bg-cash-bg border border-line-strong text-cash-ink">
               <strong>Dev OTP Code:</strong> {devOtpHint}
             </div>
           )}
@@ -302,7 +302,7 @@ export function PasswordlessAuthCard({
             type="button"
             onClick={() => handleVerifyOtp()}
             disabled={loading || otpCode.length !== 6}
-            className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-[var(--sc-ink)] text-[var(--sc-paper)] hover:opacity-95 disabled:opacity-50 transition-opacity cursor-pointer"
+            className="w-full h-12 flex items-center justify-center font-medium rounded-lg bg-btn hover:bg-btn-hover text-btn-ink disabled:opacity-50 transition-colors cursor-pointer"
           >
             {loading ? "Verifying..." : "Verify & continue"}
           </button>
@@ -315,7 +315,7 @@ export function PasswordlessAuthCard({
                 setOtpCode("");
                 setError(null);
               }}
-              className="text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)] underline transition-colors cursor-pointer"
+              className="min-h-[44px] inline-flex items-center text-ink-2 hover:text-ink underline transition-colors cursor-pointer"
             >
               Wrong email? Change it
             </button>
@@ -324,7 +324,7 @@ export function PasswordlessAuthCard({
               type="button"
               disabled={loading || resendCooldown > 0}
               onClick={() => handleRequestOtp()}
-              className="text-[var(--sc-ink-2)] hover:text-[var(--sc-ink)] disabled:opacity-50 underline transition-colors cursor-pointer"
+              className="min-h-[44px] inline-flex items-center text-ink-2 hover:text-ink disabled:opacity-50 underline transition-colors cursor-pointer"
             >
               {resendCooldown > 0 ? `Resend code (${resendCooldown}s)` : "Resend code"}
             </button>
@@ -333,7 +333,7 @@ export function PasswordlessAuthCard({
       )}
 
       {footerContent && (
-        <div className="pt-4 mt-4 border-t border-[var(--sc-line)] text-center text-xs">
+        <div className="pt-4 mt-4 border-t border-line text-center text-xs">
           {footerContent}
         </div>
       )}

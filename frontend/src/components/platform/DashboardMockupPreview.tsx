@@ -1,79 +1,67 @@
-"use client";
-
-import React, { useState } from "react";
+import React from "react";
 import Image from "next/image";
-import Link from "next/link";
-import { ExternalLink } from "lucide-react";
-
-const VIEWS = [
-  {
-    id: "home" as const,
-    label: "Store home",
-    src: "/images/merchant-dashboard-real.png",
-    alt: "Real screenshot of the ShopCraft merchant dashboard showing setup progress, orders to dispatch, and NPR performance cards",
-    url: "shopcraft.me/merchant/himalayan-roasters",
-  },
-  {
-    id: "orders" as const,
-    label: "Orders queue",
-    src: "/images/merchant-orders-real.png",
-    alt: "Real screenshot of the ShopCraft orders fulfillment table showing a paid Rs. 1,450 order ready to ship",
-    url: "shopcraft.me/merchant/himalayan-roasters/orders",
-  },
-];
 
 export function DashboardMockupPreview() {
-  const [activeId, setActiveId] = useState<"home" | "orders">("home");
-  const activeView = VIEWS.find((v) => v.id === activeId) || VIEWS[0];
-
   return (
-    <div className="w-full max-w-5xl mx-auto">
-      <div className="flex flex-wrap items-center justify-between gap-3 mb-4">
-        <div className="flex items-center gap-2">
-          {VIEWS.map((view) => {
-            const selected = view.id === activeId;
-            return (
-              <button
-                key={view.id}
-                type="button"
-                onClick={() => setActiveId(view.id)}
-                className={`min-h-[44px] px-4 py-2.5 rounded-full text-xs font-mono font-semibold cursor-pointer transition-colors ${
-                  selected
-                    ? "bg-zinc-950 dark:bg-white text-white dark:text-zinc-950"
-                    : "bg-zinc-100 dark:bg-white/5 text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white border border-zinc-200 dark:border-white/10"
-                }`}
-              >
-                {view.label}
-              </button>
-            );
-          })}
+    <section
+      id="orders"
+      className="py-20 sm:py-32 bg-paper-2 border-y border-line scroll-mt-16"
+    >
+      <div className="max-w-[1180px] mx-auto px-4 sm:px-7">
+        <div className="max-w-[820px] mx-auto text-center">
+          <p className="font-mono text-[11.5px] uppercase tracking-[0.12em] text-ink-3 font-medium">
+            Merchant console
+          </p>
+          <h2 className="mt-4 font-display font-semibold tracking-[-0.048em] leading-none text-ink text-[36px] sm:text-[60px] lg:text-[76px]">
+            See every order,{" "}
+            <span className="text-accent">paid or cash to collect.</span>
+          </h2>
+          <p className="mt-5 mx-auto max-w-[560px] text-base sm:text-lg text-ink-2 leading-relaxed">
+            Orders arrive in one calm list. Open one, print the packing slip, and send it out.
+          </p>
         </div>
 
-        <Link
-          href="/s/himalayan-roasters"
-          className="inline-flex items-center gap-1.5 min-h-[44px] px-2.5 py-2.5 text-xs font-mono text-zinc-600 dark:text-zinc-400 hover:text-zinc-950 dark:hover:text-white transition-colors"
-        >
-          <span>Open Himalayan Coffee Roasters storefront</span>
-          <ExternalLink className="w-3.5 h-3.5" />
-        </Link>
-      </div>
+        <div className="relative max-w-[1080px] mx-auto mt-12 sm:mt-16">
+          <div className="relative aspect-[16/9.2] sm:aspect-[16/5.9] overflow-hidden rounded-2xl sm:rounded-3xl bg-card border border-line">
+            <Image
+              src="/images/merchant-orders-real.png"
+              alt="ShopCraft merchant orders fulfillment table showing sample order #HR-2026-0001 paid via Khalti"
+              width={2560}
+              height={1600}
+              loading="eager"
+              sizes="(max-width: 1080px) 100vw, 1080px"
+              className="absolute max-w-none w-[174%] -left-[27%] -top-[15.5%] sm:w-[140%] sm:-left-[29.5%] sm:-top-[16%]"
+            />
+          </div>
 
-      <div className="rounded-2xl border border-zinc-200 dark:border-white/10 bg-white dark:bg-[#121214] overflow-hidden shadow-sm">
-        <Image
-          src={activeView.src}
-          alt={activeView.alt}
-          width={2560}
-          height={1600}
-          sizes="(max-width: 1024px) 100vw, 1024px"
-          className="w-full h-auto block"
-          priority={false}
-        />
-      </div>
+          <div className="mt-3.5 lg:mt-0 lg:absolute lg:-right-6 lg:-bottom-12 w-full lg:w-[320px] rounded-xl bg-card text-ink p-5 border border-line-strong lg:rotate-[1.8deg]">
+            <div className="flex items-center justify-between font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
+              <span>Packing slip</span>
+              <span>Sample</span>
+            </div>
+            <p className="font-mono text-[15px] font-semibold text-ink mt-2.5">
+              #HR-2026-0001
+            </p>
+            <hr className="border-0 border-t border-dashed border-line-strong my-3.5" />
+            <div className="text-[12.5px] text-ink-2 leading-relaxed">
+              <p className="font-semibold text-ink">Aarav Shrestha</p>
+              <p>Ward 04, Kathmandu</p>
+              <p>Bagmati Province</p>
+            </div>
+            <hr className="border-0 border-t border-dashed border-line-strong my-3.5" />
+            <p className="text-[12.5px] text-ink-2">
+              2 × Gulmi Reserve Bourbon (250g)
+            </p>
+            <div className="mt-3.5 inline-block rounded-lg bg-paid-bg text-paid-ink px-3 py-1.5 font-mono text-[11.5px] font-semibold tracking-[0.04em]">
+              PAID VIA KHALTI · Rs. 1,450
+            </div>
+          </div>
+        </div>
 
-      <p className="mt-3 text-xs font-mono text-zinc-500 text-center">
-        Screenshot from{" "}
-        <span className="text-zinc-700 dark:text-zinc-300">{activeView.url}</span>
-      </p>
-    </div>
+        <p className="mt-6 lg:mt-20 text-center text-[13px] text-ink-3">
+          Screenshot of the live merchant console. Packing slip matches sample order #HR-2026-0001.
+        </p>
+      </div>
+    </section>
   );
 }

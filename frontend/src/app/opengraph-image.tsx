@@ -17,8 +17,8 @@ export default function OpenGraphImage() {
           display: "flex",
           flexDirection: "column",
           justifyContent: "space-between",
-          backgroundColor: "#0E0F12",
-          color: "#ECECE9",
+          backgroundColor: "#0C111C",
+          color: "#EEF2F8",
           padding: "72px 84px",
           fontFamily: "system-ui, -apple-system, sans-serif",
         }}
@@ -35,8 +35,8 @@ export default function OpenGraphImage() {
               width: "44px",
               height: "44px",
               borderRadius: "10px",
-              backgroundColor: "#ECECE9",
-              color: "#0E0F12",
+              backgroundColor: "#EEF2F8",
+              color: "#0C111C",
               display: "flex",
               alignItems: "center",
               justifyContent: "center",
@@ -82,7 +82,7 @@ export default function OpenGraphImage() {
               width: "220px",
               height: "6px",
               borderRadius: "999px",
-              backgroundColor: "#F2A900",
+              backgroundColor: "#E5B143",
             }}
           />
         </div>

@@ -1,18 +1,44 @@
 import type { Metadata } from "next";
-import { JetBrains_Mono, Plus_Jakarta_Sans } from "next/font/google";
+import {
+  Geist,
+  Geist_Mono,
+  Instrument_Serif,
+  Inter_Tight,
+  Tiro_Devanagari_Hindi,
+} from "next/font/google";
 import { PlatformNav } from "@/components/platform/PlatformNav";
 import { PlatformThemeProvider } from "@/context/PlatformThemeContext";
 
-const plusJakarta = Plus_Jakarta_Sans({
+const geist = Geist({
   subsets: ["latin"],
-  variable: "--font-plus-jakarta",
-  display: "optional",
+  variable: "--font-geist",
+  display: "swap",
 });
 
-const jetbrainsMono = JetBrains_Mono({
+const geistMono = Geist_Mono({
   subsets: ["latin"],
-  variable: "--font-jetbrains-mono",
-  display: "optional",
+  variable: "--font-geist-mono",
+  display: "swap",
+});
+
+const interTight = Inter_Tight({
+  subsets: ["latin"],
+  variable: "--font-inter-tight",
+  display: "swap",
+});
+
+const instrumentSerif = Instrument_Serif({
+  weight: "400",
+  subsets: ["latin"],
+  variable: "--font-instrument-serif",
+  display: "swap",
+});
+
+const tiroDevanagari = Tiro_Devanagari_Hindi({
+  weight: "400",
+  subsets: ["devanagari", "latin"],
+  variable: "--font-devanagari",
+  display: "swap",
 });
 
 export const metadata: Metadata = {
@@ -65,23 +91,20 @@ export default function PlatformLayout({
   return (
     <PlatformThemeProvider>
       <div
-        className={`${plusJakarta.variable} ${jetbrainsMono.variable} platform-shell font-sans min-h-dvh flex flex-col bg-white dark:bg-[#0A0B0E] text-[#121212] dark:text-zinc-100 selection:bg-[#121212] selection:text-white transition-colors duration-200`}
-        style={{
-          fontFamily: "var(--font-plus-jakarta), -apple-system, BlinkMacSystemFont, sans-serif",
-        }}
+        className={`${geist.variable} ${geistMono.variable} ${interTight.variable} ${instrumentSerif.variable} ${tiroDevanagari.variable} platform-shell min-h-dvh flex flex-col bg-paper text-ink transition-colors duration-200`}
       >
         <a
           href="#main"
-          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-lg focus:bg-[#111318] focus:text-white focus:text-sm focus:font-semibold"
+          className="sr-only focus:not-sr-only focus:fixed focus:top-3 focus:left-3 focus:z-[100] focus:px-4 focus:py-2.5 focus:rounded-lg focus:bg-btn focus:text-btn-ink focus:text-sm focus:font-semibold"
         >
           Skip to content
         </a>
 
-        {/* 1. Fixed Sticky Minimalist Shopify-Grade SaaS Nav with Dark Mode Toggle */}
         <PlatformNav />
 
-        {/* Main SaaS Platform Content */}
-        <main id="main" className="flex-1 w-full pt-16">{children}</main>
+        <main id="main" className="flex-1 w-full">
+          {children}
+        </main>
       </div>
     </PlatformThemeProvider>
   );

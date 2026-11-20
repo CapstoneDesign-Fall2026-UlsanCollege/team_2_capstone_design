@@ -1,39 +1,8 @@
 @import "tailwindcss";
+@import "./(platform)/platform.css";
 
 /* Manual class-based dark mode for Tailwind CSS v4 */
-@custom-variant dark (&:where([data-platform-theme="dark"], [data-platform-theme="dark"] *, .dark, .dark *));
-
-/* --------------------------------------------------------------------------
- * Surface 1: Platform Root Tokens (DESIGN.md §2)
- * -------------------------------------------------------------------------- */
-:root {
-  --sc-paper: #FAF7F2;
-  --sc-surface: #FFFFFF;
-  --sc-ink: #111318;
-  --sc-ink-2: #4B5060;
-  --sc-ink-3: #8B90A0; /* ink-3 hints only */
-  --sc-line: #EAE6DF;
-  --sc-terracotta: #C2410C;
-  --sc-forest: #0F2D1F;
-  --sc-marigold: #F2A900;
-  --sc-marigold-soft: #FFF4D6;
-  --sc-success: #15803D;
-  --sc-danger: #B42318;
-}
-
-[data-platform-theme="dark"],
-.dark {
-  --sc-paper: #090A0D;
-  --sc-surface: #111318;
-  --sc-ink: #F9FAFB;
-  --sc-ink-2: #9CA3AF;
-  --sc-ink-3: #6B7280;
-  --sc-line: #1F242E;
-  --sc-terracotta: #EA580C;
-  --sc-forest: #10B981;
-  --sc-marigold: #F59E0B;
-  --sc-marigold-soft: #2E230B;
-}
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *, [data-platform-theme="dark"], [data-platform-theme="dark"] *, .dark, .dark *));
 
 /* --------------------------------------------------------------------------
  * Surface 2: Console Tokens (calm, neutral, light-only merchant workspace)
@@ -125,7 +94,7 @@
 
 @layer base {
   .platform-shell :focus-visible {
-    outline: 2px solid #F2A900;
+    outline: 2px solid var(--sc-gold);
     outline-offset: 2px;
   }
 
@@ -189,8 +158,6 @@
   --color-canvas: var(--canvas);
   --color-surface: var(--surface);
   --color-border: var(--border);
-  --color-ink: var(--ink);
-  --color-ink-2: var(--ink-2);
   --color-nav-active: var(--nav-active);
   --color-primary: var(--primary);
   --color-primary-hover: var(--primary-hover);

@@ -4,8 +4,8 @@ import "./globals.css";
 
 export const viewport: Viewport = {
   themeColor: [
-    { media: "(prefers-color-scheme: dark)", color: "#0B0C0E" },
-    { media: "(prefers-color-scheme: light)", color: "#F7F5F0" },
+    { media: "(prefers-color-scheme: dark)", color: "#0C111C" },
+    { media: "(prefers-color-scheme: light)", color: "#F5F7FA" },
   ],
   width: "device-width",
   initialScale: 1,
@@ -72,7 +72,7 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body
         suppressHydrationWarning
-        className="min-h-dvh antialiased bg-[var(--sc-paper)] text-[var(--sc-ink)] font-sans"
+        className="min-h-dvh antialiased bg-paper text-ink font-sans"
       >
         <ServiceWorkerCleanup />
         {children}

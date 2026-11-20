@@ -11,7 +11,7 @@ export const FAQS: FaqItem[] = [
     a: "Nothing right now. ShopCraft is in beta and free to use. No card needed.",
   },
   {
-    q: "How do my customers pay?",
+    q: "How do shoppers pay?",
     a: "With Khalti, or with cash when the order arrives. For cash orders we check that the number is a valid Nepali mobile number (98 or 97). We don't confirm it by SMS yet.",
   },
   {
@@ -22,38 +22,40 @@ export const FAQS: FaqItem[] = [
     q: "Can I change how my store looks?",
     a: "Yes. Pick one of four looks and add your logo. You can switch later.",
   },
-  {
-    q: "How do I get orders to customers?",
-    a: "Customers pick their province, district and ward at checkout. You print a packing slip for each order that shows whether it is paid or cash to collect.",
-  },
-  {
-    q: "What is coming next?",
-    a: "SMS and WhatsApp order updates, courier labels, and your own domain name. None of these work yet.",
-  },
 ];
 
 export function PlatformFaq() {
   return (
     <section
       id="faq"
-      className="py-20 sm:py-24 px-4 sm:px-6 lg:px-8 max-w-3xl mx-auto border-t border-zinc-200 dark:border-white/5 scroll-mt-20"
+      className="py-20 sm:py-28 bg-paper-2 border-t border-line scroll-mt-16"
     >
-      <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white text-center mb-12">
-        Questions before you start
-      </h2>
+      <div className="max-w-[1180px] mx-auto px-4 sm:px-7 grid grid-cols-1 lg:grid-cols-[5fr_7fr] gap-10 lg:gap-20 items-start">
+        <div>
+          <p className="font-mono text-[11.5px] uppercase tracking-[0.12em] text-ink-3 font-medium">
+            Questions
+          </p>
+          <h2 className="mt-3.5 font-display font-semibold tracking-[-0.048em] leading-none text-ink text-[36px] sm:text-[54px] lg:text-[66px]">
+            Questions before <span className="text-accent">you start.</span>
+          </h2>
+        </div>
 
-      <dl className="space-y-8 text-left">
-        {FAQS.map((faq) => (
-          <div key={faq.q}>
-            <dt className="text-base sm:text-lg font-bold text-zinc-900 dark:text-white">
-              {faq.q}
-            </dt>
-            <dd className="mt-1.5 text-sm text-zinc-600 dark:text-zinc-400 leading-relaxed">
-              {faq.a}
-            </dd>
-          </div>
-        ))}
-      </dl>
+        <dl>
+          {FAQS.map((faq) => (
+            <div
+              key={faq.q}
+              className="py-6 sm:py-7 border-t border-line last:border-b"
+            >
+              <dt className="text-lg sm:text-[19px] font-semibold tracking-[-0.01em] text-ink">
+                {faq.q}
+              </dt>
+              <dd className="mt-2 text-[15.5px] text-ink-2 leading-relaxed max-w-[580px]">
+                {faq.a}
+              </dd>
+            </div>
+          ))}
+        </dl>
+      </div>
     </section>
   );
 }

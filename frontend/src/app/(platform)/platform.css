@@ -1,0 +1,187 @@
+/* platform.css: Platform surfaces only (/, /login, /signup, /merchant/new). Never used in /merchant/[storeSlug] or /s/*. */
+:root {
+  /* surfaces */
+  --sc-paper:       #F5F7FA;  /* page */
+  --sc-paper-2:     #EDF1F7;  /* alternate sections (orders, FAQ) */
+  --sc-card:        #FFFFFF;
+  --sc-surface:     #FFFFFF;
+  --sc-line:        #D9DFEA;
+  --sc-line-strong: #C3CCDB;
+
+  /* text */
+  --sc-ink:         #0F1729;  /* headings, 16.65:1 on paper */
+  --sc-ink-2:       #4B5568;  /* body, 6.99:1 on paper */
+  --sc-ink-3:       #646C80;  /* hints, captions, 4.89:1 on paper, 4.63:1 on paper-2 */
+  --sc-accent:      #2E4A87;  /* highlighted words, links, 8.00:1 on paper */
+
+  /* actions */
+  --sc-btn:         #1A2A4A;  /* primary button fill */
+  --sc-btn-hover:   #243A63;
+  --sc-btn-ink:     #F5F7FA;
+
+  /* contrast band ("Built for the way Nepal sells") and footer */
+  --sc-band:        #1A2A4A;
+  --sc-band-ink:    #F5F7FA;  /* 13.28:1 on band */
+  --sc-band-ink-2:  #B8C2D6;  /* 7.96:1 on band */
+  --sc-gold:        #E5B143;  /* 7.26:1 on band. Replaces marigold #F2A900 everywhere */
+
+  /* status pills (text on pill) */
+  --sc-cash-bg:     #FDF0CF;
+  --sc-cash-ink:    #6B4A00;  /* 7.12:1 */
+  --sc-paid-bg:     #DCF3E4;
+  --sc-paid-ink:    #14532D;  /* 7.80:1 */
+
+  /* semantic feedback aliases */
+  --sc-danger:      #B42318;
+  --sc-marigold:    var(--sc-gold);
+  --sc-marigold-soft: var(--sc-cash-bg);
+
+  /* prayer flags (decorative only) */
+  --sc-flag-red:    #E04B3F;
+  --sc-flag-green:  #2E9E5B;
+  --sc-flag-yellow: #F2B21C;
+  --sc-flag-blue:   #3A6BC4;
+
+  /* mountain image treatment */
+  --sc-mtn-filter:  none;
+  --sc-mtn-opacity: 0.9;
+  --sc-mtn-blend:   multiply;
+}
+
+:root[data-theme="dark"],
+:root[data-platform-theme="dark"],
+[data-platform-theme="dark"] {
+  --sc-paper:       #0C111C;
+  --sc-paper-2:     #111827;
+  --sc-card:        #151D2E;
+  --sc-surface:     #151D2E;
+  --sc-line:        #243049;
+  --sc-line-strong: #33425F;
+  --sc-ink:         #EEF2F8;
+  --sc-ink-2:       #A9B4C8;
+  --sc-ink-3:       #8793AB;
+  --sc-accent:      #8FB0F0;  /* 8.66:1 on dark paper */
+  --sc-btn:         #EEF2F8;
+  --sc-btn-hover:   #FFFFFF;
+  --sc-btn-ink:     #0C111C;
+  --sc-band:        #1A2A4A;
+  --sc-band-ink:    #F5F7FA;
+  --sc-band-ink-2:  #B8C2D6;
+  --sc-gold:        #E5B143;  /* 9.62:1 on dark paper, 7.26:1 on band */
+  --sc-cash-bg:     #3A2D0C;
+  --sc-cash-ink:    #F3D58A;
+  --sc-paid-bg:     #123222;
+  --sc-paid-ink:    #9BE3B7;
+  --sc-danger:      #FCA5A5;
+  --sc-mtn-filter:  brightness(0.6) contrast(6) invert(1) brightness(0.54) sepia(0.24) hue-rotate(185deg) saturate(1.5);
+  --sc-mtn-opacity: 0.88;
+  --sc-mtn-blend:   screen;
+}
+
+@theme inline {
+  --color-paper:       var(--sc-paper);
+  --color-paper-2:     var(--sc-paper-2);
+  --color-card:        var(--sc-card);
+  --color-line:        var(--sc-line);
+  --color-line-strong: var(--sc-line-strong);
+  --color-ink:         var(--sc-ink);
+  --color-ink-2:       var(--sc-ink-2);
+  --color-ink-3:       var(--sc-ink-3);
+  --color-accent:      var(--sc-accent);
+  --color-btn:         var(--sc-btn);
+  --color-btn-hover:   var(--sc-btn-hover);
+  --color-btn-ink:     var(--sc-btn-ink);
+  --color-band:        var(--sc-band);
+  --color-band-ink:    var(--sc-band-ink);
+  --color-band-ink-2:  var(--sc-band-ink-2);
+  --color-gold:        var(--sc-gold);
+  --color-cash-bg:     var(--sc-cash-bg);
+  --color-cash-ink:    var(--sc-cash-ink);
+  --color-paid-bg:     var(--sc-paid-bg);
+  --color-paid-ink:    var(--sc-paid-ink);
+}
+
+/* Platform utility helpers (kept out of .tsx components to maintain zero inline hex values) */
+.platform-mtn-wrap {
+  -webkit-mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.9) 12%, #000 32%, #000 58%, transparent 96%);
+  mask-image: linear-gradient(to bottom, transparent 0%, rgba(0, 0, 0, 0.9) 12%, #000 32%, #000 58%, transparent 96%);
+}
+
+.platform-mtn-img {
+  filter: var(--sc-mtn-filter);
+  opacity: var(--sc-mtn-opacity);
+  mix-blend-mode: var(--sc-mtn-blend);
+}
+
+.platform-dhaka-strip {
+  height: 36px;
+  background-repeat: repeat-x;
+  background-size: 60px 36px;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='60' height='36' viewBox='0 0 60 36'%3E%3Cg fill='none' stroke='%23E5B143' stroke-opacity='.55' stroke-width='1.4'%3E%3Cpath d='M0 18 L15 5 L30 18 L15 31Z'/%3E%3Cpath d='M15 18 L22 11 L30 18 L22 25Z' stroke-opacity='.9'/%3E%3Cpath d='M30 18 L45 5 L60 18 L45 31Z'/%3E%3Cpath d='M45 18 L52 11 L60 18 L52 25Z' stroke-opacity='.9'/%3E%3C/g%3E%3Cg fill='%23E5B143'%3E%3Ccircle cx='15' cy='18' r='1.8'/%3E%3Ccircle cx='45' cy='18' r='1.8'/%3E%3C/g%3E%3C/svg%3E");
+}
+
+.platform-screen-editorial {
+  background-color: #F1EDE5;
+  color: #1E1813;
+}
+.platform-screen-editorial .screen-muted { color: #595046; }
+.platform-screen-editorial .screen-badge { background-color: #2E476E; color: #FFFFFF; }
+.platform-screen-editorial .screen-photo { background-color: #141B17; }
+.platform-screen-editorial .screen-cta { background-color: #1E1813; color: #FAF8F3; }
+.platform-screen-editorial .screen-cta-outline { border: 1px solid #1E1813; color: #1E1813; background-color: transparent; }
+
+.platform-look-botanical {
+  background-color: #F5F2E4;
+  color: #13291D;
+}
+.platform-look-botanical .screen-muted { color: #3E5547; }
+.platform-look-botanical .screen-badge { background-color: #1F6D3F; color: #F5F2E4; }
+.platform-look-botanical .screen-cta { background-color: #1F6D3F; color: #F5F2E4; }
+
+.platform-look-darkcraft {
+  background-color: #141210;
+  color: #F2EAE0;
+}
+.platform-look-darkcraft .screen-muted { color: #C2B6AB; }
+.platform-look-darkcraft .screen-badge { background-color: #E27D28; color: #141210; }
+.platform-look-darkcraft .screen-cta { background-color: #E27D28; color: #141210; }
+
+.platform-look-cotton {
+  background-color: #FCFBF9;
+  color: #1C1917;
+}
+.platform-look-cotton .screen-muted { color: #57514C; }
+.platform-look-cotton .screen-badge { background-color: #A83E28; color: #FFFFFF; }
+.platform-look-cotton .screen-cta { background-color: #1C1917; color: #FCFBF9; }
+
+.platform-phone-shell {
+  background-color: #14171F;
+}
+.platform-phone-island {
+  background-color: #0B0907;
+}
+
+.no-scrollbar {
+  scrollbar-width: none;
+}
+.no-scrollbar::-webkit-scrollbar {
+  display: none;
+}
+
+.platform-shell {
+  font-family: var(--font-geist), -apple-system, BlinkMacSystemFont, sans-serif;
+}
+.platform-shell .font-display {
+  font-family: var(--font-inter-tight), var(--font-geist), sans-serif;
+}
+.platform-shell .font-serif-brand {
+  font-family: var(--font-instrument-serif), Georgia, serif;
+}
+.platform-shell .font-devanagari {
+  font-family: var(--font-devanagari), Georgia, serif;
+}
+.platform-shell .font-mono {
+  font-family: var(--font-geist-mono), ui-monospace, monospace;
+  font-variant-numeric: tabular-nums;
+}
+

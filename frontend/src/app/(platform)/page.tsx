@@ -1,9 +1,10 @@
 import React from "react";
 import { HomeInteractiveTop } from "@/components/platform/HomeInteractiveTop";
+import { CapabilityMatrix } from "@/components/platform/CapabilityMatrix";
 import { DashboardMockupPreview } from "@/components/platform/DashboardMockupPreview";
 import { WorkflowSection } from "@/components/platform/WorkflowSection";
-import { CapabilityMatrix } from "@/components/platform/CapabilityMatrix";
-import { FAQS, PlatformFaq } from "@/components/platform/PlatformFaq";
+import { PlatformFaq, FAQS } from "@/components/platform/PlatformFaq";
+import { ClosingCtaSection } from "@/components/platform/ClosingCtaSection";
 import { PlatformFooter } from "@/components/platform/PlatformFooter";
 
 const structuredData = [
@@ -51,35 +52,31 @@ const structuredData = [
 
 export default function PlatformHomePage() {
   return (
-    <div className="relative w-full min-h-screen bg-[#FAF7F2] dark:bg-[#0d0d0e] text-zinc-900 dark:text-zinc-100 font-sans overflow-x-hidden transition-colors duration-200">
+    <div className="relative w-full min-h-screen bg-paper text-ink overflow-x-clip transition-colors duration-200">
       <script
         type="application/ld+json"
         dangerouslySetInnerHTML={{ __html: JSON.stringify(structuredData) }}
       />
 
+      {/* 1. Hero & 2. Storefront Looks */}
       <HomeInteractiveTop />
 
-      {/* 3. What works today */}
+      {/* 3. Built for the way Nepal sells */}
       <CapabilityMatrix />
 
-      {/* Real merchant dashboard & orders screenshots */}
-      <section className="px-4 sm:px-6 lg:px-8 max-w-5xl mx-auto pb-20 border-t border-zinc-200 dark:border-white/5 pt-20">
-        <h2 className="text-3xl sm:text-4xl font-black tracking-tight text-zinc-900 dark:text-white text-center mb-3">
-          See every order, paid or cash to collect
-        </h2>
-        <p className="text-sm sm:text-base text-zinc-600 dark:text-zinc-400 text-center max-w-lg mx-auto mb-10">
-          See orders as they come in and print a packing slip with Khalti or cash-to-collect status.
-        </p>
-        <DashboardMockupPreview />
-      </section>
+      {/* 4. Merchant Console Orders & Packing Slip */}
+      <DashboardMockupPreview />
 
-      {/* 4. How it works */}
+      {/* 5. Three steps to open */}
       <WorkflowSection />
 
-      {/* 5. FAQ */}
+      {/* 6. FAQ */}
       <PlatformFaq />
 
-      {/* 6. Footer */}
+      {/* 7. Closing CTA */}
+      <ClosingCtaSection />
+
+      {/* 8. Footer */}
       <PlatformFooter />
     </div>
   );
