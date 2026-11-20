@@ -169,4 +169,64 @@ describe("Storefront Theme Registry (Single Source of Truth)", () => {
     expect(recommendStorefrontThemeId("Nepali Streetwear & Fashion")).toBe("ktm-bold");
     expect(recommendStorefrontThemeId("Electronics & Tech Accessories")).toBe("midnight-obsidian");
   });
+
+  it("wires CSS-driven structural switches via data-store-theme without forked component trees", () => {
+    const globalsCss = fs.readFileSync(
+      path.join(FRONTEND_ROOT, "src", "app", "globals.css"),
+      "utf-8"
+    );
+
+    // 1. Product card aspect ratios + control/card radii per theme
+    for (const theme of STOREFRONT_THEMES) {
+      const [w, h] = theme.structural.productCardAspect.split("/");
+      const block = parseCssThemeBlock(globalsCss, theme.id);
+      const aspectVar = getCssVar(block, "--product-card-aspect");
+      expect(aspectVar.replace(/\s+/g, "")).toBe(`${w}/${h}`);
+    }
+
+    // 2. Centered header alignment + distinct desktop hero compositions in globals.css
+    expect(globalsCss).toContain('[data-store-theme="pahadi-sage"] .sf-header-inner');
+    expect(globalsCss).toContain('[data-store-theme="midnight-obsidian"] .sf-header-inner');
+    expect(globalsCss).toContain('[data-store-theme="pahadi-sage"] .sf-hero-grid');
+    expect(globalsCss).toContain('[data-store-theme="ktm-bold"] .sf-hero-grid');
+    expect(globalsCss).toContain('[data-store-theme="midnight-obsidian"] .sf-hero-media');
+    expect(globalsCss).toContain(".sf-product-media");
+
+    // 3. Shared storefront components attach CSS hook classes without branching on themePreset
+    const headerSrc = fs.readFileSync(
+      path.join(FRONTEND_ROOT, "src", "components", "storefront", "StorefrontHeader.tsx"),
+      "utf-8"
+    );
+    expect(headerSrc).toContain("sf-header-inner");
+    expect(headerSrc).toContain("sf-header-brand");
+    expect(headerSrc).toContain("sf-header-nav");
+    expect(headerSrc).toContain("sf-header-actions");
+
+    const catalogSrc = fs.readFileSync(
+      path.join(FRONTEND_ROOT, "src", "components", "storefront", "StorefrontCatalogView.tsx"),
+      "utf-8"
+    );
+    expect(catalogSrc).toContain("sf-hero-grid");
+    expect(catalogSrc).toContain("sf-hero-copy");
+    expect(catalogSrc).toContain("sf-hero-media");
+    expect(catalogSrc).toContain("sf-hero-frame");
+
+    const gridSrc = fs.readFileSync(
+      path.join(FRONTEND_ROOT, "src", "components", "storefront", "ProductGrid.tsx"),
+      "utf-8"
+    );
+    expect(gridSrc).toContain("sf-card-radius");
+    expect(gridSrc).toContain("sf-product-media");
+
+    // 4. Lightweight wizard Step 2 previews render swatches, font stacks, store name, Best for line, no iframes
+    const wizardSrc = fs.readFileSync(
+      path.join(FRONTEND_ROOT, "src", "app", "(platform)", "merchant", "new", "page.tsx"),
+      "utf-8"
+    );
+    expect(wizardSrc).toContain("theme.fontPairing.displayCssStack");
+    expect(wizardSrc).toContain("Best for:");
+    expect(wizardSrc).toContain("theme.tokens.canvas");
+    expect(wizardSrc).toContain("theme.structural.productCardAspect");
+    expect(wizardSrc).not.toContain("<iframe");
+  });
 });

@@ -398,12 +398,12 @@ export function StorefrontCatalogView({
         </div>
       )}
 
-      {/* 2. Hero Section (Desktop: 2 columns, Mobile: stacked with sticky bottom bar) */}
+      {/* 2. Hero Section (CSS-driven structural composition per [data-store-theme]) */}
       <section className="w-full border-b border-[var(--border)] bg-[var(--canvas)] py-8 md:py-16 px-4 sm:px-6 lg:px-8">
         <div className="max-w-6xl mx-auto">
-          {/* Desktop 2-Column Hero */}
-          <div className="hidden md:grid md:grid-cols-2 gap-10 lg:gap-16 items-center text-left">
-            <div className="space-y-4">
+          {/* Desktop Hero */}
+          <div className="sf-hero-grid hidden md:grid md:grid-cols-2 gap-10 lg:gap-16 items-center text-left">
+            <div className="sf-hero-copy space-y-4">
               {cleanCategory && (
                 <p className="text-xs font-semibold tracking-wider uppercase text-[var(--ink-2)]">
                   {cleanCategory}
@@ -420,11 +420,11 @@ export function StorefrontCatalogView({
                 </p>
               )}
 
-              <div className="flex flex-wrap items-center gap-4 pt-2">
+              <div className="sf-hero-cta-row flex flex-wrap items-center gap-4 pt-2">
                 <Button
                   variant="primary"
                   onClick={scrollToCollection}
-                  className="h-11 px-6 text-sm font-semibold"
+                  className="sf-control-radius h-11 px-6 text-sm font-semibold"
                 >
                   {shopButtonText}
                 </Button>
@@ -449,9 +449,9 @@ export function StorefrontCatalogView({
               )}
             </div>
 
-            {/* Right Column: Real product photo or clean store-branded hero fallback */}
-            <div>
-              <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
+            {/* Hero Media Column: Real banner/product photo or clean store-branded hero fallback */}
+            <div className="sf-hero-media">
+              <div className="sf-hero-frame sf-card-radius w-full aspect-[4/3] border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
                 <StoreImage
                   src={heroImageUrl || ""}
                   alt={heroImageAlt}
@@ -478,7 +478,7 @@ export function StorefrontCatalogView({
                       onClick={handleQuickAddFeatured}
                       disabled={featuredProduct.id < 0}
                       title={featuredProduct.id < 0 ? "Preview demo item" : undefined}
-                      className="h-8 px-3 text-xs"
+                      className="sf-control-radius h-8 px-3 text-xs"
                     >
                       Add
                     </Button>
@@ -489,7 +489,7 @@ export function StorefrontCatalogView({
           </div>
 
           {/* Mobile Hero (Compact, full-width photo, 28px headline, delivery line, no overlay) */}
-          <div className="md:hidden flex flex-col space-y-4 text-left">
+          <div className="sf-mobile-hero md:hidden flex flex-col space-y-4 text-left">
             {cleanCategory && (
               <p className="text-xs font-semibold tracking-wider uppercase text-[var(--ink-2)]">
                 {cleanCategory}
@@ -506,7 +506,7 @@ export function StorefrontCatalogView({
               </p>
             )}
 
-            <div className="w-full aspect-[4/3] rounded-xl border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
+            <div className="sf-mobile-hero-frame sf-card-radius w-full aspect-[4/3] border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
               <StoreImage
                 src={heroImageUrl || ""}
                 alt={heroImageAlt}
@@ -519,7 +519,7 @@ export function StorefrontCatalogView({
             </div>
 
             {featuredProduct && (
-              <div className="flex items-center justify-between text-xs px-1 text-[var(--ink)]">
+              <div className="w-full flex items-center justify-between text-xs px-1 text-[var(--ink)]">
                 <span className="font-medium truncate max-w-[200px]">{featuredProduct.name}</span>
                 <span className="font-semibold tabular-nums">{formatNpr(featuredPriceMinor)}</span>
               </div>
@@ -531,11 +531,11 @@ export function StorefrontCatalogView({
               </p>
             )}
 
-            <div className="pt-1">
+            <div className="w-full pt-1">
               <Button
                 variant="primary"
                 onClick={scrollToCollection}
-                className="w-full h-11 text-sm font-semibold"
+                className="sf-control-radius w-full h-11 text-sm font-semibold"
               >
                 {shopButtonText}
               </Button>

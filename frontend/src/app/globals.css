@@ -66,6 +66,7 @@
   /* Radii: 8px controls, 12px cards */
   --radius-control: 8px;
   --radius-card: 12px;
+  --product-card-aspect: 4 / 5;
 
   /* shadcn aliases so existing components inherit the palette */
   --background: var(--canvas);
@@ -158,6 +159,7 @@
   /* Radii: 8px controls, 12px cards */
   --radius-control: 8px;
   --radius-card: 12px;
+  --product-card-aspect: 4 / 5;
 
   /* Typography defaults */
   --font-serif: var(--font-fraunces), "Fraunces", Georgia, serif;
@@ -264,6 +266,7 @@
   --error-bd: var(--status-error-border);
   --radius-control: 8px;
   --radius-card: 12px;
+  --product-card-aspect: 4 / 5;
   --font-serif: var(--font-fraunces), "Fraunces", var(--font-devanagari), "Noto Sans Devanagari", Georgia, serif;
   --font-ui: var(--font-plus-jakarta), "Plus Jakarta Sans", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -301,6 +304,7 @@
   --error-bd: var(--status-error-border);
   --radius-control: 12px;
   --radius-card: 16px;
+  --product-card-aspect: 1 / 1;
   --font-serif: var(--font-fraunces), "Fraunces", var(--font-devanagari), "Noto Sans Devanagari", Georgia, serif;
   --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -338,6 +342,7 @@
   --error-bd: var(--status-error-border);
   --radius-control: 4px;
   --radius-card: 6px;
+  --product-card-aspect: 3 / 4;
   --font-serif: var(--font-space-grotesk), "Space Grotesk", var(--font-devanagari), "Noto Sans Devanagari", sans-serif;
   --font-ui: var(--font-inter), "Inter", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
 }
@@ -375,8 +380,127 @@
   --error-bd: var(--status-error-border);
   --radius-control: 8px;
   --radius-card: 12px;
+  --product-card-aspect: 4 / 5;
   --font-serif: var(--font-fraunces), "Fraunces", var(--font-devanagari), "Noto Sans Devanagari", Georgia, serif;
   --font-ui: var(--font-plus-jakarta), "Plus Jakarta Sans", var(--font-devanagari), "Noto Sans Devanagari", -apple-system, BlinkMacSystemFont, sans-serif;
+}
+
+/* Storefront Structural Switches & Theme Radius Helpers (CSS-only per data-store-theme) */
+[data-store-theme] .sf-control-radius {
+  border-radius: var(--radius-control);
+}
+
+[data-store-theme] .sf-card-radius {
+  border-radius: var(--radius-card);
+}
+
+[data-store-theme] .sf-product-media {
+  aspect-ratio: var(--product-card-aspect, 4 / 5);
+}
+
+[data-store-theme="pahadi-sage"] .sf-mobile-hero {
+  text-align: center;
+  align-items: center;
+}
+
+[data-store-theme="ktm-bold"] .sf-mobile-hero-frame {
+  aspect-ratio: 16 / 10;
+}
+
+@media (min-width: 768px) {
+  /* Header Alignment Switch: "left" (editorial-warm, ktm-bold) vs "centered" (pahadi-sage, midnight-obsidian) */
+  [data-store-theme="pahadi-sage"] .sf-header-inner,
+  [data-store-theme="midnight-obsidian"] .sf-header-inner {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    align-items: center;
+  }
+
+  [data-store-theme="pahadi-sage"] .sf-header-nav,
+  [data-store-theme="midnight-obsidian"] .sf-header-nav {
+    grid-column: 1;
+    grid-row: 1;
+    justify-self: start;
+  }
+
+  [data-store-theme="pahadi-sage"] .sf-header-brand,
+  [data-store-theme="midnight-obsidian"] .sf-header-brand {
+    grid-column: 2;
+    grid-row: 1;
+    justify-self: center;
+  }
+
+  [data-store-theme="pahadi-sage"] .sf-header-brand-text,
+  [data-store-theme="midnight-obsidian"] .sf-header-brand-text {
+    align-items: center;
+    text-align: center;
+  }
+
+  [data-store-theme="pahadi-sage"] .sf-header-actions,
+  [data-store-theme="midnight-obsidian"] .sf-header-actions {
+    grid-column: 3;
+    grid-row: 1;
+    justify-self: end;
+  }
+
+  /* Hero Composition Switch:
+     - editorial-warm: editorial-split (default 2-col: copy left, media right)
+     - pahadi-sage: centered-story (centered copy top, 16:9 media centered below)
+     - ktm-bold: full-bleed-poster (21:9 poster banner top, full-width bold copy strip below)
+     - midnight-obsidian: dark-spotlight (media left with spotlight framing, copy right) */
+  [data-store-theme="pahadi-sage"] .sf-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    justify-items: center;
+    text-align: center;
+    gap: 2.25rem;
+  }
+
+  [data-store-theme="pahadi-sage"] .sf-hero-copy {
+    max-width: 42rem;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+  }
+
+  [data-store-theme="pahadi-sage"] .sf-hero-cta-row {
+    justify-content: center;
+  }
+
+  [data-store-theme="pahadi-sage"] .sf-hero-media {
+    width: 100%;
+    max-width: 48rem;
+  }
+
+  [data-store-theme="pahadi-sage"] .sf-hero-frame {
+    aspect-ratio: 16 / 9;
+  }
+
+  [data-store-theme="ktm-bold"] .sf-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    gap: 1.75rem;
+    text-align: left;
+  }
+
+  [data-store-theme="ktm-bold"] .sf-hero-media {
+    order: -1;
+    width: 100%;
+  }
+
+  [data-store-theme="ktm-bold"] .sf-hero-frame {
+    aspect-ratio: 21 / 9;
+  }
+
+  [data-store-theme="ktm-bold"] .sf-hero-copy {
+    max-width: 52rem;
+  }
+
+  [data-store-theme="midnight-obsidian"] .sf-hero-media {
+    order: -1;
+  }
+
+  [data-store-theme="midnight-obsidian"] .sf-hero-frame {
+    box-shadow: 0 24px 60px -24px var(--overlay-scrim), 0 0 0 1px var(--border-subtle);
+  }
 }
 
 /* Storefront Typography & Anti-Monospace Enforcement */

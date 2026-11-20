@@ -303,6 +303,14 @@ export default function MerchantThemesPage({ params }: PageProps) {
                         <span className="truncate">Best for: {p.bestForLabel}</span>
                         <span className="shrink-0">{p.fontPairing.label}</span>
                       </div>
+
+                      <div className="flex items-center gap-2 text-[10px] font-mono text-[var(--muted-foreground)]">
+                        <span>{p.structural.heroLabel}</span>
+                        <span>·</span>
+                        <span>{p.structural.productCardAspect} cards</span>
+                        <span>·</span>
+                        <span>{p.structural.headerAlignment} nav</span>
+                      </div>
                     </button>
                   );
                 })}

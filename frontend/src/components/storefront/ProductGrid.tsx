@@ -75,9 +75,9 @@ export function ProductGrid({
             : null;
 
         const CardContent = (
-          <div className="flex flex-col h-full bg-[var(--surface)] border border-[var(--border)] rounded-xl overflow-hidden transition-colors hover:border-[var(--ink)]">
-            {/* 1. Product Image Frame (12px rounded container, 1px border, no overlay text) */}
-            <div className="relative aspect-square sm:aspect-[4/5] w-full bg-[var(--canvas)] border-b border-[var(--border)] overflow-hidden flex items-center justify-center">
+          <div className="sf-card-radius flex flex-col h-full bg-[var(--surface)] border border-[var(--border)] overflow-hidden transition-colors hover:border-[var(--ink)]">
+            {/* 1. Product Image Frame (theme aspect ratio + theme card radius, no overlay text) */}
+            <div className="sf-product-media relative w-full bg-[var(--canvas)] border-b border-[var(--border)] overflow-hidden flex items-center justify-center">
               <StoreImage
                 src={sanitizeStorefrontImageUrl(product.image_url)}
                 alt={product.name}
@@ -134,7 +134,7 @@ export function ProductGrid({
                   onClick={(e) => handleAddClick(e, product)}
                   disabled={!hasStock || isDemoProduct}
                   title={isDemoProduct ? "Preview demo item" : undefined}
-                  className="h-8 px-3 text-xs font-semibold shrink-0"
+                  className="sf-control-radius h-8 px-3 text-xs font-semibold shrink-0"
                   aria-label={`Add ${product.name} to bag`}
                 >
                   Add

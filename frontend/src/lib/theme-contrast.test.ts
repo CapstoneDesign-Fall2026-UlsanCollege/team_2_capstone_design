@@ -20,7 +20,7 @@ function parseThemeBlocksFromGlobalsCss(): Record<string, Record<string, string>
   const blocks: Record<string, Record<string, string>> = {};
 
   const blockRegex =
-    /\[data-store-theme="([^"]+)"\][^{]*\{([\s\S]*?)\}/g;
+    /\[data-store-theme="([^"]+)"\](?:,\s*:root\[data-store-theme="\1"\])?\s*\{([\s\S]*?)\}/g;
   let match: RegExpExecArray | null;
   while ((match = blockRegex.exec(css)) !== null) {
     const themeId = match[1];
@@ -31,7 +31,7 @@ function parseThemeBlocksFromGlobalsCss(): Record<string, Record<string, string>
     while ((varMatch = varRegex.exec(body)) !== null) {
       vars[varMatch[1]] = varMatch[2].trim();
     }
-    blocks[themeId] = vars;
+    blocks[themeId] = { ...(blocks[themeId] ?? {}), ...vars };
   }
   return blocks;
 }
