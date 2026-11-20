@@ -8,10 +8,10 @@ import {
   Loader2,
   LogOut,
   Plus,
-  ShoppingBag,
   Store as StoreIcon,
 } from "lucide-react";
 import { PasswordlessAuthCard } from "@/components/auth/OtpInput";
+import { ShopCraftMark } from "@/components/platform/ShopCraftLogo";
 import {
   fetchMyStores,
   fetchSession,
@@ -108,8 +108,8 @@ function LoginContent() {
     <div className="min-h-[calc(100dvh-4rem)] flex flex-col items-center justify-center p-4 sm:p-6 bg-paper text-ink">
       {/* Brand Icon Header */}
       <div className="mb-6 flex flex-col items-center text-center space-y-2">
-        <div className="w-11 h-11 rounded-xl bg-btn text-btn-ink flex items-center justify-center font-bold">
-          <ShoppingBag className="w-5 h-5" />
+        <div className="w-11 h-11 rounded-xl bg-card border border-line flex items-center justify-center">
+          <ShopCraftMark className="w-7 h-7" />
         </div>
         <div>
           <span className="text-xs font-mono font-semibold tracking-widest uppercase text-ink-3">

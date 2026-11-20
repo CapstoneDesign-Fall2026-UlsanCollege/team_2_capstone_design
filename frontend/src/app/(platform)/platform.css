@@ -23,6 +23,7 @@
   --sc-band:        #1A2A4A;
   --sc-band-ink:    #F5F7FA;  /* 13.28:1 on band */
   --sc-band-ink-2:  #B8C2D6;  /* 7.96:1 on band */
+  --sc-band-accent: #8FB0F0;  /* cobalt brand accent on dark band */
   --sc-gold:        #E5B143;  /* 7.26:1 on band. Replaces marigold #F2A900 everywhere */
 
   /* status pills (text on pill) */
@@ -94,6 +95,7 @@
   --color-band:        var(--sc-band);
   --color-band-ink:    var(--sc-band-ink);
   --color-band-ink-2:  var(--sc-band-ink-2);
+  --color-band-accent: var(--sc-band-accent);
   --color-gold:        var(--sc-gold);
   --color-cash-bg:     var(--sc-cash-bg);
   --color-cash-ink:    var(--sc-cash-ink);

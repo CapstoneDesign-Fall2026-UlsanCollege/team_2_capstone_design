@@ -5,6 +5,7 @@ import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, Sun, Moon, LayoutDashboard } from "lucide-react";
 import { usePlatformTheme } from "@/context/PlatformThemeContext";
+import { ShopCraftLogo } from "@/components/platform/ShopCraftLogo";
 import { fetchMyStores, fetchSession } from "@/lib/api";
 
 interface NavItem {
@@ -72,17 +73,9 @@ export function PlatformNav() {
         {/* Left: Brand logo */}
         <Link
           href="/"
-          className="justify-self-start inline-flex items-center gap-2.5 min-h-[44px] py-1.5"
+          className="justify-self-start inline-flex items-center min-h-[44px] py-1.5"
         >
-          <span
-            aria-hidden="true"
-            className="w-7 h-7 rounded-lg bg-btn text-btn-ink grid place-items-center font-serif-brand text-[17px]"
-          >
-            S
-          </span>
-          <span className="font-semibold tracking-tight text-base text-ink">
-            ShopCraft
-          </span>
+          <ShopCraftLogo />
         </Link>
 
         {/* Center: Minimalist Navigation Links */}

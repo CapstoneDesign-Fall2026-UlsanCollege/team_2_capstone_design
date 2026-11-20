@@ -7,9 +7,9 @@ import {
   ArrowRight,
   CheckCircle2,
   LogOut,
-  Sparkles,
 } from "lucide-react";
 import { PasswordlessAuthCard } from "@/components/auth/OtpInput";
+import { ShopCraftMark } from "@/components/platform/ShopCraftLogo";
 import {
   fetchSession,
   logoutSession,
@@ -86,15 +86,16 @@ function SignupContent() {
 
   return (
     <div className="min-h-[calc(100dvh-4rem)] flex flex-col items-center justify-center p-4 sm:p-6 bg-paper text-ink">
-      {/* Header Banner */}
-      <div className="mb-6 flex flex-col items-center text-center space-y-2 max-w-lg">
-        <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-mono font-semibold uppercase tracking-wider bg-paid-bg text-paid-ink border border-line">
-          <Sparkles className="w-3.5 h-3.5" />
-          <span>Free while in beta · Built for Nepal</span>
+      {/* Brand Icon Header */}
+      <div className="mb-6 flex flex-col items-center text-center space-y-2">
+        <div className="w-11 h-11 rounded-xl bg-card border border-line flex items-center justify-center">
+          <ShopCraftMark className="w-7 h-7" />
         </div>
-        <p className="text-xs sm:text-sm text-ink-2 leading-relaxed">
-          Name your store, pick a look, add products. Customers pay with Khalti or cash on delivery.
-        </p>
+        <div>
+          <span className="text-xs font-mono font-semibold tracking-widest uppercase text-ink-3">
+            ShopCraft Store Setup
+          </span>
+        </div>
       </div>
 
       {loadingSession ? (

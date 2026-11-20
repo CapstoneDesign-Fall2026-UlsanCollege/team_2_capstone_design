@@ -15,7 +15,6 @@ import {
   MapPin,
   PartyPopper,
   Phone,
-  Sparkles,
 } from "lucide-react";
 import {
   ApiError,
@@ -298,8 +297,8 @@ function CreateStoreContent() {
 
           <div className="space-y-2">
             <div className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-emerald-50 text-emerald-700 text-xs font-semibold font-mono border border-emerald-200">
-              <Sparkles className="w-3.5 h-3.5" />
-              <span>Your store is live on ShopCraft!</span>
+              <CheckCircle2 className="w-3.5 h-3.5" />
+              <span>Your store is live on ShopCraft</span>
             </div>
             <h1 className="text-3xl font-extrabold tracking-tight">
               {createdStore.name}
@@ -754,8 +753,8 @@ function CreateStoreContent() {
                 </>
               ) : (
                 <>
-                  <Sparkles className="w-4 h-4 text-emerald-400" />
-                  <span>Launch Store on ShopCraft →</span>
+                  <span>Launch Store on ShopCraft</span>
+                  <ArrowRight className="w-4 h-4" />
                 </>
               )}
             </button>
