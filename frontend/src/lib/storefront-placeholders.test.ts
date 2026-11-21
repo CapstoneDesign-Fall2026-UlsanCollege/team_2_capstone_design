@@ -401,6 +401,57 @@ describe("StorefrontCatalogView placeholder removal", () => {
     expect(configuredHtml).toContain("Khalti");
     expect(configuredHtml).not.toContain("Cash on Delivery");
     expect(configuredHtml).toContain("Order on WhatsApp");
+    expect(configuredHtml).toContain("sf-trust-section");
+    expect(configuredHtml).toContain("Delivery &amp; COD details");
+    expect(configuredHtml).not.toContain("Frequently Asked Questions");
+    expect(configuredHtml).not.toContain("Quick order bar");
+  });
+
+  it("hides Story section when about_text is empty, uses 'Our story' instead of repeating hero headline, and assigns 3->3 / 6->3x2 grid columns with origin badges", () => {
+    const noStoryHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({
+          name: "Minimal Store",
+          tagline: "Short hero tagline only.",
+          story_headline: "Hero Display Headline",
+          about_text: "",
+        }),
+        products: [
+          makeProduct({ id: 1, slug: "p1", attributes: { origin: "Kanyam, Ilam" } }),
+          makeProduct({ id: 2, slug: "p2", attributes: { district: "Gulmi" } }),
+          makeProduct({ id: 3, slug: "p3", attributes: { origin: "Solukhumbu" } }),
+        ],
+      })
+    );
+    expect(noStoryHtml).not.toContain("sf-story-section");
+    expect(noStoryHtml).toContain('data-item-count="3"');
+    expect(noStoryHtml).toContain('data-grid-cols="3"');
+    expect(noStoryHtml).toContain("sf-origin-badge");
+    expect(noStoryHtml).toContain("Kanyam, Ilam");
+
+    const withStoryHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({
+          name: "BrewMellow",
+          tagline: "Header tagline that must not render in header bar.",
+          story_headline: "Boutique Micro-Lot Coffee Roastery in Patan",
+          about_text: "Founded in 2021 in the historic alleys of Patan.",
+        }),
+        products: [
+          makeProduct({ id: 1, slug: "p1" }),
+          makeProduct({ id: 2, slug: "p2" }),
+          makeProduct({ id: 3, slug: "p3" }),
+          makeProduct({ id: 4, slug: "p4" }),
+          makeProduct({ id: 5, slug: "p5" }),
+          makeProduct({ id: 6, slug: "p6" }),
+        ],
+      })
+    );
+    expect(withStoryHtml).toContain("sf-story-section");
+    expect(withStoryHtml).toContain(">Our story</h2>");
+    expect(withStoryHtml).not.toContain(">Boutique Micro-Lot Coffee Roastery in Patan</h2>");
+    expect(withStoryHtml).toContain('data-item-count="6"');
+    expect(withStoryHtml).toContain('data-grid-cols="3"');
   });
 
   it("renders User icon when signed out or signed in only as platform/merchant user, and initial badge only for storefront customers", () => {

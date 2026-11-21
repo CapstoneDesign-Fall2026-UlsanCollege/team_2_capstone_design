@@ -1,0 +1,20 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#0D0F14" />
+  <rect x="32" y="32" width="736" height="736" fill="none" stroke="#1D31E0" stroke-width="3" />
+  <!-- Heavyweight Streetwear Hoodie Silhouette -->
+  <g transform="translate(150, 120)">
+    <!-- Hood -->
+    <path d="M 175 65 Q 175 0 250 0 Q 325 0 325 65 Z" fill="#181B22" stroke="#F4F4F0" stroke-width="3" />
+    <!-- Body & Sleeves -->
+    <path d="M 155 65 L 345 65 L 465 180 L 410 250 L 365 200 L 365 475 L 135 475 L 135 200 L 90 250 L 35 180 Z" fill="#161920" stroke="#F4F4F0" stroke-width="3" />
+    <!-- Kangaroo Pocket -->
+    <path d="M 175 330 L 325 330 L 345 435 L 155 435 Z" fill="#1F2430" stroke="#66738A" stroke-width="2" />
+    <!-- Chest Print -->
+    <rect x="180" y="135" width="140" height="104" fill="#0B0B0B" stroke="#1D31E0" stroke-width="2.5" />
+    <text x="250" y="176" font-family="-apple-system, sans-serif" font-size="18" font-weight="800" fill="#FFFFFF" text-anchor="middle" letter-spacing="3">THAMEL</text>
+    <text x="250" y="200" font-family="-apple-system, sans-serif" font-size="13" font-weight="700" fill="#6878F5" text-anchor="middle" letter-spacing="2">NIGHT DROP</text>
+    <text x="250" y="222" font-family="monospace" font-size="9" fill="#A8B3C7" text-anchor="middle">420 GSM FRENCH TERRY</text>
+  </g>
+  <text x="400" y="684" font-family="-apple-system, sans-serif" font-size="17" font-weight="800" fill="#F4F4F0" text-anchor="middle" letter-spacing="5">BALUWATAR STUDIO EDITION</text>
+  <text x="400" y="712" font-family="monospace" font-size="11" fill="#6878F5" text-anchor="middle" letter-spacing="2">DOUBLE-LAYER HOOD · KATHMANDU</text>
+</svg>

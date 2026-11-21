@@ -176,7 +176,7 @@ describe("Storefront Theme Registry (Single Source of Truth)", () => {
       "utf-8"
     );
 
-    // 1. Product card aspect ratios + control/card radii per theme
+    // 1. Product card aspect ratios + control/card radii + announcement tokens per theme
     for (const theme of STOREFRONT_THEMES) {
       const [w, h] = theme.structural.productCardAspect.split("/");
       const block = parseCssThemeBlock(globalsCss, theme.id);
@@ -184,7 +184,11 @@ describe("Storefront Theme Registry (Single Source of Truth)", () => {
       expect(aspectVar.replace(/\s+/g, "")).toBe(`${w}/${h}`);
       expect(getCssVar(block, "--radius-control")).toBe(theme.radius.control);
       expect(getCssVar(block, "--radius-card")).toBe(theme.radius.card);
+      expect(getCssVar(block, "--announcement-bg")).toMatch(/^#[0-9A-Fa-f]{6}$/);
+      expect(getCssVar(block, "--announcement-fg")).toMatch(/^#[0-9A-Fa-f]{6}$/);
     }
+    const obsidianBlock = parseCssThemeBlock(globalsCss, "midnight-obsidian");
+    expect(getCssVar(obsidianBlock, "--announcement-bg").toUpperCase()).toBe("#141821");
 
     // 2. Centered header alignment + distinct desktop hero compositions + section chrome in globals.css
     expect(globalsCss).toContain('[data-store-theme="pahadi-sage"] .sf-header-inner');
@@ -193,7 +197,9 @@ describe("Storefront Theme Registry (Single Source of Truth)", () => {
     expect(globalsCss).toContain('[data-store-theme="ktm-bold"] .sf-hero-grid');
     expect(globalsCss).toContain('[data-store-theme="midnight-obsidian"] .sf-hero-media');
     expect(globalsCss).toContain('[data-store-theme="editorial-warm"] #collection-section > .grid');
+    expect(globalsCss).toContain('[data-store-theme="pahadi-sage"] .sf-origin-badge');
     expect(globalsCss).toContain('[data-store-theme="ktm-bold"] #collection-section > .grid > *::after');
+    expect(globalsCss).not.toContain("outline: 2px solid var(--primary)");
     expect(globalsCss).toContain('[data-store-theme="midnight-obsidian"] #collection-section > .grid');
     expect(globalsCss).toContain(":is(:lang(ne), :lang(hi), :lang(mai), :lang(sa))");
     expect(globalsCss).toContain("prefers-reduced-motion: reduce");

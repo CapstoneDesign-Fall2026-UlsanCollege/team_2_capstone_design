@@ -73,11 +73,11 @@ export function StorefrontHeader({
 
   return (
     <div className="w-full">
-      {/* 1. Announcement Bar: 36px, theme ink surface, single static merchant message. Hidden if empty. */}
+      {/* 1. Announcement Bar: 36px, per-theme announcement tokens, single static merchant message. Hidden if empty. */}
       {announcementText && (
         <aside
           aria-label="Store announcement"
-          className="w-full h-9 bg-[var(--ink)] text-[var(--surface)] text-xs font-medium px-4 flex items-center justify-center border-b border-[var(--border)] overflow-hidden"
+          className="sf-announcement-bar w-full h-9 bg-[var(--announcement-bg,var(--ink))] text-[var(--announcement-fg,var(--surface))] text-xs font-medium px-4 flex items-center justify-center border-b border-[var(--announcement-border,var(--border))] overflow-hidden"
         >
           <p className="truncate text-center max-w-4xl tracking-normal">
             {announcementText}
@@ -85,7 +85,7 @@ export function StorefrontHeader({
         </aside>
       )}
 
-      {/* 2. Header Bar: Logo/Name, Clean Navigation, Search, Account, Bag. 1px border. */}
+      {/* 2. Header Bar: Logo/Name (no truncated tagline), Clean Navigation, Search, Account, Bag. */}
       <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--surface)]">
         <div className="sf-header-inner max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           
@@ -109,11 +109,6 @@ export function StorefrontHeader({
                 <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-[var(--ink)] leading-tight truncate group-hover:opacity-85 transition-opacity">
                   {storeName}
                 </span>
-                {cleanTagline && (
-                  <span className="hidden lg:block text-xs text-[var(--ink-2)] max-w-sm truncate font-normal">
-                    {cleanTagline}
-                  </span>
-                )}
               </div>
             )}
           </Link>

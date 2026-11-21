@@ -95,7 +95,6 @@ export function StorefrontCatalogView({
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<"featured" | "price-asc" | "price-desc">("featured");
   const [searchOpen, setSearchOpen] = useState<boolean>(Boolean(initialSearchOpen));
-  const [openFaqIndex, setOpenFaqIndex] = useState<number | null>(null);
 
   // Real catalog unless theme-editor preview explicitly requests ephemeral preview items
   const fullCatalog: ProductItem[] = useMemo(() => {
@@ -267,6 +266,24 @@ export function StorefrontCatalogView({
     return null;
   }, [store.tagline]);
 
+  const storyText = useMemo(() => {
+    if (store.about_text && !isPlaceholderText(store.about_text)) {
+      return store.about_text.trim();
+    }
+    return null;
+  }, [store.about_text]);
+
+  const storyHeading = useMemo(() => {
+    const candidate =
+      store.story_headline && !isPlaceholderText(store.story_headline)
+        ? store.story_headline.trim()
+        : "";
+    if (candidate && candidate.toLowerCase() !== headline.toLowerCase()) {
+      return candidate;
+    }
+    return "Our story";
+  }, [store.story_headline, headline]);
+
   const heroImageUrl = useMemo(() => {
     if (heroMode === "banner") return safeBannerUrl;
     if (heroMode === "featured-product") return featuredProductImageUrl;
@@ -333,36 +350,8 @@ export function StorefrontCatalogView({
     scrollToCollection();
   };
 
-  // Dynamic Store FAQs (driven strictly by configured store capabilities)
-  const STORE_FAQS = useMemo(() => {
-    const faqs: Array<{ q: string; a: string }> = [];
-    if (claims.codEnabled) {
-      faqs.push({
-        q: "How does Cash on Delivery (COD) work?",
-        a: "Select Cash on Delivery during checkout. Pay the courier upon delivery with cash or mobile banking QR.",
-      });
-    }
-    if (claims.shippingConfigured) {
-      faqs.push({
-        q: "What are your delivery times and shipping rates?",
-        a: `Inside Kathmandu Valley orders typically arrive within 1 to 2 days for ${formatNpr(store.inside_valley_shipping_minor || 10000)}. Outside Kathmandu Valley deliveries take 2 to 4 business days via courier for ${formatNpr(store.outside_valley_shipping_minor || 20000)}.${store.free_shipping_threshold_minor ? ` Orders over ${formatNpr(store.free_shipping_threshold_minor)} qualify for free delivery.` : ""}`,
-      });
-    }
-    if (claims.hasKhalti) {
-      faqs.push({
-        q: "How do I pay with Khalti?",
-        a: "Choose Khalti at checkout to complete payment securely using your Khalti wallet, eBanking, or QR code.",
-      });
-    }
-    faqs.push({
-      q: "Can I track my order status?",
-      a: "Yes. As soon as your order is placed, you receive a confirmation receipt link with live order status updates.",
-    });
-    return faqs;
-  }, [claims, store.inside_valley_shipping_minor, store.outside_valley_shipping_minor, store.free_shipping_threshold_minor]);
-
   return (
-    <div className={`w-full min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans antialiased flex flex-col ${fullCatalog.length > 0 && featuredProduct ? "pb-20 md:pb-0" : ""}`}>
+    <div className="w-full min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans antialiased flex flex-col">
       
       {/* 1. Header with Static Merchant Announcement Bar */}
       <StorefrontHeader
@@ -608,16 +597,16 @@ export function StorefrontCatalogView({
         
         {/* Controls: Desktop Bar (shown when catalog has products) */}
         {fullCatalog.length > 0 && (
-        <div className="hidden sm:flex sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
+        <div className="sf-filter-bar hidden sm:flex sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
           {/* Category Tabs */}
           <div className="flex flex-wrap items-center gap-2">
             <button
               type="button"
               onClick={() => setSelectedCategory("all")}
-              className={`h-9 px-3.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors ${
+              className={`sf-control-radius h-9 px-3.5 border text-xs font-semibold cursor-pointer transition-colors ${
                 selectedCategory === "all"
-                  ? "bg-[var(--ink)] text-[var(--surface)]"
-                  : "bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:text-[var(--ink)]"
+                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
+                  : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:text-[var(--ink)] hover:border-[var(--ink)]"
               }`}
             >
               All ({fullCatalog.length})
@@ -627,10 +616,10 @@ export function StorefrontCatalogView({
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`h-9 px-3.5 rounded-lg text-xs font-semibold cursor-pointer transition-colors capitalize ${
+                className={`sf-control-radius h-9 px-3.5 border text-xs font-semibold cursor-pointer transition-colors capitalize ${
                   selectedCategory === cat
-                    ? "bg-[var(--ink)] text-[var(--surface)]"
-                    : "bg-[var(--surface)] text-[var(--ink-2)] border border-[var(--border)] hover:text-[var(--ink)]"
+                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
+                    : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:text-[var(--ink)] hover:border-[var(--ink)]"
                 }`}
               >
                 {cat}
@@ -639,26 +628,45 @@ export function StorefrontCatalogView({
           </div>
 
           {/* Sort & In-Stock controls */}
-          <div className="flex items-center gap-4 text-xs">
-            <label className="flex items-center gap-2 text-[var(--ink-2)] hover:text-[var(--ink)] cursor-pointer select-none">
+          <div className="flex items-center gap-3 text-xs">
+            <label
+              className={`sf-control-radius h-9 px-3 border flex items-center gap-2 cursor-pointer select-none transition-colors ${
+                inStockOnly
+                  ? "bg-[var(--nav-active)] text-[var(--ink)] border-[var(--ink)] font-semibold"
+                  : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:text-[var(--ink)]"
+              }`}
+            >
               <input
                 type="checkbox"
                 checked={inStockOnly}
                 onChange={(e) => setInStockOnly(e.target.checked)}
-                className="w-4 h-4 rounded border-[var(--border)] accent-[var(--ink)] cursor-pointer"
+                className="w-3.5 h-3.5 border-[var(--border)] accent-[var(--primary)] cursor-pointer"
               />
               <span>In stock only</span>
             </label>
 
-            <select
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as "featured" | "price-asc" | "price-desc")}
-              className="h-9 bg-[var(--surface)] border border-[var(--border)] rounded-lg px-3 py-1 text-[var(--ink)] text-xs focus:outline-none focus:border-[var(--ink)] cursor-pointer"
-            >
-              <option value="featured">Featured</option>
-              <option value="price-asc">Price: Low to High</option>
-              <option value="price-desc">Price: High to Low</option>
-            </select>
+            <div className="relative inline-flex items-center">
+              <select
+                aria-label="Sort products"
+                value={sortBy}
+                onChange={(e) => setSortBy(e.target.value as "featured" | "price-asc" | "price-desc")}
+                className="sf-sort-select sf-control-radius appearance-none h-9 bg-[var(--surface)] border border-[var(--border)] pl-3 pr-8 py-1 text-[var(--ink)] text-xs font-medium focus:outline-none focus:border-[var(--primary)] cursor-pointer"
+              >
+                <option value="featured" className="bg-[var(--surface)] text-[var(--ink)]">
+                  Featured
+                </option>
+                <option value="price-asc" className="bg-[var(--surface)] text-[var(--ink)]">
+                  Price: Low to High
+                </option>
+                <option value="price-desc" className="bg-[var(--surface)] text-[var(--ink)]">
+                  Price: High to Low
+                </option>
+              </select>
+              <ChevronDown
+                className="w-3.5 h-3.5 text-[var(--ink-2)] pointer-events-none absolute right-2.5"
+                aria-hidden="true"
+              />
+            </div>
           </div>
         </div>
         )}
@@ -755,9 +763,10 @@ export function StorefrontCatalogView({
 
       </section>
 
-      {/* 4. Brand Story Strip (12px radius, 1px border, serif headline, plain WhatsApp link) */}
-      <section className="w-full border-t border-[var(--border)] bg-[var(--canvas)] py-12 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-4xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-10 text-left space-y-4">
+      {/* 4. Brand Story Strip (own heading, never repeats hero headline, hidden when no storyText) */}
+      {storyText && (
+      <section className="sf-story-section w-full border-t border-[var(--border)] bg-[var(--canvas)] py-12 px-4 sm:px-6 lg:px-8">
+        <div className="sf-story-box max-w-4xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-10 text-left space-y-4">
           <div className="space-y-2 max-w-2xl">
             {store.address && (
               <div className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-2)]">
@@ -766,13 +775,11 @@ export function StorefrontCatalogView({
               </div>
             )}
             <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[var(--ink)]">
-              {store.story_headline || `About ${store.name}`}
+              {storyHeading}
             </h2>
-            {(store.about_text || description) && (
-              <p className="text-sm text-[var(--ink-2)] leading-relaxed">
-                {store.about_text || description}
-              </p>
-            )}
+            <p className="text-sm text-[var(--ink-2)] leading-relaxed">
+              {storyText}
+            </p>
           </div>
 
           <div className="pt-2 flex flex-wrap items-center gap-4">
@@ -798,112 +805,69 @@ export function StorefrontCatalogView({
           </div>
         </div>
       </section>
+      )}
 
-      {/* 5. Conditional Delivery & Payment Section */}
+      {/* 5. Compact Trust Strip (delivery, COD/payment, contact) linking to Delivery page */}
       {(claims.shippingConfigured || claims.hasKhalti || claims.codEnabled) && (
-      <section className="w-full border-t border-[var(--border)] bg-[var(--surface)] py-12 px-4 sm:px-6 lg:px-8 text-left">
-        <div className="max-w-4xl mx-auto space-y-8">
-          <div className="space-y-1">
-            <p className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-2)]">
-              Store Information
-            </p>
-            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[var(--ink)]">
-              {claims.shippingConfigured ? "Delivery & Payment in Nepal" : "Payment Options"}
-            </h2>
-          </div>
-
-          <div className={`grid grid-cols-1 ${claims.shippingConfigured && (claims.hasKhalti || claims.codEnabled) ? "md:grid-cols-2" : ""} gap-4 sm:gap-6`}>
-            {/* Delivery Card */}
+      <section
+        aria-label="Delivery and payment summary"
+        className="sf-trust-section w-full border-t border-[var(--border)] bg-[var(--surface)] py-6 px-4 sm:px-6 lg:px-8 text-left"
+      >
+        <div className="sf-trust-box max-w-6xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--canvas)] px-4 py-3.5 sm:px-6 sm:py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs">
+          <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[var(--ink)]">
             {claims.shippingConfigured && (
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-5 sm:p-6 space-y-3">
-              <h3 className="font-semibold text-sm text-[var(--ink)]">
-                Doorstep Delivery
-              </h3>
-              <div className="space-y-2 text-xs text-[var(--ink-2)] leading-relaxed">
-                <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
-                  <span>Kathmandu Valley (1–2 days)</span>
-                  <span className="font-semibold text-[var(--ink)] tabular-nums">
-                    {formatNpr(store.inside_valley_shipping_minor || 10000)}
-                  </span>
-                </div>
-                <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
-                  <span>Outside Valley (2–4 business days)</span>
-                  <span className="font-semibold text-[var(--ink)] tabular-nums">
-                    {formatNpr(store.outside_valley_shipping_minor || 20000)}
-                  </span>
-                </div>
-                {typeof store.free_shipping_threshold_minor === "number" &&
-                  store.free_shipping_threshold_minor > 0 && (
-                  <p className="text-xs font-medium text-[var(--ink)] pt-1">
-                    Free delivery on orders over {formatNpr(store.free_shipping_threshold_minor)}.
-                  </p>
-                )}
-                <p className="text-[11px] text-[var(--ink-2)] pt-1">
-                  Dispatched via local couriers with phone confirmation.
-                </p>
-              </div>
-            </div>
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <span className="font-semibold">Delivery:</span>
+                <span className="text-[var(--ink-2)] tabular-nums">
+                  Valley {formatNpr(store.inside_valley_shipping_minor || 10000)} · Outside {formatNpr(store.outside_valley_shipping_minor || 20000)}
+                  {typeof store.free_shipping_threshold_minor === "number" &&
+                  store.free_shipping_threshold_minor > 0
+                    ? ` (Free over ${formatNpr(store.free_shipping_threshold_minor)})`
+                    : ""}
+                </span>
+              </span>
             )}
 
-            {/* Payment Methods Card */}
-            {(claims.hasKhalti || claims.codEnabled) && (
-            <div className="rounded-xl border border-[var(--border)] bg-[var(--canvas)] p-5 sm:p-6 space-y-3">
-              <h3 className="font-semibold text-sm text-[var(--ink)]">
-                Payment Options
-              </h3>
-              <div className="space-y-2 text-xs text-[var(--ink-2)] leading-relaxed">
-                {claims.hasKhalti && (
-                <div className={`py-1 ${claims.codEnabled ? "border-b border-[var(--border)]/60" : ""}`}>
-                  <span className="font-semibold text-[var(--ink)] block">Khalti ePayment</span>
-                  <span>Instant wallet redirect, MPIN verification, or scan Fonepay QR.</span>
-                </div>
-                )}
-                {claims.codEnabled && (
-                <div className="py-1">
-                  <span className="font-semibold text-[var(--ink)] block">Cash on Delivery (COD)</span>
-                  <span>Pay courier upon arrival with cash or mobile banking QR.</span>
-                </div>
-                )}
-                <p className="text-[11px] text-[var(--ink-2)] pt-1">
-                  All transactions settled securely in Nepalese Rupees (NPR).
-                </p>
-              </div>
-            </div>
+            {(claims.codEnabled || claims.hasKhalti) && (
+              <span className="inline-flex items-center gap-1.5 font-medium">
+                <span className="font-semibold">Payment:</span>
+                <span className="text-[var(--ink-2)]">
+                  {claims.hasKhalti && claims.codEnabled
+                    ? "Cash on Delivery (COD) & Khalti"
+                    : claims.codEnabled
+                    ? "Cash on Delivery (COD)"
+                    : "Khalti ePayment"}
+                </span>
+              </span>
+            )}
+
+            {waUrl ? (
+              <a
+                href={waUrl}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="inline-flex items-center gap-1.5 font-medium text-[var(--ink-2)] hover:text-[var(--ink)] underline-offset-4 hover:underline"
+              >
+                <MessageCircle className="w-3.5 h-3.5 shrink-0" />
+                <span>WhatsApp Support</span>
+              </a>
+            ) : (
+              <Link
+                href={`/s/${encodeURIComponent(store.slug)}/contact`}
+                className="inline-flex items-center gap-1.5 font-medium text-[var(--ink-2)] hover:text-[var(--ink)] underline-offset-4 hover:underline"
+              >
+                <span>Contact Store</span>
+              </Link>
             )}
           </div>
 
-          {/* Clean FAQ Accordion */}
-          <div className="pt-4 border-t border-[var(--border)] space-y-2">
-            <h3 className="font-semibold text-sm text-[var(--ink)] mb-3">
-              Frequently Asked Questions
-            </h3>
-            <div className="divide-y divide-[var(--border)] border-t border-b border-[var(--border)]">
-              {STORE_FAQS.map((faq, idx) => {
-                const isOpen = openFaqIndex === idx;
-                return (
-                  <div key={idx} className="py-3">
-                    <button
-                      type="button"
-                      onClick={() => setOpenFaqIndex(isOpen ? null : idx)}
-                      className="w-full flex items-center justify-between text-left text-xs sm:text-sm font-medium text-[var(--ink)] hover:text-[var(--ink-2)] transition-colors cursor-pointer min-h-[44px]"
-                    >
-                      <span>{faq.q}</span>
-                      <ChevronDown
-                        className={`w-4 h-4 text-[var(--ink-2)] transition-transform duration-200 shrink-0 ${
-                          isOpen ? "rotate-180" : ""
-                        }`}
-                      />
-                    </button>
-                    {isOpen && (
-                      <p className="text-xs text-[var(--ink-2)] pt-1 pb-2 leading-relaxed">
-                        {faq.a}
-                      </p>
-                    )}
-                  </div>
-                );
-              })}
-            </div>
-          </div>
+          <Link
+            href={`/s/${encodeURIComponent(store.slug)}/shipping`}
+            className="inline-flex items-center gap-1.5 font-semibold text-[var(--ink)] hover:opacity-80 underline underline-offset-4 shrink-0 min-h-[36px]"
+          >
+            <span>{claims.shippingConfigured ? "Delivery & COD details" : "Payment details"}</span>
+            <ArrowRight className="w-3.5 h-3.5" />
+          </Link>
         </div>
       </section>
       )}
@@ -1044,42 +1008,7 @@ export function StorefrontCatalogView({
         </div>
       )}
 
-      {/* 8. Mobile Sticky Bottom Bar (shown only when products exist) */}
-      {fullCatalog.length > 0 && featuredProduct && (
-      <aside
-        aria-label="Quick order bar"
-        className="md:hidden fixed bottom-0 inset-x-0 z-40 bg-[var(--surface)] border-t border-[var(--border)] p-3 flex items-center gap-3 pb-[calc(12px+env(safe-area-inset-bottom,0px))]"
-      >
-        <div className="flex flex-col shrink-0 min-w-[70px]">
-          <span className="text-[10px] text-[var(--ink-2)] uppercase tracking-wider font-medium">Price</span>
-          <span className="text-base font-semibold text-[var(--ink)] tabular-nums leading-none">
-            {formatNpr(featuredPriceMinor)}
-          </span>
-        </div>
-
-        <Button
-          variant="primary"
-          onClick={handleQuickAddFeatured}
-          className="flex-1 h-11 text-sm font-semibold"
-        >
-          Add to bag
-        </Button>
-
-        {waUrl && (
-          <a
-            href={waUrl}
-            target="_blank"
-            rel="noopener noreferrer"
-            className="w-11 h-11 shrink-0 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] flex items-center justify-center hover:bg-[var(--canvas)] transition-colors"
-            aria-label="Chat on WhatsApp"
-          >
-            <MessageCircle className="w-5 h-5 text-[var(--ink)]" />
-          </a>
-        )}
-      </aside>
-      )}
-
-      {/* 9. Multi-Column Storefront Footer */}
+      {/* 8. Multi-Column Storefront Footer */}
       <footer className="w-full border-t border-[var(--border)] bg-[var(--surface)] pt-12 pb-16 px-4 sm:px-6 lg:px-8 text-left">
         <div className="max-w-6xl mx-auto space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">

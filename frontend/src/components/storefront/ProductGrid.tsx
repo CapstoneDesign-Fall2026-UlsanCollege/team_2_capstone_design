@@ -2,7 +2,7 @@
 
 import React from "react";
 import Link from "next/link";
-import { Package } from "lucide-react";
+import { MapPin, Package } from "lucide-react";
 import { formatNpr, ProductItem } from "@/lib/api";
 import { isPlaceholderText, sanitizeStorefrontImageUrl } from "@/lib/storefront-helpers";
 import { Button } from "@/components/ui/button";
@@ -48,8 +48,22 @@ export function ProductGrid({
     }
   };
 
+  const count = products.length;
+  const desktopCols: 1 | 2 | 3 | 4 =
+    count <= 1
+      ? 1
+      : count === 2
+      ? 2
+      : count === 3 || count === 6 || (count % 3 === 0 && count % 4 !== 0)
+      ? 3
+      : 4;
+
   return (
-    <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-3 sm:gap-5">
+    <div
+      data-item-count={count}
+      data-grid-cols={desktopCols}
+      className="sf-product-grid grid grid-cols-2 md:grid-cols-3 gap-3 sm:gap-5"
+    >
       {products.map((product) => {
         const variants = product.variants || [];
         const inStockVariants = variants.filter((v) => v.in_stock && v.is_active);
@@ -66,6 +80,15 @@ export function ProductGrid({
         // Clean category or attribute tag
         const rawCategory = product.category || (product.attributes?.category as string) || "";
         const cleanCategory = !isPlaceholderText(rawCategory) ? rawCategory.trim() : "";
+
+        // Origin / district badge metadata (displayed on pahadi-sage product cards)
+        const rawOrigin =
+          (product.attributes?.origin as string) ||
+          (product.attributes?.district as string) ||
+          (product.attributes?.region as string) ||
+          (product.attributes?.terroir as string) ||
+          "";
+        const cleanOrigin = !isPlaceholderText(rawOrigin) ? rawOrigin.trim() : "";
 
         const isDemoProduct = product.id < 0;
         const productSlugOrId = product.slug || String(product.id);
@@ -107,6 +130,12 @@ export function ProductGrid({
             {/* 2. Product Metadata & Direct Quick Add */}
             <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-3 text-left">
               <div className="space-y-1">
+                {cleanOrigin && (
+                  <span className="sf-origin-badge hidden items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-[var(--nav-active)] text-[var(--primary)] border border-[var(--border-subtle)] w-fit">
+                    <MapPin className="w-2.5 h-2.5 shrink-0" aria-hidden="true" />
+                    <span>{cleanOrigin}</span>
+                  </span>
+                )}
                 {cleanCategory && (
                   <p className="text-[11px] text-[var(--ink-2)] font-medium uppercase tracking-wider">
                     {cleanCategory}
