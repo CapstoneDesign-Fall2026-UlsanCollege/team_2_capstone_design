@@ -73,13 +73,13 @@ export function StorefrontHeader({
 
   return (
     <div className="w-full">
-      {/* 1. Announcement Bar: 36px, per-theme announcement tokens, single static merchant message. Hidden if empty. */}
+      {/* 1. Announcement Bar: per-theme announcement tokens, wraps cleanly on 360px mobile without truncation. Hidden if empty. */}
       {announcementText && (
         <aside
           aria-label="Store announcement"
-          className="sf-announcement-bar w-full h-9 bg-[var(--announcement-bg,var(--ink))] text-[var(--announcement-fg,var(--surface))] text-xs font-medium px-4 flex items-center justify-center border-b border-[var(--announcement-border,var(--border))] overflow-hidden"
+          className="sf-announcement-bar w-full min-h-9 py-1.5 px-3 sm:px-4 bg-[var(--announcement-bg,var(--ink))] text-[var(--announcement-fg,var(--surface))] text-[11px] sm:text-xs font-medium flex items-center justify-center border-b border-[var(--announcement-border,var(--border))]"
         >
-          <p className="truncate text-center max-w-4xl tracking-normal">
+          <p className="text-center max-w-4xl leading-snug tracking-normal break-words">
             {announcementText}
           </p>
         </aside>

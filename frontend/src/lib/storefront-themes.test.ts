@@ -198,6 +198,7 @@ describe("Storefront Theme Registry (Single Source of Truth)", () => {
     expect(globalsCss).toContain('[data-store-theme="midnight-obsidian"] .sf-hero-media');
     expect(globalsCss).toContain('[data-store-theme="editorial-warm"] #collection-section > .grid');
     expect(globalsCss).toContain('[data-store-theme="pahadi-sage"] .sf-origin-badge');
+    expect(globalsCss).toContain("#collection-section > .grid > *:last-child:nth-child(odd)");
     expect(globalsCss).toContain('[data-store-theme="ktm-bold"] #collection-section > .grid > *::after');
     expect(globalsCss).not.toContain("outline: 2px solid var(--primary)");
     expect(globalsCss).toContain('[data-store-theme="midnight-obsidian"] #collection-section > .grid');

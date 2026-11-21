@@ -591,9 +591,20 @@
 @media (max-width: 767px) {
   [data-store-theme] #collection-section .sf-card-radius button,
   [data-store-theme] .sf-hero-media button,
-  [data-store-theme] .sf-mobile-hero button {
+  [data-store-theme] .sf-mobile-hero button,
+  [data-store-theme] .sf-hero-caption button {
     min-height: 44px;
-    min-width: 44px;
+    min-width: 56px;
+    padding-inline: 0.875rem;
+  }
+
+  /* Prevent orphan odd card in 2-column mobile product grids by spanning both columns */
+  [data-store-theme] #collection-section > .grid > *:last-child:nth-child(odd) {
+    grid-column: 1 / -1;
+  }
+
+  [data-store-theme] #collection-section > .grid > *:last-child:nth-child(odd) .sf-product-media {
+    aspect-ratio: 16 / 10;
   }
 }
 
@@ -660,12 +671,20 @@
   font-weight: 600;
   font-size: 1.05rem;
 }
-[data-store-theme="editorial-warm"] #collection-section .sf-card-radius button {
-  background: transparent;
-  border-width: 0 0 var(--bw) 0;
-  border-color: var(--ink);
-  border-radius: 0;
-  padding-inline: 0.25rem;
+[data-store-theme="editorial-warm"] #collection-section .sf-card-radius button,
+[data-store-theme="editorial-warm"] .sf-hero-caption button {
+  background: var(--surface);
+  color: var(--ink);
+  border: var(--bw) solid var(--ink);
+  border-radius: var(--radius-control);
+  padding-inline: 0.875rem;
+  font-weight: 600;
+}
+[data-store-theme="editorial-warm"] #collection-section .sf-card-radius button:hover,
+[data-store-theme="editorial-warm"] .sf-hero-caption button:hover {
+  background: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
 }
 [data-store-theme="editorial-warm"] .sf-story-section {
   background: var(--surface);
@@ -784,9 +803,10 @@
 [data-store-theme="pahadi-sage"] .sf-trust-box {
   background: var(--surface);
   border: var(--bw) solid var(--border-subtle);
-  border-radius: 9999px;
-  padding-inline: 1.75rem;
+  border-radius: var(--radius-card);
+  padding-inline: 1.5rem;
 }
+
 [data-store-theme="pahadi-sage"] footer {
   width: auto;
   margin: 2rem 1rem 1rem;
@@ -799,7 +819,7 @@
   border-bottom-width: var(--bw);
   text-transform: uppercase;
   font-weight: 700;
-  letter-spacing: 0.04em;
+  letter-spacing: 0.02em;
 }
 [data-store-theme="ktm-bold"] .sf-hero-copy h1,
 [data-store-theme="ktm-bold"] .sf-mobile-hero h1 {
