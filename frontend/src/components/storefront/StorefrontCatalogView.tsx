@@ -42,27 +42,27 @@ function StoreHeroFallback({
   const initial = (storeName || "S").trim().charAt(0).toUpperCase();
 
   return (
-    <div className="w-full h-full flex flex-col items-center justify-center gap-3 p-6 bg-[var(--surface)] text-center">
+    <div className="sf-hero-brand-panel w-full h-full flex items-center gap-4 p-5 sm:p-7 bg-[var(--surface)] text-left">
       {safeLogoUrl ? (
-        <div className="relative w-20 h-20 rounded-xl border border-[var(--border)] bg-[var(--canvas)] overflow-hidden">
+        <div className="sf-control-radius relative w-14 h-14 sm:w-16 sm:h-16 shrink-0 border border-[var(--border)] bg-[var(--canvas)] overflow-hidden">
           <StoreImage
             src={safeLogoUrl}
             alt={storeName}
-            sizes="80px"
-            className="object-contain p-2"
+            sizes="64px"
+            className="object-contain p-1.5"
             fallback={
-              <div className="w-full h-full flex items-center justify-center font-serif text-2xl font-semibold text-[var(--ink)]">
+              <div className="w-full h-full flex items-center justify-center font-serif text-xl font-semibold text-[var(--ink)]">
                 {initial}
               </div>
             }
           />
         </div>
       ) : (
-        <div className="w-16 h-16 rounded-xl border border-[var(--border)] bg-[var(--canvas)] flex items-center justify-center font-serif text-2xl font-semibold text-[var(--ink)]">
+        <div className="sf-control-radius w-14 h-14 sm:w-16 sm:h-16 shrink-0 border border-[var(--border)] bg-[var(--canvas)] flex items-center justify-center font-serif text-xl sm:text-2xl font-semibold text-[var(--ink)]">
           {initial}
         </div>
       )}
-      <span className="font-serif text-lg sm:text-xl font-semibold text-[var(--ink)] max-w-xs truncate">
+      <span className="font-serif text-lg sm:text-xl font-semibold text-[var(--ink)] truncate">
         {storeName}
       </span>
     </div>
@@ -189,15 +189,36 @@ export function StorefrontCatalogView({
     );
   };
 
-  // Featured product (first available product with valid image and in stock, or first product)
+  const safeBannerUrl = useMemo(
+    () => sanitizeStorefrontImageUrl(store.banner_url),
+    [store.banner_url]
+  );
+
+  // Featured product for the hero is only active when no banner exists AND a product has a real image
   const featuredProduct = useMemo(() => {
+    if (safeBannerUrl) return null;
     if (!fullCatalog || fullCatalog.length === 0) return null;
     return (
-      fullCatalog.find((p) => sanitizeStorefrontImageUrl(p.image_url) && p.variants?.some((v) => v.in_stock)) ||
-      fullCatalog.find((p) => sanitizeStorefrontImageUrl(p.image_url)) ||
-      fullCatalog[0]
+      fullCatalog.find(
+        (p) =>
+          Boolean(sanitizeStorefrontImageUrl(p.image_url)) &&
+          p.variants?.some((v) => v.in_stock)
+      ) ||
+      fullCatalog.find((p) => Boolean(sanitizeStorefrontImageUrl(p.image_url))) ||
+      null
     );
-  }, [fullCatalog]);
+  }, [safeBannerUrl, fullCatalog]);
+
+  const featuredProductImageUrl = useMemo(
+    () => sanitizeStorefrontImageUrl(featuredProduct?.image_url) || null,
+    [featuredProduct]
+  );
+
+  const heroMode: "banner" | "featured-product" | "brand-panel" = safeBannerUrl
+    ? "banner"
+    : featuredProduct && featuredProductImageUrl
+    ? "featured-product"
+    : "brand-panel";
 
   const featuredPriceMinor = useMemo(() => {
     if (!featuredProduct || !featuredProduct.variants || featuredProduct.variants.length === 0) {
@@ -246,18 +267,18 @@ export function StorefrontCatalogView({
     return null;
   }, [store.tagline]);
 
-  const safeBannerUrl = useMemo(
-    () => sanitizeStorefrontImageUrl(store.banner_url),
-    [store.banner_url]
-  );
-
   const heroImageUrl = useMemo(() => {
-    return safeBannerUrl || sanitizeStorefrontImageUrl(featuredProduct?.image_url) || null;
-  }, [safeBannerUrl, featuredProduct]);
+    if (heroMode === "banner") return safeBannerUrl;
+    if (heroMode === "featured-product") return featuredProductImageUrl;
+    return null;
+  }, [heroMode, safeBannerUrl, featuredProductImageUrl]);
 
-  const heroImageAlt = safeBannerUrl
-    ? `${store.name} cover banner`
-    : featuredProduct?.name || store.name;
+  const heroImageAlt =
+    heroMode === "banner"
+      ? `${store.name} cover banner`
+      : heroMode === "featured-product" && featuredProduct
+      ? featuredProduct.name
+      : store.name;
 
   const claims = useMemo(() => {
     return getStorefrontPaymentAndDeliveryClaims(store);
@@ -449,39 +470,52 @@ export function StorefrontCatalogView({
               )}
             </div>
 
-            {/* Hero Media Column: Real banner/product photo or clean store-branded hero fallback */}
-            <div className="sf-hero-media">
-              <div className="sf-hero-frame sf-card-radius w-full aspect-[4/3] border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
-                <StoreImage
-                  src={heroImageUrl || ""}
-                  alt={heroImageAlt}
-                  sizes="(max-width: 768px) 100vw, 50vw"
-                  priority
-                  fallback={
-                    <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
-                  }
-                />
+            {/* Hero Media Column: Case 1 (banner only), Case 2 (featured product + label/caption), Case 3 (compact brand panel) */}
+            <div className="sf-hero-media" data-hero-mode={heroMode}>
+              <div
+                className={`sf-hero-frame sf-card-radius w-full ${
+                  heroMode === "brand-panel" ? "sf-hero-frame-compact" : "aspect-[4/3]"
+                } border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative`}
+              >
+                {heroImageUrl ? (
+                  <StoreImage
+                    src={heroImageUrl}
+                    alt={heroImageAlt}
+                    sizes="(max-width: 768px) 100vw, 50vw"
+                    priority
+                    fallback={
+                      <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
+                    }
+                  />
+                ) : (
+                  <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
+                )}
               </div>
 
-              {featuredProduct && (
-                <div className="mt-3 flex items-center justify-between gap-3 px-1">
-                  <span className="text-sm font-medium text-[var(--ink)] truncate max-w-[240px]">
-                    {featuredProduct.name}
+              {heroMode === "featured-product" && featuredProduct && (
+                <div className="sf-hero-caption mt-3 px-1 space-y-1 text-left">
+                  <span className="sf-hero-featured-label block text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-2)]">
+                    Featured
                   </span>
-                  <div className="flex items-center gap-3 shrink-0">
-                    <span className="text-sm font-semibold tabular-nums text-[var(--ink)]">
-                      {formatNpr(featuredPriceMinor)}
+                  <div className="flex items-center justify-between gap-3">
+                    <span className="text-sm font-medium text-[var(--ink)] truncate max-w-[240px]">
+                      {featuredProduct.name}
                     </span>
-                    <Button
-                      size="sm"
-                      variant="secondary"
-                      onClick={handleQuickAddFeatured}
-                      disabled={featuredProduct.id < 0}
-                      title={featuredProduct.id < 0 ? "Preview demo item" : undefined}
-                      className="sf-control-radius h-8 px-3 text-xs"
-                    >
-                      Add
-                    </Button>
+                    <div className="flex items-center gap-3 shrink-0">
+                      <span className="text-sm font-semibold tabular-nums text-[var(--ink)]">
+                        {formatNpr(featuredPriceMinor)}
+                      </span>
+                      <Button
+                        size="sm"
+                        variant="secondary"
+                        onClick={handleQuickAddFeatured}
+                        disabled={featuredProduct.id < 0}
+                        title={featuredProduct.id < 0 ? "Preview demo item" : undefined}
+                        className="sf-control-radius h-8 px-3 text-xs"
+                      >
+                        Add
+                      </Button>
+                    </div>
                   </div>
                 </div>
               )}
@@ -489,7 +523,7 @@ export function StorefrontCatalogView({
           </div>
 
           {/* Mobile Hero (Compact, full-width photo, 28px headline, delivery line, no overlay) */}
-          <div className="sf-mobile-hero md:hidden flex flex-col space-y-4 text-left">
+          <div className="sf-mobile-hero md:hidden flex flex-col space-y-4 text-left" data-hero-mode={heroMode}>
             {cleanCategory && (
               <p className="text-xs font-semibold tracking-wider uppercase text-[var(--ink-2)]">
                 {cleanCategory}
@@ -506,22 +540,47 @@ export function StorefrontCatalogView({
               </p>
             )}
 
-            <div className="sf-mobile-hero-frame sf-card-radius w-full aspect-[4/3] border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative">
-              <StoreImage
-                src={heroImageUrl || ""}
-                alt={heroImageAlt}
-                sizes="(max-width: 768px) 100vw, 50vw"
-                priority
-                fallback={
-                  <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
-                }
-              />
+            <div
+              className={`sf-mobile-hero-frame sf-card-radius w-full ${
+                heroMode === "brand-panel" ? "sf-hero-frame-compact" : "aspect-[4/3]"
+              } border border-[var(--border)] overflow-hidden bg-[var(--surface)] relative`}
+            >
+              {heroImageUrl ? (
+                <StoreImage
+                  src={heroImageUrl}
+                  alt={heroImageAlt}
+                  sizes="(max-width: 768px) 100vw, 50vw"
+                  priority
+                  fallback={
+                    <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
+                  }
+                />
+              ) : (
+                <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
+              )}
             </div>
 
-            {featuredProduct && (
-              <div className="w-full flex items-center justify-between text-xs px-1 text-[var(--ink)]">
-                <span className="font-medium truncate max-w-[200px]">{featuredProduct.name}</span>
-                <span className="font-semibold tabular-nums">{formatNpr(featuredPriceMinor)}</span>
+            {heroMode === "featured-product" && featuredProduct && (
+              <div className="sf-hero-caption w-full px-1 space-y-1 text-left text-[var(--ink)]">
+                <span className="sf-hero-featured-label block text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-2)]">
+                  Featured
+                </span>
+                <div className="flex items-center justify-between gap-3 text-xs">
+                  <span className="font-medium truncate max-w-[180px]">{featuredProduct.name}</span>
+                  <div className="flex items-center gap-2.5 shrink-0">
+                    <span className="font-semibold tabular-nums">{formatNpr(featuredPriceMinor)}</span>
+                    <Button
+                      size="sm"
+                      variant="secondary"
+                      onClick={handleQuickAddFeatured}
+                      disabled={featuredProduct.id < 0}
+                      title={featuredProduct.id < 0 ? "Preview demo item" : undefined}
+                      className="sf-control-radius h-8 px-3 text-xs"
+                    >
+                      Add
+                    </Button>
+                  </div>
+                </div>
               </div>
             )}
 

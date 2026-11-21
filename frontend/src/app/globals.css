@@ -558,6 +558,17 @@
 [data-store-theme] .sf-mobile-hero-frame {
   border-width: var(--bw);
 }
+[data-store-theme] .sf-hero-frame.sf-hero-frame-compact,
+[data-store-theme] .sf-mobile-hero-frame.sf-hero-frame-compact {
+  aspect-ratio: auto !important;
+}
+[data-store-theme="pahadi-sage"] .sf-hero-brand-panel {
+  justify-content: center;
+  text-align: center;
+}
+[data-store-theme="ktm-bold"] .sf-hero-brand-panel span {
+  text-transform: uppercase;
+}
 [data-store-theme] #collection-section .sf-card-radius {
   border-width: var(--bw);
 }

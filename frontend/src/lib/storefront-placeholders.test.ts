@@ -264,7 +264,7 @@ describe("StorefrontCatalogView placeholder removal", () => {
     expect(html).not.toContain("None");
   });
 
-  it("renders neutral store-branded hero fallback even when product still references placeholder.svg", () => {
+  it("renders compact store-branded hero panel without product caption when products have no valid image (Case 3)", () => {
     const html = renderToStaticMarkup(
       React.createElement(StorefrontCatalogView, {
         store: makeStore({
@@ -273,18 +273,24 @@ describe("StorefrontCatalogView placeholder removal", () => {
         }),
         products: [
           makeProduct({
+            name: "Imageless Vessel",
             image_url: "/images/products/placeholder.svg",
           }),
         ],
       })
     );
 
+    expect(html).toContain('data-hero-mode="brand-panel"');
+    expect(html).toContain("sf-hero-brand-panel");
+    expect(html).toContain("sf-hero-frame-compact");
     expect(html).toContain("Rohit Crafts");
     expect(html).toContain("https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/logo.png");
     expect(html).not.toContain("/images/products/placeholder.svg");
+    expect(html).not.toContain("sf-hero-caption");
+    expect(html).not.toContain("sf-hero-featured-label");
   });
 
-  it("prioritizes store.banner_url over featured product image in storefront hero", () => {
+  it("renders banner-only hero without product caption when store.banner_url exists (Case 1), and Featured label + caption when falling back to featured product image (Case 2)", () => {
     const withBannerHtml = renderToStaticMarkup(
       React.createElement(StorefrontCatalogView, {
         store: makeStore({
@@ -293,16 +299,20 @@ describe("StorefrontCatalogView placeholder removal", () => {
         }),
         products: [
           makeProduct({
+            name: "Single Origin Bag",
             image_url: "https://res.cloudinary.com/demo/image/upload/product-item.jpg",
           }),
         ],
       })
     );
 
+    expect(withBannerHtml).toContain('data-hero-mode="banner"');
     expect(withBannerHtml).toContain(
       "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/hero-banner.jpg"
     );
     expect(withBannerHtml).toContain('alt="Banner Roasters cover banner"');
+    expect(withBannerHtml).not.toContain("sf-hero-caption");
+    expect(withBannerHtml).not.toContain("sf-hero-featured-label");
 
     const fallbackToProductHtml = renderToStaticMarkup(
       React.createElement(StorefrontCatalogView, {
@@ -319,10 +329,14 @@ describe("StorefrontCatalogView placeholder removal", () => {
       })
     );
 
+    expect(fallbackToProductHtml).toContain('data-hero-mode="featured-product"');
     expect(fallbackToProductHtml).toContain(
       "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/product-item.jpg"
     );
     expect(fallbackToProductHtml).toContain('alt="Single Origin Bag"');
+    expect(fallbackToProductHtml).toContain("sf-hero-caption");
+    expect(fallbackToProductHtml).toContain("sf-hero-featured-label");
+    expect(fallbackToProductHtml).toContain('sf-hero-featured-label block text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-2)]">Featured</span>');
   });
 
   it("uses merchant category label and Shop <Category> only when set", () => {
