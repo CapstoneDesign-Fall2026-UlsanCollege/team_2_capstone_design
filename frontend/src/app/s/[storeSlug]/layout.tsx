@@ -120,7 +120,7 @@ export default async function StorefrontLayout({
       style={customStyle}
       className={`${storefrontFontVariablesClass} storefront min-h-dvh bg-[var(--canvas)] text-[var(--ink)] font-sans flex flex-col`}
     >
-      <ThemePreviewWatcher initialPreset={themePreset} />
+      <ThemePreviewWatcher storeSlug={store.slug} initialPreset={themePreset} />
       <AccountProvider>
         <CartProvider
           storeSlug={store.slug}
