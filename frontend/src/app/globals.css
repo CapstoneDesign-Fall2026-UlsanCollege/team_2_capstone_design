@@ -501,6 +501,7 @@
 
   [data-store-theme="pahadi-sage"] .sf-hero-frame {
     aspect-ratio: 16 / 9;
+    max-height: 360px;
   }
 
   [data-store-theme="ktm-bold"] .sf-hero-grid {
@@ -516,6 +517,7 @@
 
   [data-store-theme="ktm-bold"] .sf-hero-frame {
     aspect-ratio: 21 / 9;
+    max-height: 320px;
   }
 
   [data-store-theme="ktm-bold"] .sf-hero-copy {
@@ -531,6 +533,10 @@
 /* ===== Storefront Personality (Phase C2): CSS only, no DOM changes, no box-shadow, no gradients ===== */
 
 /* Shared: visible focus ring, tap targets, reduced motion, Devanagari safety */
+[data-store-theme] {
+  accent-color: var(--primary);
+}
+
 [data-store-theme] :focus-visible {
   outline: 3px solid var(--primary);
   outline-offset: 2px;
@@ -931,6 +937,9 @@
 }
 
 /* ---------- midnight-obsidian: dark gallery wall (hairline-divided grid and sections, square cards) ---------- */
+[data-store-theme="midnight-obsidian"] {
+  color-scheme: dark;
+}
 [data-store-theme="midnight-obsidian"] .sf-hero-copy h1,
 [data-store-theme="midnight-obsidian"] .sf-mobile-hero h1 {
   font-weight: 600;
