@@ -471,6 +471,7 @@ export function StorefrontCatalogView({
                     src={heroImageUrl}
                     alt={heroImageAlt}
                     sizes="(max-width: 768px) 100vw, 50vw"
+                    className={heroMode === "featured-product" ? "object-contain" : "object-cover"}
                     priority
                     fallback={
                       <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
@@ -487,7 +488,7 @@ export function StorefrontCatalogView({
                     Featured
                   </span>
                   <div className="flex items-center justify-between gap-3">
-                    <span className="text-sm font-medium text-[var(--ink)] truncate max-w-[240px]">
+                    <span className="text-sm font-medium text-[var(--ink)] min-w-0 flex-1 truncate">
                       {featuredProduct.name}
                     </span>
                     <div className="flex items-center gap-3 shrink-0">
@@ -539,6 +540,7 @@ export function StorefrontCatalogView({
                   src={heroImageUrl}
                   alt={heroImageAlt}
                   sizes="(max-width: 768px) 100vw, 50vw"
+                  className={heroMode === "featured-product" ? "object-contain" : "object-cover"}
                   priority
                   fallback={
                     <StoreHeroFallback storeName={store.name} logoUrl={store.logo_url} />
@@ -555,7 +557,7 @@ export function StorefrontCatalogView({
                   Featured
                 </span>
                 <div className="flex items-center justify-between gap-3 text-xs">
-                  <span className="font-medium truncate max-w-[180px]">{featuredProduct.name}</span>
+                  <span className="font-medium min-w-0 flex-1 truncate">{featuredProduct.name}</span>
                   <div className="flex items-center gap-2.5 shrink-0">
                     <span className="font-semibold tabular-nums">{formatNpr(featuredPriceMinor)}</span>
                     <Button
@@ -978,7 +980,7 @@ export function StorefrontCatalogView({
                   type="checkbox"
                   checked={inStockOnly}
                   onChange={(e) => setInStockOnly(e.target.checked)}
-                  className="w-5 h-5 rounded border-[var(--border)] accent-[var(--ink)] cursor-pointer"
+                  className="w-5 h-5 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
                 />
               </label>
             </div>
@@ -1014,7 +1016,7 @@ export function StorefrontCatalogView({
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
             
             {/* Col 1: Brand Bio */}
-            <div className="md:col-span-5 space-y-3">
+            <div className={`${availableCategories.length > 0 ? "md:col-span-5" : "md:col-span-7"} space-y-3`}>
               <span className="font-serif text-lg font-semibold text-[var(--ink)] block">
                 {store.name}
               </span>
@@ -1083,13 +1085,13 @@ export function StorefrontCatalogView({
             </div>
 
             {/* Col 3: Categories */}
-            <div className="md:col-span-2 space-y-2.5 text-xs">
-              <span className="font-semibold uppercase tracking-wider text-[var(--ink)] block text-[11px]">
-                Collections
-              </span>
-              <ul className="space-y-2 text-[var(--ink-2)]">
-                {availableCategories.length > 0 ? (
-                  availableCategories.slice(0, 4).map((cat) => (
+            {availableCategories.length > 0 && (
+              <div className="md:col-span-2 space-y-2.5 text-xs">
+                <span className="font-semibold uppercase tracking-wider text-[var(--ink)] block text-[11px]">
+                  Collections
+                </span>
+                <ul className="space-y-2 text-[var(--ink-2)]">
+                  {availableCategories.slice(0, 6).map((cat) => (
                     <li key={cat}>
                       <button
                         type="button"
@@ -1099,14 +1101,10 @@ export function StorefrontCatalogView({
                         {cat}
                       </button>
                     </li>
-                  ))
-                ) : (
-                  <li>
-                    <span className="text-[var(--ink-2)]">Curated Goods</span>
-                  </li>
-                )}
-              </ul>
-            </div>
+                  ))}
+                </ul>
+              </div>
+            )}
 
             {/* Col 4: Payments & Delivery (conditional) */}
             {(claims.shippingConfigured || claims.hasKhalti || claims.codEnabled) && (
