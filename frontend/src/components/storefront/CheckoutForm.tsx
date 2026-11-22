@@ -20,6 +20,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  ApiError,
   CheckoutAddressPayload,
   CheckoutQuoteResponse,
   createDeliveryAddress,
@@ -107,6 +108,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   const [isApplyingPromo, setIsApplyingPromo] = useState<boolean>(false);
   const [isPromoExpanded, setIsPromoExpanded] = useState<boolean>(false);
   const [quote, setQuote] = useState<CheckoutQuoteResponse | null>(null);
+  const [quoteError, setQuoteError] = useState<string | null>(null);
   const [isSubmitting, setIsSubmitting] = useState<boolean>(false);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -198,6 +200,7 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
   useEffect(() => {
     if (items.length === 0) return;
 
+    let cancelled = false;
     const payloadItems = items.map((it) => ({
       variant_id: it.variantId,
       quantity: it.quantity,
@@ -209,11 +212,21 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
       discount_code: appliedPromoCode || undefined,
     })
       .then((res) => {
+        if (cancelled) return;
         setQuote(res);
+        setQuoteError(null);
       })
-      .catch(() => {
-        // Fallback to client estimated totals
+      .catch((err: unknown) => {
+        if (cancelled) return;
+        if (err instanceof ApiError && err.status === 400) {
+          setQuote(null);
+          setQuoteError(err.message);
+        }
       });
+
+    return () => {
+      cancelled = true;
+    };
   }, [items, district, store.slug, appliedPromoCode]);
 
   // Keep paymentMethod aligned with store-enabled payment providers
@@ -409,17 +422,21 @@ export function CheckoutForm({ store }: CheckoutFormProps) {
       setIsSubmitting(false);
       const msg = err instanceof Error ? err.message : "Failed to place order. Please try again.";
       setErrorMessage(msg);
+      if (typeof window !== "undefined") {
+        window.scrollTo({ top: 0, behavior: "smooth" });
+      }
     }
   };
 
   const activeSavedAddress = savedAddresses.find((a) => a.id === selectedAddressId);
+  const bannerError = errorMessage || quoteError;
 
   return (
     <form onSubmit={handlePlaceOrder} noValidate className="space-y-6 pb-28">
-      {errorMessage && (
+      {bannerError && (
         <div role="alert" className="p-4 rounded-xl border border-[var(--status-error-border)] bg-[var(--status-error-bg)] text-[var(--status-error-fg)] flex items-start gap-2.5 text-xs font-medium">
           <AlertCircle className="w-4 h-4 shrink-0 mt-0.5" aria-hidden="true" />
-          <span>{errorMessage}</span>
+          <span>{bannerError}</span>
         </div>
       )}
 

@@ -702,6 +702,18 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         return Response(payload)
 
 
+def _validate_checkout_variant(variants: dict[int, Variant], v_id):
+    """Ensure a checkout line item refers to an active, in-stock variant of an active product."""
+    v = variants.get(v_id)
+    if not v:
+        return None, f"Product variant {v_id} not available in this store."
+    if not v.is_active or not v.product.is_active:
+        return None, f"{v.product.name} ({v.label}) is no longer available in this store."
+    if not v.in_stock:
+        return None, f"{v.product.name} ({v.label}) is currently out of stock."
+    return v, None
+
+
 class StoreCheckoutQuoteView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -715,18 +727,17 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
             v.id: v
             for v in Variant.objects.for_store(self.store)
             .select_related("product")
-            .filter(id__in=variant_ids, is_active=True)
+            .filter(id__in=variant_ids)
         }
 
         subtotal_minor = 0
         computed_items = []
 
         for it in items_data:
-            v_id = it.get("variant_id")
-            v = variants.get(v_id)
-            if not v:
+            v, variant_err = _validate_checkout_variant(variants, it.get("variant_id"))
+            if variant_err:
                 return Response(
-                    {"error": f"Product variant {v_id} not available in this store."},
+                    {"error": variant_err},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -905,18 +916,17 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             v.id: v
             for v in Variant.objects.for_store(self.store)
             .select_related("product")
-            .filter(id__in=variant_ids, is_active=True)
+            .filter(id__in=variant_ids)
         }
 
         subtotal_minor = 0
         order_items_to_create = []
 
         for it in items_data:
-            v_id = it.get("variant_id")
-            v = variants.get(v_id)
-            if not v:
+            v, variant_err = _validate_checkout_variant(variants, it.get("variant_id"))
+            if variant_err:
                 return Response(
-                    {"error": f"Product variant {v_id} not available."},
+                    {"error": variant_err},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
