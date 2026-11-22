@@ -52,6 +52,14 @@ class Order(models.Model):
     subtotal_minor = models.PositiveIntegerField()
     shipping_minor = models.PositiveIntegerField(default=0)
     discount_minor = models.PositiveIntegerField(default=0)
+    discount = models.ForeignKey(
+        "catalog.Discount",
+        on_delete=models.SET_NULL,
+        null=True,
+        blank=True,
+        related_name="orders",
+    )
+    discount_redeemed = models.BooleanField(default=False)
     total_minor = models.PositiveIntegerField()
     currency = models.CharField(max_length=3, default="NPR")
     shipping_address_snapshot = models.JSONField(default=dict)
