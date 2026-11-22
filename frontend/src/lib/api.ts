@@ -160,12 +160,39 @@ export async function ensureCsrfToken(): Promise<string> {
 // Request deduplication & micro-cache for identical concurrent GET requests
 const inFlightRequests = new Map<string, Promise<unknown>>();
 const recentGetCache = new Map<string, { data: unknown; expires: number }>();
+let cacheGeneration = 0;
+
+export function invalidateApiGetCache(prefix?: string): void {
+  cacheGeneration += 1;
+  if (!prefix) {
+    recentGetCache.clear();
+    inFlightRequests.clear();
+    return;
+  }
+  for (const key of recentGetCache.keys()) {
+    if (key.startsWith(prefix)) {
+      recentGetCache.delete(key);
+    }
+  }
+  for (const key of inFlightRequests.keys()) {
+    if (key.startsWith(prefix)) {
+      inFlightRequests.delete(key);
+    }
+  }
+}
 
 export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
   const method = (init?.method || "GET").toUpperCase();
+  const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
+  const bypassCache = init?.cache === "no-store" || init?.cache === "reload";
+  const isCacheableGet = method === "GET" && !init?.body && !init?.signal && !bypassCache;
+
+  if (isMutating) {
+    invalidateApiGetCache();
+  }
 
   // Deduplicate in-flight GET requests (e.g. overview called concurrently by page and sidebar shell)
-  if (method === "GET" && !init?.body && !init?.signal) {
+  if (isCacheableGet) {
     const cached = recentGetCache.get(path);
     if (cached && cached.expires > Date.now()) {
       return cached.data as T;
@@ -176,92 +203,102 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
     }
   }
 
+  const requestGen = cacheGeneration;
+
   const exec = async (): Promise<T> => {
-    const headers = new Headers(init?.headers || {});
-
-    if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) {
-      headers.set("Content-Type", "application/json");
-    }
-
-    if (["POST", "PUT", "PATCH", "DELETE"].includes(method)) {
-      const csrfToken = await ensureCsrfToken();
-      if (csrfToken) {
-        headers.set("X-CSRFToken", csrfToken);
-      }
-    }
-
-    let timeoutId: ReturnType<typeof setTimeout> | null = null;
-    let signal = init?.signal;
-    if (!signal && typeof AbortController !== "undefined") {
-      const controller = new AbortController();
-      timeoutId = setTimeout(
-        () =>
-          controller.abort(
-            new Error("Request timed out. The server or remote database may be waking up; please retry.")
-          ),
-        45000
-      );
-      signal = controller.signal;
-    }
-
-    let res: Response;
     try {
-      res = await fetch(resolveApiUrl(path), {
-        ...init,
-        method,
-        headers,
-        credentials: "include",
-        signal,
-      });
-    } finally {
-      if (timeoutId) {
-        clearTimeout(timeoutId);
+      const headers = new Headers(init?.headers || {});
+
+      if (!headers.has("Content-Type") && !(init?.body instanceof FormData)) {
+        headers.set("Content-Type", "application/json");
       }
-    }
 
-    const contentType = res.headers.get("content-type");
-    const isJson = contentType && contentType.includes("application/json");
-    const data = isJson ? await res.json() : null;
-
-    if (!res.ok) {
-      let detail = "An unexpected error occurred.";
-      let fieldErrors: Record<string, string[]> | undefined;
-
-      if (data) {
-        if (typeof data.detail === "string") {
-          detail = data.detail;
-        } else if (typeof data.error === "string") {
-          detail = data.error;
-        } else if (typeof data.message === "string") {
-          detail = data.message;
-        } else if (typeof data === "object") {
-          fieldErrors = {};
-          for (const [key, val] of Object.entries(data)) {
-            if (Array.isArray(val)) {
-              fieldErrors[key] = val.map(String);
-            } else if (typeof val === "string") {
-              fieldErrors[key] = [val];
-            }
-          }
-          const firstKey = Object.keys(fieldErrors)[0];
-          if (firstKey && fieldErrors[firstKey].length > 0) {
-            detail = `${firstKey}: ${fieldErrors[firstKey][0]}`;
-          }
+      if (isMutating) {
+        const csrfToken = await ensureCsrfToken();
+        if (csrfToken) {
+          headers.set("X-CSRFToken", csrfToken);
         }
       }
-      throw new ApiError(res.status, detail, fieldErrors, data && typeof data === "object" ? data : null);
-    }
 
-    if (method === "GET" && !init?.body && !init?.signal) {
-      recentGetCache.set(path, { data, expires: Date.now() + 2500 });
-    }
+      let timeoutId: ReturnType<typeof setTimeout> | null = null;
+      let signal = init?.signal;
+      if (!signal && typeof AbortController !== "undefined") {
+        const controller = new AbortController();
+        timeoutId = setTimeout(
+          () =>
+            controller.abort(
+              new Error("Request timed out. The server or remote database may be waking up; please retry.")
+            ),
+          45000
+        );
+        signal = controller.signal;
+      }
 
-    return data as T;
+      let res: Response;
+      try {
+        res = await fetch(resolveApiUrl(path), {
+          ...init,
+          method,
+          headers,
+          credentials: "include",
+          signal,
+        });
+      } finally {
+        if (timeoutId) {
+          clearTimeout(timeoutId);
+        }
+      }
+
+      const contentType = res.headers.get("content-type");
+      const isJson = contentType && contentType.includes("application/json");
+      const data = isJson ? await res.json() : null;
+
+      if (!res.ok) {
+        let detail = "An unexpected error occurred.";
+        let fieldErrors: Record<string, string[]> | undefined;
+
+        if (data) {
+          if (typeof data.detail === "string") {
+            detail = data.detail;
+          } else if (typeof data.error === "string") {
+            detail = data.error;
+          } else if (typeof data.message === "string") {
+            detail = data.message;
+          } else if (typeof data === "object") {
+            fieldErrors = {};
+            for (const [key, val] of Object.entries(data)) {
+              if (Array.isArray(val)) {
+                fieldErrors[key] = val.map(String);
+              } else if (typeof val === "string") {
+                fieldErrors[key] = [val];
+              }
+            }
+            const firstKey = Object.keys(fieldErrors)[0];
+            if (firstKey && fieldErrors[firstKey].length > 0) {
+              detail = `${firstKey}: ${fieldErrors[firstKey][0]}`;
+            }
+          }
+        }
+        throw new ApiError(res.status, detail, fieldErrors, data && typeof data === "object" ? data : null);
+      }
+
+      if (isCacheableGet && requestGen === cacheGeneration) {
+        recentGetCache.set(path, { data, expires: Date.now() + 2500 });
+      }
+
+      return data as T;
+    } finally {
+      if (isMutating) {
+        invalidateApiGetCache();
+      }
+    }
   };
 
-  if (method === "GET" && !init?.body && !init?.signal) {
+  if (isCacheableGet) {
     const promise = exec().finally(() => {
-      inFlightRequests.delete(path);
+      if (inFlightRequests.get(path) === promise) {
+        inFlightRequests.delete(path);
+      }
     });
     inFlightRequests.set(path, promise);
     return promise;

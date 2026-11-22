@@ -46,3 +46,15 @@ Progress: [==========] 100%
 4. `Slice 4`: Theme system + Story page + storefront + cart drawer + checkout (COMPLETED)
 5. `Slice 5`: Subscriptions [FORMALLY CUT IN PR #45 — OUT OF MVP SCOPE]
 6. `Slice 6`: Dashboard home, analytics, discounts, settings, staff RBAC & polish (COMPLETED)
+
+## Quick Tasks Completed
+
+| ID | Description | Branch | Date | Status | Directory |
+|----|-------------|--------|------|--------|-----------|
+| `261120-vme` | Phase A — Storefront theme correctness, contrast, token cleanup, and banner priority | `feature/storefront-template-system` | 2026-11-20 | complete | [.planning/quick/261120-vme-phase-a-storefront-theme-correctness-con](.planning/quick/261120-vme-phase-a-storefront-theme-correctness-con) |
+| `261120-wbu` | Phase B — Single theme registry used by all 5 surfaces & loaded Google fonts | `feature/storefront-template-system` | 2026-11-20 | complete | [.planning/quick/261120-wbu-phase-b-single-theme-registry-used-by-al](.planning/quick/261120-wbu-phase-b-single-theme-registry-used-by-al) |
+| `261120-wmj` | Phase C — Structural CSS switches + /merchant/new Step 2 lightweight previews | `feature/storefront-template-system` | 2026-11-20 | complete | [.planning/quick/261120-wmj-phase-c-structural-css-switches-and-wiza](.planning/quick/261120-wmj-phase-c-structural-css-switches-and-wiza) |
+| `261120-x4w` | Phase C2 — Theme personality push, grid density, section chrome & contact sheets | `feature/storefront-template-system` | 2026-11-21 | complete | [.planning/quick/261120-x4w-phase-c2-theme-personality-push-and-sect](.planning/quick/261120-x4w-phase-c2-theme-personality-push-and-sect) |
+| `261121-frt` | Hero clarity fix — 3 hero states (banner only, featured product + label, compact brand panel) | `feature/storefront-template-system` | 2026-11-21 | complete | [.planning/quick/261121-frt-hero-clarity-fix-three-hero-states-and-t](.planning/quick/261121-frt-hero-clarity-fix-three-hero-states-and-t) |
+| `261121-urd` | 11-point storefront visual polish, trust strip, auto-fit 3/3x2 grids, demo images & full screenshot suite | `feature/storefront-template-system` | 2026-11-21 | complete | [.planning/quick/261121-urd-storefront-11-point-visual-polish-trust-](.planning/quick/261121-urd-storefront-11-point-visual-polish-trust-) |
+| `261121-w8w` | 4 mobile polish fixes, 3-step Account Sheet captures & 80-page readable PDF/PNG review packet | `feature/storefront-template-system` | 2026-11-21 | complete | [.planning/quick/261121-w8w-4-mobile-polish-fixes-and-full-readable-](.planning/quick/261121-w8w-4-mobile-polish-fixes-and-full-readable-) |

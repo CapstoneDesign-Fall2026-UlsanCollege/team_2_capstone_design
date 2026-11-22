@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#0B0D11" />
+  <rect x="36" y="36" width="728" height="728" fill="none" stroke="#262D3D" stroke-width="2" />
+  <!-- Matte Black V60 Pour-Over Dripper -->
+  <g transform="translate(210, 170)">
+    <!-- Cone -->
+    <path d="M 50 60 L 330 60 L 250 290 L 130 290 Z" fill="#1A1F2B" stroke="#E5B143" stroke-width="2.5" />
+    <!-- Spiral Ribs -->
+    <path d="M 95 60 L 155 290 M 145 60 L 180 290 M 195 60 L 200 290 M 245 60 L 220 290 M 285 60 L 240 290" stroke="#364156" stroke-width="2" fill="none" />
+    <!-- Handle -->
+    <path d="M 320 90 L 375 90 Q 395 90 385 130 L 340 230 L 270 230" fill="none" stroke="#E5B143" stroke-width="10" stroke-linecap="round" stroke-linejoin="round" />
+    <!-- Base Flange -->
+    <rect x="85" y="290" width="210" height="22" rx="6" fill="#E5B143" />
+    <rect x="130" y="312" width="120" height="16" rx="3" fill="#141821" stroke="#66738A" stroke-width="1.5" />
+  </g>
+  <text x="400" y="656" font-family="Georgia, serif" font-size="20" font-weight="700" fill="#F8FAFC" text-anchor="middle" letter-spacing="2">Matte Steel V60 Dripper</text>
+  <text x="400" y="688" font-family="-apple-system, sans-serif" font-size="11" font-weight="600" fill="#E5B143" text-anchor="middle" letter-spacing="3">PRECISION BARISTA BREWING GEAR</text>
+  <text x="400" y="714" font-family="-apple-system, sans-serif" font-size="10.5" fill="#A8B3C7" text-anchor="middle" letter-spacing="1.5">DOUBLE-WALL 304 STAINLESS · PAPERLESS MICROMESH</text>
+</svg>

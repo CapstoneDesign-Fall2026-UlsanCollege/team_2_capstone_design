@@ -105,7 +105,7 @@ export default function KhaltiReturnPage() {
               <Chip tone="warning">Verifying Payment</Chip>
             </div>
 
-            <Loader2 className="w-8 h-8 text-[var(--warning-fg)] animate-spin mx-auto" aria-hidden="true" />
+            <Loader2 className="w-8 h-8 text-[var(--status-warning-fg)] animate-spin mx-auto" aria-hidden="true" />
 
             <div className="space-y-1.5">
               <h1 className="font-serif text-xl sm:text-2xl font-semibold text-[var(--ink)]">
@@ -125,9 +125,9 @@ export default function KhaltiReturnPage() {
             </div>
 
             {!snapshot.pollExhausted ? (
-              <Loader2 className="w-8 h-8 text-[var(--warning-fg)] animate-spin mx-auto" aria-hidden="true" />
+              <Loader2 className="w-8 h-8 text-[var(--status-warning-fg)] animate-spin mx-auto" aria-hidden="true" />
             ) : (
-              <div className="w-12 h-12 rounded-full bg-[var(--warning-bg)] border border-[var(--warning-bd)] text-[var(--warning-fg)] mx-auto flex items-center justify-center">
+              <div className="w-12 h-12 rounded-full bg-[var(--status-warning-bg)] border border-[var(--status-warning-border)] text-[var(--status-warning-fg)] mx-auto flex items-center justify-center">
                 <RotateCw className="w-5 h-5" aria-hidden="true" />
               </div>
             )}
@@ -148,7 +148,7 @@ export default function KhaltiReturnPage() {
                 <button
                   type="button"
                   onClick={handleCheckAgain}
-                  className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   <RotateCw className="w-4 h-4" />
                   <span>Check again</span>
@@ -172,7 +172,7 @@ export default function KhaltiReturnPage() {
               <Chip tone="success">Payment Verified</Chip>
             </div>
 
-            <div className="w-12 h-12 rounded-full bg-[var(--success-bg)] border border-[var(--success-bd)] text-[var(--success-fg)] mx-auto flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[var(--status-success-bg)] border border-[var(--status-success-border)] text-[var(--status-success-fg)] mx-auto flex items-center justify-center">
               <CheckCircle2 className="w-6 h-6" aria-hidden="true" />
             </div>
 
@@ -193,7 +193,7 @@ export default function KhaltiReturnPage() {
               <Chip tone="error">Payment Failed</Chip>
             </div>
 
-            <div className="w-12 h-12 rounded-full bg-[var(--error-bg)] border border-[var(--error-bd)] text-[var(--error-fg)] mx-auto flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[var(--status-error-bg)] border border-[var(--status-error-border)] text-[var(--status-error-fg)] mx-auto flex items-center justify-center">
               <AlertCircle className="w-6 h-6" aria-hidden="true" />
             </div>
 
@@ -212,7 +212,7 @@ export default function KhaltiReturnPage() {
                   type="button"
                   onClick={handleRetryPayment}
                   disabled={snapshot.isRetrying}
-                  className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] disabled:opacity-60 text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                  className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] disabled:opacity-60 text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
                 >
                   {snapshot.isRetrying ? (
                     <Loader2 className="w-4 h-4 animate-spin" />
@@ -240,7 +240,7 @@ export default function KhaltiReturnPage() {
               <Chip tone="warning">Verification Unavailable</Chip>
             </div>
 
-            <div className="w-12 h-12 rounded-full bg-[var(--warning-bg)] border border-[var(--warning-bd)] text-[var(--warning-fg)] mx-auto flex items-center justify-center">
+            <div className="w-12 h-12 rounded-full bg-[var(--status-warning-bg)] border border-[var(--status-warning-border)] text-[var(--status-warning-fg)] mx-auto flex items-center justify-center">
               <WifiOff className="w-6 h-6" aria-hidden="true" />
             </div>
 
@@ -257,7 +257,7 @@ export default function KhaltiReturnPage() {
               <button
                 type="button"
                 onClick={handleCheckAgain}
-                className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <RotateCw className="w-4 h-4" />
                 <span>Check again</span>

@@ -129,3 +129,75 @@ export function resolveOrdersStatusTab(raw: string | null | undefined): OrdersQu
   if (normalized === "delivered") return "delivered";
   return "all";
 }
+
+export interface PackingSlipPaymentView {
+  tone: "success" | "warning" | "error";
+  heading: string;
+  instruction: string;
+  shouldCollectCash: boolean;
+  totalLabel: string;
+}
+
+/** Payment callout & cash-collection guard for printable courier packing slips. */
+export function packingSlipPaymentView(o: OrderLike): PackingSlipPaymentView {
+  const status = (o.status || "").toUpperCase();
+  const method = (o.payment_method || "").toUpperCase();
+  const paymentStatus = (o.payment_status || "").toUpperCase();
+
+  if (status === "CANCELLED") {
+    return {
+      tone: "error",
+      heading: "ORDER CANCELLED",
+      instruction: "DO NOT DISPATCH OR COLLECT PAYMENT. THIS ORDER IS CANCELLED.",
+      shouldCollectCash: false,
+      totalLabel: "Order Total",
+    };
+  }
+
+  if (status === "PAYMENT_FAILED" || paymentStatus === "FAILED") {
+    return {
+      tone: "error",
+      heading: method === "KHALTI" ? "PAYMENT FAILED (KHALTI)" : "PAYMENT FAILED",
+      instruction: "DO NOT DISPATCH OR COLLECT CASH. ONLINE PAYMENT FAILED.",
+      shouldCollectCash: false,
+      totalLabel: "Unpaid Total",
+    };
+  }
+
+  if (method === "COD") {
+    if (paymentStatus === "PAID" || status === "DELIVERED") {
+      return {
+        tone: "success",
+        heading: "CASH ON DELIVERY (COLLECTED)",
+        instruction: "CASH PAYMENT ALREADY RECORDED FOR THIS DELIVERY.",
+        shouldCollectCash: false,
+        totalLabel: "Total Paid",
+      };
+    }
+    return {
+      tone: "warning",
+      heading: "CASH ON DELIVERY (COD)",
+      instruction: "COLLECT EXACT CASH FROM CUSTOMER UPON DELIVERY.",
+      shouldCollectCash: true,
+      totalLabel: "Total Due (COD)",
+    };
+  }
+
+  if (paymentStatus === "PAID") {
+    return {
+      tone: "success",
+      heading: method === "KHALTI" ? "ONLINE PAYMENT COMPLETED (KHALTI)" : "ONLINE PAYMENT COMPLETED",
+      instruction: "DO NOT COLLECT ANY PAYMENT FROM CUSTOMER. ORDER IS FULLY PAID.",
+      shouldCollectCash: false,
+      totalLabel: "Total Paid",
+    };
+  }
+
+  return {
+    tone: "warning",
+    heading: method === "KHALTI" ? "ONLINE PAYMENT PENDING (KHALTI)" : "ONLINE PAYMENT PENDING",
+    instruction: "DO NOT COLLECT CASH AS COD. VERIFY ONLINE PAYMENT BEFORE DISPATCH.",
+    shouldCollectCash: false,
+    totalLabel: "Total Unpaid",
+  };
+}

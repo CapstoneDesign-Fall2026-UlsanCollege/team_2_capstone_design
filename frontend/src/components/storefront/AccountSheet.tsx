@@ -23,6 +23,7 @@ import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { emitAuthChange, useStorefrontAuth } from "@/lib/auth";
 import { getEmailTypoSuggestion, validateEmailFormat } from "@/lib/email-validation";
 import { useAccount } from "./AccountContext";
+import { useEffectiveStoreTheme } from "./ThemePreviewWatcher";
 
 export interface AccountSheetProps {
   storeSlug: string;
@@ -33,6 +34,7 @@ type AuthStep = "EMAIL" | "OTP" | "LOGGED_IN";
 
 export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: AccountSheetProps) {
   const router = useRouter();
+  const activeTheme = useEffectiveStoreTheme(themePreset);
   const { isAccountOpen, closeAccount, prefillEmail } = useAccount();
   const { isAuthenticated, user, customer, refresh, signOut } = useStorefrontAuth(storeSlug);
 
@@ -212,11 +214,11 @@ export function AccountSheet({ storeSlug, themePreset = "editorial-warm" }: Acco
       <Dialog.Portal>
         {/* Simple semi-transparent overlay without blur or gradient */}
         <Dialog.Overlay
-          data-store-theme={themePreset}
-          className="fixed inset-0 z-50 bg-[var(--ink)]/40 transition-opacity duration-200"
+          data-store-theme={activeTheme}
+          className="fixed inset-0 z-50 bg-[var(--overlay-scrim)] transition-opacity duration-200"
         />
         <Dialog.Content
-          data-store-theme={themePreset}
+          data-store-theme={activeTheme}
           className="fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-50 w-full sm:max-w-md border-t sm:border-t-0 sm:border-l border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] flex flex-col justify-between max-h-[90dvh] sm:max-h-dvh overflow-hidden outline-none duration-200"
         >
           {/* Header */}

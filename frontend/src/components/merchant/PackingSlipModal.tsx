@@ -2,8 +2,9 @@
 
 import React, { useRef } from "react";
 import * as Dialog from "@radix-ui/react-dialog";
-import { Printer, X, Check, AlertTriangle, Package, MapPin, Phone, User } from "lucide-react";
+import { Printer, X, Check, AlertTriangle } from "lucide-react";
 import { formatNpr, formatOrderNumber, OrderDetail } from "@/lib/api";
+import { packingSlipPaymentView } from "@/lib/merchant-status";
 
 export interface PackingSlipModalProps {
   storeName: string;
@@ -24,8 +25,7 @@ export function PackingSlipModal({
 
   if (!order) return null;
 
-  const isPaid = order.payment_status === "PAID";
-  const isCOD = order.payment_method === "COD";
+  const slipPayment = packingSlipPaymentView(order);
   const phone = order.customer_phone || order.shipping_address_snapshot?.phone || "N/A";
   const recipientName =
     order.shipping_address_snapshot?.recipient_name || order.customer_name || "Customer";
@@ -174,25 +174,27 @@ export function PackingSlipModal({
             {/* HIGH-VISIBILITY PAYMENT INSTRUCTION CALLOUT */}
             <div
               className={`p-3 rounded border-2 ${
-                isPaid
+                slipPayment.tone === "success"
                   ? "bg-emerald-50 border-emerald-600 text-emerald-950"
+                  : slipPayment.tone === "error"
+                  ? "bg-red-50 border-red-600 text-red-950"
                   : "bg-amber-50 border-amber-600 text-amber-950"
               }`}
             >
               <div className="flex items-center gap-2">
-                {isPaid ? (
+                {slipPayment.tone === "success" ? (
                   <Check className="w-5 h-5 text-emerald-700 stroke-[3] shrink-0" />
+                ) : slipPayment.tone === "error" ? (
+                  <AlertTriangle className="w-5 h-5 text-red-700 stroke-[3] shrink-0" />
                 ) : (
                   <AlertTriangle className="w-5 h-5 text-amber-700 stroke-[3] shrink-0" />
                 )}
                 <div>
                   <p className="text-xs font-black uppercase tracking-wider font-mono">
-                    {isPaid ? "ONLINE PAYMENT COMPLETED (KHALTI)" : "CASH ON DELIVERY (COD)"}
+                    {slipPayment.heading}
                   </p>
                   <p className="text-[11px] font-semibold mt-0.5">
-                    {isPaid ? (
-                      "DO NOT COLLECT ANY PAYMENT FROM CUSTOMER. ORDER IS FULLY PAID."
-                    ) : (
+                    {slipPayment.shouldCollectCash ? (
                       <>
                         COLLECT EXACT CASH:{" "}
                         <span className="font-mono font-black text-sm underline">
@@ -200,6 +202,8 @@ export function PackingSlipModal({
                         </span>{" "}
                         FROM CUSTOMER UPON DELIVERY.
                       </>
+                    ) : (
+                      slipPayment.instruction
                     )}
                   </p>
                 </div>
@@ -241,12 +245,18 @@ export function PackingSlipModal({
                 <span>Subtotal</span>
                 <span>{formatNpr(order.subtotal_minor)}</span>
               </div>
+              {order.discount_minor > 0 && (
+                <div className="flex justify-between text-emerald-700">
+                  <span>Discount</span>
+                  <span className="tabular-nums">-{formatNpr(order.discount_minor)}</span>
+                </div>
+              )}
               <div className="flex justify-between text-zinc-600">
                 <span>Delivery Charge</span>
                 <span>{order.shipping_minor === 0 ? "FREE" : formatNpr(order.shipping_minor)}</span>
               </div>
               <div className="flex justify-between text-sm font-black border-t border-zinc-900 pt-1 text-zinc-900">
-                <span>Total Due</span>
+                <span>{slipPayment.totalLabel}</span>
                 <span>{formatNpr(order.total_minor)}</span>
               </div>
             </div>

@@ -118,7 +118,7 @@ export function OrderPaymentActions({
         type="button"
         onClick={isFailedMode ? handleRetryPayment : handleCheckAgain}
         disabled={busy}
-        className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] disabled:opacity-60 text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+        className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] disabled:opacity-60 text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
       >
         {busy ? (
           <Loader2 className="w-4 h-4 animate-spin" />

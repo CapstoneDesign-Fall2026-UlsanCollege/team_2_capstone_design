@@ -551,6 +551,39 @@ class StorePublicOrderDetailView(StorePublicMixin, APIView):
         response['Cache-Control'] = 'no-store, no-cache, must-revalidate, private'
         return response
 
+def _release_order_discount(store, order) -> bool:
+    """Release a previously counted discount redemption when an order fails or is cancelled."""
+    if not order.discount_id or not order.discount_redeemed:
+        return False
+    Discount.objects.select_for_update().for_store(store).filter(id=order.discount_id).first()
+    Discount.objects.for_store(store).filter(
+        id=order.discount_id,
+        used_count__gt=0,
+    ).update(used_count=F("used_count") - 1)
+    order.discount_redeemed = False
+    return True
+
+
+def _reclaim_order_discount(store, order) -> str | None:
+    """Re-claim a discount redemption when retrying payment or switching a failed order to COD."""
+    if not order.discount_id or order.discount_redeemed:
+        return None
+    locked_disc = (
+        Discount.objects.select_for_update()
+        .for_store(store)
+        .filter(id=order.discount_id)
+        .first()
+    )
+    if not locked_disc:
+        return "The promo code on this order is no longer valid. Please place a new order."
+    ok, reason = locked_disc.check_eligibility(order.subtotal_minor)
+    if not ok:
+        return f"{reason} Please place a new order."
+    Discount.objects.for_store(store).filter(id=locked_disc.id).update(used_count=F("used_count") + 1)
+    order.discount_redeemed = True
+    return None
+
+
 class StorePublicOrderPayView(StorePublicMixin, APIView):
     """
     Allows a shopper holding a valid unguessable order access token (e.g. from a
@@ -607,11 +640,22 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
 
         if payment_method == "COD":
             with transaction.atomic():
+                promo_err = _reclaim_order_discount(self.store, order)
+                if promo_err:
+                    return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
                 old_status = order.status
                 order.status = "CONFIRMED"
                 order.payment_method = "COD"
                 order.payment_status = "COD_PENDING"
-                order.save(update_fields=["status", "payment_method", "payment_status", "updated_at"])
+                order.save(
+                    update_fields=[
+                        "status",
+                        "payment_method",
+                        "payment_status",
+                        "discount_redeemed",
+                        "updated_at",
+                    ]
+                )
 
                 OrderEvent.objects.create(
                     store=self.store,
@@ -636,6 +680,10 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
         if khalti_cfg_err:
             return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
+
+        promo_err = _reclaim_order_discount(self.store, order)
+        if promo_err:
+            return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
 
         snap = order.shipping_address_snapshot or {}
         recipient_name = snap.get("recipient_name") or order.customer.full_name or "Shopper"
@@ -676,6 +724,7 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                     "status",
                     "payment_ref",
                     "is_test",
+                    "discount_redeemed",
                     "updated_at",
                 ]
             )
@@ -702,6 +751,18 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         return Response(payload)
 
 
+def _validate_checkout_variant(variants: dict[int, Variant], v_id):
+    """Ensure a checkout line item refers to an active, in-stock variant of an active product."""
+    v = variants.get(v_id)
+    if not v:
+        return None, f"Product variant {v_id} not available in this store."
+    if not v.is_active or not v.product.is_active:
+        return None, f"{v.product.name} ({v.label}) is no longer available in this store."
+    if not v.in_stock:
+        return None, f"{v.product.name} ({v.label}) is currently out of stock."
+    return v, None
+
+
 class StoreCheckoutQuoteView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
 
@@ -715,18 +776,17 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
             v.id: v
             for v in Variant.objects.for_store(self.store)
             .select_related("product")
-            .filter(id__in=variant_ids, is_active=True)
+            .filter(id__in=variant_ids)
         }
 
         subtotal_minor = 0
         computed_items = []
 
         for it in items_data:
-            v_id = it.get("variant_id")
-            v = variants.get(v_id)
-            if not v:
+            v, variant_err = _validate_checkout_variant(variants, it.get("variant_id"))
+            if variant_err:
                 return Response(
-                    {"error": f"Product variant {v_id} not available in this store."},
+                    {"error": variant_err},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -905,18 +965,17 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             v.id: v
             for v in Variant.objects.for_store(self.store)
             .select_related("product")
-            .filter(id__in=variant_ids, is_active=True)
+            .filter(id__in=variant_ids)
         }
 
         subtotal_minor = 0
         order_items_to_create = []
 
         for it in items_data:
-            v_id = it.get("variant_id")
-            v = variants.get(v_id)
-            if not v:
+            v, variant_err = _validate_checkout_variant(variants, it.get("variant_id"))
+            if variant_err:
                 return Response(
-                    {"error": f"Product variant {v_id} not available."},
+                    {"error": variant_err},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
@@ -961,6 +1020,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
         with transaction.atomic():
             discount_minor = 0
             applied_promo_note = ""
+            applied_discount = None
             if disc_candidate is not None:
                 locked_disc = Discount.objects.select_for_update().for_store(self.store).filter(id=disc_candidate.id).first()
                 if not locked_disc:
@@ -970,6 +1030,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                     return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
                 discount_minor = locked_disc.compute_discount_minor(subtotal_minor)
                 Discount.objects.for_store(self.store).filter(id=locked_disc.id).update(used_count=F("used_count") + 1)
+                applied_discount = locked_disc
                 applied_promo_note = f" (Promo: {locked_disc.code})"
 
             total_minor = max(0, subtotal_minor - discount_minor) + shipping_minor
@@ -994,6 +1055,8 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 subtotal_minor=subtotal_minor,
                 shipping_minor=shipping_minor,
                 discount_minor=discount_minor,
+                discount=applied_discount,
+                discount_redeemed=(applied_discount is not None),
                 total_minor=total_minor,
                 currency=self.store.currency,
                 shipping_address_snapshot=shipping_address,
@@ -1101,7 +1164,8 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
         prev_status = order.status
         order.status = "PAYMENT_FAILED"
         order.payment_status = "FAILED"
-        order.save(update_fields=["status", "payment_status", "updated_at"])
+        _release_order_discount(self.store, order)
+        order.save(update_fields=["status", "payment_status", "discount_redeemed", "updated_at"])
 
         OrderEvent.objects.create(
             store=self.store,
@@ -1672,7 +1736,7 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
             except (ValueError, TypeError):
                 pass
 
-                MerchantAuditLog.objects.create(
+        MerchantAuditLog.objects.create(
             store=self.store,
             actor=request.user,
             action="PRODUCT_CREATE",
@@ -1855,7 +1919,7 @@ class MerchantOrderDetailView(StoreMerchantMixin, APIView):
 
 class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
     def post(self, request, store_slug, order_id):
-        order = Order.objects.for_store(self.store).filter(id=order_id).first()
+        order = Order.objects.for_store(self.store).select_for_update().filter(id=order_id).first()
         if not order:
             raise Http404("Order not found.")
 
@@ -1896,6 +1960,8 @@ class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
                 order.payment_status = "COD_PENDING"
                 if not note:
                     note = "Undone delivery · Reverted cash collection."
+            elif target_status == "CANCELLED":
+                _release_order_discount(self.store, order)
 
             order.save()
 

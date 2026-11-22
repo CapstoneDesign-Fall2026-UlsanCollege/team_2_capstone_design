@@ -1,0 +1,18 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#23170E" />
+  <rect x="36" y="36" width="728" height="728" fill="none" stroke="#523620" stroke-width="2" />
+  <!-- Spice Canister -->
+  <g transform="translate(245, 145)">
+    <rect x="50" y="20" width="210" height="32" rx="6" fill="#9A3D26" stroke="#F5CE75" stroke-width="1.5" />
+    <rect x="30" y="52" width="250" height="390" rx="16" fill="#362214" stroke="#C27D38" stroke-width="2" />
+    <rect x="56" y="120" width="198" height="240" rx="8" fill="#F5F2EB" stroke="#857C70" stroke-width="1.5" />
+    <text x="155" y="162" font-family="Georgia, serif" font-size="10" font-weight="700" fill="#9A3D26" text-anchor="middle" letter-spacing="2.5">SINDHUPALCHOK</text>
+    <text x="155" y="202" font-family="Georgia, serif" font-size="21" font-weight="700" fill="#1A1512" text-anchor="middle">Wild Turmeric</text>
+    <text x="155" y="228" font-family="Georgia, serif" font-size="19" font-weight="700" fill="#1A1512" text-anchor="middle">&amp; Mountain Ginger</text>
+    <line x1="84" y1="250" x2="226" y2="250" stroke="#857C70" stroke-width="1" />
+    <text x="155" y="278" font-family="-apple-system, sans-serif" font-size="9.5" font-weight="600" fill="#594F47" text-anchor="middle" letter-spacing="1.5">6.2% HIGH-CURCUMIN ROOT</text>
+    <text x="155" y="302" font-family="-apple-system, sans-serif" font-size="9.5" fill="#594F47" text-anchor="middle">Stone-Ground Heirloom Harvest</text>
+  </g>
+  <text x="400" y="684" font-family="Georgia, serif" font-size="16" font-weight="600" fill="#F5CE75" text-anchor="middle" letter-spacing="4">HEIRLOOM MOUNTAIN SPICE</text>
+  <text x="400" y="712" font-family="-apple-system, sans-serif" font-size="11" fill="#E5B143" text-anchor="middle" letter-spacing="2">SMALLHOLDER COOPERATIVE · NEPAL</text>
+</svg>

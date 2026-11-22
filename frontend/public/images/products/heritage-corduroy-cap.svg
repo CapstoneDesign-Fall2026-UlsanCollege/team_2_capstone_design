@@ -1,0 +1,21 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#151916" />
+  <rect x="32" y="32" width="736" height="736" fill="none" stroke="#3E5749" stroke-width="3" />
+  <!-- 6-Panel Corduroy Cap Silhouette -->
+  <g transform="translate(150, 210)">
+    <!-- Crown -->
+    <path d="M 110 210 Q 110 40 265 40 Q 415 40 415 210 Z" fill="#1C3A2B" stroke="#F4F4F0" stroke-width="3" />
+    <!-- Top button -->
+    <circle cx="265" cy="36" r="8" fill="#E5B143" />
+    <!-- Panel seams -->
+    <path d="M 265 40 L 210 210 M 265 40 L 320 210" stroke="#3E5749" stroke-width="2" fill="none" />
+    <!-- Embroidered Front Patch -->
+    <rect x="205" y="115" width="120" height="58" rx="4" fill="#F4F4F0" stroke="#0B0B0B" stroke-width="2.5" />
+    <text x="265" y="143" font-family="-apple-system, sans-serif" font-size="16" font-weight="800" fill="#0B0B0B" text-anchor="middle" letter-spacing="3">NEPAL</text>
+    <text x="265" y="161" font-family="monospace" font-size="9" font-weight="700" fill="#1C6342" text-anchor="middle" letter-spacing="1.5">EST. KATHMANDU</text>
+    <!-- Curved Visor / Brim -->
+    <path d="M 45 225 Q 160 195 415 210 Q 250 245 45 225 Z" fill="#E5B143" stroke="#0B0B0B" stroke-width="3" />
+  </g>
+  <text x="400" y="684" font-family="-apple-system, sans-serif" font-size="17" font-weight="800" fill="#F4F4F0" text-anchor="middle" letter-spacing="5">8-WALE CORDUROY 6-PANEL</text>
+  <text x="400" y="712" font-family="monospace" font-size="11" fill="#E5B143" text-anchor="middle" letter-spacing="2">FOREST &amp; MUSTARD · EMBROIDERED CREST</text>
+</svg>

@@ -9,6 +9,75 @@
  * 4. Invalid or failing tenant overrides automatically fall back to design token defaults.
  */
 
+import {
+  VALID_STOREFRONT_THEME_PRESETS,
+  type StorefrontThemePresetId,
+  type PresetTokenSet,
+  STOREFRONT_PRESET_TOKENS,
+  isValidStorefrontThemePreset,
+  normalizeStorefrontThemePreset,
+  getStorefrontTheme,
+} from "./storefront-themes";
+
+export {
+  VALID_STOREFRONT_THEME_PRESETS,
+  type StorefrontThemePresetId,
+  type PresetTokenSet,
+  STOREFRONT_PRESET_TOKENS,
+  isValidStorefrontThemePreset,
+  normalizeStorefrontThemePreset,
+  getStorefrontTheme,
+};
+
+/**
+ * Validates an optional merchant accent hex override against:
+ * 1. Valid hex syntax
+ * 2. Forbidden semantic status hues (red/amber/green)
+ * 3. Button text WCAG AA contrast (>= 4.5:1 against #FFFFFF or #0B0D11)
+ * 4. Button visibility against both preset surface and canvas (>= 3.0:1)
+ */
+export function resolveSafeAccentOverride(
+  accentColor?: string | null,
+  themePreset?: string | null
+): { primary: string; primaryHover: string; primaryForeground: string } | null {
+  const raw = typeof accentColor === "string" ? accentColor.trim() : "";
+  if (!raw) return null;
+
+  const clean = raw.startsWith("#") ? raw : `#${raw}`;
+  const rgb = hexToRgb(clean);
+  if (!rgb) return null;
+
+  if (isForbiddenStatusHue(rgb[0], rgb[1], rgb[2])) {
+    return null;
+  }
+
+  const normalizedHex = `#${rgb
+    .map((n) => n.toString(16).padStart(2, "0"))
+    .join("")
+    .toUpperCase()}`;
+
+  const whiteContrast = calculateContrastRatio("#FFFFFF", normalizedHex);
+  const darkContrast = calculateContrastRatio("#0B0D11", normalizedHex);
+  const primaryForeground = whiteContrast >= darkContrast ? "#FFFFFF" : "#0B0D11";
+  const bestFgContrast = Math.max(whiteContrast, darkContrast);
+  if (bestFgContrast < 4.5) {
+    return null;
+  }
+
+  const presetTokens = STOREFRONT_PRESET_TOKENS[normalizeStorefrontThemePreset(themePreset)];
+  const surfaceContrast = calculateContrastRatio(normalizedHex, presetTokens.surface);
+  const canvasContrast = calculateContrastRatio(normalizedHex, presetTokens.canvas);
+  if (surfaceContrast < 3.0 || canvasContrast < 3.0) {
+    return null;
+  }
+
+  return {
+    primary: normalizedHex,
+    primaryHover: normalizedHex,
+    primaryForeground,
+  };
+}
+
 export interface ThemeTokens {
   canvas: string;
   surface: string;

@@ -73,26 +73,26 @@ export function StorefrontHeader({
 
   return (
     <div className="w-full">
-      {/* 1. Announcement Bar: 36px, charcoal (#171716), single static merchant message. Hidden if empty. */}
+      {/* 1. Announcement Bar: per-theme announcement tokens, wraps cleanly on 360px mobile without truncation. Hidden if empty. */}
       {announcementText && (
         <aside
           aria-label="Store announcement"
-          className="w-full h-9 bg-[var(--ink)] text-[var(--surface)] text-xs font-medium px-4 flex items-center justify-center border-b border-[var(--border)] overflow-hidden"
+          className="sf-announcement-bar w-full min-h-9 py-1.5 px-3 sm:px-4 bg-[var(--announcement-bg,var(--ink))] text-[var(--announcement-fg,var(--surface))] text-[11px] sm:text-xs font-medium flex items-center justify-center border-b border-[var(--announcement-border,var(--border))]"
         >
-          <p className="truncate text-center max-w-4xl tracking-normal">
+          <p className="text-center max-w-4xl leading-snug tracking-normal break-words">
             {announcementText}
           </p>
         </aside>
       )}
 
-      {/* 2. Header Bar: Logo/Name, Clean Navigation, Search, Account, Bag. 1px border. */}
+      {/* 2. Header Bar: Logo/Name (no truncated tagline), Clean Navigation, Search, Account, Bag. */}
       <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--surface)]">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
+        <div className="sf-header-inner max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           
-          {/* Left: Brand Identity */}
+          {/* Brand Identity */}
           <Link
             href={`/s/${encodeURIComponent(storeSlug)}`}
-            className="flex items-center gap-3 min-w-0 group shrink-0"
+            className="sf-header-brand flex items-center gap-3 min-w-0 flex-1 md:flex-initial group"
           >
             {logoUrl ? (
               <Image
@@ -102,26 +102,21 @@ export function StorefrontHeader({
                 height={36}
                 sizes="150px"
                 unoptimized={shouldBypassNextImageOptimization(optimizeCloudinaryUrl(logoUrl))}
-                className="h-8 sm:h-9 w-auto max-w-[150px] object-contain rounded"
+                className="sf-control-radius h-8 sm:h-9 w-auto max-w-[150px] object-contain"
               />
             ) : (
-              <div className="flex flex-col text-left">
-                <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-[var(--ink)] leading-tight group-hover:opacity-85 transition-opacity">
+              <div className="sf-header-brand-text flex flex-col text-left min-w-0">
+                <span className="font-serif text-lg sm:text-xl font-bold tracking-tight text-[var(--ink)] leading-tight truncate group-hover:opacity-85 transition-opacity">
                   {storeName}
                 </span>
-                {cleanTagline && (
-                  <span className="hidden lg:block text-xs text-[var(--ink-2)] max-w-sm truncate font-normal">
-                    {cleanTagline}
-                  </span>
-                )}
               </div>
             )}
           </Link>
 
-          {/* Center: Desktop Navigation (Catalog, Our story, Delivery & COD, Contact) */}
+          {/* Desktop Navigation (Catalog, Our story, Delivery & COD, Contact) */}
           <nav
             aria-label="Main storefront navigation"
-            className="hidden md:flex items-center gap-6 text-sm font-medium text-[var(--ink-2)]"
+            className="sf-header-nav hidden md:flex items-center gap-4 lg:gap-6 whitespace-nowrap text-sm font-medium text-[var(--ink-2)]"
           >
             {onCatalogClick ? (
               <button
@@ -162,13 +157,13 @@ export function StorefrontHeader({
           </nav>
 
           {/* Right: Actions (Search, Account, Bag) with min 44px tap targets */}
-          <div className="flex items-center gap-1.5 sm:gap-2">
+          <div className="sf-header-actions flex items-center gap-1.5 sm:gap-2 shrink-0">
             {/* Search Trigger */}
             {onOpenSearch ? (
               <button
                 type="button"
                 onClick={onOpenSearch}
-                className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
+                className="sf-control-radius w-11 h-11 flex items-center justify-center text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
                 aria-label="Search catalog"
               >
                 <Search className="w-4 h-4" />
@@ -176,7 +171,7 @@ export function StorefrontHeader({
             ) : (
               <Link
                 href={`/s/${encodeURIComponent(storeSlug)}?search=1#collection-section`}
-                className="w-11 h-11 flex items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
+                className="sf-control-radius w-11 h-11 flex items-center justify-center text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
                 aria-label="Search catalog"
               >
                 <Search className="w-4 h-4" />
@@ -187,7 +182,7 @@ export function StorefrontHeader({
             <button
               type="button"
               onClick={onOpenAccount}
-              className="w-11 h-11 relative flex items-center justify-center rounded-lg text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
+              className="sf-control-radius w-11 h-11 relative flex items-center justify-center text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
               aria-label={isAuthenticated ? "Open your account menu" : "Sign in to your account"}
             >
               {isAuthenticated && userInitial ? (
@@ -211,7 +206,7 @@ export function StorefrontHeader({
             <button
               type="button"
               onClick={onOpenCart}
-              className="min-h-[44px] min-w-[44px] px-3.5 py-2 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] transition-colors cursor-pointer flex items-center gap-2 text-xs sm:text-sm font-medium"
+              className="sf-control-radius min-h-[44px] min-w-[44px] px-3.5 py-2 bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] transition-colors cursor-pointer flex items-center gap-2 text-xs sm:text-sm font-medium"
               aria-label={`Open shopping bag with ${cartCount} items`}
             >
               <ShoppingBag className="w-4 h-4 shrink-0" />

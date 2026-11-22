@@ -16,6 +16,7 @@ import {
 import { formatNpr } from "@/lib/api";
 import { useCart } from "./CartContext";
 import { StoreImage } from "./StoreImage";
+import { useEffectiveStoreTheme } from "./ThemePreviewWatcher";
 
 export function CartDrawer() {
   const router = useRouter();
@@ -32,6 +33,7 @@ export function CartDrawer() {
     removeItem,
     freeShippingThresholdMinor,
   } = useCart();
+  const activeTheme = useEffectiveStoreTheme(themePreset || "editorial-warm");
 
   // Free delivery threshold calculations (only when explicitly configured > 0)
   const thresholdMinor =
@@ -70,10 +72,11 @@ export function CartDrawer() {
       <Dialog.Portal>
         {/* Dark token-based overlay with smooth fade animation */}
         <Dialog.Overlay
-          className="cart-drawer-overlay fixed inset-0 z-50 bg-black/60 transition-opacity"
+          data-store-theme={activeTheme}
+          className="cart-drawer-overlay fixed inset-0 z-50 bg-[var(--overlay-scrim)] transition-opacity"
         />
         <Dialog.Content
-          data-store-theme={themePreset || "editorial-warm"}
+          data-store-theme={activeTheme}
           className="cart-drawer-content fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-50 w-full sm:max-w-md border-t sm:border-t-0 sm:border-l border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] flex flex-col justify-between max-h-[90dvh] sm:max-h-dvh overflow-hidden outline-none font-sans"
         >
           {/* Header */}
@@ -110,7 +113,7 @@ export function CartDrawer() {
                 <div className="flex items-center gap-1.5 text-[var(--ink)] font-medium">
                   <Truck className="w-3.5 h-3.5 text-[var(--ink-2)]" aria-hidden="true" />
                   {isFreeDeliveryQualified ? (
-                    <span className="text-[var(--success-fg)] font-semibold">
+                    <span className="text-[var(--status-success-fg)] font-semibold">
                       Free delivery unlocked!
                     </span>
                   ) : (
@@ -260,7 +263,7 @@ export function CartDrawer() {
               <button
                 type="button"
                 onClick={handleProceedToCheckout}
-                className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+                className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
               >
                 <span>Proceed to Checkout</span>
                 <span>·</span>

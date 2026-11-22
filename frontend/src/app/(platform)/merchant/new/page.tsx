@@ -23,6 +23,11 @@ import {
   fetchSession,
   StorePublicMetadata,
 } from "@/lib/api";
+import {
+  STOREFRONT_THEMES,
+  normalizeStorefrontThemePreset,
+  recommendStorefrontThemeId,
+} from "@/lib/storefront-themes";
 
 function slugify(text: string): string {
   return text
@@ -52,42 +57,11 @@ const PROVINCE_OPTIONS = [
   "Sudurpashchim Province",
 ];
 
-const THEME_OPTIONS = [
-  {
-    id: "editorial-warm",
-    name: "Editorial Warm",
-    desc: "Earthy terracotta, warm paper canvas, Fraunces serif display. For coffee, tea, roasters, bakeries, books.",
-    accent: "#A3432A",
-    canvas: "#F5F2EB",
-  },
-  {
-    id: "pahadi-sage",
-    name: "Pahadi Sage",
-    desc: "Herbal forest green, warm sage lines, Young Serif display. For organic honey, ayurveda, skincare, teas.",
-    accent: "#1F6F4A",
-    canvas: "#F3F7F4",
-  },
-  {
-    id: "midnight-obsidian",
-    name: "Midnight Obsidian",
-    desc: "Deep matte charcoal, electric blue, Space Grotesk display. For streetwear, tech, sneakers, modern drops.",
-    accent: "#2563EB",
-    canvas: "#0D0D0E",
-  },
-  {
-    id: "ktm-bold",
-    name: "Modern Minimalist",
-    desc: "High contrast monochrome, stark canvas, Space Grotesk. For contemporary art, accessories, jewelry, gear.",
-    accent: "#2B3BFF",
-    canvas: "#F4F4F0",
-  },
-];
-
 function CreateStoreContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const initialName = searchParams.get("name") || "";
-  const initialTheme = searchParams.get("theme") || "editorial-warm";
+  const initialTheme = normalizeStorefrontThemePreset(searchParams.get("theme"));
 
   // Navigation & Step state: 1: Your store, 2: Pick a look, 3: Celebration
   const [currentStep, setCurrentStep] = useState<1 | 2 | 3>(1);
@@ -218,6 +192,10 @@ function CreateStoreContent() {
     } else if (slugAvailable === false) {
       setFormError(slugError || "This URL slug is taken. Please choose another.");
       return;
+    }
+
+    if (!searchParams.get("theme") && category) {
+      setThemePreset(recommendStorefrontThemeId(category));
     }
 
     setCurrentStep(2);
@@ -693,38 +671,187 @@ function CreateStoreContent() {
               </p>
             </div>
 
-            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-              {THEME_OPTIONS.map((theme) => {
+            <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+              {STOREFRONT_THEMES.map((theme) => {
                 const selected = themePreset === theme.id;
+                const recommendedId = category ? recommendStorefrontThemeId(category) : null;
+                const isRecommended = recommendedId === theme.id;
+                const previewStoreName = storeName.trim() || "Your Store";
+                const isCenteredHeader = theme.structural.headerAlignment === "centered";
+
                 return (
-                  <div
+                  <button
                     key={theme.id}
+                    type="button"
                     onClick={() => setThemePreset(theme.id)}
-                    className={`p-4 rounded-xl border-2 transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
+                    aria-pressed={selected}
+                    className={`p-4 rounded-xl border-2 text-left transition-all cursor-pointer flex flex-col justify-between space-y-3 ${
                       selected
                         ? "border-[var(--sc-ink,#111318)] bg-[var(--sc-paper,#FAFAF7)] shadow-xs"
                         : "border-[var(--sc-line,#E8E8E1)] hover:border-zinc-400 bg-[var(--sc-surface,#FFFFFF)]"
                     }`}
                   >
-                    <div className="space-y-1.5">
-                      <div className="flex items-center justify-between">
-                        <span className="font-bold text-xs">{theme.name}</span>
-                        <span
-                          className="w-3.5 h-3.5 rounded-full border border-black/10 inline-block"
-                          style={{ backgroundColor: theme.accent }}
-                        />
+                    <div className="space-y-3 w-full">
+                      {/* Title Row + Swatches */}
+                      <div className="flex items-center justify-between gap-2">
+                        <div className="flex items-center gap-2 min-w-0">
+                          <span className="font-bold text-sm text-[var(--sc-ink,#111318)] truncate">
+                            {theme.displayName}
+                          </span>
+                          {isRecommended && (
+                            <span className="text-[10px] font-mono uppercase tracking-wider px-1.5 py-0.5 rounded bg-[var(--sc-ink,#111318)] text-[var(--sc-paper,#FAFAF7)] shrink-0">
+                              Recommended
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-1 shrink-0" aria-label="Theme color swatches">
+                          <span
+                            className="w-3.5 h-3.5 rounded-full border border-black/15 inline-block"
+                            style={{ backgroundColor: theme.tokens.canvas }}
+                            title="Canvas"
+                          />
+                          <span
+                            className="w-3.5 h-3.5 rounded-full border border-black/15 inline-block"
+                            style={{ backgroundColor: theme.tokens.surface }}
+                            title="Surface"
+                          />
+                          <span
+                            className="w-3.5 h-3.5 rounded-full border border-black/15 inline-block"
+                            style={{ backgroundColor: theme.tokens.primary }}
+                            title="Primary button"
+                          />
+                          <span
+                            className="w-3.5 h-3.5 rounded-full border border-black/15 inline-block"
+                            style={{ backgroundColor: theme.tokens.ink }}
+                            title="Text ink"
+                          />
+                        </div>
                       </div>
-                      <p className="text-[11px] text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
-                        {theme.desc}
-                      </p>
+
+                      {/* Lightweight Live Storefront Mockup Preview */}
+                      <div
+                        className="p-3 border overflow-hidden space-y-2.5"
+                        style={{
+                          backgroundColor: theme.tokens.canvas,
+                          color: theme.tokens.ink,
+                          borderColor: theme.tokens.borderSubtle,
+                          borderRadius: theme.radius.card,
+                          fontFamily: theme.fontPairing.uiCssStack,
+                        }}
+                      >
+                        {/* Mini Header (reflects left vs centered alignment) */}
+                        <div
+                          className={`pb-2 border-b flex items-center gap-2 ${
+                            isCenteredHeader ? "justify-between" : "justify-between"
+                          }`}
+                          style={{ borderColor: theme.tokens.borderSubtle }}
+                        >
+                          {isCenteredHeader && (
+                            <span
+                              className="text-[9px] uppercase tracking-wider"
+                              style={{ color: theme.tokens.ink2 }}
+                            >
+                              Catalog
+                            </span>
+                          )}
+                          <span
+                            className={`text-xs font-semibold truncate ${
+                              isCenteredHeader ? "text-center" : "text-left"
+                            }`}
+                            style={{ fontFamily: theme.fontPairing.displayCssStack }}
+                          >
+                            {previewStoreName}
+                          </span>
+                          <span
+                            className="text-[9px] font-semibold px-2 py-0.5 shrink-0"
+                            style={{
+                              backgroundColor: theme.tokens.primary,
+                              color: theme.tokens.primaryForeground,
+                              borderRadius: theme.radius.control,
+                            }}
+                          >
+                            Bag (1)
+                          </span>
+                        </div>
+
+                        {/* Mini Font Sample + Product Aspect Preview */}
+                        <div className="flex items-center justify-between gap-3">
+                          <div className="min-w-0 flex-1 space-y-1">
+                            <p
+                              className="text-sm font-semibold leading-tight truncate"
+                              style={{ fontFamily: theme.fontPairing.displayCssStack }}
+                            >
+                              {previewStoreName}
+                            </p>
+                            <p
+                              className="text-[11px] leading-snug line-clamp-1"
+                              style={{ color: theme.tokens.ink2 }}
+                            >
+                              {theme.preview.sampleProductTitle} · {theme.preview.samplePrice}
+                            </p>
+                            <span
+                              className="inline-block text-[10px] font-semibold px-2.5 py-1 mt-1"
+                              style={{
+                                backgroundColor: theme.tokens.primary,
+                                color: theme.tokens.primaryForeground,
+                                borderRadius: theme.radius.control,
+                              }}
+                            >
+                              Shop {theme.preview.sampleTag}
+                            </span>
+                          </div>
+
+                          {/* Aspect Ratio Thumbnail Container */}
+                          <div
+                            className="w-12 shrink-0 border overflow-hidden flex items-center justify-center p-1"
+                            style={{
+                              backgroundColor: theme.tokens.surface,
+                              borderColor: theme.tokens.borderSubtle,
+                              borderRadius: theme.radius.control,
+                              aspectRatio: theme.structural.productCardAspect,
+                            }}
+                          >
+                            <div
+                              className="w-full h-full flex items-center justify-center text-[8px] font-semibold tabular-nums"
+                              style={{
+                                backgroundColor: theme.preview.photoBackdropHex,
+                                color: theme.tokens.primary,
+                                borderRadius: theme.radius.control,
+                              }}
+                            >
+                              {theme.structural.productCardAspect}
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Metadata Copy */}
+                      <div className="space-y-1">
+                        <p className="text-[11px] text-[var(--sc-ink-2,#4B5060)] leading-relaxed">
+                          {theme.shortDescription}
+                        </p>
+                        <p className="text-[11px] font-medium text-[var(--sc-ink,#111318)]">
+                          Best for: <span className="font-normal text-[var(--sc-ink-2,#4B5060)]">{theme.bestForLabel}</span>
+                        </p>
+                        <div className="flex flex-wrap items-center gap-x-2 gap-y-1 text-[10px] font-mono text-[var(--sc-ink-3,#8B90A0)] pt-0.5">
+                          <span>Fonts: {theme.fontPairing.label}</span>
+                          <span>·</span>
+                          <span>{theme.structural.heroLabel}</span>
+                          <span>·</span>
+                          <span>{theme.structural.headerAlignment} header</span>
+                        </div>
+                      </div>
                     </div>
 
-                    <div className="pt-2 border-t border-[var(--sc-line,#E8E8E1)] flex items-center justify-between text-[11px] font-mono">
+                    <div className="w-full pt-2 border-t border-[var(--sc-line,#E8E8E1)] flex items-center justify-between text-[11px] font-mono">
                       <span className={selected ? "font-bold text-[var(--sc-ink,#111318)]" : "text-[var(--sc-ink-3,#8B90A0)]"}>
-                        {selected ? "✓ Active" : "Select"}
+                        {selected ? "✓ Selected template" : "Choose template"}
+                      </span>
+                      <span className="text-[10px] text-[var(--sc-ink-3,#8B90A0)]">
+                        {theme.structural.productCardAspect} cards
                       </span>
                     </div>
-                  </div>
+                  </button>
                 );
               })}
             </div>

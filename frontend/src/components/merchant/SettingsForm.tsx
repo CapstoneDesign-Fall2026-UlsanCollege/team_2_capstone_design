@@ -9,37 +9,7 @@ import {
   ApiError,
 } from "@/lib/api";
 import { ThemeMediaUpload } from "@/components/merchant/ThemeMediaUpload";
-
-const PRESETS = [
-  {
-    id: "editorial-warm",
-    name: "Editorial Warm",
-    desc: "Serif headlines, warm paper tones, terracotta accents. Best for coffee, tea, baked goods, artisan pantry.",
-    dotColor: "#A3432A",
-    bgColor: "#F5F2EB",
-  },
-  {
-    id: "pahadi-sage",
-    name: "Pahadi Sage",
-    desc: "Soft organic greens, clean serifs, deep pine primary. Best for herbal remedies, honey, organic skincare.",
-    dotColor: "#1F6F4A",
-    bgColor: "#F3F7F4",
-  },
-  {
-    id: "ktm-bold",
-    name: "KTM Bold",
-    desc: "Space Grotesk typography, sharp 4px corners, electric blue primary. Best for streetwear, tech, sneakers.",
-    dotColor: "#2B3BFF",
-    bgColor: "#F4F4F0",
-  },
-  {
-    id: "midnight-obsidian",
-    name: "Midnight Obsidian (Dark)",
-    desc: "Deep obsidian canvas, warm marigold accent, emerald badges. Best for premium night brands, electronics & spirits.",
-    dotColor: "#F59E0B",
-    bgColor: "#0B0D11",
-  },
-];
+import { STOREFRONT_THEMES } from "@/lib/storefront-themes";
 
 const NEPAL_PROVINCES = [
   "Bagmati Province",
@@ -333,7 +303,7 @@ export function SettingsForm({
                 Storefront Theme Preset
               </label>
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3">
-                {PRESETS.map((preset) => {
+                {STOREFRONT_THEMES.map((preset) => {
                   const isSelected = themePreset === preset.id;
                   return (
                     <button
@@ -346,24 +316,27 @@ export function SettingsForm({
                           : "border-[var(--border)] bg-[var(--background)] hover:border-[var(--border)]/80"
                       }`}
                     >
-                      <div className="space-y-1 mb-2">
-                        <div className="flex items-center justify-between">
+                      <div className="space-y-1.5 mb-2 w-full">
+                        <div className="flex items-center justify-between gap-2">
                           <span className="font-semibold text-xs text-[var(--foreground)]">
-                            {preset.name}
+                            {preset.displayName}
                           </span>
-                          <div className="flex items-center gap-1.5">
+                          <div className="flex items-center gap-1.5 shrink-0">
                             <span
                               className="w-2.5 h-2.5 rounded-full border border-black/10 inline-block shrink-0"
-                              style={{ backgroundColor: preset.dotColor }}
+                              style={{ backgroundColor: preset.tokens.primary }}
                             />
                             <span
                               className="w-2.5 h-2.5 rounded-full border border-black/10 inline-block shrink-0"
-                              style={{ backgroundColor: preset.bgColor }}
+                              style={{ backgroundColor: preset.tokens.canvas }}
                             />
                           </div>
                         </div>
                         <p className="text-[10px] text-[var(--muted-foreground)] leading-snug line-clamp-2">
-                          {preset.desc}
+                          {preset.shortDescription}
+                        </p>
+                        <p className="text-[10px] font-mono text-[var(--muted-foreground)] truncate">
+                          {preset.fontPairing.label}
                         </p>
                       </div>
 

@@ -1,0 +1,19 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 800 800" width="800" height="800">
+  <rect width="800" height="800" fill="#18241B" />
+  <rect x="36" y="36" width="728" height="728" fill="none" stroke="#364E3C" stroke-width="2" />
+  <!-- Apothecary Botanical Jar -->
+  <g transform="translate(245, 145)">
+    <rect x="55" y="18" width="200" height="34" rx="8" fill="#734D10" stroke="#F5CE75" stroke-width="1.5" />
+    <rect x="30" y="52" width="250" height="390" rx="22" fill="#223527" stroke="#85A38E" stroke-width="2" />
+    <rect x="56" y="118" width="198" height="244" rx="12" fill="#FFFDF9" stroke="#D5E2DA" stroke-width="1.5" />
+    <circle cx="155" cy="166" r="14" fill="#E5B143" stroke="#734D10" stroke-width="1.5" />
+    <text x="155" y="210" font-family="Georgia, serif" font-size="10.5" font-weight="700" fill="#1C6342" text-anchor="middle" letter-spacing="2.5">SOLUKHUMBU</text>
+    <text x="155" y="242" font-family="Georgia, serif" font-size="21" font-weight="700" fill="#14281D" text-anchor="middle">Himalayan</text>
+    <text x="155" y="268" font-family="Georgia, serif" font-size="21" font-weight="700" fill="#14281D" text-anchor="middle">Chamomile</text>
+    <line x1="86" y1="288" x2="224" y2="288" stroke="#6A8275" stroke-width="1" />
+    <text x="155" y="314" font-family="-apple-system, sans-serif" font-size="9.5" font-weight="600" fill="#3E5749" text-anchor="middle" letter-spacing="1.5">WHOLE BLOSSOM TISANE</text>
+    <text x="155" y="336" font-family="-apple-system, sans-serif" font-size="9.5" fill="#3E5749" text-anchor="middle">Caffeine-Free · Everest Foothills</text>
+  </g>
+  <text x="400" y="684" font-family="Georgia, serif" font-size="16" font-weight="600" fill="#FBF1DA" text-anchor="middle" letter-spacing="4">PURE ALPINE BOTANICALS</text>
+  <text x="400" y="712" font-family="-apple-system, sans-serif" font-size="11" fill="#A7F3D0" text-anchor="middle" letter-spacing="2">SUN-DRIED HIGHLAND HARVEST · NEPAL</text>
+</svg>

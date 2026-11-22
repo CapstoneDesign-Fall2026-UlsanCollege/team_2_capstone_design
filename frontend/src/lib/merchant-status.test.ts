@@ -9,6 +9,7 @@ import {
   isCodWithCourier,
   isKhaltiProblem,
   needsDispatch,
+  packingSlipPaymentView,
   paymentView,
   resolveOrdersStatusTab,
   salesMinor,
@@ -153,5 +154,59 @@ describe("resolveOrdersStatusTab", () => {
     expect(resolveOrdersStatusTab("delivered")).toBe("delivered");
     expect(resolveOrdersStatusTab("unknown")).toBe("all");
     expect(resolveOrdersStatusTab(null)).toBe("all");
+  });
+});
+
+describe("packingSlipPaymentView (#65)", () => {
+  it("marks paid Khalti orders as completed with zero cash collection", () => {
+    const view = packingSlipPaymentView(khalti("PAID", "PAID"));
+    expect(view.tone).toBe("success");
+    expect(view.heading).toBe("ONLINE PAYMENT COMPLETED (KHALTI)");
+    expect(view.shouldCollectCash).toBe(false);
+    expect(view.totalLabel).toBe("Total Paid");
+  });
+
+  it("never instructs courier to collect cash as COD for unpaid/pending Khalti orders", () => {
+    const view = packingSlipPaymentView(khalti("PENDING_PAYMENT", "UNPAID"));
+    expect(view.tone).toBe("warning");
+    expect(view.heading).toBe("ONLINE PAYMENT PENDING (KHALTI)");
+    expect(view.shouldCollectCash).toBe(false);
+    expect(view.instruction).toContain("DO NOT COLLECT CASH AS COD");
+    expect(view.totalLabel).toBe("Total Unpaid");
+  });
+
+  it("marks failed Khalti orders as payment failed with error tone and no cash collection", () => {
+    const view = packingSlipPaymentView(khalti("PAYMENT_FAILED", "FAILED"));
+    expect(view.tone).toBe("error");
+    expect(view.heading).toBe("PAYMENT FAILED (KHALTI)");
+    expect(view.shouldCollectCash).toBe(false);
+    expect(view.totalLabel).toBe("Unpaid Total");
+  });
+
+  it("requires cash collection only on active undelivered COD orders", () => {
+    for (const statusVal of ["CONFIRMED", "PROCESSING", "SHIPPED"]) {
+      const view = packingSlipPaymentView(cod(statusVal));
+      expect(view.tone).toBe("warning");
+      expect(view.heading).toBe("CASH ON DELIVERY (COD)");
+      expect(view.shouldCollectCash).toBe(true);
+      expect(view.totalLabel).toBe("Total Due (COD)");
+    }
+  });
+
+  it("marks delivered COD orders as already collected without cash collection prompt", () => {
+    const view = packingSlipPaymentView(order("DELIVERED", "COD", "PAID"));
+    expect(view.tone).toBe("success");
+    expect(view.heading).toBe("CASH ON DELIVERY (COLLECTED)");
+    expect(view.shouldCollectCash).toBe(false);
+    expect(view.totalLabel).toBe("Total Paid");
+  });
+
+  it("marks cancelled COD or Khalti orders as cancelled with no cash collection", () => {
+    for (const o of [cod("CANCELLED"), khalti("CANCELLED", "UNPAID"), khalti("CANCELLED", "PAID")]) {
+      const view = packingSlipPaymentView(o);
+      expect(view.tone).toBe("error");
+      expect(view.heading).toBe("ORDER CANCELLED");
+      expect(view.shouldCollectCash).toBe(false);
+    }
   });
 });

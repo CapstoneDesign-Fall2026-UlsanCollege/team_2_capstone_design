@@ -26,7 +26,7 @@ export default function StoreSegmentError({
           <Chip tone="error">Connection Error</Chip>
         </div>
 
-        <div className="w-14 h-14 rounded-full bg-[var(--error-bg)] border border-[var(--error-bd)] text-[var(--error-fg)] mx-auto flex items-center justify-center">
+        <div className="w-14 h-14 rounded-full bg-[var(--status-error-bg)] border border-[var(--status-error-border)] text-[var(--status-error-fg)] mx-auto flex items-center justify-center">
           <AlertCircle className="w-7 h-7" aria-hidden="true" />
         </div>
 
@@ -44,7 +44,7 @@ export default function StoreSegmentError({
           <button
             type="button"
             onClick={() => reset()}
-            className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--surface)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
+            className="w-full min-h-[44px] h-12 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] text-sm font-semibold transition-colors flex items-center justify-center gap-2 cursor-pointer"
           >
             <RotateCw className="w-4 h-4" />
             <span>Try Again</span>

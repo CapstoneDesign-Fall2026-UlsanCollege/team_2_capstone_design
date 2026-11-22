@@ -8,6 +8,7 @@ import {
 } from "next/font/google";
 import { PlatformNav } from "@/components/platform/PlatformNav";
 import { PlatformThemeProvider } from "@/context/PlatformThemeContext";
+import { storefrontLatinFontVariablesClass } from "@/lib/storefront-fonts";
 
 const geist = Geist({
   subsets: ["latin"],
@@ -92,7 +93,7 @@ export default function PlatformLayout({
   return (
     <PlatformThemeProvider>
       <div
-        className={`${geist.variable} ${geistMono.variable} ${interTight.variable} ${instrumentSerif.variable} ${tiroDevanagari.variable} platform-shell min-h-dvh flex flex-col bg-paper text-ink transition-colors duration-200`}
+        className={`${geist.variable} ${geistMono.variable} ${interTight.variable} ${instrumentSerif.variable} ${tiroDevanagari.variable} ${storefrontLatinFontVariablesClass} platform-shell min-h-dvh flex flex-col bg-paper text-ink transition-colors duration-200`}
       >
         <a
           href="#main"

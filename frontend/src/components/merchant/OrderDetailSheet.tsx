@@ -20,6 +20,7 @@ import {
 } from "lucide-react";
 import { PackingSlipModal } from "./PackingSlipModal";
 import { formatNpr, OrderDetail } from "@/lib/api";
+import { paymentView } from "@/lib/merchant-status";
 
 export interface OrderDetailSheetProps {
   order: OrderDetail | null;
@@ -45,8 +46,8 @@ export function OrderDetailSheet({
   if (!order) return null;
 
   const statusUpper = order.status.toUpperCase();
-  const isPaid = order.payment_status === "PAID";
   const isCOD = order.payment_method === "COD";
+  const payBadge = paymentView(order);
 
   const customerPhone =
     order.customer_phone || order.shipping_address_snapshot?.phone || "";
@@ -156,12 +157,16 @@ export function OrderDetailSheet({
 
                   <span
                     className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${
-                      isPaid
+                      payBadge.tone === "success"
                         ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800"
-                        : "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+                        : payBadge.tone === "error"
+                        ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800"
+                        : payBadge.tone === "warning"
+                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
+                        : "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700"
                     }`}
                   >
-                    {isPaid ? "Paid" : "COD Due"}
+                    {payBadge.label}
                   </span>
                 </div>
 
@@ -276,6 +281,12 @@ export function OrderDetailSheet({
                       {formatNpr(order.subtotal_minor)}
                     </span>
                   </div>
+                  {order.discount_minor > 0 && (
+                    <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                      <span>Discount</span>
+                      <span className="tabular-nums">-{formatNpr(order.discount_minor)}</span>
+                    </div>
+                  )}
                   <div className="flex justify-between">
                     <span>Delivery</span>
                     <span className="text-[var(--foreground)] tabular-nums">

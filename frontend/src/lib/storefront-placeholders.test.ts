@@ -264,7 +264,7 @@ describe("StorefrontCatalogView placeholder removal", () => {
     expect(html).not.toContain("None");
   });
 
-  it("renders neutral store-branded hero fallback even when product still references placeholder.svg", () => {
+  it("renders compact store-branded hero panel without product caption when products have no valid image (Case 3)", () => {
     const html = renderToStaticMarkup(
       React.createElement(StorefrontCatalogView, {
         store: makeStore({
@@ -273,15 +273,70 @@ describe("StorefrontCatalogView placeholder removal", () => {
         }),
         products: [
           makeProduct({
+            name: "Imageless Vessel",
             image_url: "/images/products/placeholder.svg",
           }),
         ],
       })
     );
 
+    expect(html).toContain('data-hero-mode="brand-panel"');
+    expect(html).toContain("sf-hero-brand-panel");
+    expect(html).toContain("sf-hero-frame-compact");
     expect(html).toContain("Rohit Crafts");
     expect(html).toContain("https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/logo.png");
     expect(html).not.toContain("/images/products/placeholder.svg");
+    expect(html).not.toContain("sf-hero-caption");
+    expect(html).not.toContain("sf-hero-featured-label");
+  });
+
+  it("renders banner-only hero without product caption when store.banner_url exists (Case 1), and Featured label + caption when falling back to featured product image (Case 2)", () => {
+    const withBannerHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({
+          name: "Banner Roasters",
+          banner_url: "https://res.cloudinary.com/demo/image/upload/hero-banner.jpg",
+        }),
+        products: [
+          makeProduct({
+            name: "Single Origin Bag",
+            image_url: "https://res.cloudinary.com/demo/image/upload/product-item.jpg",
+          }),
+        ],
+      })
+    );
+
+    expect(withBannerHtml).toContain('data-hero-mode="banner"');
+    expect(withBannerHtml).toContain(
+      "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/hero-banner.jpg"
+    );
+    expect(withBannerHtml).toContain('alt="Banner Roasters cover banner"');
+    expect(withBannerHtml).not.toContain("sf-hero-caption");
+    expect(withBannerHtml).not.toContain("sf-hero-featured-label");
+
+    const fallbackToProductHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({
+          name: "Product Hero Roasters",
+          banner_url: "/images/banners/placeholder.jpg",
+        }),
+        products: [
+          makeProduct({
+            name: "Single Origin Bag",
+            image_url: "https://res.cloudinary.com/demo/image/upload/product-item.jpg",
+          }),
+        ],
+      })
+    );
+
+    expect(fallbackToProductHtml).toContain('data-hero-mode="featured-product"');
+    expect(fallbackToProductHtml).toContain(
+      "https://res.cloudinary.com/demo/image/upload/f_auto,q_auto/product-item.jpg"
+    );
+    expect(fallbackToProductHtml).toContain('alt="Single Origin Bag"');
+    expect(fallbackToProductHtml).toContain("sf-hero-caption");
+    expect(fallbackToProductHtml).toContain("sf-hero-featured-label");
+    expect(fallbackToProductHtml).toContain('sf-hero-featured-label block text-[10px] font-semibold uppercase tracking-wider text-[var(--ink-2)]">Featured</span>');
   });
 
   it("uses merchant category label and Shop <Category> only when set", () => {
@@ -346,6 +401,57 @@ describe("StorefrontCatalogView placeholder removal", () => {
     expect(configuredHtml).toContain("Khalti");
     expect(configuredHtml).not.toContain("Cash on Delivery");
     expect(configuredHtml).toContain("Order on WhatsApp");
+    expect(configuredHtml).toContain("sf-trust-section");
+    expect(configuredHtml).toContain("Delivery &amp; COD details");
+    expect(configuredHtml).not.toContain("Frequently Asked Questions");
+    expect(configuredHtml).not.toContain("Quick order bar");
+  });
+
+  it("hides Story section when about_text is empty, uses 'Our story' instead of repeating hero headline, and assigns 3->3 / 6->3x2 grid columns with origin badges", () => {
+    const noStoryHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({
+          name: "Minimal Store",
+          tagline: "Short hero tagline only.",
+          story_headline: "Hero Display Headline",
+          about_text: "",
+        }),
+        products: [
+          makeProduct({ id: 1, slug: "p1", attributes: { origin: "Kanyam, Ilam" } }),
+          makeProduct({ id: 2, slug: "p2", attributes: { district: "Gulmi" } }),
+          makeProduct({ id: 3, slug: "p3", attributes: { origin: "Solukhumbu" } }),
+        ],
+      })
+    );
+    expect(noStoryHtml).not.toContain("sf-story-section");
+    expect(noStoryHtml).toContain('data-item-count="3"');
+    expect(noStoryHtml).toContain('data-grid-cols="3"');
+    expect(noStoryHtml).toContain("sf-origin-badge");
+    expect(noStoryHtml).toContain("Kanyam, Ilam");
+
+    const withStoryHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({
+          name: "BrewMellow",
+          tagline: "Header tagline that must not render in header bar.",
+          story_headline: "Boutique Micro-Lot Coffee Roastery in Patan",
+          about_text: "Founded in 2021 in the historic alleys of Patan.",
+        }),
+        products: [
+          makeProduct({ id: 1, slug: "p1" }),
+          makeProduct({ id: 2, slug: "p2" }),
+          makeProduct({ id: 3, slug: "p3" }),
+          makeProduct({ id: 4, slug: "p4" }),
+          makeProduct({ id: 5, slug: "p5" }),
+          makeProduct({ id: 6, slug: "p6" }),
+        ],
+      })
+    );
+    expect(withStoryHtml).toContain("sf-story-section");
+    expect(withStoryHtml).toContain(">Our story</h2>");
+    expect(withStoryHtml).not.toContain(">Boutique Micro-Lot Coffee Roastery in Patan</h2>");
+    expect(withStoryHtml).toContain('data-item-count="6"');
+    expect(withStoryHtml).toContain('data-grid-cols="3"');
   });
 
   it("renders User icon when signed out or signed in only as platform/merchant user, and initial badge only for storefront customers", () => {
