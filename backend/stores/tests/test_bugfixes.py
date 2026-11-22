@@ -6,7 +6,7 @@ from rest_framework.test import APIClient
 from catalog.models import Product, Variant
 from core.tenant_context import TenantDatabaseContext
 from orders.models import Order
-from stores.models import Store, StoreMembership
+from stores.models import MerchantAuditLog, Store, StoreMembership
 
 User = get_user_model()
 
@@ -182,3 +182,82 @@ class CheckoutAvailabilityBug60Tests(TestCase):
         self.assertEqual(place_res.status_code, status.HTTP_201_CREATED)
         with TenantDatabaseContext(self.store.id):
             self.assertEqual(Order.objects.for_store(self.store).count(), 1)
+
+
+class ProductCreateAuditLogBug63Tests(TestCase):
+    """Regression tests for Issue #63: log PRODUCT_CREATE unconditionally on product creation."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            email="owner.bug63@example.com",
+            full_name="Bug63 Owner",
+        )
+        self.store = Store.objects.create(
+            name="Bug63 Shop",
+            slug="bug63-shop",
+            is_active=True,
+        )
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(
+                store=self.store,
+                user=self.owner,
+                role="OWNER",
+            )
+        self.client.force_authenticate(user=self.owner)
+
+    def test_audit_log_created_with_valid_initial_price_minor(self):
+        res = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/",
+            {"name": "Single Origin Roast", "initial_price_minor": 120000},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        product_id = res.json()["id"]
+
+        with TenantDatabaseContext(self.store.id):
+            logs = list(
+                MerchantAuditLog.objects.for_store(self.store).filter(
+                    action="PRODUCT_CREATE",
+                    entity_id=str(product_id),
+                )
+            )
+            self.assertEqual(len(logs), 1)
+            self.assertEqual(logs[0].entity_type, "Product")
+            self.assertEqual(logs[0].actor_id, self.owner.id)
+
+    def test_audit_log_created_without_initial_price_minor(self):
+        res = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/",
+            {"name": "No Price Roast"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        product_id = res.json()["id"]
+
+        with TenantDatabaseContext(self.store.id):
+            logs = list(
+                MerchantAuditLog.objects.for_store(self.store).filter(
+                    action="PRODUCT_CREATE",
+                    entity_id=str(product_id),
+                )
+            )
+            self.assertEqual(len(logs), 1)
+
+    def test_audit_log_created_when_initial_price_minor_invalid(self):
+        res = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/",
+            {"name": "Invalid Price Roast", "initial_price_minor": "not-a-number"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED)
+        product_id = res.json()["id"]
+
+        with TenantDatabaseContext(self.store.id):
+            logs = list(
+                MerchantAuditLog.objects.for_store(self.store).filter(
+                    action="PRODUCT_CREATE",
+                    entity_id=str(product_id),
+                )
+            )
+            self.assertEqual(len(logs), 1)

@@ -1682,7 +1682,7 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
             except (ValueError, TypeError):
                 pass
 
-                MerchantAuditLog.objects.create(
+        MerchantAuditLog.objects.create(
             store=self.store,
             actor=request.user,
             action="PRODUCT_CREATE",
