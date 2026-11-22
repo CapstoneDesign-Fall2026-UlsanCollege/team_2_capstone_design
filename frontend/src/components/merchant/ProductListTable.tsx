@@ -3,6 +3,11 @@
 import React, { useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { deleteMerchantProduct, formatNpr, ProductItem } from "@/lib/api";
+import {
+  createProductArchiveController,
+  PendingArchiveState,
+  ProductArchiveController,
+} from "@/lib/product-archive";
 
 interface ProductListTableProps {
   storeSlug: string;
@@ -12,12 +17,6 @@ interface ProductListTableProps {
   onAddNew: () => void;
 }
 
-interface PendingArchive {
-  product: ProductItem;
-  timerId: NodeJS.Timeout;
-  remainingSeconds: number;
-}
-
 export function ProductListTable({
   storeSlug,
   products,
@@ -25,65 +24,57 @@ export function ProductListTable({
   onRefresh,
   onAddNew,
 }: ProductListTableProps) {
-  const [pendingArchive, setPendingArchive] = useState<PendingArchive | null>(null);
-  const countdownIntervalRef = useRef<NodeJS.Timeout | null>(null);
+  const [pendingArchive, setPendingArchive] =
+    useState<PendingArchiveState<ProductItem> | null>(null);
+  const storeSlugRef = useRef(storeSlug);
+  const onRefreshRef = useRef(onRefresh);
+  const controllerRef = useRef<ProductArchiveController<ProductItem> | null>(null);
+
+  useEffect(() => {
+    storeSlugRef.current = storeSlug;
+    onRefreshRef.current = onRefresh;
+  }, [storeSlug, onRefresh]);
 
   // Derived list: exclude pending archived item without needing state sync
   const displayedProducts = pendingArchive
-    ? products.filter((p) => p.id !== pendingArchive.product.id)
+    ? products.filter((p) => p.id !== pendingArchive.item.id)
     : products;
 
-  // Clean up countdown timer on unmount
+  // Clean up countdown timers only on unmount
   useEffect(() => {
     return () => {
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      if (pendingArchive?.timerId) clearTimeout(pendingArchive.timerId);
+      controllerRef.current?.dispose();
+      controllerRef.current = null;
     };
-  }, [pendingArchive]);
+  }, []);
+
+  const getController = () => {
+    if (!controllerRef.current) {
+      controllerRef.current = createProductArchiveController<ProductItem>({
+        durationSeconds: 5,
+        onArchive: async (item) => {
+          await deleteMerchantProduct(storeSlugRef.current, item.id);
+        },
+        onRefresh: () => {
+          onRefreshRef.current();
+        },
+        onChange: (next) => {
+          setPendingArchive(next);
+        },
+        onError: (err) => {
+          console.error("Failed to archive product:", err);
+        },
+      });
+    }
+    return controllerRef.current;
+  };
 
   const handleArchiveClick = (product: ProductItem) => {
-    // If another deletion was pending, finalize it immediately
-    if (pendingArchive) {
-      clearTimeout(pendingArchive.timerId);
-      if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-      deleteMerchantProduct(storeSlug, pendingArchive.product.id).catch(console.error);
-    }
-
-    // Setup 5-second countdown timer
-    let secondsLeft = 5;
-    const interval = setInterval(() => {
-      secondsLeft -= 1;
-      setPendingArchive((prev) => (prev ? { ...prev, remainingSeconds: secondsLeft } : null));
-      if (secondsLeft <= 0) {
-        clearInterval(interval);
-      }
-    }, 1000);
-    countdownIntervalRef.current = interval;
-
-    const timer = setTimeout(async () => {
-      try {
-        await deleteMerchantProduct(storeSlug, product.id);
-      } catch (err) {
-        console.error("Failed to archive product:", err);
-      } finally {
-        setPendingArchive(null);
-        if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-        onRefresh();
-      }
-    }, 5000);
-
-    setPendingArchive({
-      product,
-      timerId: timer,
-      remainingSeconds: 5,
-    });
+    getController().scheduleArchive(product);
   };
 
   const handleUndo = () => {
-    if (!pendingArchive) return;
-    clearTimeout(pendingArchive.timerId);
-    if (countdownIntervalRef.current) clearInterval(countdownIntervalRef.current);
-    setPendingArchive(null);
+    getController().undo();
   };
 
   if (displayedProducts.length === 0 && !pendingArchive) {
@@ -122,7 +113,7 @@ export function ProductListTable({
               style={{ backgroundColor: "var(--st-cancelled)" }}
             />
             <span className="text-[var(--foreground)]">
-              Product <span className="font-semibold">&quot;{pendingArchive.product.name}&quot;</span> archived.
+              Product <span className="font-semibold">&quot;{pendingArchive.item.name}&quot;</span> archived.
             </span>
           </div>
 
