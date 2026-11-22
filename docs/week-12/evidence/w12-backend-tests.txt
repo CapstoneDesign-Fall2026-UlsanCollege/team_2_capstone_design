@@ -1,0 +1,605 @@
+Found 165 test(s).
+Operations to perform:
+  Synchronize unmigrated apps: corsheaders, messages, rest_framework, staticfiles
+  Apply all migrations: accounts, admin, auth, catalog, contenttypes, orders, sessions, stores, subscriptions
+Synchronizing apps without migrations:
+  Creating tables...
+    Running deferred SQL...
+Running migrations:
+  Applying contenttypes.0001_initial... OK
+  Applying contenttypes.0002_remove_content_type_name... OK
+  Applying auth.0001_initial... OK
+  Applying auth.0002_alter_permission_name_max_length... OK
+  Applying auth.0003_alter_user_email_max_length... OK
+  Applying auth.0004_alter_user_username_opts... OK
+  Applying auth.0005_alter_user_last_login_null... OK
+  Applying auth.0006_require_contenttypes_0002... OK
+  Applying auth.0007_alter_validators_add_error_messages... OK
+  Applying auth.0008_alter_user_username_max_length... OK
+  Applying auth.0009_alter_user_last_name_max_length... OK
+  Applying auth.0010_alter_group_name_max_length... OK
+  Applying auth.0011_update_proxy_permissions... OK
+  Applying auth.0012_alter_user_first_name_max_length... OK
+  Applying accounts.0001_initial... OK
+  Applying stores.0001_initial... OK
+  Applying stores.0002_alter_store_theme_preset... OK
+  Applying stores.0003_store_about_text_store_address_store_banner_url_and_more... OK
+  Applying stores.0004_merchantauditlog... OK
+  Applying stores.0005_store_category_store_city_store_province... OK
+  Applying stores.0006_store_cod_enabled_store_custom_domain... OK
+  Applying catalog.0001_initial... OK
+  Applying orders.0001_initial... OK
+  Applying subscriptions.0001_initial... OK
+  Applying subscriptions.0002_alter_subscription_status... OK
+  Applying orders.0002_order_token... OK
+  Applying orders.0003_alter_order_token... OK
+  Applying orders.0004_order_subscription... OK
+  Applying orders.0005_remove_subscription_fields... OK
+  Applying accounts.0002_emailotpchallenge_ip_address... OK
+  Applying accounts.0003_normalize_and_merge_emails... OK
+  Applying accounts.0004_deliveryaddress_addr_user_def_upd_idx_and_more... OK
+  Applying admin.0001_initial... OK
+  Applying admin.0002_logentry_remove_auto_add... OK
+  Applying admin.0003_logentry_add_action_flag_choices... OK
+  Applying stores.0007_store_support_email... OK
+  Applying subscriptions.0003_delete_subscription... OK
+  Applying catalog.0002_discount... OK
+  Applying catalog.0003_remove_product_allow_subscription_and_more... OK
+  Applying stores.0008_force_rls_policies... OK
+  Applying stores.0009_customer_cust_store_user_idx_and_more... OK
+  Applying stores.0010_actionratelimit... OK
+  Applying stores.0011_remove_bypass_rls_and_add_user_membership_policy... OK
+  Applying catalog.0004_discount_disc_store_act_created_idx_and_more... OK
+  Applying catalog.0005_product_is_starter_default... OK
+  Applying orders.0006_order_ord_store_created_idx_and_more... OK
+  Applying orders.0007_order_discount_order_discount_redeemed... OK
+  Applying sessions.0001_initial... OK
+  Applying stores.0012_store_shipping_configured_alter_store_category... OK
+  Applying stores.0013_drop_legacy_rls_policies... OK
+System check identified no issues (0 silenced).
+Seeding BrewMellow Store #1...
+BrewMellow Store #1 seeded successfully.
+Seeding BrewMellow Store #1...
+BrewMellow Store #1 seeded successfully.
+Seeding BrewMellow Store #1...
+BrewMellow Store #1 seeded successfully.
+Seeding Himalayan Artisans Store #2...
+Himalayan Artisans Store #2 seeded successfully.
+Seeding KTM Streetwear Store #3...
+Successfully seeded KTM Streetwear Store #3!
+Seeding Himalayan Coffee Roasters (himalayan-roasters)...
+Successfully seeded Himalayan Coffee Roasters (himalayan-roasters)!
+Creating test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
+2026-11-22 21:40:38,872 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-22 21:40:38,919 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+2026-11-22 21:40:39,135 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_create_and_manage_addresses_atomic_default (accounts.tests.DeliveryAddressAPITests.test_create_and_manage_addresses_atomic_default) ... ok
+test_cross_shopper_isolation_returns_404 (accounts.tests.DeliveryAddressAPITests.test_cross_shopper_isolation_returns_404) ... 2026-11-22 21:40:39,328 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
+2026-11-22 21:40:39,330 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
+2026-11-22 21:40:39,331 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
+ok
+test_invalid_phone_numbers_rejected (accounts.tests.DeliveryAddressAPITests.test_invalid_phone_numbers_rejected) ... 2026-11-22 21:40:39,363 level=WARNING logger=django.request msg=Bad Request: /api/auth/addresses/
+2026-11-22 21:40:39,365 level=WARNING logger=django.request msg=Bad Request: /api/auth/addresses/
+2026-11-22 21:40:39,366 level=WARNING logger=django.request msg=Bad Request: /api/auth/addresses/
+ok
+test_unauthenticated_request_rejected (accounts.tests.DeliveryAddressAPITests.test_unauthenticated_request_rejected) ... 2026-11-22 21:40:39,386 level=WARNING logger=django.request msg=Unauthorized: /api/auth/addresses/
+ok
+test_csrf_token_endpoint (accounts.tests.EmailOTPAuthTests.test_csrf_token_endpoint) ... ok
+test_dev_otp_hint_suppressed_and_no_otp_in_response_or_logs (accounts.tests.EmailOTPAuthTests.test_dev_otp_hint_suppressed_and_no_otp_in_response_or_logs) ... ok
+test_email_transport_startup_validation_fails_closed_in_prod (accounts.tests.EmailOTPAuthTests.test_email_transport_startup_validation_fails_closed_in_prod) ... ok
+test_expired_challenge_rejected (accounts.tests.EmailOTPAuthTests.test_expired_challenge_rejected) ... 2026-11-22 21:40:39,457 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+ok
+test_five_wrong_attempts_locks_out_challenge (accounts.tests.EmailOTPAuthTests.test_five_wrong_attempts_locks_out_challenge) ... 2026-11-22 21:40:39,462 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-22 21:40:39,464 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-22 21:40:39,465 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-22 21:40:39,466 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-22 21:40:39,468 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+2026-11-22 21:40:39,469 level=WARNING logger=django.request msg=Bad Request: /api/auth/otp/verify/
+ok
+test_happy_path_otp_request_and_verify (accounts.tests.EmailOTPAuthTests.test_happy_path_otp_request_and_verify) ... ok
+test_heroku_rightmost_x_forwarded_for_extraction (accounts.tests.EmailOTPAuthTests.test_heroku_rightmost_x_forwarded_for_extraction) ... 2026-11-22 21:40:39,489 level=WARNING logger=django.request msg=Not Found: /
+ok
+test_resend_transport_failure_masks_logs_and_returns_generic_200 (accounts.tests.EmailOTPAuthTests.test_resend_transport_failure_masks_logs_and_returns_generic_200) ... ok
+test_send_test_email_command_masks_key_and_reports_status (accounts.tests.EmailOTPAuthTests.test_send_test_email_command_masks_key_and_reports_status) ... ok
+test_shared_session_and_executor_post_fork_reinit (accounts.tests.EmailOTPAuthTests.test_shared_session_and_executor_post_fork_reinit) ... ok
+test_invalid_token_rejected (accounts.tests.GoogleOAuthTests.test_invalid_token_rejected) ... 2026-11-22 21:40:39,541 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=platform
+2026-11-22 21:40:39,541 level=WARNING logger=django.request msg=Unauthorized: /api/auth/google/
+ok
+test_unconfigured_oauth_returns_503 (accounts.tests.GoogleOAuthTests.test_unconfigured_oauth_returns_503) ... 2026-11-22 21:40:39,564 level=ERROR logger=django.request msg=Service Unavailable: /api/auth/google/
+ok
+test_unverified_email_rejected (accounts.tests.GoogleOAuthTests.test_unverified_email_rejected) ... 2026-11-22 21:40:39,583 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=unverified_email store_id=platform
+2026-11-22 21:40:39,583 level=WARNING logger=django.request msg=Unauthorized: /api/auth/google/
+ok
+test_valid_google_token_authenticates_user (accounts.tests.GoogleOAuthTests.test_valid_google_token_authenticates_user) ... ok
+test_place_rejects_out_of_stock_variant_for_cod_and_khalti (stores.tests.test_bugfixes.CheckoutAvailabilityBug60Tests.test_place_rejects_out_of_stock_variant_for_cod_and_khalti) ... 2026-11-22 21:40:39,652 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug60-roastery/checkout/place/
+2026-11-22 21:40:39,656 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug60-roastery/checkout/place/
+ok
+test_quote_and_place_reject_archived_product_with_active_variant (stores.tests.test_bugfixes.CheckoutAvailabilityBug60Tests.test_quote_and_place_reject_archived_product_with_active_variant) ... 2026-11-22 21:40:39,685 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug60-roastery/checkout/quote/
+2026-11-22 21:40:39,688 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug60-roastery/checkout/place/
+ok
+test_quote_and_place_succeed_for_in_stock_active_variant (stores.tests.test_bugfixes.CheckoutAvailabilityBug60Tests.test_quote_and_place_succeed_for_in_stock_active_variant) ... ok
+test_quote_rejects_out_of_stock_variant (stores.tests.test_bugfixes.CheckoutAvailabilityBug60Tests.test_quote_rejects_out_of_stock_variant) ... 2026-11-22 21:40:39,744 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug60-roastery/checkout/quote/
+ok
+test_audit_log_created_when_initial_price_minor_invalid (stores.tests.test_bugfixes.ProductCreateAuditLogBug63Tests.test_audit_log_created_when_initial_price_minor_invalid) ... ok
+test_audit_log_created_with_valid_initial_price_minor (stores.tests.test_bugfixes.ProductCreateAuditLogBug63Tests.test_audit_log_created_with_valid_initial_price_minor) ... ok
+test_audit_log_created_without_initial_price_minor (stores.tests.test_bugfixes.ProductCreateAuditLogBug63Tests.test_audit_log_created_without_initial_price_minor) ... ok
+test_failed_khalti_retry_gateway_502_rolls_back_reclaim (stores.tests.test_bugfixes.PromoDiscountKhaltiReleaseBug64Tests.test_failed_khalti_retry_gateway_502_rolls_back_reclaim) ... 2026-11-22 21:40:39,850 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug64-shop/checkout/khalti-verify/
+2026-11-22 21:40:39,853 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/bug64-shop/public-orders/1/pay/
+ok
+test_khalti_cancel_releases_used_count_and_allows_reapply (stores.tests.test_bugfixes.PromoDiscountKhaltiReleaseBug64Tests.test_khalti_cancel_releases_used_count_and_allows_reapply) ... 2026-11-22 21:40:39,886 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug64-shop/checkout/khalti-verify/
+ok
+test_merchant_cancel_releases_used_count_and_discount_delete_preserves_order (stores.tests.test_bugfixes.PromoDiscountKhaltiReleaseBug64Tests.test_merchant_cancel_releases_used_count_and_discount_delete_preserves_order) ... ok
+test_retry_khalti_and_cod_fallback_reclaim_or_block_when_exhausted (stores.tests.test_bugfixes.PromoDiscountKhaltiReleaseBug64Tests.test_retry_khalti_and_cod_fallback_reclaim_or_block_when_exhausted) ... 2026-11-22 21:40:39,959 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug64-shop/checkout/khalti-verify/
+2026-11-22 21:40:39,966 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug64-shop/checkout/khalti-verify/
+2026-11-22 21:40:39,976 level=WARNING logger=django.request msg=Bad Request: /api/stores/bug64-shop/public-orders/1/pay/
+ok
+test_dry_run_reports_deletes_and_ordered_archives_without_mutating (stores.tests.test_cleanup_starter_products.CleanupStarterProductsCommandTests.test_dry_run_reports_deletes_and_ordered_archives_without_mutating) ... ok
+test_store_scoped_cleanup_respects_rls_and_leaves_other_store_intact (stores.tests.test_cleanup_starter_products.CleanupStarterProductsCommandTests.test_store_scoped_cleanup_respects_rls_and_leaves_other_store_intact) ... ok
+test_unknown_store_slug_raises_command_error (stores.tests.test_cleanup_starter_products.CleanupStarterProductsCommandTests.test_unknown_store_slug_raises_command_error) ... ok
+test_email_normalization_on_save (stores.tests.test_customer_email_linking.CustomerEmailLinkingAndCheckoutTests.test_email_normalization_on_save)
+User and Customer emails must be automatically lowercase and stripped on save. ... ok
+test_logged_in_user_entering_another_email_at_checkout_does_not_gain_access (stores.tests.test_customer_email_linking.CustomerEmailLinkingAndCheckoutTests.test_logged_in_user_entering_another_email_at_checkout_does_not_gain_access)
+Security check: ... ok
+test_logged_in_user_using_own_email_links_order_to_customer (stores.tests.test_customer_email_linking.CustomerEmailLinkingAndCheckoutTests.test_logged_in_user_using_own_email_links_order_to_customer)
+When logged-in user (Attacker) uses their own email at checkout: ... ok
+test_provision_store_customer_never_overwrites_existing_user (stores.tests.test_customer_email_linking.CustomerEmailLinkingAndCheckoutTests.test_provision_store_customer_never_overwrites_existing_user)
+provision_store_customer must refuse to reassign customer.user to a different user. ... ok
+test_customer_already_bound_to_other_user_is_never_overwritten (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_customer_already_bound_to_other_user_is_never_overwritten) ... ok
+test_customer_google_signin_grants_zero_merchant_access_and_never_links_across_stores (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_customer_google_signin_grants_zero_merchant_access_and_never_links_across_stores) ... 2026-11-22 21:40:40,330 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-craft/overview/
+ok
+test_expired_token_rejected (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_expired_token_rejected) ... 2026-11-22 21:40:40,389 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=1
+2026-11-22 21:40:40,390 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
+ok
+test_forged_signature_rejected_and_never_logged (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_forged_signature_rejected_and_never_logged) ... 2026-11-22 21:40:40,442 level=WARNING logger=django.request msg=Unauthorized: /api/auth/google/
+ok
+test_google_endpoint_ip_rate_limit_enforced (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_google_endpoint_ip_rate_limit_enforced) ... 2026-11-22 21:40:40,462 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-craft/account/google/
+ok
+test_merchant_google_login_without_membership_grants_zero_merchant_access (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_merchant_google_login_without_membership_grants_zero_merchant_access) ... 2026-11-22 21:40:40,518 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-craft/overview/
+ok
+test_unverified_email_rejected_and_never_logged (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_unverified_email_rejected_and_never_logged) ... 2026-11-22 21:40:40,572 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
+ok
+test_valid_token_verifies_cryptographically_and_caches_google_certs (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_valid_token_verifies_cryptographically_and_caches_google_certs) ... ok
+test_wrong_audience_rejected (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_wrong_audience_rejected) ... 2026-11-22 21:40:40,719 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=1
+2026-11-22 21:40:40,719 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
+ok
+test_wrong_issuer_rejected (stores.tests.test_google_auth.GoogleSignInVerificationAndIsolationTests.test_wrong_issuer_rejected) ... 2026-11-22 21:40:40,777 level=WARNING logger=accounts.google_auth msg=Google auth failed: reason=token_verification_failed store_id=1
+2026-11-22 21:40:40,778 level=WARNING logger=django.request msg=Unauthorized: /api/stores/himalayan-craft/account/google/
+ok
+test_cleanup_expired_and_management_command (stores.tests.test_hardening.ActionRateLimitCleanupTests.test_cleanup_expired_and_management_command) ... ok
+test_gateway_secrets_are_never_logged (stores.tests.test_hardening.GatewayKeyExposureAndFernetScannerTests.test_gateway_secrets_are_never_logged)
+Verifies that gateway secret keys and Fernet strings are never logged. ... ok
+test_merchant_settings_role_based_gateway_visibility (stores.tests.test_hardening.GatewayKeyExposureAndFernetScannerTests.test_merchant_settings_role_based_gateway_visibility)
+Owner receives masked gateway key; Staff role never sees any gateway fields. ... ok
+test_scan_responses_for_fernet_ciphertext_prefix_gAAAA (stores.tests.test_hardening.GatewayKeyExposureAndFernetScannerTests.test_scan_responses_for_fernet_ciphertext_prefix_gAAAA)
+Scans public and merchant responses to guarantee 'gAAAA' Fernet tokens never leak. ... ok
+test_checkout_rejects_empty_municipality_ward_and_landmark (stores.tests.test_hardening.ProductionHardeningAndKhaltiSafetyTests.test_checkout_rejects_empty_municipality_ward_and_landmark) ... 2026-11-22 21:40:40,932 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-22 21:40:40,933 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-22 21:40:40,934 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-22 21:40:40,935 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-22 21:40:40,936 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-22 21:40:40,938 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-22 21:40:40,939 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+ok
+test_cloudinary_signed_upload_and_ephemeral_fs_guard (stores.tests.test_hardening.ProductionHardeningAndKhaltiSafetyTests.test_cloudinary_signed_upload_and_ephemeral_fs_guard) ... 2026-11-22 21:40:40,967 level=ERROR logger=django.request msg=Service Unavailable: /api/merchant/stores/himalayan-goods/media/upload/
+ok
+test_hashed_client_ip_verification_log_masks_ip (stores.tests.test_hardening.ProductionHardeningAndKhaltiSafetyTests.test_hashed_client_ip_verification_log_masks_ip) ... ok
+test_health_check_zero_db_queries_ssl_exemption_hsts_and_cookies (stores.tests.test_hardening.ProductionHardeningAndKhaltiSafetyTests.test_health_check_zero_db_queries_ssl_exemption_hsts_and_cookies) ... ok
+test_khalti_defaults_to_sandbox_and_live_requires_explicit_env_flag (stores.tests.test_hardening.ProductionHardeningAndKhaltiSafetyTests.test_khalti_defaults_to_sandbox_and_live_requires_explicit_env_flag) ... 2026-11-22 21:40:41,047 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-22 21:40:41,050 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+ok
+test_khalti_live_prefixed_sandbox_keys_allowed_in_test_mode_and_live_tokens_rejected (stores.tests.test_hardening.ProductionHardeningAndKhaltiSafetyTests.test_khalti_live_prefixed_sandbox_keys_allowed_in_test_mode_and_live_tokens_rejected) ... 2026-11-22 21:40:41,077 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-22 21:40:41,101 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/khalti-verify/
+ok
+test_khalti_sandbox_keys_and_tokens_rejected_in_live_mode (stores.tests.test_hardening.ProductionHardeningAndKhaltiSafetyTests.test_khalti_sandbox_keys_and_tokens_rejected_in_live_mode) ... 2026-11-22 21:40:41,128 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-22 21:40:41,130 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-22 21:40:41,132 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-22 21:40:41,134 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-goods/settings/
+2026-11-22 21:40:41,136 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/place/
+2026-11-22 21:40:41,142 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/khalti-verify/
+2026-11-22 21:40:41,146 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-goods/checkout/khalti-verify/
+ok
+test_production_startup_secret_validation_fails_closed (stores.tests.test_hardening.ProductionHardeningAndKhaltiSafetyTests.test_production_startup_secret_validation_fails_closed) ... 2026-11-22 21:40:41,148 level=ERROR logger=shopcraft.payments msg=KHALTI_MOCK_MODE cannot be enabled in production when DEBUG=False.
+ok
+test_admin_email_backdoor_removed (stores.tests.test_isolation.TenantIsolationTests.test_admin_email_backdoor_removed)
+Verifies that users with 'admin@' email pattern cannot bypass merchant authorization ... 2026-11-22 21:40:41,204 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/overview/
+2026-11-22 21:40:41,207 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
+ok
+test_catalog_num_queries_and_no_n_plus_one (stores.tests.test_isolation.TenantIsolationTests.test_catalog_num_queries_and_no_n_plus_one)
+Verifies that StoreCatalogView eliminates N+1 queries by using prefetch_related ... ok
+test_checkout_atomic_rollback_on_midway_failure (stores.tests.test_isolation.TenantIsolationTests.test_checkout_atomic_rollback_on_midway_failure)
+Verifies that if checkout fails mid-way (e.g. forced exception after Order creation ... 2026-11-22 21:40:41,265 level=ERROR logger=django.request msg=Internal Server Error: /api/stores/brewmellow/checkout/place/
+Traceback (most recent call last):
+  File "backend\venv\Lib\site-packages\django\core\handlers\exception.py", line 56, in inner
+    response = get_response(request)
+  File "backend\venv\Lib\site-packages\django\core\handlers\base.py", line 199, in _get_response
+    response = wrapped_callback(request, *callback_args, **callback_kwargs)
+  File "backend\venv\Lib\site-packages\django\views\decorators\csrf.py", line 64, in _view_wrapper
+    return view_func(request, *args, **kwargs)
+  File "backend\venv\Lib\site-packages\django\views\generic\base.py", line 105, in view
+    return self.dispatch(request, *args, **kwargs)
+           ~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "backend\stores\api.py", line 106, in dispatch
+    response = super().dispatch(request, *args, **kwargs)
+  File "backend\venv\Lib\site-packages\rest_framework\views.py", line 526, in dispatch
+    response = self.handle_exception(exc)
+  File "backend\venv\Lib\site-packages\rest_framework\views.py", line 474, in handle_exception
+    self.raise_uncaught_exception(exc)
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^^^^
+  File "backend\venv\Lib\site-packages\rest_framework\views.py", line 485, in raise_uncaught_exception
+    raise exc
+  File "backend\venv\Lib\site-packages\rest_framework\views.py", line 523, in dispatch
+    response = handler(request, *args, **kwargs)
+  File "backend\stores\api.py", line 1066, in post
+    OrderItem.objects.bulk_create([
+    ~~~~~~~~~~~~~~~~~~~~~~~~~~~~~^^
+        OrderItem(
+        ^^^^^^^^^^
+    ...<9 lines>...
+        for item_info in order_items_to_create
+        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+    ])
+    ^^
+  File "C:\Users\adity\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py", line 1167, in __call__
+    return self._mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\adity\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py", line 1171, in _mock_call
+    return self._execute_mock_call(*args, **kwargs)
+           ~~~~~~~~~~~~~~~~~~~~~~~^^^^^^^^^^^^^^^^^
+  File "C:\Users\adity\AppData\Local\Programs\Python\Python313\Lib\unittest\mock.py", line 1226, in _execute_mock_call
+    raise effect
+RuntimeError: Forced midway failure
+2026-11-22 21:40:41,280 level=ERROR logger=django.request msg=Internal Server Error: /api/stores/brewmellow/checkout/place/
+ok
+test_global_user_provisions_isolated_per_store_customers (stores.tests.test_isolation.TenantIsolationTests.test_global_user_provisions_isolated_per_store_customers) ... ok
+test_khalti_sandbox_rejected_in_live_mode (stores.tests.test_isolation.TenantIsolationTests.test_khalti_sandbox_rejected_in_live_mode)
+Verifies that sandbox pidx payments are strictly rejected when store is in LIVE khalti mode. ... 2026-11-22 21:40:41,342 level=WARNING logger=django.request msg=Bad Request: /api/stores/brewmellow/checkout/khalti-verify/
+ok
+test_media_upload_scoping_and_audit_logging (stores.tests.test_isolation.TenantIsolationTests.test_media_upload_scoping_and_audit_logging)
+Verifies store-prefixed media uploads require merchant authentication, ... 2026-11-22 21:40:41,364 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/media/upload/
+2026-11-22 21:40:41,368 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/media/upload/
+ok
+test_merchant_audit_log_isolation (stores.tests.test_isolation.TenantIsolationTests.test_merchant_audit_log_isolation)
+Verifies that merchant audit logs are strictly isolated per store. ... 2026-11-22 21:40:41,402 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/audit-logs/
+ok
+test_merchant_cross_store_endpoints_return_404 (stores.tests.test_isolation.TenantIsolationTests.test_merchant_cross_store_endpoints_return_404) ... 2026-11-22 21:40:41,423 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/overview/
+2026-11-22 21:40:41,428 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
+2026-11-22 21:40:41,430 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/
+2026-11-22 21:40:41,432 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/
+2026-11-22 21:40:41,434 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/orders/
+2026-11-22 21:40:41,436 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/customers/
+2026-11-22 21:40:41,442 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/overview/
+2026-11-22 21:40:41,444 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/
+2026-11-22 21:40:41,446 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/
+2026-11-22 21:40:41,448 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/orders/
+2026-11-22 21:40:41,450 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/customers/
+ok
+test_merchant_customer_detail_idor_protection (stores.tests.test_isolation.TenantIsolationTests.test_merchant_customer_detail_idor_protection)
+Slice 3: IDOR verification on customer detail endpoint. ... 2026-11-22 21:40:41,483 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/customers/4/
+2026-11-22 21:40:41,486 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/customers/4/
+ok
+test_merchant_customer_directory_isolation (stores.tests.test_isolation.TenantIsolationTests.test_merchant_customer_directory_isolation)
+Slice 3: Verifies that customer directory is strictly tenant-isolated. ... 2026-11-22 21:40:41,515 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/customers/
+ok
+test_merchant_customer_search_and_aggregations (stores.tests.test_isolation.TenantIsolationTests.test_merchant_customer_search_and_aggregations)
+Slice 3: Verifies search filtering and order aggregation calculations. ... ok
+test_merchant_endpoints_access_matrix (stores.tests.test_isolation.TenantIsolationTests.test_merchant_endpoints_access_matrix)
+Verify the authorization matrix across merchant endpoints: ... 2026-11-22 21:40:41,574 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/overview/
+2026-11-22 21:40:41,575 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/settings/
+2026-11-22 21:40:41,575 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/orders/
+2026-11-22 21:40:41,576 level=WARNING logger=django.request msg=Unauthorized: /api/merchant/stores/brewmellow/products/
+2026-11-22 21:40:41,602 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
+2026-11-22 21:40:41,605 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/settings/
+2026-11-22 21:40:41,608 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/orders/
+2026-11-22 21:40:41,610 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/
+2026-11-22 21:40:41,611 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/overview/
+2026-11-22 21:40:41,613 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/settings/
+2026-11-22 21:40:41,614 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/orders/
+2026-11-22 21:40:41,616 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/non-existent-store-slug-xyz/products/
+ok
+test_merchant_my_stores_listing_and_isolation (stores.tests.test_isolation.TenantIsolationTests.test_merchant_my_stores_listing_and_isolation)
+Slice 2: Verifies /api/stores/my-stores/ returns only the active stores ... 2026-11-22 21:40:41,642 level=WARNING logger=django.request msg=Unauthorized: /api/stores/my-stores/
+ok
+test_merchant_order_queue_and_transition_isolation (stores.tests.test_isolation.TenantIsolationTests.test_merchant_order_queue_and_transition_isolation)
+Verify merchant order queue status tabs, transitions with COD cash confirmation, and multi-tenant security. ... 2026-11-22 21:40:41,711 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/orders/5/
+2026-11-22 21:40:41,713 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/orders/5/transition/
+ok
+test_merchant_product_crud_and_cross_tenant_isolation (stores.tests.test_isolation.TenantIsolationTests.test_merchant_product_crud_and_cross_tenant_isolation) ... 2026-11-22 21:40:41,749 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/products/5/
+2026-11-22 21:40:41,752 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/5/
+ok
+test_merchant_settings_isolation_and_encryption (stores.tests.test_isolation.TenantIsolationTests.test_merchant_settings_isolation_and_encryption) ... 2026-11-22 21:40:41,793 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/settings/
+2026-11-22 21:40:41,796 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/settings/
+ok
+test_merchant_theme_update_isolation (stores.tests.test_isolation.TenantIsolationTests.test_merchant_theme_update_isolation)
+Slice 4: Verifies that merchant theme updates take effect on Store A ... 2026-11-22 21:40:41,825 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/settings/
+ok
+test_merchant_variant_crud_isolation (stores.tests.test_isolation.TenantIsolationTests.test_merchant_variant_crud_isolation) ... 2026-11-22 21:40:41,863 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/products/1/variants/14/
+ok
+test_multi_store_switch_preserves_strict_isolation (stores.tests.test_isolation.TenantIsolationTests.test_multi_store_switch_preserves_strict_isolation)
+Slice 2: Verifies a merchant with multiple store memberships can switch ... ok
+test_postgres_rls_row_level_isolation_enforced (stores.tests.test_isolation.TenantIsolationTests.test_postgres_rls_row_level_isolation_enforced)
+Directly asserts that PostgreSQL Row-Level Security (RLS) policies enforce ... skipped 'Skipping PostgreSQL RLS policy enforcement test on non-PostgreSQL engine (SQLite).'
+test_postgres_row_locking_select_for_update (stores.tests.test_isolation.TenantIsolationTests.test_postgres_row_locking_select_for_update)
+Verifies that row-level locking (select_for_update) acquires an actual PostgreSQL ... skipped 'Skipping PostgreSQL select_for_update row-level locking test on non-PostgreSQL engine (SQLite).'
+test_public_pay_order_token_cross_store_isolation (stores.tests.test_isolation.TenantIsolationTests.test_public_pay_order_token_cross_store_isolation)
+Proves Store B's unpaid order token cannot be paid through Store A's public endpoint. ... 2026-11-22 21:40:41,927 level=WARNING logger=django.request msg=Not Found: /api/stores/brewmellow/public-orders/5/pay/
+ok
+test_seed_brewmellow_double_run_idempotency_and_paisa_matrix (stores.tests.test_isolation.TenantIsolationTests.test_seed_brewmellow_double_run_idempotency_and_paisa_matrix) ... ok
+test_shopper_cross_user_order_and_address_return_404 (stores.tests.test_isolation.TenantIsolationTests.test_shopper_cross_user_order_and_address_return_404) ... 2026-11-22 21:40:41,980 level=WARNING logger=django.request msg=Not Found: /api/stores/brewmellow/orders/5/
+2026-11-22 21:40:41,984 level=WARNING logger=django.request msg=Not Found: /api/auth/addresses/1/
+ok
+test_slice6_analytics_isolation_and_nepal_province_breakdown (stores.tests.test_isolation.TenantIsolationTests.test_slice6_analytics_isolation_and_nepal_province_breakdown)
+Slice 6: Proves Analytics reports strictly scope revenue, payment rail mix, ... 2026-11-22 21:40:42,010 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/analytics/
+ok
+test_slice6_cod_toggle_and_custom_domain_isolation (stores.tests.test_isolation.TenantIsolationTests.test_slice6_cod_toggle_and_custom_domain_isolation)
+Slice 6: Proves disabling COD on Store A blocks Cash on Delivery at checkout ... 2026-11-22 21:40:42,045 level=WARNING logger=django.request msg=Bad Request: /api/stores/brewmellow/checkout/place/
+ok
+test_slice6_discount_crud_rls_and_cross_store_checkout_isolation (stores.tests.test_isolation.TenantIsolationTests.test_slice6_discount_crud_rls_and_cross_store_checkout_isolation)
+Slice 6: Proves Discount promo codes enforce Postgres RLS, CRUD tenant isolation, ... 2026-11-22 21:40:42,078 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/discounts/
+2026-11-22 21:40:42,081 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/brewmellow/discounts/1/
+2026-11-22 21:40:42,089 level=WARNING logger=django.request msg=Bad Request: /api/stores/pahadi-honey/checkout/quote/
+2026-11-22 21:40:42,103 level=WARNING logger=django.request msg=Bad Request: /api/stores/brewmellow/checkout/quote/
+ok
+test_slice6_staff_rbac_permissions_and_sole_owner_protection (stores.tests.test_isolation.TenantIsolationTests.test_slice6_staff_rbac_permissions_and_sole_owner_protection)
+Slice 6: Proves OWNER vs STAFF RBAC enforcement: ... 2026-11-22 21:40:42,134 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/brewmellow/staff/1/
+2026-11-22 21:40:42,139 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/brewmellow/staff/1/
+2026-11-22 21:40:42,158 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/pahadi-honey/overview/
+2026-11-22 21:40:42,161 level=WARNING logger=django.request msg=Forbidden: /api/merchant/stores/brewmellow/settings/
+2026-11-22 21:40:42,163 level=WARNING logger=django.request msg=Forbidden: /api/merchant/stores/brewmellow/staff/
+2026-11-22 21:40:42,165 level=WARNING logger=django.request msg=Forbidden: /api/merchant/stores/brewmellow/staff/1/
+ok
+test_store_checkout_quote_and_placement_isolation (stores.tests.test_isolation.TenantIsolationTests.test_store_checkout_quote_and_placement_isolation)
+Verify server-authoritative checkout quote, COD placement, and Khalti verify with strict multi-tenant isolation. ... 2026-11-22 21:40:42,194 level=WARNING logger=django.request msg=Not Found: /api/stores/brewmellow/public-orders/5/
+2026-11-22 21:40:42,203 level=WARNING logger=django.request msg=Not Found: /api/stores/himalayan-craft/public-orders/cefe688e-2d3f-4f5e-bfdf-a6a30f94da47/
+2026-11-22 21:40:42,211 level=WARNING logger=django.request msg=Not Found: /api/stores/himalayan-craft/checkout/khalti-verify/
+ok
+test_store_create_with_category_location_and_membership (stores.tests.test_isolation.TenantIsolationTests.test_store_create_with_category_location_and_membership)
+Slice 2: Verifies store creation with category, city, province, ... ok
+test_store_field_never_writable_from_payload (stores.tests.test_isolation.TenantIsolationTests.test_store_field_never_writable_from_payload) ... ok
+test_store_slug_validation_reserved_and_format (stores.tests.test_isolation.TenantIsolationTests.test_store_slug_validation_reserved_and_format)
+Slice 2: Verifies reserved slugs and taken slugs return 400 or available: False. ... 2026-11-22 21:40:42,295 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:42,297 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+ok
+test_storefront_public_catalog_and_theme_isolation (stores.tests.test_isolation.TenantIsolationTests.test_storefront_public_catalog_and_theme_isolation)
+Slice 4: Verifies that public storefront metadata, catalog, and theme presets ... ok
+test_tenant_database_context_and_rls_switching (stores.tests.test_isolation.TenantIsolationTests.test_tenant_database_context_and_rls_switching)
+Verifies TenantDatabaseContext sets and resets thread-local tenant ID cleanly, ... skipped 'Skipping PostgreSQL RLS role-switching test on non-PostgreSQL engine (SQLite).'
+test_initiate_failures_return_502_with_atomic_rollback_and_no_fake_url (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_initiate_failures_return_502_with_atomic_rollback_and_no_fake_url) ... 2026-11-22 21:40:42,362 level=WARNING logger=shopcraft.payments msg=Khalti initiate non-200 or incomplete response: status_code=500 store_id=1 mode=TEST
+2026-11-22 21:40:42,362 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+2026-11-22 21:40:42,367 level=WARNING logger=shopcraft.payments msg=Khalti initiate error: error_class=Timeout store_id=1 mode=TEST
+2026-11-22 21:40:42,367 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+2026-11-22 21:40:42,372 level=WARNING logger=shopcraft.payments msg=Khalti initiate non-200 or incomplete response: status_code=200 store_id=1 mode=TEST
+2026-11-22 21:40:42,372 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+2026-11-22 21:40:42,377 level=WARNING logger=shopcraft.payments msg=Khalti initiate non-200 or incomplete response: status_code=200 store_id=1 mode=TEST
+2026-11-22 21:40:42,377 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+ok
+test_initiate_in_test_mode_without_key_fails_closed_when_mock_off (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_initiate_in_test_mode_without_key_fails_closed_when_mock_off) ... 2026-11-22 21:40:42,401 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/place/
+ok
+test_initiate_sandbox_success_and_paisa_units (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_initiate_sandbox_success_and_paisa_units) ... ok
+test_khalti_401_and_invalid_token_initiate_rolls_back_and_masks_secret (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_khalti_401_and_invalid_token_initiate_rolls_back_and_masks_secret) ... 2026-11-22 21:40:42,455 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+2026-11-22 21:40:42,460 level=ERROR logger=django.request msg=Bad Gateway: /api/stores/ktm-craft/checkout/place/
+ok
+test_khalti_401_lookup_logs_warning_and_returns_clear_message (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_khalti_401_lookup_logs_warning_and_returns_clear_message) ... 2026-11-22 21:40:42,489 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+ok
+test_live_mode_rejects_empty_and_sandbox_keys_and_never_uses_platform_key (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_live_mode_rejects_empty_and_sandbox_keys_and_never_uses_platform_key) ... 2026-11-22 21:40:42,563 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/place/
+2026-11-22 21:40:42,565 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+2026-11-22 21:40:42,566 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+2026-11-22 21:40:42,568 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+2026-11-22 21:40:42,569 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+2026-11-22 21:40:42,572 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/ktm-craft/settings/
+ok
+test_live_mode_targets_production_khalti_url (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_live_mode_targets_production_khalti_url) ... ok
+test_mock_mode_flow_and_strict_enforcement (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_mock_mode_flow_and_strict_enforcement) ... 2026-11-22 21:40:42,631 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+ok
+test_mock_mode_rejected_in_non_debug_non_test_environment (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_mock_mode_rejected_in_non_debug_non_test_environment) ... ok
+test_mock_sandbox_and_test_tokens_rejected_when_mock_mode_off (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_mock_sandbox_and_test_tokens_rejected_when_mock_mode_off) ... 2026-11-22 21:40:42,659 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-22 21:40:42,662 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-22 21:40:42,665 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+ok
+test_platform_sandbox_key_for_demos_never_used_in_live (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_platform_sandbox_key_for_demos_never_used_in_live) ... 2026-11-22 21:40:42,703 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/place/
+ok
+test_public_order_pay_retry_flow_and_guards (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_public_order_pay_retry_flow_and_guards) ... 2026-11-22 21:40:42,727 level=WARNING logger=django.request msg=Not Found: /api/stores/ktm-craft/public-orders/1/pay/
+2026-11-22 21:40:42,729 level=WARNING logger=django.request msg=Not Found: /api/stores/ktm-craft/public-orders/1/pay/
+2026-11-22 21:40:42,734 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-22 21:40:42,739 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/public-orders/1/pay/
+ok
+test_test_mode_accepts_live_prefixed_sandbox_key_and_selects_sandbox_url (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_test_mode_accepts_live_prefixed_sandbox_key_and_selects_sandbox_url) ... ok
+test_verify_amount_mismatch_marks_payment_failed (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_verify_amount_mismatch_marks_payment_failed) ... 2026-11-22 21:40:42,803 level=WARNING logger=shopcraft.payments msg=Khalti payment amount mismatch: store_id=1 order_id=1 expected_paisa=130000 received_paisa=5000
+2026-11-22 21:40:42,804 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+ok
+test_verify_canceled_expired_refunded_mark_payment_failed (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_verify_canceled_expired_refunded_mark_payment_failed) ... 2026-11-22 21:40:42,830 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-22 21:40:42,834 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-22 21:40:42,840 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+ok
+test_verify_completed_match_ignores_tampered_client_fields (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_verify_completed_match_ignores_tampered_client_fields) ... ok
+test_verify_cross_tenant_returns_404 (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_verify_cross_tenant_returns_404) ... 2026-11-22 21:40:42,895 level=WARNING logger=django.request msg=Not Found: /api/stores/pokhara-loom/checkout/khalti-verify/
+ok
+test_verify_idempotency_and_forward_status_preservation (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_verify_idempotency_and_forward_status_preservation) ... ok
+test_verify_pending_and_initiated_return_202_without_failing_order (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_verify_pending_and_initiated_return_202_without_failing_order) ... ok
+test_verify_rejects_pidx_mismatch_and_sandbox_x_without_modifying_order (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_verify_rejects_pidx_mismatch_and_sandbox_x_without_modifying_order) ... 2026-11-22 21:40:42,986 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-22 21:40:42,989 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-craft/checkout/khalti-verify/
+ok
+test_verify_unknown_error_network_malformed_returns_503_unchanged (stores.tests.test_khalti.KhaltiHardenedIntegrationTests.test_verify_unknown_error_network_malformed_returns_503_unchanged) ... 2026-11-22 21:40:43,015 level=WARNING logger=shopcraft.payments msg=Khalti lookup error: error_class=Timeout store_id=1 mode=TEST
+2026-11-22 21:40:43,015 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-22 21:40:43,018 level=WARNING logger=shopcraft.payments msg=Khalti lookup non-200 response: status_code=502 store_id=1 mode=TEST
+2026-11-22 21:40:43,018 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-22 21:40:43,022 level=WARNING logger=shopcraft.payments msg=Khalti lookup error: error_class=ValueError store_id=1 mode=TEST
+2026-11-22 21:40:43,022 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+2026-11-22 21:40:43,025 level=WARNING logger=shopcraft.payments msg=Khalti lookup returned unknown status='UnexpectedStatus' store_id=1 mode=TEST
+2026-11-22 21:40:43,025 level=ERROR logger=django.request msg=Service Unavailable: /api/stores/ktm-craft/checkout/khalti-verify/
+ok
+test_cart_quote_checkout_and_order_tracking_constant_queries_and_no_store (stores.tests.test_performance.HotEndpointPerformanceAndCachingTests.test_cart_quote_checkout_and_order_tracking_constant_queries_and_no_store) ... ok
+test_otp_request_verify_and_merchant_lists_query_bounds (stores.tests.test_performance.HotEndpointPerformanceAndCachingTests.test_otp_request_verify_and_merchant_lists_query_bounds) ... ok
+test_public_storefront_reads_query_counts_and_cache_headers (stores.tests.test_performance.HotEndpointPerformanceAndCachingTests.test_public_storefront_reads_query_counts_and_cache_headers) ... ok
+test_cap_owned_stores_per_user_at_three (stores.tests.test_store_creation.MerchantStoreCreationAndSignupTests.test_cap_owned_stores_per_user_at_three)
+A single merchant user cannot own more than 3 stores. ... 2026-11-22 21:40:43,233 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+ok
+test_check_slug_rate_limited_per_ip (stores.tests.test_store_creation.MerchantStoreCreationAndSignupTests.test_check_slug_rate_limited_per_ip)
+The /api/stores/check-slug/ endpoint is rate-limited per IP using salted hash. ... 2026-11-22 21:40:43,296 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/check-slug/
+ok
+test_google_user_creates_own_shop_and_cannot_access_other_stores (stores.tests.test_store_creation.MerchantStoreCreationAndSignupTests.test_google_user_creates_own_shop_and_cannot_access_other_stores)
+A merchant who signs in with Google (verified email) can create their own shop, ... 2026-11-22 21:40:43,328 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/existing-store/products/
+2026-11-22 21:40:43,335 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/existing-store/products/
+ok
+test_otp_verified_user_creates_shop_and_gains_owner_membership (stores.tests.test_store_creation.MerchantStoreCreationAndSignupTests.test_otp_verified_user_creates_shop_and_gains_owner_membership)
+A merchant who verifies via Email OTP can create a shop. ... 2026-11-22 21:40:43,366 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/existing-store/products/
+ok
+test_per_ip_store_creation_rate_limit (stores.tests.test_store_creation.MerchantStoreCreationAndSignupTests.test_per_ip_store_creation_rate_limit)
+Store creation is rate-limited per IP (max 10 creations per 24 hours per IP). ... 2026-11-22 21:40:43,433 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/create/
+ok
+test_slug_validation_rules_and_reserved_words (stores.tests.test_store_creation.MerchantStoreCreationAndSignupTests.test_slug_validation_rules_and_reserved_words)
+Tests slug length (3-60), characters, reserved keywords, and duplicate handling. ... 2026-11-22 21:40:43,455 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,457 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,458 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,459 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,460 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,461 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,462 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,463 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,464 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,468 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,469 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+2026-11-22 21:40:43,471 level=WARNING logger=django.request msg=Bad Request: /api/stores/create/
+ok
+test_unverified_anonymous_cannot_create_shop (stores.tests.test_store_creation.MerchantStoreCreationAndSignupTests.test_unverified_anonymous_cannot_create_shop)
+Unauthenticated / anonymous requests must be rejected immediately. ... 2026-11-22 21:40:43,492 level=WARNING logger=django.request msg=Unauthorized: /api/stores/create/
+ok
+test_demo_seed_commands_still_work (stores.tests.test_store_creation.StoreCreationNoPlaceholdersTests.test_demo_seed_commands_still_work) ... ok
+test_editing_product_name_price_or_image_clears_starter_default (stores.tests.test_store_creation.StoreCreationNoPlaceholdersTests.test_editing_product_name_price_or_image_clears_starter_default) ... ok
+test_migration_starter_pattern_conservatism_and_shipping_backfill (stores.tests.test_store_creation.StoreCreationNoPlaceholdersTests.test_migration_starter_pattern_conservatism_and_shipping_backfill) ... ok
+test_new_store_created_with_zero_products_empty_banner_and_empty_category (stores.tests.test_store_creation.StoreCreationNoPlaceholdersTests.test_new_store_created_with_zero_products_empty_banner_and_empty_category) ... ok
+test_public_serializer_exposes_has_khalti_boolean_only_never_key_material (stores.tests.test_store_creation.StoreCreationNoPlaceholdersTests.test_public_serializer_exposes_has_khalti_boolean_only_never_key_material) ... ok
+test_shipping_configured_flag_and_checkout_quote_fallback (stores.tests.test_store_creation.StoreCreationNoPlaceholdersTests.test_shipping_configured_flag_and_checkout_quote_fallback) ... ok
+test_account_detail_get_and_cross_store_isolation (stores.tests.test_storefront_account_profile.StorefrontAccountProfileAndOrdersTests.test_account_detail_get_and_cross_store_isolation)
+GET /api/stores/<slug>/account/ returns customer profile for THAT store only. ... ok
+test_account_detail_patch_validation_and_update (stores.tests.test_storefront_account_profile.StorefrontAccountProfileAndOrdersTests.test_account_detail_patch_validation_and_update)
+PATCH /api/stores/<slug>/account/: ... 2026-11-22 21:40:43,843 level=WARNING logger=django.request msg=Bad Request: /api/stores/ktm-roasters/account/
+ok
+test_account_endpoints_require_authentication (stores.tests.test_storefront_account_profile.StorefrontAccountProfileAndOrdersTests.test_account_endpoints_require_authentication)
+Unauthenticated requests must be rejected with 401 or 403. ... 2026-11-22 21:40:43,876 level=WARNING logger=django.request msg=Unauthorized: /api/stores/ktm-roasters/account/
+2026-11-22 21:40:43,877 level=WARNING logger=django.request msg=Unauthorized: /api/stores/ktm-roasters/account/
+2026-11-22 21:40:43,877 level=WARNING logger=django.request msg=Unauthorized: /api/stores/ktm-roasters/account/orders/
+ok
+test_customer_orders_list_scoping_and_privacy (stores.tests.test_storefront_account_profile.StorefrontAccountProfileAndOrdersTests.test_customer_orders_list_scoping_and_privacy)
+GET /api/stores/<slug>/account/orders/: ... ok
+test_lookup_only_does_not_autoprovision_merchant_session (stores.tests.test_storefront_account_profile.StorefrontAccountProfileAndOrdersTests.test_lookup_only_does_not_autoprovision_merchant_session)
+GET /api/stores/<slug>/account/?lookup_only=1 returns customer=None ... ok
+test_merchant_customers_has_account_indicator (stores.tests.test_storefront_account_profile.StorefrontAccountProfileAndOrdersTests.test_merchant_customers_has_account_indicator)
+Merchant customer list includes read-only has_account boolean without sensitive leak. ... ok
+test_async_on_commit_commits_otp_before_executor_submit_and_skips_on_rollback (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_async_on_commit_commits_otp_before_executor_submit_and_skips_on_rollback)
+Verifies async path registers via transaction.on_commit -> ThreadPoolExecutor only after commit. ... ok
+test_cleanup_deletes_only_rows_older_than_24h (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_cleanup_deletes_only_rows_older_than_24h)
+Opportunistic cleanup deletes rows older than 24 hours while keeping rate limit history. ... ok
+test_hmac_hashing_and_legacy_fallback (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_hmac_hashing_and_legacy_fallback)
+Tests domain-separated HMAC-SHA256 digest and backward-compatible legacy hash fallback. ... ok
+test_otp_rate_limiting_cooldown_and_email_limit (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_otp_rate_limiting_cooldown_and_email_limit)
+Enforces 60s cooldown on immediate resend and max 3 requests per email per 15 minutes. ... 2026-11-22 21:40:45,628 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+2026-11-22 21:40:45,635 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+ok
+test_otp_rate_limiting_ip_limit (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_otp_rate_limiting_ip_limit)
+Max 10 requests per IP per hour (honoring rightmost X-Forwarded-For on Heroku). ... 2026-11-22 21:40:45,658 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+ok
+test_otp_replay_expired_and_max_attempts (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_otp_replay_expired_and_max_attempts)
+OTP cannot be replayed, used after expiry, or used after 5 wrong attempts. ... ok
+test_otp_request_email_send_failure_returns_generic_response_and_masks_logs (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_otp_request_email_send_failure_returns_generic_response_and_masks_logs)
+When mail backend raises an error, response remains generic 200 and logs mask email/code. ... ok
+test_otp_request_store_branded_email_and_optional_reply_to (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_otp_request_store_branded_email_and_optional_reply_to)
+OTP email must use formataddr((store.name, DEFAULT_FROM_EMAIL)) and conditional reply_to. ... ok
+test_otp_verification_success_links_customer_and_logs_in (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_otp_verification_success_links_customer_and_logs_in)
+Valid OTP creates User, logs in session, and links Customer for this store only. ... 2026-11-22 21:40:45,792 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-artisans/overview/
+ok
+test_resend_api_payload_headers_timeout_and_zero_otp_leak (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_resend_api_payload_headers_timeout_and_zero_otp_leak)
+Verifies Resend API POST format, <=5s timeout, no OTP in response/logs when DEBUG=False. ... ok
+test_storefront_otp_request_rate_limit_counters_persist (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_storefront_otp_request_rate_limit_counters_persist)
+OTP request rate-limit counters persist across failed and rate-limited requests. ... 2026-11-22 21:40:45,837 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+2026-11-22 21:40:45,847 level=WARNING logger=django.request msg=Too Many Requests: /api/stores/himalayan-artisans/account/otp/request/
+ok
+test_storefront_otp_verify_six_attempts_persist_and_lockout (stores.tests.test_storefront_otp.StorefrontOTPHMacAndRateLimitTests.test_storefront_otp_verify_six_attempts_persist_and_lockout)
+Failed OTP verify attempts persist attempt_count and lock out on the 6th attempt. ... 2026-11-22 21:40:45,875 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-22 21:40:45,876 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-22 21:40:45,878 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-22 21:40:45,880 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-22 21:40:45,882 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+2026-11-22 21:40:45,883 level=WARNING logger=django.request msg=Bad Request: /api/stores/himalayan-artisans/account/otp/verify/
+ok
+test_all_store_fk_tables_in_database_enforce_rls (stores.tests.test_hardening.PostgresForceRLSAndPooledTransactionTests.test_all_store_fk_tables_in_database_enforce_rls)
+Dynamically inspects PostgreSQL information_schema to find every single table in ... skipped 'PostgreSQL-specific dynamic schema check.'
+2026-11-22 21:40:45,901 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_force_rls_and_non_superuser_role_verified_on_postgres (stores.tests.test_hardening.PostgresForceRLSAndPooledTransactionTests.test_force_rls_and_non_superuser_role_verified_on_postgres) ... skipped 'PostgreSQL-specific catalog inspection.'
+2026-11-22 21:40:45,918 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_set_local_atomic_guard_and_two_tenant_pooled_connection_isolation (stores.tests.test_hardening.PostgresForceRLSAndPooledTransactionTests.test_set_local_atomic_guard_and_two_tenant_pooled_connection_isolation) ... 2026-11-22 21:40:45,948 level=WARNING logger=django.request msg=Not Found: /api/stores/does-not-exist-xyz/catalog/
+ok
+2026-11-22 21:40:45,960 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_concurrent_store_creations_serialize_under_select_for_update_cap (stores.tests.test_hardening.StoreCreationConcurrencyTests.test_concurrent_store_creations_serialize_under_select_for_update_cap) ... skipped 'Row locking select_for_update concurrency requires PostgreSQL.'
+2026-11-22 21:40:45,975 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_deletion_on_replace_strictly_scoped_to_own_store (stores.tests.test_hardening.ThemeMediaSignedUploadTests.test_deletion_on_replace_strictly_scoped_to_own_store) ... 2026-11-22 21:40:46,000 level=INFO logger=shopcraft.media msg=Successfully deleted old Cloudinary asset: public_id=shopcraft/stores/7_himalayan-teas/theme/old_banner store_id=7
+ok
+2026-11-22 21:40:46,018 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_key_includes_store_id_and_returns_f_auto_q_auto_cloudinary_url (stores.tests.test_hardening.ThemeMediaSignedUploadTests.test_key_includes_store_id_and_returns_f_auto_q_auto_cloudinary_url) ... ok
+2026-11-22 21:40:46,110 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_per_user_rate_limiting_enforced (stores.tests.test_hardening.ThemeMediaSignedUploadTests.test_per_user_rate_limiting_enforced) ... 2026-11-22 21:40:46,231 level=WARNING logger=django.request msg=Too Many Requests: /api/merchant/stores/himalayan-teas/media/theme/upload/
+ok
+2026-11-22 21:40:46,243 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_pillow_image_verification_rejects_spoofed_and_svg (stores.tests.test_hardening.ThemeMediaSignedUploadTests.test_pillow_image_verification_rejects_spoofed_and_svg) ... 2026-11-22 21:40:46,347 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+2026-11-22 21:40:46,351 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+2026-11-22 21:40:46,354 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+ok
+2026-11-22 21:40:46,365 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_production_guard_blocks_local_uploads_when_debug_false (stores.tests.test_hardening.ThemeMediaSignedUploadTests.test_production_guard_blocks_local_uploads_when_debug_false) ... 2026-11-22 21:40:46,396 level=ERROR logger=django.request msg=Service Unavailable: /api/merchant/stores/himalayan-teas/media/theme/upload/
+ok
+2026-11-22 21:40:46,408 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_settings_strict_cdn_validation_field_level_400 (stores.tests.test_hardening.ThemeMediaSignedUploadTests.test_settings_strict_cdn_validation_field_level_400) ... 2026-11-22 21:40:46,433 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/settings/
+2026-11-22 21:40:46,435 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/settings/
+ok
+2026-11-22 21:40:46,453 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_size_limits_hero_and_logo (stores.tests.test_hardening.ThemeMediaSignedUploadTests.test_size_limits_hero_and_logo) ... 2026-11-22 21:40:46,489 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+2026-11-22 21:40:46,499 level=WARNING logger=django.request msg=Bad Request: /api/merchant/stores/himalayan-teas/media/theme/upload/
+ok
+2026-11-22 21:40:46,511 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_unauthenticated_and_non_member_access_returns_404 (stores.tests.test_hardening.ThemeMediaSignedUploadTests.test_unauthenticated_and_non_member_access_returns_404) ... 2026-11-22 21:40:46,534 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-teas/media/theme/upload/
+2026-11-22 21:40:46,557 level=WARNING logger=django.request msg=Not Found: /api/merchant/stores/himalayan-teas/media/theme/upload/
+ok
+2026-11-22 21:40:46,566 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_set_local_bypass_rls_on_does_not_reveal_other_tenants_data (stores.tests.test_hardening.UserMembershipContextAndPoolerLeakageTests.test_set_local_bypass_rls_on_does_not_reveal_other_tenants_data)
+Critical test: executing SET LOCAL app.bypass_rls = 'on' as the runtime role ... skipped 'PostgreSQL-specific RLS check.'
+2026-11-22 21:40:46,581 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_user_membership_context_cleans_up_on_commit_and_does_not_leak (stores.tests.test_hardening.UserMembershipContextAndPoolerLeakageTests.test_user_membership_context_cleans_up_on_commit_and_does_not_leak)
+After exiting UserMembershipContext, app.current_user_id is completely cleared. ... skipped 'PostgreSQL-specific setting check.'
+2026-11-22 21:40:46,596 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_user_membership_context_nested_atomic_and_rollback_leakage (stores.tests.test_hardening.UserMembershipContextAndPoolerLeakageTests.test_user_membership_context_nested_atomic_and_rollback_leakage)
+Verifies that an inner atomic block rollback clears app.current_user_id. ... skipped 'PostgreSQL-specific setting check.'
+2026-11-22 21:40:46,612 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_user_membership_context_requires_positive_integer_user_id (stores.tests.test_hardening.UserMembershipContextAndPoolerLeakageTests.test_user_membership_context_requires_positive_integer_user_id) ... ok
+2026-11-22 21:40:46,628 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_user_membership_policy_allows_own_memberships_only (stores.tests.test_hardening.UserMembershipContextAndPoolerLeakageTests.test_user_membership_policy_allows_own_memberships_only)
+User A sees only Store A membership; User B sees only Store B membership. ... skipped 'PostgreSQL-specific RLS check.'
+2026-11-22 21:40:46,644 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+test_parallel_store_requests_preserve_strict_isolation_with_error_paths (stores.tests.test_rls_concurrency.TenantRLSConcurrencyTests.test_parallel_store_requests_preserve_strict_isolation_with_error_paths)
+Spawns 8 concurrent worker threads firing 80 requests to Store Alpha, ... 2026-11-22 21:40:46,949 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:47,143 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:47,164 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:47,233 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:47,279 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:47,628 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:47,693 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:47,739 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:47,893 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:47,940 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:48,029 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:48,113 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:48,194 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:48,456 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:48,501 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:48,557 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:48,661 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:48,870 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+2026-11-22 21:40:48,911 level=WARNING logger=django.request msg=Not Found: /api/stores/non-existent-store-slug/catalog/
+ok
+2026-11-22 21:40:48,924 level=INFO logger=core.tenant_context msg=Database is not PostgreSQL; skipping Postgres RLS application.
+
+----------------------------------------------------------------------
+Ran 165 tests in 9.684s
+
+OK (skipped=10)
+Destroying test database for alias 'default' ('file:memorydb_default?mode=memory&cache=shared')...
+
