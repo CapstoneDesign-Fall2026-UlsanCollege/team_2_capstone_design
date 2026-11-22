@@ -66,7 +66,7 @@ class Command(BaseCommand):
                         "elevation": "2,000m",
                         "origin": "Kanyam, Ilam",
                         "tasting_notes": ["Muscatel", "Wild Honey", "Roasted Malt"],
-                        "process": "Hand-rolled orthodox orthodox",
+                        "process": "Hand-rolled orthodox",
                     },
                     "allow_one_time": True,
                     "is_active": True,
