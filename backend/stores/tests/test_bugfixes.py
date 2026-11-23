@@ -933,3 +933,93 @@ class AnalyticsAndRevenueAccuracyBugTests(TestCase):
             self.pending_order.refresh_from_db()
             self.assertEqual(self.discount.used_count, 0)
             self.assertFalse(self.pending_order.discount_redeemed)
+
+
+class OrderUndoTransitionGuardBugTests(TestCase):
+    """Regression tests for Bug 6: guard PROCESSING undo transitions by payment_status and payment_method."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            email="owner.undo@example.com",
+            full_name="Undo Owner",
+        )
+        self.store = Store.objects.create(
+            name="Undo Store",
+            slug="undo-store",
+            is_active=True,
+        )
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=self.owner, role="OWNER")
+            self.customer = Customer.objects.create(
+                store=self.store,
+                full_name="Undo Shopper",
+                email="undo.shopper@example.com",
+                phone="9800000002",
+            )
+            self.cod_processing = Order.objects.create(
+                store=self.store,
+                customer=self.customer,
+                order_number="#UNDO-COD-1",
+                status="PROCESSING",
+                payment_method="COD",
+                payment_status="UNPAID",
+                subtotal_minor=50000,
+                shipping_minor=10000,
+                discount_minor=0,
+                total_minor=60000,
+                shipping_address_snapshot={"province": "Bagmati", "district": "Kathmandu"},
+            )
+            self.paid_processing = Order.objects.create(
+                store=self.store,
+                customer=self.customer,
+                order_number="#UNDO-KHALTI-2",
+                status="PROCESSING",
+                payment_method="KHALTI",
+                payment_status="PAID",
+                subtotal_minor=50000,
+                shipping_minor=10000,
+                discount_minor=0,
+                total_minor=60000,
+                shipping_address_snapshot={"province": "Bagmati", "district": "Kathmandu"},
+            )
+
+    def test_cannot_undo_unpaid_cod_processing_order_into_paid(self):
+        self.client.force_authenticate(user=self.owner)
+        bad_res = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/orders/{self.cod_processing.id}/transition/",
+            {"to_status": "PAID"},
+            format="json",
+        )
+        self.assertEqual(bad_res.status_code, status.HTTP_400_BAD_REQUEST)
+        with TenantDatabaseContext(self.store.id):
+            self.cod_processing.refresh_from_db()
+            self.assertEqual(self.cod_processing.status, "PROCESSING")
+
+        good_res = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/orders/{self.cod_processing.id}/transition/",
+            {"to_status": "CONFIRMED"},
+            format="json",
+        )
+        self.assertEqual(good_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(good_res.json()["status"], "CONFIRMED")
+
+    def test_cannot_undo_paid_online_processing_order_into_confirmed(self):
+        self.client.force_authenticate(user=self.owner)
+        bad_res = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/orders/{self.paid_processing.id}/transition/",
+            {"to_status": "CONFIRMED"},
+            format="json",
+        )
+        self.assertEqual(bad_res.status_code, status.HTTP_400_BAD_REQUEST)
+        with TenantDatabaseContext(self.store.id):
+            self.paid_processing.refresh_from_db()
+            self.assertEqual(self.paid_processing.status, "PROCESSING")
+
+        good_res = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/orders/{self.paid_processing.id}/transition/",
+            {"to_status": "PAID"},
+            format="json",
+        )
+        self.assertEqual(good_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(good_res.json()["status"], "PAID")

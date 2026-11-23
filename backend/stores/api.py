@@ -2060,6 +2060,22 @@ class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
+        if is_undo and current == "PROCESSING":
+            if target_status == "PAID" and order.payment_status != "PAID":
+                return Response(
+                    {"error": "Cannot undo an unpaid order into PAID status."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            if (
+                target_status == "CONFIRMED"
+                and order.payment_method != "COD"
+                and order.payment_status == "PAID"
+            ):
+                return Response(
+                    {"error": "Cannot undo a paid online order into COD CONFIRMED status."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
         with transaction.atomic():
             old_status = order.status
             order.status = target_status
