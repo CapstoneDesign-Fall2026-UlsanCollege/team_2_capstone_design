@@ -2,6 +2,7 @@ import logging
 from datetime import timedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.validators import URLValidator
 from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Prefetch, Q, Sum
 from django.http import Http404
@@ -301,6 +302,7 @@ class VariantSerializer(StoreScopedSerializerMixin):
 
 class ProductSerializer(StoreScopedSerializerMixin):
     variants = serializers.SerializerMethodField()
+    image_url = serializers.CharField(max_length=200, required=False, allow_blank=True)
 
     class Meta:
         model = Product
@@ -317,6 +319,25 @@ class ProductSerializer(StoreScopedSerializerMixin):
             "variants",
         ]
         read_only_fields = ["id"]
+
+    def validate_image_url(self, value):
+        cleaned = (value or "").strip()
+        if not cleaned:
+            return ""
+        if cleaned.startswith("/images/") or cleaned.startswith("/uploads/"):
+            if (
+                ".." in cleaned
+                or cleaned.startswith("//")
+                or any(c.isspace() or ord(c) < 32 for c in cleaned)
+            ):
+                raise serializers.ValidationError("Enter a valid store asset path.")
+            return cleaned
+        validator = URLValidator(schemes=["http", "https"])
+        try:
+            validator(cleaned)
+        except ValidationError:
+            raise serializers.ValidationError("Enter a valid URL or store asset path.")
+        return cleaned
 
     def get_variants(self, obj):
         if hasattr(obj, "prefetched_active_variants"):

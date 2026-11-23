@@ -542,3 +542,98 @@ class PromoDiscountKhaltiReleaseBug64Tests(TestCase):
             self.assertFalse(Discount.objects.for_store(self.store).filter(id=self.discount.id).exists())
             order = Order.objects.for_store(self.store).get(id=order_id)
             self.assertIsNone(order.discount_id)
+
+
+class ProductImageUrlBugTests(TestCase):
+    """Regression tests for Bug 1: allow relative store asset paths in ProductSerializer.image_url."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            email="owner.imgurl@example.com",
+            full_name="ImgUrl Owner",
+        )
+        self.store = Store.objects.create(
+            name="ImgUrl Store",
+            slug="imgurl-store",
+            is_active=True,
+        )
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=self.owner, role="OWNER")
+            self.seeded_product = Product.objects.create(
+                store=self.store,
+                name="Gulmi Reserve",
+                slug="gulmi-reserve",
+                image_url="/images/products/gulmi-reserve.svg",
+                is_active=True,
+            )
+
+    def test_patch_seeded_product_with_relative_image_url_succeeds(self):
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.patch(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.seeded_product.id}/",
+            {
+                "name": "Gulmi Reserve Updated",
+                "image_url": "/images/products/gulmi-reserve.svg",
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.json()["name"], "Gulmi Reserve Updated")
+        self.assertEqual(res.json()["image_url"], "/images/products/gulmi-reserve.svg")
+
+    def test_create_product_with_local_upload_and_https_url_succeeds(self):
+        self.client.force_authenticate(user=self.owner)
+        res_local = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/",
+            {
+                "name": "Local Upload Product",
+                "image_url": f"/uploads/stores/{self.store.slug}/products/prod_1.jpg",
+                "initial_price_minor": 50000,
+            },
+            format="json",
+        )
+        self.assertEqual(res_local.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            res_local.json()["image_url"],
+            f"/uploads/stores/{self.store.slug}/products/prod_1.jpg",
+        )
+
+        res_https = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/",
+            {
+                "name": "Cloud Product",
+                "image_url": "https://res.cloudinary.com/demo/image/upload/item.jpg",
+                "initial_price_minor": 60000,
+            },
+            format="json",
+        )
+        self.assertEqual(res_https.status_code, status.HTTP_201_CREATED)
+        self.assertEqual(
+            res_https.json()["image_url"],
+            "https://res.cloudinary.com/demo/image/upload/item.jpg",
+        )
+
+    def test_rejects_unsafe_and_invalid_image_urls(self):
+        self.client.force_authenticate(user=self.owner)
+        invalid_urls = [
+            "javascript:alert(1)",
+            "//evil.com/x.png",
+            "/uploads/../etc/passwd",
+            "not-a-url",
+        ]
+        for bad_url in invalid_urls:
+            res = self.client.post(
+                f"/api/merchant/stores/{self.store.slug}/products/",
+                {
+                    "name": "Bad Image Product",
+                    "image_url": bad_url,
+                },
+                format="json",
+            )
+            self.assertEqual(
+                res.status_code,
+                status.HTTP_400_BAD_REQUEST,
+                f"Expected 400 for image_url={bad_url!r}, got {res.status_code}",
+            )
+            self.assertIn("image_url", res.json())
