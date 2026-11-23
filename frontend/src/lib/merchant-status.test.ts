@@ -1,4 +1,26 @@
-import { describe, expect, it } from "vitest";
+import React from "react";
+import { renderToStaticMarkup } from "react-dom/server";
+import { describe, expect, it, vi } from "vitest";
+
+vi.mock("@radix-ui/react-dialog", () => ({
+  Root: ({ open, children }: { open?: boolean; children?: React.ReactNode }) =>
+    open ? React.createElement("div", { "data-dialog-root": "true" }, children) : null,
+  Portal: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement(React.Fragment, null, children),
+  Overlay: () => React.createElement("div"),
+  Content: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement("div", null, children),
+  Title: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement("h2", null, children),
+  Description: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement("p", null, children),
+  Close: ({ children }: { children?: React.ReactNode }) =>
+    React.createElement("div", null, children),
+}));
+
+import type { OrderDetail } from "./api";
+import { OrderQueueTable } from "@/components/merchant/OrderQueueTable";
+import { OrderDetailSheet } from "@/components/merchant/OrderDetailSheet";
 import {
   COD_DELIVERED_LABEL,
   codToCollectMinor,
@@ -9,6 +31,7 @@ import {
   isCodWithCourier,
   isKhaltiProblem,
   needsDispatch,
+  orderTerminalActionView,
   packingSlipPaymentView,
   paymentView,
   resolveOrdersStatusTab,
@@ -208,5 +231,154 @@ describe("packingSlipPaymentView (#65)", () => {
       expect(view.heading).toBe("ORDER CANCELLED");
       expect(view.shouldCollectCash).toBe(false);
     }
+  });
+});
+
+function makeOrderDetail(overrides: Partial<OrderDetail> = {}): OrderDetail {
+  return {
+    id: 10,
+    order_number: "#BM-2026-0010",
+    order_type: "ONE_TIME",
+    status: "DELIVERED",
+    payment_method: "KHALTI",
+    payment_status: "PAID",
+    payment_ref: "pidx_10",
+    subtotal_minor: 100000,
+    shipping_minor: 10000,
+    discount_minor: 0,
+    total_minor: 110000,
+    currency: "NPR",
+    shipping_address_snapshot: {
+      recipient_name: "Sita Rai",
+      phone: "9801234567",
+      province: "Bagmati",
+      district: "Kathmandu",
+      municipality: "Kathmandu Metro",
+      ward: "3",
+      street_landmark: "Thamel",
+    },
+    created_at: "2026-11-20T10:00:00Z",
+    items: [
+      {
+        id: 1,
+        product_name_snapshot: "Gulmi Reserve",
+        variant_label_snapshot: "250g",
+        unit_price_minor: 100000,
+        quantity: 1,
+        line_total_minor: 100000,
+      },
+    ],
+    events: [],
+    customer_name: "Sita Rai",
+    customer_email: "sita@example.com",
+    customer_phone: "9801234567",
+    ...overrides,
+  };
+}
+
+describe("orderTerminalActionView and merchant order queue/drawer terminal labels", () => {
+  it("maps terminal and awaiting-payment statuses accurately", () => {
+    expect(orderTerminalActionView(khalti("DELIVERED", "PAID"))).toEqual({
+      kind: "delivered",
+      tableLabel: "Done",
+      sheetLabel: "Order Completed & Delivered",
+      tone: "success",
+    });
+    expect(orderTerminalActionView(cod("CANCELLED"))).toEqual({
+      kind: "cancelled",
+      tableLabel: "Cancelled",
+      sheetLabel: "Order Cancelled",
+      tone: "error",
+    });
+    expect(orderTerminalActionView(khalti("PAYMENT_FAILED", "FAILED"))).toEqual({
+      kind: "failed",
+      tableLabel: "Failed",
+      sheetLabel: "Payment Failed — Awaiting Retry",
+      tone: "error",
+    });
+    expect(orderTerminalActionView(khalti("PENDING_PAYMENT", "UNPAID"))).toEqual({
+      kind: "pending",
+      tableLabel: "Awaiting Pay",
+      sheetLabel: "Awaiting Online Payment Verification",
+      tone: "warning",
+    });
+  });
+
+  it("renders non-delivered terminal states accurately in OrderQueueTable and OrderDetailSheet", () => {
+    const cancelledCod = makeOrderDetail({
+      id: 11,
+      order_number: "#BM-2026-0011",
+      status: "CANCELLED",
+      payment_method: "COD",
+      payment_status: "COD_PENDING",
+    });
+    const failedKhalti = makeOrderDetail({
+      id: 12,
+      order_number: "#BM-2026-0012",
+      status: "PAYMENT_FAILED",
+      payment_method: "KHALTI",
+      payment_status: "FAILED",
+    });
+    const pendingKhalti = makeOrderDetail({
+      id: 13,
+      order_number: "#BM-2026-0013",
+      status: "PENDING_PAYMENT",
+      payment_method: "KHALTI",
+      payment_status: "UNPAID",
+    });
+    const deliveredOrder = makeOrderDetail({
+      id: 14,
+      order_number: "#BM-2026-0014",
+      status: "DELIVERED",
+      payment_method: "KHALTI",
+      payment_status: "PAID",
+    });
+
+    for (const [ord, expectedLabel] of [
+      [cancelledCod, "Order Cancelled"],
+      [failedKhalti, "Payment Failed — Awaiting Retry"],
+      [pendingKhalti, "Awaiting Online Payment Verification"],
+    ] as const) {
+      const tableHtml = renderToStaticMarkup(
+        React.createElement(OrderQueueTable, {
+          orders: [ord],
+          onSelectOrder: () => {},
+          onQuickAdvance: () => {},
+        })
+      );
+      expect(tableHtml).not.toContain(">Done<");
+      expect(tableHtml).not.toContain("COD Due");
+
+      const sheetHtml = renderToStaticMarkup(
+        React.createElement(OrderDetailSheet, {
+          order: ord,
+          open: true,
+          onOpenChange: () => {},
+          onAdvanceStatus: () => {},
+        })
+      );
+      expect(sheetHtml).not.toContain("Order Completed &amp; Delivered");
+      expect(sheetHtml).not.toContain("Order Completed & Delivered");
+      expect(sheetHtml).toContain(expectedLabel);
+    }
+
+    const deliveredTableHtml = renderToStaticMarkup(
+      React.createElement(OrderQueueTable, {
+        orders: [deliveredOrder],
+        onSelectOrder: () => {},
+        onQuickAdvance: () => {},
+      })
+    );
+    expect(deliveredTableHtml).toContain(">Done<");
+
+    const deliveredSheetHtml = renderToStaticMarkup(
+      React.createElement(OrderDetailSheet, {
+        order: deliveredOrder,
+        open: true,
+        onOpenChange: () => {},
+        onAdvanceStatus: () => {},
+      })
+    );
+    expect(deliveredSheetHtml).toContain("Order Completed &amp; Delivered");
   });
 });

@@ -7,8 +7,10 @@ import {
   Clock,
   CreditCard,
   ShoppingBag,
+  XCircle,
 } from "lucide-react";
 import { formatNpr, OrderDetail } from "@/lib/api";
+import { orderTerminalActionView, paymentView } from "@/lib/merchant-status";
 
 export interface OrderQueueTableProps {
   orders: OrderDetail[];
@@ -73,8 +75,9 @@ export function OrderQueueTable({
           <tbody className="divide-y divide-[var(--border)]">
             {orders.map((order) => {
               const statusUpper = order.status.toUpperCase();
-              const isPaid = order.payment_status === "PAID";
               const isCOD = order.payment_method === "COD";
+              const payBadge = paymentView(order);
+              const terminalAction = orderTerminalActionView(order);
 
               const recipientName =
                 order.customer_name ||
@@ -130,19 +133,25 @@ export function OrderQueueTable({
 
                   {/* Payment Badge */}
                   <td className="py-3.5 px-4 whitespace-nowrap">
-                    {isPaid ? (
+                    {payBadge.tone === "success" ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-mono font-medium">
                         <CreditCard className="w-2.5 h-2.5" />
-                        <span>Paid</span>
+                        <span>{payBadge.label}</span>
+                      </span>
+                    ) : payBadge.tone === "error" ? (
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800 text-[10px] font-mono font-medium">
+                        <XCircle className="w-2.5 h-2.5" />
+                        <span>{payBadge.label}</span>
                       </span>
                     ) : isCOD ? (
                       <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[10px] font-mono font-medium">
                         <Banknote className="w-2.5 h-2.5" />
-                        <span>COD Due</span>
+                        <span>{payBadge.label}</span>
                       </span>
                     ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-zinc-100 text-zinc-600 dark:bg-zinc-800 dark:text-zinc-400 border border-zinc-200 dark:border-zinc-700 text-[10px] font-mono font-medium">
-                        <span>Unpaid</span>
+                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[10px] font-mono font-medium">
+                        <Clock className="w-2.5 h-2.5" />
+                        <span>{payBadge.label}</span>
                       </span>
                     )}
                   </td>
@@ -184,10 +193,20 @@ export function OrderQueueTable({
                       >
                         Deliver
                       </button>
-                    ) : (
+                    ) : terminalAction.kind === "delivered" ? (
                       <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-medium">
                         <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>Done</span>
+                        <span>{terminalAction.tableLabel}</span>
+                      </span>
+                    ) : terminalAction.kind === "cancelled" || terminalAction.kind === "failed" ? (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-red-600 dark:text-red-400 font-medium">
+                        <XCircle className="w-3.5 h-3.5" />
+                        <span>{terminalAction.tableLabel}</span>
+                      </span>
+                    ) : (
+                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-amber-600 dark:text-amber-400 font-medium">
+                        <Clock className="w-3.5 h-3.5" />
+                        <span>{terminalAction.tableLabel}</span>
                       </span>
                     )}
                   </td>

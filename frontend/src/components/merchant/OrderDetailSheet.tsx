@@ -17,10 +17,11 @@ import {
   Truck,
   User,
   X,
+  XCircle,
 } from "lucide-react";
 import { PackingSlipModal } from "./PackingSlipModal";
 import { formatNpr, OrderDetail } from "@/lib/api";
-import { paymentView } from "@/lib/merchant-status";
+import { orderTerminalActionView, paymentView } from "@/lib/merchant-status";
 
 export interface OrderDetailSheetProps {
   order: OrderDetail | null;
@@ -43,11 +44,19 @@ export function OrderDetailSheet({
   const [copiedPhone, setCopiedPhone] = useState<boolean>(false);
   const [trackingNote, setTrackingNote] = useState<string>("");
 
+  const currentOrderId = order?.id ?? null;
+  const [prevOrderId, setPrevOrderId] = useState<number | null>(currentOrderId);
+  if (currentOrderId !== prevOrderId) {
+    setPrevOrderId(currentOrderId);
+    setTrackingNote("");
+  }
+
   if (!order) return null;
 
   const statusUpper = order.status.toUpperCase();
   const isCOD = order.payment_method === "COD";
   const payBadge = paymentView(order);
+  const terminalAction = orderTerminalActionView(order);
 
   const customerPhone =
     order.customer_phone || order.shipping_address_snapshot?.phone || "";
@@ -83,6 +92,7 @@ export function OrderDetailSheet({
   const handleExecuteNextAction = () => {
     if (!nextStatus) return;
     onAdvanceStatus(order, nextStatus, trackingNote.trim() || undefined);
+    setTrackingNote("");
     onOpenChange(false);
   };
 
@@ -373,10 +383,20 @@ export function OrderDetailSheet({
                 <span>{actionLabel}</span>
                 <ArrowRight className="w-4 h-4" aria-hidden="true" />
               </button>
-            ) : (
+            ) : terminalAction.kind === "delivered" ? (
               <div className="w-full py-2.5 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-mono text-xs font-semibold text-center flex items-center justify-center gap-1.5">
                 <CheckCircle2 className="w-4 h-4" />
-                <span>Order Completed &amp; Delivered</span>
+                <span>{terminalAction.sheetLabel}</span>
+              </div>
+            ) : terminalAction.kind === "cancelled" || terminalAction.kind === "failed" ? (
+              <div className="w-full py-2.5 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-800 text-red-700 dark:text-red-400 font-mono text-xs font-semibold text-center flex items-center justify-center gap-1.5">
+                <XCircle className="w-4 h-4" />
+                <span>{terminalAction.sheetLabel}</span>
+              </div>
+            ) : (
+              <div className="w-full py-2.5 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 text-amber-700 dark:text-amber-400 font-mono text-xs font-semibold text-center flex items-center justify-center gap-1.5">
+                <Clock className="w-4 h-4" />
+                <span>{terminalAction.sheetLabel}</span>
               </div>
             )}
           </div>

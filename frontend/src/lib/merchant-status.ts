@@ -201,3 +201,60 @@ export function packingSlipPaymentView(o: OrderLike): PackingSlipPaymentView {
     totalLabel: "Total Unpaid",
   };
 }
+
+export interface OrderTerminalActionView {
+  kind: "delivered" | "cancelled" | "failed" | "pending";
+  tableLabel: string;
+  sheetLabel: string;
+  tone: ChipTone;
+}
+
+/** Terminal / non-advanceable action indicator for merchant queue table and detail drawer. */
+export function orderTerminalActionView(o: OrderLike): OrderTerminalActionView {
+  const statusUpper = (o.status || "").toUpperCase();
+  const paymentStatusUpper = (o.payment_status || "").toUpperCase();
+
+  if (statusUpper === "DELIVERED") {
+    return {
+      kind: "delivered",
+      tableLabel: "Done",
+      sheetLabel: "Order Completed & Delivered",
+      tone: "success",
+    };
+  }
+
+  if (statusUpper === "CANCELLED") {
+    return {
+      kind: "cancelled",
+      tableLabel: "Cancelled",
+      sheetLabel: "Order Cancelled",
+      tone: "error",
+    };
+  }
+
+  if (statusUpper === "PAYMENT_FAILED" || paymentStatusUpper === "FAILED") {
+    return {
+      kind: "failed",
+      tableLabel: "Failed",
+      sheetLabel: "Payment Failed — Awaiting Retry",
+      tone: "error",
+    };
+  }
+
+  if (statusUpper === "PENDING_PAYMENT") {
+    return {
+      kind: "pending",
+      tableLabel: "Awaiting Pay",
+      sheetLabel: "Awaiting Online Payment Verification",
+      tone: "warning",
+    };
+  }
+
+  const fallbackLabel = statusUpper.replace(/_/g, " ") || "Pending";
+  return {
+    kind: "pending",
+    tableLabel: fallbackLabel,
+    sheetLabel: fallbackLabel,
+    tone: "neutral",
+  };
+}
