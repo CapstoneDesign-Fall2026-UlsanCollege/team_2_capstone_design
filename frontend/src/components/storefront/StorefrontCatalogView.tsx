@@ -144,10 +144,9 @@ export function StorefrontCatalogView({
     }
 
     if (inStockOnly) {
-      result = result.filter((p) => {
-        if (!p.variants || p.variants.length === 0) return true;
-        return p.variants.some((v) => v.in_stock);
-      });
+      result = result.filter((p) =>
+        Boolean(p.variants && p.variants.some((v) => v.in_stock && v.is_active))
+      );
     }
 
     if (sortBy === "price-asc") {

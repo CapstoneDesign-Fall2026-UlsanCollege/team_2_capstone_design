@@ -74,7 +74,7 @@ export function ProductDetailView({
 
   const unitPriceMinor = selectedVariant ? selectedVariant.price_minor : 0;
   const totalPriceMinor = unitPriceMinor * quantity;
-  const isInStock = selectedVariant ? selectedVariant.in_stock && selectedVariant.is_active : true;
+  const isInStock = selectedVariant ? selectedVariant.in_stock && selectedVariant.is_active : false;
 
   const finalVariantLabel = selectedVariant?.label || "Standard";
 
@@ -292,7 +292,11 @@ export function ProductDetailView({
 
               <div className="pt-1 flex items-baseline gap-2">
                 <span className="font-serif text-2xl sm:text-3xl font-semibold text-[var(--ink)] tabular-nums">
-                  {unitPriceMinor > 0 ? formatNpr(unitPriceMinor) : "Rs. 0"}
+                  {selectedVariant
+                    ? unitPriceMinor > 0
+                      ? formatNpr(unitPriceMinor)
+                      : "Rs. 0"
+                    : "Unavailable"}
                 </span>
               </div>
             </div>
@@ -375,7 +379,7 @@ export function ProductDetailView({
               <Button
                 variant="primary"
                 onClick={handleAddToCart}
-                disabled={!isInStock || justAdded}
+                disabled={!selectedVariant || !isInStock || justAdded}
                 className="w-full h-12 text-sm font-semibold flex items-center justify-center gap-2"
               >
                 {justAdded ? (
@@ -383,6 +387,8 @@ export function ProductDetailView({
                     <Check className="w-4 h-4" aria-hidden="true" />
                     <span>Added to bag ✓</span>
                   </>
+                ) : !selectedVariant ? (
+                  <span>Unavailable</span>
                 ) : !isInStock ? (
                   <span>Sold Out</span>
                 ) : (
@@ -567,17 +573,27 @@ export function ProductDetailView({
         <div className="flex flex-col shrink-0 min-w-[70px] text-left">
           <span className="text-[10px] text-[var(--ink-2)] uppercase tracking-wider font-medium">Total</span>
           <span className="text-base font-semibold text-[var(--ink)] tabular-nums leading-none">
-            {totalPriceMinor > 0 ? formatNpr(totalPriceMinor) : "Rs. 0"}
+            {selectedVariant
+              ? totalPriceMinor > 0
+                ? formatNpr(totalPriceMinor)
+                : "Rs. 0"
+              : "Unavailable"}
           </span>
         </div>
 
         <Button
           variant="primary"
           onClick={handleAddToCart}
-          disabled={!isInStock || justAdded}
+          disabled={!selectedVariant || !isInStock || justAdded}
           className="flex-1 h-11 text-xs font-semibold"
         >
-          {justAdded ? "Added ✓" : !isInStock ? "Sold Out" : "Add to bag"}
+          {justAdded
+            ? "Added ✓"
+            : !selectedVariant
+            ? "Unavailable"
+            : !isInStock
+            ? "Sold Out"
+            : "Add to bag"}
         </Button>
 
         {waUrl && (

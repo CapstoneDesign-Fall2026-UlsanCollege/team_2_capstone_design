@@ -48,6 +48,7 @@ export function ProductDetailSheet({
         className="w-full sm:max-w-md bg-[var(--surface)] rounded-t-xl sm:rounded-xl border border-[var(--border)] overflow-hidden max-h-[90dvh] flex flex-col animate-in slide-in-from-bottom duration-250"
       >
         <ProductDetailSheetContent
+          key={product.id}
           storeSlug={storeSlug}
           product={product}
           onClose={() => onOpenChange(false)}
@@ -85,7 +86,7 @@ function ProductDetailSheetContent({
 
   const unitPriceMinor = selectedVariant ? selectedVariant.price_minor : 0;
   const totalPriceMinor = unitPriceMinor * quantity;
-  const isInStock = selectedVariant ? selectedVariant.in_stock : true;
+  const isInStock = selectedVariant ? selectedVariant.in_stock && selectedVariant.is_active : false;
 
   const finalVariantLabel = selectedVariant?.label || "Standard";
 
@@ -154,7 +155,11 @@ function ProductDetailSheetContent({
 
           <div className="space-y-0.5 min-w-0 flex-1">
             <span className="text-base font-semibold text-[var(--ink)] tabular-nums">
-              {formatNpr(unitPriceMinor)}
+              {selectedVariant
+                ? unitPriceMinor > 0
+                  ? formatNpr(unitPriceMinor)
+                  : "Rs. 0"
+                : "Unavailable"}
             </span>
             {product.description && (
               <p className="text-xs text-[var(--ink-2)] line-clamp-1 leading-normal">
@@ -245,14 +250,18 @@ function ProductDetailSheetContent({
         <div className="flex items-center justify-between text-xs">
           <span className="text-[var(--ink-2)]">Subtotal:</span>
           <span className="text-base font-semibold text-[var(--ink)] tabular-nums">
-            {formatNpr(totalPriceMinor)}
+            {selectedVariant
+              ? totalPriceMinor > 0
+                ? formatNpr(totalPriceMinor)
+                : "Rs. 0"
+              : "Unavailable"}
           </span>
         </div>
 
         <Button
           variant="primary"
           onClick={handleAddToCart}
-          disabled={isDemoProduct || !isInStock || justAdded}
+          disabled={isDemoProduct || !selectedVariant || !isInStock || justAdded}
           className="w-full h-11 text-sm font-semibold"
         >
           {justAdded ? (
@@ -262,6 +271,8 @@ function ProductDetailSheetContent({
             </>
           ) : isDemoProduct ? (
             <span>Demo Preview Only</span>
+          ) : !selectedVariant ? (
+            <span>Unavailable</span>
           ) : !isInStock ? (
             <span>Sold Out</span>
           ) : (

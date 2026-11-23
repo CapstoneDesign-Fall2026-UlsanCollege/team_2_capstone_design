@@ -67,7 +67,7 @@ export function ProductGrid({
       {products.map((product) => {
         const variants = product.variants || [];
         const inStockVariants = variants.filter((v) => v.in_stock && v.is_active);
-        const hasStock = variants.length === 0 || inStockVariants.length > 0;
+        const hasStock = inStockVariants.length > 0;
         const validVariants = inStockVariants.length > 0 ? inStockVariants : variants;
 
         const prices = validVariants
@@ -117,11 +117,11 @@ export function ProductGrid({
                 }
               />
 
-              {/* Clean out-of-stock overlay only when actually sold out */}
-              {!hasStock && variants.length > 0 && (
+              {/* Clean out-of-stock overlay when no purchasable variants exist */}
+              {!hasStock && (
                 <div className="absolute inset-0 bg-[var(--surface)]/85 flex items-center justify-center z-10">
                   <span className="px-2.5 py-1 rounded text-xs font-semibold uppercase tracking-wider bg-[var(--ink)] text-[var(--surface)]">
-                    Sold Out
+                    {variants.length === 0 ? "Unavailable" : "Sold Out"}
                   </span>
                 </div>
               )}
@@ -149,7 +149,9 @@ export function ProductGrid({
               <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]/60">
                 <div className="flex flex-col">
                   <span className="text-xs sm:text-sm font-semibold text-[var(--ink)] tabular-nums">
-                    {minPrice > 0
+                    {variants.length === 0
+                      ? "Unavailable"
+                      : minPrice > 0
                       ? hasMultiplePrices
                         ? `From ${formatNpr(minPrice)}`
                         : formatNpr(minPrice)

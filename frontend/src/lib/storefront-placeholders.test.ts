@@ -110,6 +110,7 @@ vi.mock("next/link", () => ({
 import { StorefrontCatalogView } from "@/components/storefront/StorefrontCatalogView";
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader";
 import { ProductDetailView } from "@/components/storefront/ProductDetailView";
+import { ProductGrid } from "@/components/storefront/ProductGrid";
 import { CartDrawer } from "@/components/storefront/CartDrawer";
 import { CheckoutForm } from "@/components/storefront/CheckoutForm";
 import { NeedsAttentionCards } from "@/components/merchant/NeedsAttentionCards";
@@ -721,5 +722,38 @@ describe("StorefrontCatalogView placeholder removal", () => {
     expect(catalogHtml).toContain("Outside Rs. 0");
     expect(catalogHtml).not.toContain("Rs. 100");
     expect(catalogHtml).not.toContain("Rs. 200");
+  });
+
+  it("treats zero-variant products as unavailable instead of in-stock Rs. 0 (Bug 11)", () => {
+    const emptyVariantProduct = makeProduct({
+      id: 99,
+      slug: "no-variant-item",
+      name: "Custom Handloom Scarf",
+      variants: [],
+    });
+
+    const detailHtml = renderToStaticMarkup(
+      React.createElement(ProductDetailView, {
+        store: makeStore(),
+        product: emptyVariantProduct,
+        relatedProducts: [],
+      })
+    );
+    expect(detailHtml).toContain("Unavailable");
+    expect(detailHtml).not.toContain("Rs. 0");
+    expect(detailHtml).toMatch(/<button[^>]*disabled[^>]*>[\s\S]*?Unavailable[\s\S]*?<\/button>/);
+
+    const gridHtml = renderToStaticMarkup(
+      React.createElement(ProductGrid, {
+        storeSlug: "adi-store",
+        products: [emptyVariantProduct],
+        onSelectProduct: () => {},
+      })
+    );
+    expect(gridHtml).toContain("Unavailable");
+    expect(gridHtml).not.toContain("Rs. 0");
+    expect(gridHtml).toMatch(
+      /<button[^>]*disabled[^>]*aria-label="Add Custom Handloom Scarf to bag"[^>]*>/
+    );
   });
 });
