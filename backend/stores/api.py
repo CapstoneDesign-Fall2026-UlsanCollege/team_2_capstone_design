@@ -1726,7 +1726,7 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
 
     def post(self, request, store_slug):
         data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
-        if "slug" not in data or not data["slug"]:
+        if "slug" not in data or not str(data.get("slug") or "").strip():
             from django.utils.text import slugify
             name = data.get("name", "")
             base_slug = slugify(name) or "item"
@@ -1737,25 +1737,51 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
                 idx += 1
             data["slug"] = candidate
 
-        serializer = ProductSerializer(data=data)
-        serializer.is_valid(raise_exception=True)
-        product = serializer.save(store=self.store)
-
+        initial_price_minor = None
         if "initial_price_minor" in data:
             try:
-                price_minor = int(data["initial_price_minor"])
-                Variant.objects.create(
-                    store=self.store,
-                    product=product,
-                    sku=f"{self.store.slug.upper()[:4]}-{product.id}-01",
-                    label=data.get("initial_variant_label", "Standard"),
-                    price_minor=price_minor,
-                    allow_one_time=product.allow_one_time,
-                    in_stock=True,
-                    is_active=True,
-                )
+                initial_price_minor = int(data["initial_price_minor"])
             except (ValueError, TypeError):
-                pass
+                initial_price_minor = None
+            if initial_price_minor is not None and initial_price_minor < 0:
+                return Response(
+                    {"error": "Initial price cannot be negative."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+        serializer = ProductSerializer(data=data)
+        serializer.is_valid(raise_exception=True)
+        if Product.objects.for_store(self.store).filter(slug=serializer.validated_data["slug"]).exists():
+            return Response(
+                {"slug": ["A product with this slug already exists in this store."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            with transaction.atomic():
+                product = serializer.save(store=self.store)
+        except IntegrityError:
+            return Response(
+                {"slug": ["A product with this slug already exists in this store."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+
+        if initial_price_minor is not None:
+            idx = 1
+            base_sku = f"{self.store.slug.upper()[:4]}-{product.id}"
+            candidate_sku = f"{base_sku}-{idx:02d}"
+            while Variant.objects.for_store(self.store).filter(sku=candidate_sku).exists():
+                idx += 1
+                candidate_sku = f"{base_sku}-{idx:02d}"
+            Variant.objects.create(
+                store=self.store,
+                product=product,
+                sku=candidate_sku,
+                label=data.get("initial_variant_label", "Standard"),
+                price_minor=initial_price_minor,
+                allow_one_time=product.allow_one_time,
+                in_stock=True,
+                is_active=True,
+            )
 
         MerchantAuditLog.objects.create(
             store=self.store,
@@ -1794,7 +1820,25 @@ class MerchantProductDetailView(StoreMerchantMixin, APIView):
         old_image_url = product.image_url
         serializer = ProductSerializer(product, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        if (
+            "slug" in serializer.validated_data
+            and Product.objects.for_store(self.store)
+            .filter(slug=serializer.validated_data["slug"])
+            .exclude(id=product.id)
+            .exists()
+        ):
+            return Response(
+                {"slug": ["A product with this slug already exists in this store."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except IntegrityError:
+            return Response(
+                {"slug": ["A product with this slug already exists in this store."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if product.is_starter_default and (product.name != old_name or product.image_url != old_image_url):
             product.is_starter_default = False
             product.save(update_fields=["is_starter_default"])
@@ -1825,13 +1869,32 @@ class MerchantVariantListCreateView(StoreMerchantMixin, APIView):
     def post(self, request, store_slug, product_id):
         product = self.get_product(product_id)
         data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
-        if "sku" not in data or not data["sku"]:
-            count = product.variants.count() + 1
-            data["sku"] = f"{self.store.slug.upper()[:4]}-{product.id}-{count}"
+        raw_sku = str(data.get("sku") or "").strip()
+        if not raw_sku:
+            idx = product.variants.count() + 1
+            candidate = f"{self.store.slug.upper()[:4]}-{product.id}-{idx}"
+            while Variant.objects.for_store(self.store).filter(sku=candidate).exists():
+                idx += 1
+                candidate = f"{self.store.slug.upper()[:4]}-{product.id}-{idx}"
+            data["sku"] = candidate
+        else:
+            data["sku"] = raw_sku
+            if Variant.objects.for_store(self.store).filter(sku=raw_sku).exists():
+                return Response(
+                    {"sku": ["A variant with this SKU already exists in this store."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         serializer = VariantSerializer(data=data)
         serializer.is_valid(raise_exception=True)
-        variant = serializer.save(store=self.store, product=product)
+        try:
+            with transaction.atomic():
+                variant = serializer.save(store=self.store, product=product)
+        except IntegrityError:
+            return Response(
+                {"error": "A variant with this SKU already exists in this store."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         return Response(VariantSerializer(variant).data, status=status.HTTP_201_CREATED)
 
 
@@ -1854,7 +1917,27 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
         old_price_minor = variant.price_minor
         serializer = VariantSerializer(variant, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
-        serializer.save()
+        if "sku" in serializer.validated_data:
+            new_sku = str(serializer.validated_data["sku"] or "").strip()
+            if (
+                new_sku
+                and Variant.objects.for_store(self.store)
+                .filter(sku=new_sku)
+                .exclude(id=variant.id)
+                .exists()
+            ):
+                return Response(
+                    {"sku": ["A variant with this SKU already exists in this store."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+        try:
+            with transaction.atomic():
+                serializer.save()
+        except IntegrityError:
+            return Response(
+                {"sku": ["A variant with this SKU already exists in this store."]},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
         if variant.price_minor != old_price_minor:
             Product.objects.for_store(self.store).filter(
                 id=variant.product_id,

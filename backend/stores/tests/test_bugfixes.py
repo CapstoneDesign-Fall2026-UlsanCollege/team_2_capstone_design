@@ -637,3 +637,115 @@ class ProductImageUrlBugTests(TestCase):
                 f"Expected 400 for image_url={bad_url!r}, got {res.status_code}",
             )
             self.assertIn("image_url", res.json())
+
+
+class VariantSkuAndProductSlugCollisionBugTests(TestCase):
+    """Regression tests for Bug 2: prevent variant SKU collisions after delete and return 400 on duplicate SKU/slug."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            email="owner.sku@example.com",
+            full_name="SKU Owner",
+        )
+        self.store = Store.objects.create(
+            name="SKU Store",
+            slug="sku-store",
+            is_active=True,
+        )
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=self.owner, role="OWNER")
+            self.product = Product.objects.create(
+                store=self.store,
+                name="Himalayan Tea",
+                slug="himalayan-tea",
+                is_active=True,
+            )
+            self.other_product = Product.objects.create(
+                store=self.store,
+                name="Green Tea",
+                slug="green-tea",
+                is_active=True,
+            )
+
+    def test_auto_generated_variant_sku_does_not_collide_after_permanent_delete(self):
+        self.client.force_authenticate(user=self.owner)
+        v1 = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.product.id}/variants/",
+            {"label": "100g", "price_minor": 40000},
+            format="json",
+        )
+        self.assertEqual(v1.status_code, status.HTTP_201_CREATED)
+        v2 = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.product.id}/variants/",
+            {"label": "250g", "price_minor": 85000},
+            format="json",
+        )
+        self.assertEqual(v2.status_code, status.HTTP_201_CREATED)
+
+        # Permanently delete the first variant (leaves -2 in DB while count drops to 1)
+        del_res = self.client.delete(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.product.id}/variants/{v1.json()['id']}/?permanent=true"
+        )
+        self.assertEqual(del_res.status_code, status.HTTP_204_NO_CONTENT)
+
+        # Adding a 3rd variant without an explicit SKU must pick a unique SKU instead of crashing with 500
+        v3 = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.product.id}/variants/",
+            {"label": "500g", "price_minor": 150000},
+            format="json",
+        )
+        self.assertEqual(v3.status_code, status.HTTP_201_CREATED)
+        self.assertNotEqual(v3.json()["sku"], v2.json()["sku"])
+
+    def test_duplicate_explicit_sku_and_product_slug_return_400(self):
+        self.client.force_authenticate(user=self.owner)
+        v1 = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.product.id}/variants/",
+            {"label": "Pack A", "sku": "UNIQUE-SKU-1", "price_minor": 50000},
+            format="json",
+        )
+        self.assertEqual(v1.status_code, status.HTTP_201_CREATED)
+
+        v2 = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.product.id}/variants/",
+            {"label": "Pack B", "sku": "UNIQUE-SKU-2", "price_minor": 60000},
+            format="json",
+        )
+        self.assertEqual(v2.status_code, status.HTTP_201_CREATED)
+
+        # Duplicate explicit SKU on POST -> 400
+        dup_post = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.product.id}/variants/",
+            {"label": "Pack C", "sku": "UNIQUE-SKU-1", "price_minor": 70000},
+            format="json",
+        )
+        self.assertEqual(dup_post.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("sku", dup_post.json())
+
+        # Duplicate explicit SKU on PATCH -> 400
+        dup_patch = self.client.patch(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.product.id}/variants/{v2.json()['id']}/",
+            {"sku": "UNIQUE-SKU-1"},
+            format="json",
+        )
+        self.assertEqual(dup_patch.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("sku", dup_patch.json())
+
+        # Duplicate explicit product slug on POST -> 400
+        dup_prod_post = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/products/",
+            {"name": "Duplicate Slug Tea", "slug": "himalayan-tea"},
+            format="json",
+        )
+        self.assertEqual(dup_prod_post.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("slug", dup_prod_post.json())
+
+        # Duplicate explicit product slug on PATCH -> 400
+        dup_prod_patch = self.client.patch(
+            f"/api/merchant/stores/{self.store.slug}/products/{self.other_product.id}/",
+            {"slug": "himalayan-tea"},
+            format="json",
+        )
+        self.assertEqual(dup_prod_patch.status_code, status.HTTP_400_BAD_REQUEST)
+        self.assertIn("slug", dup_prod_patch.json())
