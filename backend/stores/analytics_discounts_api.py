@@ -101,6 +101,7 @@ def normalize_nepal_province(snap: dict | None) -> str:
 
 class DiscountSerializer(serializers.ModelSerializer):
     is_expired = serializers.SerializerMethodField()
+    is_maxed = serializers.SerializerMethodField()
 
     class Meta:
         model = Discount
@@ -117,17 +118,17 @@ class DiscountSerializer(serializers.ModelSerializer):
             "expires_at",
             "is_active",
             "is_expired",
+            "is_maxed",
             "created_at",
             "updated_at",
         ]
-        read_only_fields = ["id", "used_count", "is_expired", "created_at", "updated_at"]
+        read_only_fields = ["id", "used_count", "is_expired", "is_maxed", "created_at", "updated_at"]
 
     def get_is_expired(self, obj):
-        if obj.expires_at and timezone.now() > obj.expires_at:
-            return True
-        if obj.max_uses is not None and obj.used_count >= obj.max_uses:
-            return True
-        return False
+        return bool(obj.expires_at and timezone.now() > obj.expires_at)
+
+    def get_is_maxed(self, obj):
+        return bool(obj.max_uses is not None and obj.used_count >= obj.max_uses)
 
 
 def build_slice6_views(StoreMerchantMixin):
@@ -321,13 +322,17 @@ def build_slice6_views(StoreMerchantMixin):
         def get(self, request, store_slug):
             discounts = list(Discount.objects.for_store(self.store).order_by("-created_at", "-id"))
             serialized = DiscountSerializer(discounts, many=True).data
-            active_count = sum(1 for d in serialized if d["is_active"] and not d["is_expired"])
+            active_count = sum(
+                1 for d in serialized if d["is_active"] and not d["is_expired"] and not d["is_maxed"]
+            )
             expired_count = sum(1 for d in serialized if d["is_expired"])
+            maxed_count = sum(1 for d in serialized if d["is_maxed"] and not d["is_expired"])
             total_redemptions = sum(d["used_count"] for d in serialized)
             return Response({
                 "metrics": {
                     "active_count": active_count,
                     "expired_count": expired_count,
+                    "maxed_count": maxed_count,
                     "total_redemptions": total_redemptions,
                 },
                 "discounts": serialized,

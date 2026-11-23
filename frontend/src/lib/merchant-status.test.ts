@@ -38,6 +38,7 @@ import {
   orderTerminalActionView,
   packingSlipPaymentView,
   paymentView,
+  resolveDiscountStatusLabel,
   resolveKhaltiSettingsBanner,
   resolveOrdersStatusTab,
   resolveProductImagePickerVisible,
@@ -542,5 +543,58 @@ describe("VariantGridEditor mobile custom variant form (Bug 9)", () => {
     const mobileSection = mobileSplit[1];
     expect(mobileSection).toContain("+ Add size / variant...");
     expect(mobileSection).toContain("+ Add Variant");
+  });
+});
+
+describe("resolveDiscountStatusLabel (Bug 12)", () => {
+  it("distinguishes maxed-out promo codes from time-expired codes and paused codes", () => {
+    expect(
+      resolveDiscountStatusLabel({
+        is_active: true,
+        is_expired: false,
+        is_maxed: true,
+        max_uses: 5,
+        used_count: 5,
+      })
+    ).toBe("Maxed Out");
+
+    expect(
+      resolveDiscountStatusLabel({
+        is_active: true,
+        is_expired: false,
+        max_uses: 3,
+        used_count: 3,
+      })
+    ).toBe("Maxed Out");
+
+    expect(
+      resolveDiscountStatusLabel({
+        is_active: true,
+        is_expired: true,
+        is_maxed: false,
+        max_uses: 10,
+        used_count: 2,
+      })
+    ).toBe("Expired");
+
+    expect(
+      resolveDiscountStatusLabel({
+        is_active: false,
+        is_expired: true,
+        is_maxed: true,
+        max_uses: 5,
+        used_count: 5,
+      })
+    ).toBe("Paused");
+
+    expect(
+      resolveDiscountStatusLabel({
+        is_active: true,
+        is_expired: false,
+        is_maxed: false,
+        max_uses: 10,
+        used_count: 2,
+      })
+    ).toBe("Active");
   });
 });

@@ -1,7 +1,9 @@
+from datetime import timedelta
 from unittest.mock import patch
 
 from django.contrib.auth import get_user_model
 from django.test import TestCase
+from django.utils import timezone
 from rest_framework import status
 from rest_framework.test import APIClient
 
@@ -1023,3 +1025,74 @@ class OrderUndoTransitionGuardBugTests(TestCase):
         )
         self.assertEqual(good_res.status_code, status.HTTP_200_OK)
         self.assertEqual(good_res.json()["status"], "PAID")
+
+
+class DiscountMaxedVsExpiredBugTests(TestCase):
+    """Regression tests for Bug 12: distinguish maxed-out promo codes from time-expired ones."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            email="owner.promo@example.com",
+            full_name="Promo Owner",
+        )
+        self.store = Store.objects.create(
+            name="Promo Store",
+            slug="promo-store",
+            is_active=True,
+        )
+        now = timezone.now()
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=self.owner, role="OWNER")
+            self.maxed_promo = Discount.objects.create(
+                store=self.store,
+                code="MAXED5",
+                discount_type="PERCENTAGE",
+                value=15,
+                max_uses=5,
+                used_count=5,
+                expires_at=now + timedelta(days=7),
+                is_active=True,
+            )
+            self.expired_promo = Discount.objects.create(
+                store=self.store,
+                code="OLDWINDOW",
+                discount_type="PERCENTAGE",
+                value=10,
+                max_uses=50,
+                used_count=2,
+                expires_at=now - timedelta(days=1),
+                is_active=True,
+            )
+            self.active_promo = Discount.objects.create(
+                store=self.store,
+                code="LIVE20",
+                discount_type="FIXED_AMOUNT",
+                value=20000,
+                max_uses=10,
+                used_count=3,
+                expires_at=now + timedelta(days=7),
+                is_active=True,
+            )
+
+    def test_discount_list_distinguishes_maxed_from_time_expired(self):
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.get(f"/api/merchant/stores/{self.store.slug}/discounts/")
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        body = res.json()
+
+        metrics = body["metrics"]
+        self.assertEqual(metrics["active_count"], 1)
+        self.assertEqual(metrics["expired_count"], 1)
+        self.assertEqual(metrics["maxed_count"], 1)
+        self.assertEqual(metrics["total_redemptions"], 10)
+
+        by_code = {d["code"]: d for d in body["discounts"]}
+        self.assertTrue(by_code["MAXED5"]["is_maxed"])
+        self.assertFalse(by_code["MAXED5"]["is_expired"])
+
+        self.assertTrue(by_code["OLDWINDOW"]["is_expired"])
+        self.assertFalse(by_code["OLDWINDOW"]["is_maxed"])
+
+        self.assertFalse(by_code["LIVE20"]["is_expired"])
+        self.assertFalse(by_code["LIVE20"]["is_maxed"])

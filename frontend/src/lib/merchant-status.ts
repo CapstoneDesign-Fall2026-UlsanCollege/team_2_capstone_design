@@ -311,3 +311,23 @@ export function resolveKhaltiSettingsBanner(opts: {
       "No store or platform Khalti secret key is active. Add a Khalti merchant secret key below to accept Khalti checkout payments.",
   };
 }
+
+export interface DiscountStatusInput {
+  is_active: boolean;
+  is_expired: boolean;
+  is_maxed?: boolean;
+  max_uses: number | null;
+  used_count: number;
+}
+
+export type DiscountStatusLabel = "Paused" | "Expired" | "Maxed Out" | "Active";
+
+/** Derives promo status label cleanly keeping time-expired distinct from usage-maxed codes. */
+export function resolveDiscountStatusLabel(disc: DiscountStatusInput): DiscountStatusLabel {
+  if (!disc.is_active) return "Paused";
+  if (disc.is_expired) return "Expired";
+  const isMaxed =
+    Boolean(disc.is_maxed) || (disc.max_uses !== null && disc.used_count >= disc.max_uses);
+  if (isMaxed) return "Maxed Out";
+  return "Active";
+}

@@ -21,7 +21,7 @@ class Command(BaseCommand):
         with transaction.atomic():
             # 1. Merchant Owner
             owner, _ = User.objects.get_or_create(
-                email="aarav.shrestha@brewmellow.com.np",
+                email="aayushman1234511@gmail.com",
                 defaults={
                     "full_name": "Aarav Shrestha",
                     "phone": "9841223344",

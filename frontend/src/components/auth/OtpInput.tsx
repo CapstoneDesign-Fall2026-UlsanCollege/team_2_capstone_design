@@ -122,7 +122,6 @@ export function PasswordlessAuthCard({
   const [otpCode, setOtpCode] = useState("");
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [devOtpHint, setDevOtpHint] = useState<string | null>(null);
   const [resendCooldown, setResendCooldown] = useState(0);
 
   useEffect(() => {
@@ -156,9 +155,6 @@ export function PasswordlessAuthCard({
     setError(null);
     try {
       const res = await requestEmailOtp(validation.cleanEmail);
-      if (res.dev_otp_hint) {
-        setDevOtpHint(res.dev_otp_hint);
-      }
       setStep("otp");
       setResendCooldown(res.resend_in_seconds ?? 60);
     } catch (err: unknown) {
@@ -278,12 +274,6 @@ export function PasswordlessAuthCard({
               Can&apos;t find it? Check your spam folder.
             </p>
           </div>
-
-          {devOtpHint && (
-            <div className="p-3 text-xs font-mono rounded-lg bg-cash-bg border border-line-strong text-cash-ink">
-              <strong>Dev OTP Code:</strong> {devOtpHint}
-            </div>
-          )}
 
           <div className="space-y-2 pt-1">
             <OtpInput

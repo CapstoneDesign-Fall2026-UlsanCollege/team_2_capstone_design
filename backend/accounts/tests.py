@@ -2,6 +2,7 @@ from datetime import timedelta
 import io
 import json
 import os
+import re
 import time
 from unittest.mock import MagicMock, patch
 
@@ -35,12 +36,18 @@ class EmailOTPAuthTests(APITestCase):
         mail.outbox.clear()
         cache.clear()
 
+    def _extract_last_otp(self):
+        self.assertGreaterEqual(len(mail.outbox), 1)
+        match = re.search(r"\b(\d{6})\b", mail.outbox[-1].body)
+        self.assertIsNotNone(match, "Expected 6-digit OTP in sent email body.")
+        return match.group(1)
+
     def test_happy_path_otp_request_and_verify(self):
         with self.captureOnCommitCallbacks(execute=True):
             req_res = self.client.post("/api/auth/otp/request/", {"email": self.email})
         self.assertEqual(req_res.status_code, status.HTTP_200_OK)
-        self.assertIn("dev_otp_hint", req_res.data)
-        otp_code = req_res.data["dev_otp_hint"]
+        self.assertNotIn("dev_otp_hint", req_res.data)
+        otp_code = self._extract_last_otp()
 
         # Verify email was sent via transaction.on_commit
         self.assertEqual(len(mail.outbox), 1)
@@ -89,7 +96,8 @@ class EmailOTPAuthTests(APITestCase):
         with self.captureOnCommitCallbacks(execute=True):
             req_res = self.client.post("/api/auth/otp/request/", {"email": self.email})
         self.assertEqual(req_res.status_code, status.HTTP_200_OK)
-        correct_code = req_res.data["dev_otp_hint"]
+        self.assertNotIn("dev_otp_hint", req_res.data)
+        correct_code = self._extract_last_otp()
 
         for _ in range(5):
             res = self.client.post("/api/auth/otp/verify/", {
@@ -115,7 +123,8 @@ class EmailOTPAuthTests(APITestCase):
     def test_expired_challenge_rejected(self):
         with self.captureOnCommitCallbacks(execute=True):
             req_res = self.client.post("/api/auth/otp/request/", {"email": self.email})
-        correct_code = req_res.data["dev_otp_hint"]
+        self.assertNotIn("dev_otp_hint", req_res.data)
+        correct_code = self._extract_last_otp()
 
         EmailOTPChallenge.objects.filter(email=self.email).update(
             expires_at=timezone.now() - timedelta(seconds=1)

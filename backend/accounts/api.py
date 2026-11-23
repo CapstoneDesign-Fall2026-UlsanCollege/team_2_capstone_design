@@ -172,8 +172,6 @@ class OTPRequestView(NoStoreAuthAPIView):
             "expires_in_seconds": 600,
             "resend_in_seconds": 60,
         }
-        if settings.DEBUG:
-            payload["dev_otp_hint"] = raw_code
 
         return Response(payload, status=status.HTTP_200_OK)
 

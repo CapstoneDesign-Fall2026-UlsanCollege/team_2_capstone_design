@@ -24,7 +24,7 @@ class TenantIsolationTests(APITestCase):
     def setUpTestData(cls):
         call_command("seed_brewmellow")
         cls.store_a = Store.objects.get(slug="brewmellow")
-        cls.owner_a = User.objects.get(email="aarav.shrestha@brewmellow.com.np")
+        cls.owner_a = User.objects.get(email="aayushman1234511@gmail.com")
 
         # Provision Store B (competitor merchant) inside TenantDatabaseContext
         cls.owner_b = User.objects.create_user("roshani.gurung@pahadihoney.com.np", full_name="Roshani Gurung")

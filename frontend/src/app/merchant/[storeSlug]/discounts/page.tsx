@@ -25,6 +25,7 @@ import {
   MerchantDiscountsResponse,
   updateMerchantDiscount,
 } from "@/lib/api";
+import { resolveDiscountStatusLabel } from "@/lib/merchant-status";
 
 interface PageProps {
   params: Promise<{ storeSlug: string }>;
@@ -358,14 +359,7 @@ export default function MerchantDiscountsPage({ params }: PageProps) {
           {/* Mobile 375px Card List */}
           <div className="sm:hidden divide-y divide-[var(--border)]">
             {data.discounts.map((disc) => {
-              const isMaxed = disc.max_uses !== null && disc.used_count >= disc.max_uses;
-              const statusLabel = !disc.is_active
-                ? "Paused"
-                : disc.is_expired
-                ? "Expired"
-                : isMaxed
-                ? "Maxed Out"
-                : "Active";
+              const statusLabel = resolveDiscountStatusLabel(disc);
 
               return (
                 <div key={disc.id} className="p-4 space-y-2.5">
@@ -470,15 +464,7 @@ export default function MerchantDiscountsPage({ params }: PageProps) {
               </thead>
               <tbody className="divide-y divide-[var(--border)] text-xs">
                 {data.discounts.map((disc) => {
-                  const isMaxed =
-                    disc.max_uses !== null && disc.used_count >= disc.max_uses;
-                  const statusLabel = !disc.is_active
-                    ? "Paused"
-                    : disc.is_expired
-                    ? "Expired"
-                    : isMaxed
-                    ? "Maxed Out"
-                    : "Active";
+                  const statusLabel = resolveDiscountStatusLabel(disc);
 
                   return (
                     <tr

@@ -313,7 +313,6 @@ export async function requestEmailOtp(email: string) {
     email?: string;
     resend_in_seconds?: number;
     expires_in_seconds: number;
-    dev_otp_hint?: string;
   }>("/api/auth/otp/request/", {
     method: "POST",
     body: JSON.stringify({ email }),
@@ -406,7 +405,6 @@ export async function requestStorefrontOTP(storeSlug: string, email: string) {
     ok: boolean;
     detail: string;
     resend_in_seconds: number;
-    dev_otp_hint?: string;
   }>(`/api/stores/${encodeURIComponent(storeSlug)}/account/otp/request/`, {
     method: "POST",
     body: JSON.stringify({ email }),
@@ -1150,6 +1148,7 @@ export interface DiscountItem {
   expires_at: string | null;
   is_active: boolean;
   is_expired: boolean;
+  is_maxed?: boolean;
   created_at: string;
 }
 
@@ -1158,6 +1157,7 @@ export interface MerchantDiscountsResponse {
     active_count: number;
     total_redemptions: number;
     expired_count: number;
+    maxed_count?: number;
   };
   discounts: DiscountItem[];
 }
