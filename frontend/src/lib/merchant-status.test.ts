@@ -20,9 +20,10 @@ vi.mock("@radix-ui/react-dialog", () => ({
     React.createElement("div", null, children),
 }));
 
-import type { OrderDetail } from "./api";
+import type { MerchantStoreSettings, OrderDetail } from "./api";
 import { OrderQueueTable } from "@/components/merchant/OrderQueueTable";
 import { OrderDetailSheet } from "@/components/merchant/OrderDetailSheet";
+import { SettingsForm } from "@/components/merchant/SettingsForm";
 import {
   COD_DELIVERED_LABEL,
   codToCollectMinor,
@@ -36,6 +37,7 @@ import {
   orderTerminalActionView,
   packingSlipPaymentView,
   paymentView,
+  resolveKhaltiSettingsBanner,
   resolveOrdersStatusTab,
   resolveProductImagePickerVisible,
   salesMinor,
@@ -408,5 +410,102 @@ describe("ProductSheet preset picker visibility (Bug 7)", () => {
     expect(source).toContain("Hide picker");
     const refMatches = source.match(/ref=\{fileInputRef\}/g) || [];
     expect(refMatches).toHaveLength(1);
+  });
+});
+
+function makeStoreSettings(
+  overrides: Partial<MerchantStoreSettings> = {}
+): MerchantStoreSettings {
+  return {
+    slug: "test-store",
+    name: "Test Store",
+    tagline: "Handcrafted in Nepal",
+    currency: "NPR",
+    theme_preset: "editorial-warm",
+    logo_url: "",
+    accent_color: "#224433",
+    contact_phone: "9800000000",
+    inside_valley_shipping_minor: 10000,
+    outside_valley_shipping_minor: 20000,
+    free_shipping_threshold_minor: null,
+    has_custom_khalti_key: false,
+    has_khalti: false,
+    khalti_mode: "TEST",
+    khalti_key_masked: "",
+    cod_enabled: true,
+    custom_domain: "",
+    member_role: "OWNER",
+    ...overrides,
+  };
+}
+
+describe("Khalti settings banner (Bug 8)", () => {
+  it("resolves all four Khalti credential and sandbox states accurately", () => {
+    const liveCustom = resolveKhaltiSettingsBanner({
+      hasCustomKey: true,
+      hasKhalti: true,
+      khaltiMode: "LIVE",
+      maskedKey: "••••1234",
+    });
+    expect(liveCustom.title).toBe("Live Merchant Key Connected");
+    expect(liveCustom.badge).toBe("LIVE MODE");
+    expect(liveCustom.dotColor).toBe("var(--st-delivered)");
+    expect(liveCustom.description).toContain("••••1234");
+
+    const testCustom = resolveKhaltiSettingsBanner({
+      hasCustomKey: true,
+      hasKhalti: true,
+      khaltiMode: "TEST",
+      maskedKey: "••••5678",
+    });
+    expect(testCustom.title).toBe("Custom Test Key Connected");
+    expect(testCustom.badge).toBe("TEST MODE");
+    expect(testCustom.dotColor).toBe("var(--st-delivered)");
+
+    const platformSandbox = resolveKhaltiSettingsBanner({
+      hasCustomKey: false,
+      hasKhalti: true,
+      khaltiMode: "TEST",
+    });
+    expect(platformSandbox.title).toBe("Platform Sandbox Active (Ready for Test Orders)");
+    expect(platformSandbox.badge).toBe("TEST MODE");
+    expect(platformSandbox.dotColor).toBe("var(--st-new)");
+
+    const unconfigured = resolveKhaltiSettingsBanner({
+      hasCustomKey: false,
+      hasKhalti: false,
+      khaltiMode: "TEST",
+    });
+    expect(unconfigured.title).toBe("Khalti Not Configured");
+    expect(unconfigured.badge).toBe("UNCONFIGURED");
+    expect(unconfigured.dotColor).toBe("var(--st-cancelled)");
+  });
+
+  it("renders unconfigured status in SettingsForm when no store or platform key is active", () => {
+    const unconfiguredHtml = renderToStaticMarkup(
+      React.createElement(SettingsForm, {
+        storeSlug: "test-store",
+        section: "payments",
+        initialSettings: makeStoreSettings({
+          has_custom_khalti_key: false,
+          has_khalti: false,
+        }),
+      })
+    );
+    expect(unconfiguredHtml).toContain("Khalti Not Configured");
+    expect(unconfiguredHtml).toContain("UNCONFIGURED");
+    expect(unconfiguredHtml).not.toContain("Platform Sandbox Active");
+
+    const sandboxHtml = renderToStaticMarkup(
+      React.createElement(SettingsForm, {
+        storeSlug: "test-store",
+        section: "payments",
+        initialSettings: makeStoreSettings({
+          has_custom_khalti_key: false,
+          has_khalti: true,
+        }),
+      })
+    );
+    expect(sandboxHtml).toContain("Platform Sandbox Active (Ready for Test Orders)");
   });
 });

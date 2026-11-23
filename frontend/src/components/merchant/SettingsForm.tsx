@@ -10,6 +10,7 @@ import {
 } from "@/lib/api";
 import { ThemeMediaUpload } from "@/components/merchant/ThemeMediaUpload";
 import { STOREFRONT_THEMES } from "@/lib/storefront-themes";
+import { resolveKhaltiSettingsBanner } from "@/lib/merchant-status";
 
 const NEPAL_PROVINCES = [
   "Bagmati Province",
@@ -83,6 +84,7 @@ export function SettingsForm({
   const [khaltiSecretKey, setKhaltiSecretKey] = useState("");
   const [showSecretKey, setShowSecretKey] = useState(false);
   const [hasCustomKey, setHasCustomKey] = useState(initialSettings.has_custom_khalti_key);
+  const [hasKhalti, setHasKhalti] = useState(Boolean(initialSettings.has_khalti));
   const [maskedKey, setMaskedKey] = useState(initialSettings.khalti_key_masked || "");
 
   const [submitting, setSubmitting] = useState(false);
@@ -101,12 +103,15 @@ export function SettingsForm({
         khalti_mode: "TEST",
       });
       setHasCustomKey(updated.has_custom_khalti_key);
+      setHasKhalti(Boolean(updated.has_khalti));
       setMaskedKey(updated.khalti_key_masked);
       setKhaltiMode(updated.khalti_mode);
       setKhaltiSecretKey("");
       setFeedback({
         type: "success",
-        message: "Custom Khalti key cleared. Store reverted to Platform Sandbox.",
+        message: updated.has_khalti
+          ? "Custom Khalti key cleared. Store reverted to Platform Sandbox."
+          : "Custom Khalti key cleared. Khalti checkout is currently unconfigured.",
       });
       if (onSaved) onSaved(updated);
     } catch (err: unknown) {
@@ -167,6 +172,7 @@ export function SettingsForm({
     try {
       const updated = await updateMerchantSettings(storeSlug, payload);
       setHasCustomKey(updated.has_custom_khalti_key);
+      setHasKhalti(Boolean(updated.has_khalti));
       setMaskedKey(updated.khalti_key_masked);
       setCodEnabled(updated.cod_enabled !== false);
       setKhaltiSecretKey("");
@@ -183,6 +189,13 @@ export function SettingsForm({
       setSubmitting(false);
     }
   };
+
+  const khaltiBanner = resolveKhaltiSettingsBanner({
+    hasCustomKey,
+    hasKhalti,
+    khaltiMode,
+    maskedKey,
+  });
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
@@ -579,29 +592,21 @@ export function SettingsForm({
                   <span
                     className="w-2.5 h-2.5 rounded-full inline-block"
                     style={{
-                      backgroundColor: hasCustomKey ? "var(--st-delivered)" : "var(--st-new)",
+                      backgroundColor: khaltiBanner.dotColor,
                     }}
                   />
                   <span className="text-xs font-semibold text-[var(--foreground)]">
-                    {hasCustomKey
-                      ? khaltiMode === "LIVE"
-                        ? "Live Merchant Key Connected"
-                        : "Custom Test Key Connected"
-                      : "Platform Sandbox Active (Ready for Test Orders)"}
+                    {khaltiBanner.title}
                   </span>
                 </div>
 
                 <span className="text-[10px] font-mono uppercase px-2 py-0.5 rounded border border-[var(--border)] bg-[var(--card)] text-[var(--muted-foreground)]">
-                  {khaltiMode} MODE
+                  {khaltiBanner.badge}
                 </span>
               </div>
 
               <p className="text-xs text-[var(--muted-foreground)] leading-relaxed">
-                {hasCustomKey
-                  ? `Connected secret key: ${
-                      maskedKey || "Configured"
-                    }. Settlements deposit directly to your Khalti merchant account.`
-                  : "ShopCraft provides a zero-config sandbox out of the box so shoppers can test Khalti checkout immediately."}
+                {khaltiBanner.description}
               </p>
             </div>
 

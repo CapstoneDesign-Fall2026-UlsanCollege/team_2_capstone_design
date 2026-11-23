@@ -266,3 +266,48 @@ export function resolveProductImagePickerVisible(
 ): boolean {
   return !imageUrl.trim() || showImagePicker;
 }
+
+export interface KhaltiSettingsBannerView {
+  dotColor: string;
+  title: string;
+  badge: string;
+  description: string;
+}
+
+/** Derives accurate Khalti credential/sandbox status for SettingsForm without claiming an active sandbox when none exists. */
+export function resolveKhaltiSettingsBanner(opts: {
+  hasCustomKey: boolean;
+  hasKhalti: boolean;
+  khaltiMode: "TEST" | "LIVE" | string;
+  maskedKey?: string | null;
+}): KhaltiSettingsBannerView {
+  const modeUpper = (opts.khaltiMode || "TEST").toUpperCase();
+  if (opts.hasCustomKey) {
+    return {
+      dotColor: "var(--st-delivered)",
+      title: modeUpper === "LIVE" ? "Live Merchant Key Connected" : "Custom Test Key Connected",
+      badge: `${modeUpper} MODE`,
+      description: `Connected secret key: ${
+        opts.maskedKey || "Configured"
+      }. Settlements deposit directly to your Khalti merchant account.`,
+    };
+  }
+
+  if (opts.hasKhalti) {
+    return {
+      dotColor: "var(--st-new)",
+      title: "Platform Sandbox Active (Ready for Test Orders)",
+      badge: `${modeUpper} MODE`,
+      description:
+        "ShopCraft provides a zero-config sandbox out of the box so shoppers can test Khalti checkout immediately.",
+    };
+  }
+
+  return {
+    dotColor: "var(--st-cancelled)",
+    title: "Khalti Not Configured",
+    badge: "UNCONFIGURED",
+    description:
+      "No store or platform Khalti secret key is active. Add a Khalti merchant secret key below to accept Khalti checkout payments.",
+  };
+}
