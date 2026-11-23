@@ -17,6 +17,7 @@ import { formatNpr, ProductItem, StorePublicMetadata } from "@/lib/api";
 import {
   buildThemePreviewDemoProducts,
   cleanStoreCategory,
+  formatShippingRateLabel,
   getStorefrontAccountBadge,
   getStorefrontPaymentAndDeliveryClaims,
   isPlaceholderText,
@@ -821,7 +822,7 @@ export function StorefrontCatalogView({
               <span className="inline-flex items-center gap-1.5 font-medium">
                 <span className="font-semibold">Delivery:</span>
                 <span className="text-[var(--ink-2)] tabular-nums">
-                  Valley {formatNpr(store.inside_valley_shipping_minor || 10000)} · Outside {formatNpr(store.outside_valley_shipping_minor || 20000)}
+                  Valley {formatShippingRateLabel(store.inside_valley_shipping_minor, 10000)} · Outside {formatShippingRateLabel(store.outside_valley_shipping_minor, 20000)}
                   {typeof store.free_shipping_threshold_minor === "number" &&
                   store.free_shipping_threshold_minor > 0
                     ? ` (Free over ${formatNpr(store.free_shipping_threshold_minor)})`

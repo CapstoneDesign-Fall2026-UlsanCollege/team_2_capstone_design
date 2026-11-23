@@ -7,8 +7,10 @@ import {
   buildThemePreviewDemoProducts,
   buildWhatsAppUrl,
   cleanStoreCategory,
+  formatShippingRateLabel,
   getStorefrontAccountBadge,
   getStorefrontPaymentAndDeliveryClaims,
+  resolveShippingRateMinor,
   resolveStorefrontContactDetails,
   sanitizeStorefrontImageUrl,
 } from "./storefront-helpers";
@@ -695,5 +697,29 @@ describe("StorefrontCatalogView placeholder removal", () => {
     expect(formatOrderNumber(42)).toBe("#42");
     expect(formatOrderNumber("")).toBe("—");
     expect(formatOrderNumber(null)).toBe("—");
+  });
+
+  it("preserves explicit Rs. 0 shipping rates instead of falling back to defaults (Bug 10)", () => {
+    expect(resolveShippingRateMinor(0, 10000)).toBe(0);
+    expect(formatShippingRateLabel(0, 10000)).toBe("Rs. 0");
+    expect(formatShippingRateLabel(0, 20000)).toBe("Rs. 0");
+    expect(formatShippingRateLabel(null, 10000)).toBe("Rs. 100");
+    expect(formatShippingRateLabel(undefined, 20000)).toBe("Rs. 200");
+    expect(formatShippingRateLabel(-50, 10000)).toBe("Rs. 100");
+
+    const catalogHtml = renderToStaticMarkup(
+      React.createElement(StorefrontCatalogView, {
+        store: makeStore({
+          shipping_configured: true,
+          inside_valley_shipping_minor: 0,
+          outside_valley_shipping_minor: 0,
+        }),
+        products: [makeProduct()],
+      })
+    );
+    expect(catalogHtml).toContain("Valley Rs. 0");
+    expect(catalogHtml).toContain("Outside Rs. 0");
+    expect(catalogHtml).not.toContain("Rs. 100");
+    expect(catalogHtml).not.toContain("Rs. 200");
   });
 });

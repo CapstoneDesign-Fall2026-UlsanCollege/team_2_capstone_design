@@ -5,7 +5,10 @@ import { notFound } from "next/navigation";
 import { ArrowLeft, Banknote, CreditCard, MapPin, Truck } from "lucide-react";
 import { formatNpr, StorePublicMetadata } from "@/lib/api";
 import { fetchPublicStoreOutcome } from "@/lib/storefront-fetch";
-import { getStorefrontPaymentAndDeliveryClaims } from "@/lib/storefront-helpers";
+import {
+  formatShippingRateLabel,
+  getStorefrontPaymentAndDeliveryClaims,
+} from "@/lib/storefront-helpers";
 
 async function fetchStore(storeSlug: string): Promise<StorePublicMetadata | null> {
   const res = await fetchPublicStoreOutcome(storeSlug);
@@ -46,8 +49,8 @@ export default async function StorefrontShippingPage({
   }
 
   const claims = getStorefrontPaymentAndDeliveryClaims(store);
-  const insideValleyRs = formatNpr(store.inside_valley_shipping_minor || 10000);
-  const outsideValleyRs = formatNpr(store.outside_valley_shipping_minor || 20000);
+  const insideValleyRs = formatShippingRateLabel(store.inside_valley_shipping_minor, 10000);
+  const outsideValleyRs = formatShippingRateLabel(store.outside_valley_shipping_minor, 20000);
   const hasFreeShipping = Boolean(store.free_shipping_threshold_minor && store.free_shipping_threshold_minor > 0);
   const freeThresholdRs = hasFreeShipping ? formatNpr(store.free_shipping_threshold_minor!) : "";
 

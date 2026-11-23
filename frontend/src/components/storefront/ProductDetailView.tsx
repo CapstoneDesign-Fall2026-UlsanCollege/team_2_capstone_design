@@ -29,6 +29,7 @@ import { StoreImage } from "./StoreImage";
 import {
   buildWhatsAppUrl,
   cleanStoreCategory,
+  formatShippingRateLabel,
   getStorefrontAccountBadge,
   getStorefrontPaymentAndDeliveryClaims,
   sanitizeStorefrontImageUrl,
@@ -455,13 +456,13 @@ export function ProductDetailView({
                           <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
                             <span>Kathmandu Valley (1–2 days):</span>
                             <span className="font-semibold text-[var(--ink)] tabular-nums">
-                              {formatNpr(store.inside_valley_shipping_minor || 10000)}
+                              {formatShippingRateLabel(store.inside_valley_shipping_minor, 10000)}
                             </span>
                           </div>
                           <div className="flex justify-between py-1 border-b border-[var(--border)]/60">
                             <span>Outside Valley (Nationwide courier):</span>
                             <span className="font-semibold text-[var(--ink)] tabular-nums">
-                              {formatNpr(store.outside_valley_shipping_minor || 20000)}
+                              {formatShippingRateLabel(store.outside_valley_shipping_minor, 20000)}
                             </span>
                           </div>
                           {typeof store.free_shipping_threshold_minor === "number" &&

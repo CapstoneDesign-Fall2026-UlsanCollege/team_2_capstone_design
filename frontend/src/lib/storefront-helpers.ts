@@ -1,4 +1,4 @@
-import type { ProductItem, StorePublicMetadata } from "./api";
+import { formatNpr, type ProductItem, type StorePublicMetadata } from "./api";
 
 const PLACEHOLDER_TEXT_VALUES = new Set([
   "",
@@ -226,4 +226,21 @@ export function buildThemePreviewDemoProducts(store: Partial<StorePublicMetadata
       ],
     },
   ];
+}
+
+/** Preserves explicit 0 (Rs. 0 / free shipping) while falling back only on null/undefined/negative. */
+export function resolveShippingRateMinor(
+  rateMinor: number | null | undefined,
+  fallbackMinor: number
+): number {
+  return typeof rateMinor === "number" && Number.isFinite(rateMinor) && rateMinor >= 0
+    ? rateMinor
+    : fallbackMinor;
+}
+
+export function formatShippingRateLabel(
+  rateMinor: number | null | undefined,
+  fallbackMinor: number
+): string {
+  return formatNpr(resolveShippingRateMinor(rateMinor, fallbackMinor));
 }
