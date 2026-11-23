@@ -162,7 +162,10 @@ def build_slice6_views(StoreMerchantMixin):
                 scoped_orders = list(base_orders.order_by("created_at"))
 
             valid_orders = [
-                o for o in scoped_orders if o.status not in ("CANCELLED", "PAYMENT_FAILED")
+                o
+                for o in scoped_orders
+                if o.status not in ("CANCELLED", "PAYMENT_FAILED")
+                and not (o.status == "PENDING_PAYMENT" and o.payment_status != "PAID")
             ]
 
             gross_sales_minor = sum(o.total_minor for o in valid_orders)
@@ -176,13 +179,19 @@ def build_slice6_views(StoreMerchantMixin):
             orders_count = len(valid_orders)
             aov_minor = round(gross_sales_minor / orders_count) if orders_count > 0 else 0
 
-            # Repeat customer rate across store (excluding cancelled & failed orders)
+            # Repeat customer rate across store (excluding cancelled, failed, and unpaid pending orders)
             cust_order_counts = (
                 Customer.objects.for_store(self.store)
                 .annotate(
                     valid_orders=Count(
                         "orders",
-                        filter=~Q(orders__status__in=["CANCELLED", "PAYMENT_FAILED"]),
+                        filter=(
+                            ~Q(orders__status__in=["CANCELLED", "PAYMENT_FAILED"])
+                            & ~(
+                                Q(orders__status="PENDING_PAYMENT")
+                                & ~Q(orders__payment_status="PAID")
+                            )
+                        ),
                     )
                 )
                 .filter(valid_orders__gt=0)

@@ -136,8 +136,6 @@ class StorefrontOTPRequestView(StorePublicMixin, APIView):
             "expires_in_seconds": 600,
             "resend_in_seconds": 60,
         }
-        if settings.DEBUG:
-            payload["dev_otp_hint"] = raw_code
 
         return Response(payload, status=status.HTTP_200_OK)
 
@@ -324,7 +322,11 @@ class StorefrontAccountDetailView(StorePublicMixin, APIView):
         else:
             agg = Order.objects.for_store(self.store).filter(customer=customer).aggregate(
                 orders_count=models.Count("id"),
-                total_spent=models.Sum("total_minor", filter=models.Q(payment_status="PAID")),
+                total_spent=models.Sum(
+                    "total_minor",
+                    filter=models.Q(payment_status="PAID")
+                    & ~models.Q(status__in=["CANCELLED", "PAYMENT_FAILED"]),
+                ),
             )
             cust_payload = {
                 "id": customer.id,
@@ -385,7 +387,11 @@ class StorefrontAccountDetailView(StorePublicMixin, APIView):
 
         agg = Order.objects.for_store(self.store).filter(customer=customer).aggregate(
             orders_count=models.Count("id"),
-            total_spent=models.Sum("total_minor", filter=models.Q(payment_status="PAID")),
+            total_spent=models.Sum(
+                "total_minor",
+                filter=models.Q(payment_status="PAID")
+                & ~models.Q(status__in=["CANCELLED", "PAYMENT_FAILED"]),
+            ),
         )
         orders_count = agg["orders_count"] or 0
         total_spent = agg["total_spent"] or 0

@@ -7,9 +7,9 @@ from rest_framework.test import APIClient
 
 from catalog.models import Discount, Product, Variant
 from core.tenant_context import TenantDatabaseContext
-from orders.models import Order
+from orders.models import Order, OrderItem
 from stores.khalti import KHALTI_STATE_CANCELED, KhaltiVerifyResult
-from stores.models import MerchantAuditLog, Store, StoreMembership
+from stores.models import Customer, MerchantAuditLog, Store, StoreMembership
 
 User = get_user_model()
 
@@ -749,3 +749,187 @@ class VariantSkuAndProductSlugCollisionBugTests(TestCase):
         )
         self.assertEqual(dup_prod_patch.status_code, status.HTTP_400_BAD_REQUEST)
         self.assertIn("slug", dup_prod_patch.json())
+
+
+class AnalyticsAndRevenueAccuracyBugTests(TestCase):
+    """Regression tests for Bug 5: exclude unpaid PENDING_PAYMENT and cancelled paid orders from revenue/analytics."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.owner = User.objects.create_user(
+            email="owner.rev@example.com",
+            full_name="Revenue Owner",
+        )
+        self.shopper_user = User.objects.create_user(
+            email="shopper.rev@example.com",
+            full_name="Shopper Rev",
+            phone="9801112233",
+        )
+        self.store = Store.objects.create(
+            name="Revenue Roasters",
+            slug="revenue-roasters",
+            is_active=True,
+        )
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=self.owner, role="OWNER")
+            self.customer = Customer.objects.create(
+                store=self.store,
+                user=self.shopper_user,
+                email=self.shopper_user.email,
+                full_name=self.shopper_user.full_name,
+                phone=self.shopper_user.phone,
+            )
+            self.product = Product.objects.create(
+                store=self.store,
+                name="Ilam Gold",
+                slug="ilam-gold",
+                is_active=True,
+            )
+            self.variant = Variant.objects.create(
+                store=self.store,
+                product=self.product,
+                sku="REV-250",
+                label="250g",
+                price_minor=100000,
+                in_stock=True,
+                is_active=True,
+            )
+            self.discount = Discount.objects.create(
+                store=self.store,
+                code="ABANDON10",
+                discount_type="PERCENTAGE",
+                value=10,
+                used_count=1,
+                is_active=True,
+            )
+            # 1) Legitimate paid Khalti order (Rs. 1,000)
+            self.paid_order = Order.objects.create(
+                store=self.store,
+                customer=self.customer,
+                order_number="#REV-PAID-1",
+                status="PAID",
+                payment_method="KHALTI",
+                payment_status="PAID",
+                subtotal_minor=100000,
+                shipping_minor=0,
+                discount_minor=0,
+                total_minor=100000,
+                shipping_address_snapshot={"province": "Bagmati", "district": "Kathmandu"},
+            )
+            OrderItem.objects.create(
+                store=self.store,
+                order=self.paid_order,
+                variant=self.variant,
+                product_name_snapshot="Ilam Gold",
+                variant_label_snapshot="250g",
+                unit_price_minor=100000,
+                quantity=1,
+                line_total_minor=100000,
+            )
+            # 2) Abandoned PENDING_PAYMENT / UNPAID Khalti checkout (Rs. 2,000) with promo held
+            self.pending_order = Order.objects.create(
+                store=self.store,
+                customer=self.customer,
+                order_number="#REV-PEND-2",
+                status="PENDING_PAYMENT",
+                payment_method="KHALTI",
+                payment_status="UNPAID",
+                subtotal_minor=200000,
+                shipping_minor=0,
+                discount_minor=0,
+                discount=self.discount,
+                discount_redeemed=True,
+                total_minor=200000,
+                shipping_address_snapshot={"province": "Bagmati", "district": "Kathmandu"},
+            )
+            OrderItem.objects.create(
+                store=self.store,
+                order=self.pending_order,
+                variant=self.variant,
+                product_name_snapshot="Ilam Gold",
+                variant_label_snapshot="250g",
+                unit_price_minor=100000,
+                quantity=2,
+                line_total_minor=200000,
+            )
+            # 3) Cancelled Khalti order that still has payment_status="PAID" (Rs. 3,000)
+            self.cancelled_paid_order = Order.objects.create(
+                store=self.store,
+                customer=self.customer,
+                order_number="#REV-CANC-3",
+                status="CANCELLED",
+                payment_method="KHALTI",
+                payment_status="PAID",
+                subtotal_minor=300000,
+                shipping_minor=0,
+                discount_minor=0,
+                total_minor=300000,
+                shipping_address_snapshot={"province": "Bagmati", "district": "Kathmandu"},
+            )
+            OrderItem.objects.create(
+                store=self.store,
+                order=self.cancelled_paid_order,
+                variant=self.variant,
+                product_name_snapshot="Ilam Gold",
+                variant_label_snapshot="250g",
+                unit_price_minor=100000,
+                quantity=3,
+                line_total_minor=300000,
+            )
+
+    def test_analytics_overview_and_customer_spend_count_only_real_paid_order(self):
+        self.client.force_authenticate(user=self.owner)
+
+        # Merchant Analytics
+        ana_res = self.client.get(f"/api/merchant/stores/{self.store.slug}/analytics/?range=30d")
+        self.assertEqual(ana_res.status_code, status.HTTP_200_OK)
+        ana = ana_res.json()
+        self.assertEqual(ana["kpis"]["orders_count"], 1)
+        self.assertEqual(ana["kpis"]["gross_sales_minor"], 100000)
+        self.assertEqual(ana["kpis"]["paid_sales_minor"], 100000)
+        self.assertEqual(ana["kpis"]["repeat_customers"], 0)
+        self.assertEqual(ana["top_products"][0]["units_sold"], 1)
+        self.assertEqual(ana["top_products"][0]["revenue_minor"], 100000)
+
+        # Merchant Overview
+        ov_res = self.client.get(f"/api/merchant/stores/{self.store.slug}/overview/")
+        self.assertEqual(ov_res.status_code, status.HTTP_200_OK)
+        ov = ov_res.json()
+        self.assertEqual(ov["orders_count"], 1)
+        self.assertEqual(ov["revenue_minor"], 100000)
+        self.assertEqual(ov["today_orders_count"], 1)
+        self.assertEqual(ov["today_sales_minor"], 100000)
+        self.assertEqual(ov["daily_sales_7d"][-1]["orders_count"], 1)
+        self.assertEqual(ov["daily_sales_7d"][-1]["revenue_minor"], 100000)
+
+        # Merchant Customer List & Detail
+        cust_list_res = self.client.get(f"/api/merchant/stores/{self.store.slug}/customers/")
+        self.assertEqual(cust_list_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(cust_list_res.json()[0]["total_spent_minor"], 100000)
+
+        cust_detail_res = self.client.get(
+            f"/api/merchant/stores/{self.store.slug}/customers/{self.customer.id}/"
+        )
+        self.assertEqual(cust_detail_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(cust_detail_res.json()["customer"]["total_spent_minor"], 100000)
+
+        # Storefront Customer Account Profile
+        self.client.force_authenticate(user=self.shopper_user)
+        acct_res = self.client.get(f"/api/stores/{self.store.slug}/account/")
+        self.assertEqual(acct_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(acct_res.json()["customer"]["total_spent_minor"], 100000)
+
+    def test_merchant_can_cancel_abandoned_pending_payment_order_and_release_promo(self):
+        self.client.force_authenticate(user=self.owner)
+        res = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/orders/{self.pending_order.id}/transition/",
+            {"to_status": "CANCELLED", "note": "Abandoned Khalti checkout"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_200_OK)
+        self.assertEqual(res.json()["status"], "CANCELLED")
+        with TenantDatabaseContext(self.store.id):
+            self.discount.refresh_from_db()
+            self.pending_order.refresh_from_db()
+            self.assertEqual(self.discount.used_count, 0)
+            self.assertFalse(self.pending_order.discount_redeemed)

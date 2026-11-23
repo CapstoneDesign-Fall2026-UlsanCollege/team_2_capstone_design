@@ -1377,15 +1377,22 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
         seven_days_start = (now - timedelta(days=6)).replace(hour=0, minute=0, second=0, microsecond=0)
 
         orders_qs = Order.objects.for_store(self.store)
-        valid_orders_qs = orders_qs.exclude(status__in=["CANCELLED", "PAYMENT_FAILED"])
+        valid_order_q = ~Q(status__in=["CANCELLED", "PAYMENT_FAILED"]) & ~(
+            Q(status="PENDING_PAYMENT") & ~Q(payment_status="PAID")
+        )
+        paid_revenue_q = Q(payment_status="PAID") & ~Q(status__in=["CANCELLED", "PAYMENT_FAILED"])
+        valid_orders_qs = orders_qs.filter(valid_order_q)
 
         orders_agg = orders_qs.aggregate(
-            orders_count=Count("id"),
-            revenue_minor=Sum("total_minor", filter=Q(payment_status__in=["PAID", "CONFIRMED"])),
-            today_orders_count=Count("id", filter=Q(created_at__gte=today_start) & ~Q(status__in=["CANCELLED", "PAYMENT_FAILED"])),
-            today_sales_minor=Sum("total_minor", filter=Q(created_at__gte=today_start) & ~Q(status__in=["CANCELLED", "PAYMENT_FAILED"])),
+            orders_count=Count("id", filter=valid_order_q),
+            revenue_minor=Sum("total_minor", filter=paid_revenue_q),
+            today_orders_count=Count("id", filter=Q(created_at__gte=today_start) & valid_order_q),
+            today_sales_minor=Sum("total_minor", filter=Q(created_at__gte=today_start) & valid_order_q),
             pending_fulfillment_count=Count("id", filter=Q(status__in=["CONFIRMED", "PAID", "PROCESSING"])),
-            cod_pending_minor=Sum("total_minor", filter=Q(payment_status="COD_PENDING") & ~Q(status="CANCELLED")),
+            cod_pending_minor=Sum(
+                "total_minor",
+                filter=Q(payment_status="COD_PENDING") & ~Q(status__in=["CANCELLED", "PAYMENT_FAILED"]),
+            ),
         )
         orders_count = orders_agg["orders_count"] or 0
         revenue_minor = orders_agg["revenue_minor"] or 0
@@ -2031,6 +2038,7 @@ class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
         note = str(request.data.get("note", "")).strip()
 
         VALID_FORWARD = {
+            "PENDING_PAYMENT": ["CANCELLED"],
             "CONFIRMED": ["PROCESSING", "CANCELLED"],
             "PAID": ["PROCESSING", "CANCELLED"],
             "PROCESSING": ["SHIPPED", "CANCELLED"],
@@ -2096,7 +2104,10 @@ class MerchantCustomerListView(StoreMerchantMixin, APIView):
                 orders_count=Count("orders", distinct=True),
                 total_spent_minor=Sum(
                     "orders__total_minor",
-                    filter=Q(orders__payment_status__in=["PAID", "CONFIRMED"]),
+                    filter=(
+                        Q(orders__payment_status="PAID")
+                        & ~Q(orders__status__in=["CANCELLED", "PAYMENT_FAILED"])
+                    ),
                     default=0,
                 ),
             )
@@ -2117,7 +2128,10 @@ class MerchantCustomerDetailView(StoreMerchantMixin, APIView):
                 orders_count=Count("orders", distinct=True),
                 total_spent_minor=Sum(
                     "orders__total_minor",
-                    filter=Q(orders__payment_status__in=["PAID", "CONFIRMED"]),
+                    filter=(
+                        Q(orders__payment_status="PAID")
+                        & ~Q(orders__status__in=["CANCELLED", "PAYMENT_FAILED"])
+                    ),
                     default=0,
                 ),
             )
