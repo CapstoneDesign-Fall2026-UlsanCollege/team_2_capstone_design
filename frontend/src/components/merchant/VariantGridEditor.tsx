@@ -82,6 +82,12 @@ export function VariantGridEditor({
     }
   };
 
+  const handleCreateCustomVariant = () => {
+    const cleanedDigits = newPriceRs.replace(/\D/g, "");
+    const num = cleanedDigits === "" ? 1000 : parseInt(cleanedDigits, 10);
+    handleCreate(newLabel, num * 100);
+  };
+
   const handleQuickAdd = async (items: string[]) => {
     const existingLabels = new Set(variants.map((v) => v.label.toLowerCase()));
     const missing = items.filter((item) => !existingLabels.has(item.toLowerCase()));
@@ -236,8 +242,7 @@ export function VariantGridEditor({
                   onKeyDown={(e) => {
                     if (e.key === "Enter") {
                       e.preventDefault();
-                      const num = parseInt(newPriceRs.replace(/\D/g, ""), 10) || 1000;
-                      handleCreate(newLabel, num * 100);
+                      handleCreateCustomVariant();
                     }
                   }}
                   className="w-full h-8 px-2 rounded border border-dashed border-[var(--border)] bg-transparent text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:border-[var(--ring)] focus:border-solid"
@@ -257,22 +262,18 @@ export function VariantGridEditor({
                     onKeyDown={(e) => {
                       if (e.key === "Enter") {
                         e.preventDefault();
-                        const num = parseInt(newPriceRs.replace(/\D/g, ""), 10) || 1000;
-                        handleCreate(newLabel, num * 100);
+                        handleCreateCustomVariant();
                       }
                     }}
                     className="w-full h-8 pl-9 pr-2 rounded border border-dashed border-[var(--border)] bg-transparent text-xs font-mono tabular-nums text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:border-[var(--ring)] focus:border-solid"
                   />
                 </div>
               </td>
-              <td colSpan={3} className="py-2 px-3 text-right">
+              <td colSpan={2} className="py-2 px-3 text-right">
                 <button
                   type="button"
                   disabled={creating || !newLabel.trim()}
-                  onClick={() => {
-                    const num = parseInt(newPriceRs.replace(/\D/g, ""), 10) || 1000;
-                    handleCreate(newLabel, num * 100);
-                  }}
+                  onClick={handleCreateCustomVariant}
                   className="h-8 px-3 rounded bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer"
                 >
                   {creating ? "Adding..." : "+ Add Row"}
@@ -350,6 +351,75 @@ export function VariantGridEditor({
             </div>
           </div>
         ))}
+
+        {/* Mobile Custom Variant Creation Card */}
+        <div className="p-3.5 rounded-lg border border-dashed border-[var(--border)] bg-[var(--secondary)]/20 space-y-3">
+          <div className="text-xs font-semibold text-[var(--foreground)]">
+            Add Custom Variant
+          </div>
+          <div className="grid grid-cols-2 gap-2">
+            <div>
+              <label
+                htmlFor="mobile-variant-label"
+                className="text-[10px] text-[var(--muted-foreground)] block mb-1"
+              >
+                Label
+              </label>
+              <input
+                id="mobile-variant-label"
+                type="text"
+                placeholder="+ Add size / variant..."
+                value={newLabel}
+                onChange={(e) => setNewLabel(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    e.preventDefault();
+                    handleCreateCustomVariant();
+                  }
+                }}
+                className="w-full h-8 px-2 rounded border border-[var(--border)] bg-[var(--background)] text-xs text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:border-[var(--ring)]"
+              />
+            </div>
+
+            <div>
+              <label
+                htmlFor="mobile-variant-price"
+                className="text-[10px] text-[var(--muted-foreground)] block mb-1"
+              >
+                Price (Rs.)
+              </label>
+              <div className="relative">
+                <span className="absolute left-2 top-2 text-xs font-mono text-[var(--muted-foreground)]">
+                  Rs.
+                </span>
+                <input
+                  id="mobile-variant-price"
+                  type="text"
+                  inputMode="numeric"
+                  placeholder="1000"
+                  value={newPriceRs}
+                  onChange={(e) => setNewPriceRs(e.target.value)}
+                  onKeyDown={(e) => {
+                    if (e.key === "Enter") {
+                      e.preventDefault();
+                      handleCreateCustomVariant();
+                    }
+                  }}
+                  className="w-full h-8 pl-8 pr-2 rounded border border-[var(--border)] bg-[var(--background)] text-xs font-mono tabular-nums text-[var(--foreground)] placeholder-[var(--muted-foreground)] focus:outline-none focus:border-[var(--ring)]"
+                />
+              </div>
+            </div>
+          </div>
+
+          <button
+            type="button"
+            disabled={creating || !newLabel.trim()}
+            onClick={handleCreateCustomVariant}
+            className="w-full h-9 px-3 rounded bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-medium hover:opacity-90 disabled:opacity-40 transition-opacity cursor-pointer"
+          >
+            {creating ? "Adding..." : "+ Add Variant"}
+          </button>
+        </div>
       </div>
     </div>
   );

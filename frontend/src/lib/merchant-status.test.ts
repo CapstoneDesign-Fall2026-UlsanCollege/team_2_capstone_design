@@ -24,6 +24,7 @@ import type { MerchantStoreSettings, OrderDetail } from "./api";
 import { OrderQueueTable } from "@/components/merchant/OrderQueueTable";
 import { OrderDetailSheet } from "@/components/merchant/OrderDetailSheet";
 import { SettingsForm } from "@/components/merchant/SettingsForm";
+import { VariantGridEditor } from "@/components/merchant/VariantGridEditor";
 import {
   COD_DELIVERED_LABEL,
   codToCollectMinor,
@@ -507,5 +508,39 @@ describe("Khalti settings banner (Bug 8)", () => {
       })
     );
     expect(sandboxHtml).toContain("Platform Sandbox Active (Ready for Test Orders)");
+  });
+});
+
+describe("VariantGridEditor mobile custom variant form (Bug 9)", () => {
+  it("renders custom variant inputs and button inside the mobile container and aligns desktop colSpan", () => {
+    const html = renderToStaticMarkup(
+      React.createElement(VariantGridEditor, {
+        storeSlug: "test-store",
+        productId: 42,
+        initialVariants: [
+          {
+            id: 1,
+            sku: "SKU-1",
+            label: "250g",
+            weight_grams: 250,
+            price_minor: 80000,
+            allow_one_time: true,
+            in_stock: true,
+            is_active: true,
+            sort_order: 0,
+          },
+        ],
+      })
+    );
+
+    const desktopMatch = html.match(/<table[\s\S]*?<\/table>/);
+    expect(desktopMatch).not.toBeNull();
+    expect(desktopMatch![0]).toMatch(/colspan="2"/i);
+
+    const mobileSplit = html.split("sm:hidden space-y-3");
+    expect(mobileSplit.length).toBeGreaterThan(1);
+    const mobileSection = mobileSplit[1];
+    expect(mobileSection).toContain("+ Add size / variant...");
+    expect(mobileSection).toContain("+ Add Variant");
   });
 });
