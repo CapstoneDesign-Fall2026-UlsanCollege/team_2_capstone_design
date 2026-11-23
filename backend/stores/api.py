@@ -1,4 +1,5 @@
 import logging
+import math
 from datetime import timedelta
 from django.conf import settings
 from django.core.exceptions import ValidationError
@@ -325,9 +326,18 @@ class ProductSerializer(StoreScopedSerializerMixin):
         if not cleaned:
             return ""
         if cleaned.startswith("/images/") or cleaned.startswith("/uploads/"):
+            prefix = "/images/" if cleaned.startswith("/images/") else "/uploads/"
+            subpath = cleaned[len(prefix):]
+            lower_cleaned = cleaned.lower()
             if (
-                ".." in cleaned
+                not subpath
+                or ".." in cleaned
+                or "\\" in cleaned
                 or cleaned.startswith("//")
+                or "%2e" in lower_cleaned
+                or "%2f" in lower_cleaned
+                or "%5c" in lower_cleaned
+                or any(ch in cleaned for ch in '<>"\'`')
                 or any(c.isspace() or ord(c) < 32 for c in cleaned)
             ):
                 raise serializers.ValidationError("Enter a valid store asset path.")
@@ -772,12 +782,17 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         return Response(payload)
 
 
-def _parse_positive_int(raw_val):
-    """Parse a positive integer (>= 1) without accepting booleans or fractional values."""
+MAX_CHECKOUT_ITEMS = 100
+MAX_CHECKOUT_ITEM_QUANTITY = 999
+MAX_DB_POSITIVE_INT = 2_147_483_647
+
+
+def _parse_positive_int(raw_val, max_val=MAX_DB_POSITIVE_INT):
+    """Parse a positive integer (1..max_val) without accepting booleans or fractional values."""
     if raw_val is None or isinstance(raw_val, bool):
         return None
     if isinstance(raw_val, float):
-        if not raw_val.is_integer():
+        if not math.isfinite(raw_val) or not raw_val.is_integer():
             return None
         val = int(raw_val)
     elif isinstance(raw_val, int):
@@ -792,7 +807,7 @@ def _parse_positive_int(raw_val):
             return None
     else:
         return None
-    return val if val >= 1 else None
+    return val if 1 <= val <= max_val else None
 
 
 def _parse_checkout_items(raw_items):
@@ -801,16 +816,18 @@ def _parse_checkout_items(raw_items):
         return None, "Cart is empty."
     if not isinstance(raw_items, list):
         return None, "Invalid cart items format."
+    if len(raw_items) > MAX_CHECKOUT_ITEMS:
+        return None, f"Too many items in cart (maximum {MAX_CHECKOUT_ITEMS})."
 
     parsed_items = []
     for it in raw_items:
         if not isinstance(it, dict):
             return None, "Each cart item must be an object with variant_id and quantity."
-        vid = _parse_positive_int(it.get("variant_id"))
+        vid = _parse_positive_int(it.get("variant_id"), max_val=MAX_DB_POSITIVE_INT)
         if vid is None:
             return None, "Invalid variant_id in cart items."
         raw_qty = it["quantity"] if "quantity" in it else 1
-        qty = _parse_positive_int(raw_qty)
+        qty = _parse_positive_int(raw_qty, max_val=MAX_CHECKOUT_ITEM_QUANTITY)
         if qty is None:
             return None, "Item quantity must be a positive integer."
         parsed_items.append({"variant_id": vid, "quantity": qty})
@@ -834,6 +851,9 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, store_slug):
+        if not isinstance(request.data, dict):
+            return Response({"error": "Invalid request payload."}, status=status.HTTP_400_BAD_REQUEST)
+
         items_data, items_err = _parse_checkout_items(request.data.get("items"))
         if items_err:
             return Response({"error": items_err}, status=status.HTTP_400_BAD_REQUEST)
@@ -860,6 +880,11 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
             quantity = it["quantity"]
             unit_price = v.price_minor
             line_total = unit_price * quantity
+            if line_total > MAX_DB_POSITIVE_INT or subtotal_minor + line_total > MAX_DB_POSITIVE_INT:
+                return Response(
+                    {"error": "Order total exceeds maximum supported amount."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
             subtotal_minor += line_total
             computed_items.append({
@@ -901,6 +926,11 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
             applied_discount_code = disc.code
 
         total_minor = max(0, subtotal_minor - discount_minor) + shipping_minor
+        if total_minor > MAX_DB_POSITIVE_INT:
+            return Response(
+                {"error": "Order total exceeds maximum supported amount."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         return Response({
             "subtotal_minor": subtotal_minor,
@@ -918,6 +948,9 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, store_slug):
+        if not isinstance(request.data, dict):
+            return Response({"error": "Invalid request payload."}, status=status.HTTP_400_BAD_REQUEST)
+
         items_data, items_err = _parse_checkout_items(request.data.get("items"))
         if items_err:
             return Response({"error": items_err}, status=status.HTTP_400_BAD_REQUEST)
@@ -1049,6 +1082,11 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             quantity = it["quantity"]
             unit_price = v.price_minor
             line_total = unit_price * quantity
+            if line_total > MAX_DB_POSITIVE_INT or subtotal_minor + line_total > MAX_DB_POSITIVE_INT:
+                return Response(
+                    {"error": "Order total exceeds maximum supported amount."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
             variant_label = v.label
 
             subtotal_minor += line_total
@@ -1096,11 +1134,18 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 if not ok:
                     return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
                 discount_minor = locked_disc.compute_discount_minor(subtotal_minor)
-                Discount.objects.for_store(self.store).filter(id=locked_disc.id).update(used_count=F("used_count") + 1)
                 applied_discount = locked_disc
                 applied_promo_note = f" (Promo: {locked_disc.code})"
 
             total_minor = max(0, subtotal_minor - discount_minor) + shipping_minor
+            if total_minor > MAX_DB_POSITIVE_INT:
+                return Response(
+                    {"error": "Order total exceeds maximum supported amount."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if applied_discount is not None:
+                Discount.objects.for_store(self.store).filter(id=applied_discount.id).update(used_count=F("used_count") + 1)
 
             count = Order.objects.for_store(self.store).count() + 1
             order_number = f"#{prefix}-{count:04d}"
@@ -1792,15 +1837,27 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
 
         initial_price_minor = None
         if "initial_price_minor" in data:
-            try:
-                initial_price_minor = int(data["initial_price_minor"])
-            except (ValueError, TypeError):
-                initial_price_minor = None
-            if initial_price_minor is not None and initial_price_minor < 0:
-                return Response(
-                    {"error": "Initial price cannot be negative."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
+            raw_initial_price = data["initial_price_minor"]
+            if raw_initial_price is not None and raw_initial_price != "":
+                if isinstance(raw_initial_price, bool) or (
+                    isinstance(raw_initial_price, float)
+                    and (not math.isfinite(raw_initial_price) or not raw_initial_price.is_integer())
+                ):
+                    return Response(
+                        {"error": "Initial price must be a non-negative integer within range."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                try:
+                    initial_price_minor = int(raw_initial_price)
+                except (ValueError, TypeError):
+                    initial_price_minor = None
+                if initial_price_minor is not None and (
+                    initial_price_minor < 0 or initial_price_minor > MAX_DB_POSITIVE_INT
+                ):
+                    return Response(
+                        {"error": "Initial price must be a non-negative integer within range."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
         serializer = ProductSerializer(data=data)
         serializer.is_valid(raise_exception=True)
@@ -1968,13 +2025,25 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
     def patch(self, request, store_slug, product_id, variant_id):
         variant = self.get_variant(product_id, variant_id)
         old_price_minor = variant.price_minor
+        if "sku" in request.data:
+            raw_patch_sku = request.data.get("sku")
+            if raw_patch_sku is None or not str(raw_patch_sku).strip():
+                return Response(
+                    {"sku": ["Variant SKU cannot be blank."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
         serializer = VariantSerializer(variant, data=request.data, partial=True)
         serializer.is_valid(raise_exception=True)
         if "sku" in serializer.validated_data:
             new_sku = str(serializer.validated_data["sku"] or "").strip()
+            if not new_sku:
+                return Response(
+                    {"sku": ["Variant SKU cannot be blank."]},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+            serializer.validated_data["sku"] = new_sku
             if (
-                new_sku
-                and Variant.objects.for_store(self.store)
+                Variant.objects.for_store(self.store)
                 .filter(sku=new_sku)
                 .exclude(id=variant.id)
                 .exists()
@@ -2076,10 +2145,6 @@ class MerchantOrderDetailView(StoreMerchantMixin, APIView):
 
 class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
     def post(self, request, store_slug, order_id):
-        order = Order.objects.for_store(self.store).select_for_update().filter(id=order_id).first()
-        if not order:
-            raise Http404("Order not found.")
-
         target_status = str(request.data.get("to_status", "")).strip().upper()
         note = str(request.data.get("note", "")).strip()
 
@@ -2096,33 +2161,37 @@ class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
             "DELIVERED": ["SHIPPED"],
         }
 
-        current = order.status.upper()
-        is_forward = target_status in VALID_FORWARD.get(current, [])
-        is_undo = target_status in VALID_UNDO.get(current, [])
-
-        if not is_forward and not is_undo:
-            return Response(
-                {"error": f"Invalid transition from {current} to {target_status}."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
-
-        if is_undo and current == "PROCESSING":
-            if target_status == "PAID" and order.payment_status != "PAID":
-                return Response(
-                    {"error": "Cannot undo an unpaid order into PAID status."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-            if (
-                target_status == "CONFIRMED"
-                and order.payment_method != "COD"
-                and order.payment_status == "PAID"
-            ):
-                return Response(
-                    {"error": "Cannot undo a paid online order into COD CONFIRMED status."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
-
         with transaction.atomic():
+            order = Order.objects.for_store(self.store).select_for_update().filter(id=order_id).first()
+            if not order:
+                raise Http404("Order not found.")
+
+            current = order.status.upper()
+            is_forward = target_status in VALID_FORWARD.get(current, [])
+            is_undo = target_status in VALID_UNDO.get(current, [])
+
+            if not is_forward and not is_undo:
+                return Response(
+                    {"error": f"Invalid transition from {current} to {target_status}."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if is_undo and current == "PROCESSING":
+                if target_status == "PAID" and order.payment_status != "PAID":
+                    return Response(
+                        {"error": "Cannot undo an unpaid order into PAID status."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if (
+                    target_status == "CONFIRMED"
+                    and order.payment_method != "COD"
+                    and order.payment_status == "PAID"
+                ):
+                    return Response(
+                        {"error": "Cannot undo a paid online order into COD CONFIRMED status."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
             old_status = order.status
             order.status = target_status
 
