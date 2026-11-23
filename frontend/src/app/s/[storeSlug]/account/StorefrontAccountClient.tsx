@@ -43,6 +43,7 @@ import {
 import { GoogleSignInButton } from "@/components/auth/GoogleSignInButton";
 import { useAccount } from "@/components/storefront/AccountContext";
 import { Chip, ChipTone } from "@/components/ui/chip";
+import { resolveShopperOrderListStatus } from "@/lib/storefront-order-status";
 import { StorefrontHeader } from "@/components/storefront/StorefrontHeader";
 import { useCart } from "@/components/storefront/CartContext";
 
@@ -83,28 +84,7 @@ export interface StorefrontAccountClientProps {
 type TabType = "orders" | "profile" | "addresses";
 
 function getOrderStatusTone(status: string, paymentStatus?: string): { tone: ChipTone; label: string } {
-  const s = status.toUpperCase();
-  const p = (paymentStatus || "").toUpperCase();
-
-  if (s === "DELIVERED") {
-    return { tone: "success", label: "Delivered" };
-  }
-  if (p === "PAID" || s === "PAID") {
-    return { tone: "success", label: "Paid" };
-  }
-  if (s === "PAYMENT_FAILED" || p === "FAILED") {
-    return { tone: "error", label: "Payment Failed" };
-  }
-  if (s === "CANCELLED") {
-    return { tone: "error", label: "Cancelled" };
-  }
-  if (s === "SHIPPED") {
-    return { tone: "warning", label: "Shipped" };
-  }
-  if (s === "CONFIRMED") {
-    return { tone: "neutral", label: "Confirmed" };
-  }
-  return { tone: "warning", label: "Pending" };
+  return resolveShopperOrderListStatus(status, paymentStatus);
 }
 
 function formatDate(isoString: string): string {

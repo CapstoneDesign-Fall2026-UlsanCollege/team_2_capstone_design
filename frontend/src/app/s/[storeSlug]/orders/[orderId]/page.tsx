@@ -13,7 +13,8 @@ import {
 } from "lucide-react";
 import { formatNpr, OrderDetail, StorePublicMetadata } from "@/lib/api";
 import { getServerApiOrigin } from "@/lib/env";
-import { Chip, ChipTone } from "@/components/ui/chip";
+import { resolveShopperOrderReceiptView } from "@/lib/storefront-order-status";
+import { Chip } from "@/components/ui/chip";
 import { OrderAccountBanner, OrderHeaderNav } from "@/components/storefront/OrderAccountBanner";
 import { OrderPaymentActions } from "@/components/storefront/OrderPaymentActions";
 
@@ -78,62 +79,17 @@ export default async function StorefrontOrderDetailPage({
   const statusUpper = order.status.toUpperCase();
   const paymentStatusUpper = order.payment_status.toUpperCase();
   const isKhalti = order.payment_method === "KHALTI";
-  const isCod = order.payment_method === "COD";
 
-  // Determine Semantic Status Mapping
-  let chipTone: ChipTone = "neutral";
-  let statusBadgeLabel = order.status.replace(/_/g, " ");
-  let heroHeadline = "Order Received";
-  let heroSubtitle = `Thank you for ordering directly from ${store.name}.`;
-  let paymentActionMode: "failed" | "pending" | null = null;
-
-  if (statusUpper === "DELIVERED") {
-    chipTone = "success";
-    statusBadgeLabel = "Delivered";
-    heroHeadline = "Order Delivered!";
-    heroSubtitle = "Your package has been safely delivered.";
-  } else if (paymentStatusUpper === "PAID" || statusUpper === "PAID") {
-    chipTone = "success";
-    statusBadgeLabel = isKhalti ? "Khalti Verified" : "Paid";
-    heroHeadline = "Payment Verified & Order Confirmed!";
-    heroSubtitle = `Your payment is verified. ${store.name} will prepare your order for dispatch.`;
-  } else if (statusUpper === "PAYMENT_FAILED" || paymentStatusUpper === "FAILED") {
-    chipTone = "error";
-    statusBadgeLabel = "Payment Failed";
-    heroHeadline = "Payment Not Completed";
-    heroSubtitle = "Your payment transaction was not completed. Tap below to retry.";
-    if (isKhalti) {
-      paymentActionMode = "failed";
-    }
-  } else if (statusUpper === "CANCELLED") {
-    chipTone = "error";
-    statusBadgeLabel = "Cancelled";
-    heroHeadline = "Order Cancelled";
-    heroSubtitle = "This order has been cancelled.";
-  } else if (statusUpper === "SHIPPED") {
-    chipTone = "warning";
-    statusBadgeLabel = "Out for Delivery";
-    heroHeadline = "Your Order is on the Way!";
-    heroSubtitle = "Courier has picked up your package for doorstep delivery.";
-  } else if (isCod || paymentStatusUpper === "COD_PENDING") {
-    chipTone = "warning";
-    statusBadgeLabel = "Awaiting COD";
-    heroHeadline = "Order Confirmed for Cash on Delivery";
-    heroSubtitle = `Please have ${formatNpr(order.total_minor)} ready in cash upon arrival.`;
-  } else if (statusUpper === "PENDING_PAYMENT") {
-    chipTone = "warning";
-    statusBadgeLabel = "Verifying Payment";
-    heroHeadline = "Awaiting Payment Confirmation";
-    heroSubtitle = "We are verifying your transaction with Khalti. Tap Check again to refresh status.";
-    if (isKhalti) {
-      paymentActionMode = "pending";
-    }
-  } else if (statusUpper === "CONFIRMED" || statusUpper === "PROCESSING" || statusUpper === "PACKED") {
-    chipTone = "warning";
-    statusBadgeLabel = "Processing";
-    heroHeadline = "Order Confirmed!";
-    heroSubtitle = `${store.name} is preparing your items for courier dispatch.`;
-  }
+  const receiptView = resolveShopperOrderReceiptView(order, store.name, formatNpr);
+  const {
+    chipTone,
+    statusBadgeLabel,
+    heroHeadline,
+    heroSubtitle,
+    paymentSummaryLabel,
+    paymentActionMode,
+    showProgressStepper,
+  } = receiptView;
 
   const isOrderActive =
     !["DELIVERED", "CANCELLED", "PAYMENT_FAILED"].includes(statusUpper) &&
@@ -244,6 +200,7 @@ export default async function StorefrontOrderDetailPage({
         <OrderAccountBanner storeSlug={store.slug} customerEmail={order.customer_email} />
 
         {/* Order Lifecycle Timeline */}
+        {showProgressStepper && (
         <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-4">
           <div className="flex flex-wrap items-center justify-between gap-x-3 gap-y-1">
             <h2 className="font-serif text-base font-semibold text-[var(--ink)]">
@@ -277,6 +234,7 @@ export default async function StorefrontOrderDetailPage({
             ))}
           </div>
         </section>
+        )}
 
         {/* Delivery Destination */}
         <section className="p-5 sm:p-6 rounded-xl border border-[var(--border)] bg-[var(--surface)] space-y-3">
@@ -370,11 +328,7 @@ export default async function StorefrontOrderDetailPage({
                 {isKhalti ? "Khalti ePayment" : "Cash on Delivery"}
               </p>
               <p className="text-xs text-[var(--ink-2)] tabular-nums mt-0.5">
-                {paymentStatusUpper === "PAID"
-                  ? "Paid in Full"
-                  : paymentStatusUpper === "COD_PENDING"
-                  ? `Collect ${formatNpr(order.total_minor)} on arrival`
-                  : `Balance: ${formatNpr(order.total_minor)}`}
+                {paymentSummaryLabel}
               </p>
             </div>
           </div>
