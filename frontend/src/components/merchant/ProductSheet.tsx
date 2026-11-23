@@ -18,6 +18,7 @@ import {
   ProductPayload,
   updateMerchantProduct,
 } from "@/lib/api";
+import { resolveProductImagePickerVisible } from "@/lib/merchant-status";
 
 const PRESET_IMAGES = [
   {
@@ -117,10 +118,12 @@ function ProductForm({
 
   // Image upload state
   const [imageTab, setImageTab] = useState<"upload" | "presets" | "url">("upload");
+  const [showImagePicker, setShowImagePicker] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [uploadError, setUploadError] = useState<string | null>(null);
   const [dragActive, setDragActive] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
+  const isImagePickerVisible = resolveProductImagePickerVisible(imageUrl, showImagePicker);
 
   // Attributes: key-value pairs
   const [attributes, setAttributes] = useState<Array<{ key: string; value: string }>>(() => {
@@ -162,6 +165,7 @@ function ProductForm({
         { method: "POST", body: formData }
       );
       setImageUrl(data.url);
+      setShowImagePicker(false);
     } catch (err: unknown) {
       const msg = err instanceof Error ? err.message : "Upload failed";
       setUploadError(msg);
@@ -351,7 +355,7 @@ function ProductForm({
           </div>
 
           {/* Active Image Preview Card */}
-          {imageUrl ? (
+          {imageUrl && (
             <div className="p-3 rounded-lg border border-[var(--border)] bg-[var(--secondary)]/40 space-y-3">
               <div className="flex items-center gap-3">
                 <div className="w-16 h-16 rounded-md border border-[var(--border)] overflow-hidden shrink-0 bg-[var(--background)] relative">
@@ -375,7 +379,10 @@ function ProductForm({
                 </div>
                 <button
                   type="button"
-                  onClick={() => setImageUrl("")}
+                  onClick={() => {
+                    setImageUrl("");
+                    setShowImagePicker(false);
+                  }}
                   className="p-1.5 rounded text-[var(--muted-foreground)] hover:text-[var(--destructive)] hover:bg-[var(--destructive)]/10 transition-colors cursor-pointer"
                   title="Remove image"
                 >
@@ -394,15 +401,32 @@ function ProductForm({
                 <span className="text-[var(--muted-foreground)]">·</span>
                 <button
                   type="button"
-                  onClick={() => setImageTab("presets")}
+                  onClick={() => {
+                    setImageTab("presets");
+                    setShowImagePicker(true);
+                  }}
                   className="text-xs text-[var(--muted-foreground)] hover:text-[var(--foreground)] cursor-pointer"
                 >
                   Pick from Presets
                 </button>
               </div>
             </div>
-          ) : (
+          )}
+
+          {isImagePickerVisible && (
             <div className="space-y-2">
+              {Boolean(imageUrl) && (
+                <div className="flex items-center justify-between text-[11px] text-[var(--muted-foreground)]">
+                  <span>Choose a replacement image below</span>
+                  <button
+                    type="button"
+                    onClick={() => setShowImagePicker(false)}
+                    className="text-xs font-medium text-[var(--primary)] hover:underline cursor-pointer"
+                  >
+                    Hide picker
+                  </button>
+                </div>
+              )}
               {/* Option Mode Tabs */}
               <div className="grid grid-cols-3 gap-1 p-1 rounded-lg bg-[var(--secondary)] border border-[var(--border)] text-xs font-medium">
                 <button
@@ -459,14 +483,6 @@ function ProductForm({
                       : "border-[var(--border)] hover:border-[var(--muted-foreground)] bg-[var(--background)]"
                   }`}
                 >
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/jpeg,image/png,image/webp,image/avif"
-                    onChange={handleFileChange}
-                    className="hidden"
-                  />
-
                   {uploading ? (
                     <div className="py-2 flex flex-col items-center gap-2">
                       <Loader2 className="w-6 h-6 animate-spin text-[var(--primary)]" />
@@ -509,7 +525,10 @@ function ProductForm({
                       <button
                         key={idx}
                         type="button"
-                        onClick={() => setImageUrl(preset.url)}
+                        onClick={() => {
+                          setImageUrl(preset.url);
+                          setShowImagePicker(false);
+                        }}
                         className="group flex items-center gap-2 p-1.5 rounded border border-[var(--border)] bg-[var(--card)] hover:border-[var(--primary)] text-left cursor-pointer transition-all"
                       >
                         <div className="w-9 h-9 rounded overflow-hidden shrink-0 bg-[var(--secondary)]">
@@ -542,7 +561,10 @@ function ProductForm({
                     type="url"
                     placeholder="https://images.unsplash.com/... or Cloudinary URL"
                     value={imageUrl}
-                    onChange={(e) => setImageUrl(e.target.value)}
+                    onChange={(e) => {
+                      setShowImagePicker(true);
+                      setImageUrl(e.target.value);
+                    }}
                     className="w-full h-9 px-3 rounded border border-[var(--border)] bg-[var(--background)] text-xs font-mono text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)]"
                   />
                   <p className="text-[10px] text-[var(--muted-foreground)]">

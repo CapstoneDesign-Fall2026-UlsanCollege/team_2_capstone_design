@@ -258,3 +258,11 @@ export function orderTerminalActionView(o: OrderLike): OrderTerminalActionView {
     tone: "neutral",
   };
 }
+
+/** Whether the ProductSheet image upload/presets/URL picker should be visible. */
+export function resolveProductImagePickerVisible(
+  imageUrl: string,
+  showImagePicker: boolean
+): boolean {
+  return !imageUrl.trim() || showImagePicker;
+}

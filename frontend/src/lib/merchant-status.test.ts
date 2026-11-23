@@ -1,3 +1,5 @@
+import fs from "node:fs";
+import path from "node:path";
 import React from "react";
 import { renderToStaticMarkup } from "react-dom/server";
 import { describe, expect, it, vi } from "vitest";
@@ -35,6 +37,7 @@ import {
   packingSlipPaymentView,
   paymentView,
   resolveOrdersStatusTab,
+  resolveProductImagePickerVisible,
   salesMinor,
   type MoneyOrder,
 } from "./merchant-status";
@@ -380,5 +383,30 @@ describe("orderTerminalActionView and merchant order queue/drawer terminal label
       })
     );
     expect(deliveredSheetHtml).toContain("Order Completed &amp; Delivered");
+  });
+});
+
+describe("ProductSheet preset picker visibility (Bug 7)", () => {
+  it("keeps picker hidden when imageUrl is present unless showImagePicker is true", () => {
+    expect(resolveProductImagePickerVisible("/uploads/a.png", false)).toBe(false);
+    expect(resolveProductImagePickerVisible("/uploads/a.png", true)).toBe(true);
+    expect(resolveProductImagePickerVisible("", false)).toBe(true);
+    expect(resolveProductImagePickerVisible("   ", false)).toBe(true);
+  });
+
+  it("opens preset picker on Pick from Presets and mounts only one fileInputRef in ProductSheet", () => {
+    const productSheetPath = path.resolve(
+      __dirname,
+      "../components/merchant/ProductSheet.tsx"
+    );
+    const source = fs.readFileSync(productSheetPath, "utf-8");
+
+    expect(source).toContain("resolveProductImagePickerVisible");
+    expect(source).toMatch(
+      /setImageTab\("presets"\);\s*setShowImagePicker\(true\);[\s\S]{0,260}Pick from Presets/
+    );
+    expect(source).toContain("Hide picker");
+    const refMatches = source.match(/ref=\{fileInputRef\}/g) || [];
+    expect(refMatches).toHaveLength(1);
   });
 });
