@@ -37,15 +37,17 @@ Both **Khalti** (official Sandbox test mode `9800000000` / OTP `987654`) and **C
 
 ### Actual Result
 - **Nov 18 Observation (`8098426`):** Live `/s/brewmellow/checkout` rendered `Khalti Unavailable — Not configured by merchant`.
-- **Nov 22 Reproduction (`fbc79ab`):** Reproduced identically on `390x844` mobile checkout — **Khalti** card is grayed out with `Unavailable` / `Not configured by merchant`, while **Cash on Delivery** (`Pay Rs. 550 cash to rider`) is selected and active.
+- **Nov 22 Reproduction (`fbc79ab`):** Reproduced identically on `390x844` mobile checkout — **Khalti** card grayed out with `Unavailable` / `Not configured by merchant`, while **Cash on Delivery** (`Pay Rs. 550 cash to rider`) stayed active ([`w12-05`](evidence/screenshots/w12-05-live-brewmellow-khalti-unavailable-promo.png)).
+- **Nov 23 Resolution & Live Verification (`4464ed7`):** Authenticated as BrewMellow `OWNER` via real Email OTP (`aayushman1234511@gmail.com`), saved custom Khalti `TEST (Sandbox)` credentials encrypted with Fernet AES-256 (`HTTP 200`, `Custom Test Key Connected`, masked `••••••••••••9fc1`, [`w12-06`](evidence/screenshots/w12-06-brewmellow-khalti-sandbox-connected.png)), confirmed **Khalti** active on `/s/brewmellow/checkout` ([`w12-07`](evidence/screenshots/w12-07-brewmellow-checkout-khalti-active.png)), initiated & completed sandbox payment on `https://test-pay.khalti.com` -> Order `#BR-2026-0005` verified **`Khalti Verified` (`PAID`, `Test mode: no real money is charged`)** ([`w12-08`](evidence/screenshots/w12-08-khalti-sandbox-order-br-2026-0005-paid.png)) and visible in `/merchant/brewmellow/orders` ([`w12-09`](evidence/screenshots/w12-09-merchant-orders-queue-khalti-verified.png)).
 
 ### Proof
-- **Nov 22 Live Reproduction Screenshot (`390x844`):** [`w12-05-live-brewmellow-khalti-unavailable-promo.png`](evidence/screenshots/w12-05-live-brewmellow-khalti-unavailable-promo.png)
+- **Before-Fix Live Reproduction (`Nov 22`):** [`w12-05-live-brewmellow-khalti-unavailable-promo.png`](evidence/screenshots/w12-05-live-brewmellow-khalti-unavailable-promo.png)
+- **After-Fix Live Verification (`Nov 23`):** [`w12-06`](evidence/screenshots/w12-06-brewmellow-khalti-sandbox-connected.png) · [`w12-07`](evidence/screenshots/w12-07-brewmellow-checkout-khalti-active.png) · [`w12-08`](evidence/screenshots/w12-08-khalti-sandbox-order-br-2026-0005-paid.png) · [`w12-09`](evidence/screenshots/w12-09-merchant-orders-queue-khalti-verified.png)
 - **GitHub Issue Tracker:** [`Issue #51`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) & [`Issue #67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67)
 
 ### Owner / Next Action
-- **Owner:** Aditya Kumar Gupta (`@notyouradhee`) to configure Khalti Sandbox credentials in live `brewmellow` merchant settings (keeping **no real fiat money** Sandbox mode enabled), then Kushan Sunuwar (`@Kushan2191`) runs the uncoached non-author live checkout + cancellation recovery check before **Wed Nov 25, 2026 EOD**.
-- **Reproduced by / evidence:** Nov 18 & Nov 22 automated browser checks (`w12-05`); awaiting independent teammate live re-run comment in `#51` / `#67`.
+- **Owner:** Khalti Sandbox configuration & payment completion resolved (`@notyouradhee`); remaining uncoached non-author live repeat (`Status=User canceled` cart/promo retention + checkout check) assigned to **Kushan Sunuwar (`@Kushan2191`)** before **Wed Nov 25, 2026 EOD** in `#51` / `#67`.
+- **Reproduced / retested by:** Live Nov 18 & Nov 22 repro (`w12-05`) -> Nov 23 live fix + user-completed sandbox payment & browser audit (`w12-06`..`w12-09`); awaiting `@Kushan2191`'s independent teammate repeat comment in `#51` / `#67`.
 
 ---
 
