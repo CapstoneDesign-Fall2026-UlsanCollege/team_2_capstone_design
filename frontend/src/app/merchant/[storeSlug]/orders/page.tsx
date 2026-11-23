@@ -1,6 +1,6 @@
 "use client";
 
-import React, { Suspense, useEffect, useRef, useState } from "react";
+import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
 import { useParams, useSearchParams } from "next/navigation";
 import {
   RotateCcw,
@@ -14,7 +14,11 @@ import {
 } from "@/lib/api";
 import { OrderQueueTable } from "@/components/merchant/OrderQueueTable";
 import { OrderDetailSheet } from "@/components/merchant/OrderDetailSheet";
-import { OrdersQueueTab, resolveOrdersStatusTab } from "@/lib/merchant-status";
+import {
+  createLatestTabRefresher,
+  OrdersQueueTab,
+  resolveOrdersStatusTab,
+} from "@/lib/merchant-status";
 
 interface PendingUndo {
   orderId: number;
@@ -50,42 +54,81 @@ function MerchantOrdersContent() {
   // 5-second non-blocking undo state
   const [pendingUndo, setPendingUndo] = useState<PendingUndo | null>(null);
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
+  const loadSeqRef = useRef<number>(0);
 
-  const loadOrders = (statusFilter = activeTab, search = searchQuery) => {
-    if (!storeSlug) return;
-    setIsLoading(true);
-    fetchMerchantOrders(storeSlug, {
-      status: statusFilter,
-      search: search.trim() || undefined,
-    })
-      .then((res) => {
-        setOrders(res.orders);
-        setCounts(res.counts);
+  const loadOrders = useCallback(
+    (statusFilter: OrdersQueueTab = activeTab, search: string = searchQuery) => {
+      if (!storeSlug) return;
+      const reqId = ++loadSeqRef.current;
+      setIsLoading(true);
+      fetchMerchantOrders(storeSlug, {
+        status: statusFilter,
+        search: search.trim() || undefined,
       })
-      .catch(() => {
-        // Handle fetch error
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
+        .then((res) => {
+          if (reqId === loadSeqRef.current) {
+            setOrders(res.orders);
+            setCounts(res.counts);
+          }
+        })
+        .catch(() => {
+          // Handle fetch error
+        })
+        .finally(() => {
+          if (reqId === loadSeqRef.current) {
+            setIsLoading(false);
+          }
+        });
+    },
+    [storeSlug, activeTab, searchQuery]
+  );
+
+  const loadOrdersRef = useRef(loadOrders);
+  const refresherRef = useRef<ReturnType<typeof createLatestTabRefresher<OrdersQueueTab>> | null>(
+    null
+  );
+
+  useEffect(() => {
+    loadOrdersRef.current = loadOrders;
+  }, [loadOrders]);
+
+  useEffect(() => {
+    if (!refresherRef.current) {
+      refresherRef.current = createLatestTabRefresher(
+        activeTab,
+        searchQuery,
+        (tab, search) => loadOrdersRef.current(tab, search)
+      );
+    } else {
+      refresherRef.current.setLatest(activeTab, searchQuery);
+    }
+  }, [activeTab, searchQuery]);
+
+  useEffect(() => {
+    return () => {
+      if (undoTimeoutRef.current) {
+        clearTimeout(undoTimeoutRef.current);
+      }
+    };
+  }, []);
 
   useEffect(() => {
     if (!storeSlug) return;
     let ignore = false;
+    const reqId = ++loadSeqRef.current;
     fetchMerchantOrders(storeSlug, {
       status: activeTab,
       search: searchQuery.trim() || undefined,
     })
       .then((res) => {
-        if (!ignore) {
+        if (!ignore && reqId === loadSeqRef.current) {
           setOrders(res.orders);
           setCounts(res.counts);
         }
       })
       .catch(() => {})
       .finally(() => {
-        if (!ignore) {
+        if (!ignore && reqId === loadSeqRef.current) {
           setIsLoading(false);
         }
       });
@@ -144,11 +187,19 @@ function MerchantOrdersContent() {
 
       undoTimeoutRef.current = setTimeout(() => {
         setPendingUndo(null);
-        loadOrders(activeTab, searchQuery);
+        if (refresherRef.current) {
+          refresherRef.current.refreshLatest();
+        } else {
+          loadOrdersRef.current(activeTab, searchQuery);
+        }
       }, 5000);
     } catch {
       // Revert optimistic update
-      loadOrders(activeTab, searchQuery);
+      if (refresherRef.current) {
+        refresherRef.current.refreshLatest();
+      } else {
+        loadOrders(activeTab, searchQuery);
+      }
     }
   };
 
@@ -177,9 +228,17 @@ function MerchantOrdersContent() {
         to_status: previousStatus,
         note: "Action undone by merchant",
       });
-      loadOrders(activeTab, searchQuery);
+      if (refresherRef.current) {
+        refresherRef.current.refreshLatest();
+      } else {
+        loadOrders(activeTab, searchQuery);
+      }
     } catch {
-      loadOrders(activeTab, searchQuery);
+      if (refresherRef.current) {
+        refresherRef.current.refreshLatest();
+      } else {
+        loadOrders(activeTab, searchQuery);
+      }
     }
   };
 

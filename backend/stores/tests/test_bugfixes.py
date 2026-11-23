@@ -1096,3 +1096,105 @@ class DiscountMaxedVsExpiredBugTests(TestCase):
 
         self.assertFalse(by_code["LIVE20"]["is_expired"])
         self.assertFalse(by_code["LIVE20"]["is_maxed"])
+
+
+class CheckoutItemInputValidationBugTests(TestCase):
+    """Regression tests for Bug 13: validate malformed checkout item payloads with HTTP 400."""
+
+    def setUp(self):
+        self.client = APIClient()
+        self.store = Store.objects.create(
+            name="Checkout Guard Store",
+            slug="checkout-guard-store",
+            is_active=True,
+            cod_enabled=True,
+        )
+        with TenantDatabaseContext(self.store.id):
+            self.product = Product.objects.create(
+                store=self.store,
+                name="Organic Honey",
+                slug="organic-honey",
+                is_active=True,
+            )
+            self.variant = Variant.objects.create(
+                store=self.store,
+                product=self.product,
+                sku="HNY-500",
+                label="500g",
+                price_minor=95000,
+                in_stock=True,
+                is_active=True,
+            )
+
+    def _valid_place_payload(self, items):
+        return {
+            "items": items,
+            "customer_email": "shopper.valid@example.com",
+            "payment_method": "COD",
+            "shipping_address": {
+                "recipient_name": "Ram Bahadur",
+                "phone": "9801112233",
+                "district": "Kathmandu",
+                "municipality": "Kathmandu Metro",
+                "ward": "5",
+                "street_landmark": "Basantapur",
+            },
+        }
+
+    def test_malformed_checkout_items_return_400_on_quote_and_place(self):
+        bad_payloads = [
+            "not-a-list",
+            [123],
+            [{"variant_id": "abc", "quantity": 1}],
+            [{"variant_id": True, "quantity": 1}],
+            [{"variant_id": 0, "quantity": 1}],
+            [{"variant_id": self.variant.id, "quantity": "bad"}],
+            [{"variant_id": self.variant.id, "quantity": None}],
+            [{"variant_id": self.variant.id, "quantity": 0}],
+            [{"variant_id": self.variant.id, "quantity": -2}],
+            [{"variant_id": self.variant.id, "quantity": True}],
+            [{"variant_id": self.variant.id, "quantity": 1.5}],
+        ]
+
+        for bad_items in bad_payloads:
+            q_res = self.client.post(
+                f"/api/stores/{self.store.slug}/checkout/quote/",
+                {"items": bad_items, "district": "Kathmandu"},
+                format="json",
+            )
+            self.assertEqual(
+                q_res.status_code,
+                status.HTTP_400_BAD_REQUEST,
+                f"Expected quote 400 for items={bad_items!r}, got {q_res.status_code}",
+            )
+
+            p_res = self.client.post(
+                f"/api/stores/{self.store.slug}/checkout/place/",
+                self._valid_place_payload(bad_items),
+                format="json",
+            )
+            self.assertEqual(
+                p_res.status_code,
+                status.HTTP_400_BAD_REQUEST,
+                f"Expected place 400 for items={bad_items!r}, got {p_res.status_code}",
+            )
+
+    def test_valid_checkout_items_succeed_on_quote_and_place(self):
+        q_res = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/quote/",
+            {"items": [{"variant_id": self.variant.id, "quantity": 2}], "district": "Kathmandu"},
+            format="json",
+        )
+        self.assertEqual(q_res.status_code, status.HTTP_200_OK)
+        self.assertEqual(q_res.json()["subtotal_minor"], 190000)
+
+        p_res = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/place/",
+            self._valid_place_payload([{"variant_id": self.variant.id, "quantity": 2}]),
+            format="json",
+        )
+        self.assertEqual(p_res.status_code, status.HTTP_201_CREATED)
+        created_id = p_res.json()["order_id"]
+        with TenantDatabaseContext(self.store.id):
+            created_order = Order.objects.for_store(self.store).get(id=created_id)
+            self.assertEqual(created_order.subtotal_minor, 190000)

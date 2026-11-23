@@ -30,6 +30,7 @@ import {
   codToCollectMinor,
   codWithCourierMinor,
   countsAsSales,
+  createLatestTabRefresher,
   fulfillmentView,
   isCodToCollect,
   isCodWithCourier,
@@ -44,6 +45,7 @@ import {
   resolveProductImagePickerVisible,
   salesMinor,
   type MoneyOrder,
+  type OrdersQueueTab,
 } from "./merchant-status";
 
 const order = (
@@ -596,5 +598,21 @@ describe("resolveDiscountStatusLabel (Bug 12)", () => {
         used_count: 2,
       })
     ).toBe("Active");
+  });
+});
+
+describe("createLatestTabRefresher (Bug 13)", () => {
+  it("refreshes the latest tab and search query even when the user switches tabs before the timer fires", () => {
+    const loads: Array<{ tab: string; search: string }> = [];
+    const refresher = createLatestTabRefresher<OrdersQueueTab>("new", "initial", (tab, search) => {
+      loads.push({ tab, search });
+    });
+
+    // Simulate user switching tab & search while the 5s undo timer is pending
+    refresher.setLatest("packed", "sita");
+    refresher.setLatest("shipped", "9801");
+    refresher.refreshLatest();
+
+    expect(loads).toEqual([{ tab: "shipped", search: "9801" }]);
   });
 });

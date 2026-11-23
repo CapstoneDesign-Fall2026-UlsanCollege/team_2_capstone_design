@@ -772,6 +772,52 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         return Response(payload)
 
 
+def _parse_positive_int(raw_val):
+    """Parse a positive integer (>= 1) without accepting booleans or fractional values."""
+    if raw_val is None or isinstance(raw_val, bool):
+        return None
+    if isinstance(raw_val, float):
+        if not raw_val.is_integer():
+            return None
+        val = int(raw_val)
+    elif isinstance(raw_val, int):
+        val = raw_val
+    elif isinstance(raw_val, str):
+        stripped = raw_val.strip()
+        if not stripped:
+            return None
+        try:
+            val = int(stripped)
+        except ValueError:
+            return None
+    else:
+        return None
+    return val if val >= 1 else None
+
+
+def _parse_checkout_items(raw_items):
+    """Validate and normalize checkout line items so malformed payloads yield HTTP 400."""
+    if raw_items is None or raw_items == []:
+        return None, "Cart is empty."
+    if not isinstance(raw_items, list):
+        return None, "Invalid cart items format."
+
+    parsed_items = []
+    for it in raw_items:
+        if not isinstance(it, dict):
+            return None, "Each cart item must be an object with variant_id and quantity."
+        vid = _parse_positive_int(it.get("variant_id"))
+        if vid is None:
+            return None, "Invalid variant_id in cart items."
+        raw_qty = it["quantity"] if "quantity" in it else 1
+        qty = _parse_positive_int(raw_qty)
+        if qty is None:
+            return None, "Item quantity must be a positive integer."
+        parsed_items.append({"variant_id": vid, "quantity": qty})
+
+    return parsed_items, None
+
+
 def _validate_checkout_variant(variants: dict[int, Variant], v_id):
     """Ensure a checkout line item refers to an active, in-stock variant of an active product."""
     v = variants.get(v_id)
@@ -788,11 +834,11 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, store_slug):
-        items_data = request.data.get("items", [])
-        if not items_data:
-            return Response({"error": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST)
+        items_data, items_err = _parse_checkout_items(request.data.get("items"))
+        if items_err:
+            return Response({"error": items_err}, status=status.HTTP_400_BAD_REQUEST)
 
-        variant_ids = [it.get("variant_id") for it in items_data if it.get("variant_id")]
+        variant_ids = [it["variant_id"] for it in items_data]
         variants = {
             v.id: v
             for v in Variant.objects.for_store(self.store)
@@ -804,14 +850,14 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
         computed_items = []
 
         for it in items_data:
-            v, variant_err = _validate_checkout_variant(variants, it.get("variant_id"))
+            v, variant_err = _validate_checkout_variant(variants, it["variant_id"])
             if variant_err:
                 return Response(
                     {"error": variant_err},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            quantity = max(1, int(it.get("quantity", 1)))
+            quantity = it["quantity"]
             unit_price = v.price_minor
             line_total = unit_price * quantity
 
@@ -872,9 +918,9 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
 
     def post(self, request, store_slug):
-        items_data = request.data.get("items", [])
-        if not items_data:
-            return Response({"error": "Cart is empty."}, status=status.HTTP_400_BAD_REQUEST)
+        items_data, items_err = _parse_checkout_items(request.data.get("items"))
+        if items_err:
+            return Response({"error": items_err}, status=status.HTTP_400_BAD_REQUEST)
 
         shipping_address = request.data.get("shipping_address")
         if not isinstance(shipping_address, dict):
@@ -981,7 +1027,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             if khalti_cfg_err:
                 return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
 
-        variant_ids = [it.get("variant_id") for it in items_data if it.get("variant_id")]
+        variant_ids = [it["variant_id"] for it in items_data]
         variants = {
             v.id: v
             for v in Variant.objects.for_store(self.store)
@@ -993,14 +1039,14 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
         order_items_to_create = []
 
         for it in items_data:
-            v, variant_err = _validate_checkout_variant(variants, it.get("variant_id"))
+            v, variant_err = _validate_checkout_variant(variants, it["variant_id"])
             if variant_err:
                 return Response(
                     {"error": variant_err},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            quantity = max(1, int(it.get("quantity", 1)))
+            quantity = it["quantity"]
             unit_price = v.price_minor
             line_total = unit_price * quantity
             variant_label = v.label

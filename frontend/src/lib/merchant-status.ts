@@ -331,3 +331,27 @@ export function resolveDiscountStatusLabel(disc: DiscountStatusInput): DiscountS
   if (isMaxed) return "Maxed Out";
   return "Active";
 }
+
+export interface LatestTabRefresher<TTab extends string> {
+  setLatest: (tab: TTab, search: string) => void;
+  refreshLatest: () => void;
+}
+
+/** Ensures delayed callbacks (such as the orders 5s undo timer) reload the latest active tab & search. */
+export function createLatestTabRefresher<TTab extends string>(
+  initialTab: TTab,
+  initialSearch: string,
+  loadFn: (tab: TTab, search: string) => void
+): LatestTabRefresher<TTab> {
+  let latestTab = initialTab;
+  let latestSearch = initialSearch;
+  return {
+    setLatest(tab: TTab, search: string) {
+      latestTab = tab;
+      latestSearch = search;
+    },
+    refreshLatest() {
+      loadFn(latestTab, latestSearch);
+    },
+  };
+}
