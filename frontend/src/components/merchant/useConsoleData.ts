@@ -7,10 +7,11 @@ import { fetchMerchantStoreOverview, fetchMyStores, MerchantStoreMembership } fr
  * Stores the signed-in user belongs to. Presentation only: uses the existing
  * authenticated endpoint; tenant resolution happens server-side.
  */
-export function useMyStores(storeSlug?: string) {
+export function useMyStores(storeSlug?: string, enabled: boolean = true) {
   const [stores, setStores] = useState<MerchantStoreMembership[]>([]);
 
   useEffect(() => {
+    if (!enabled) return;
     let active = true;
     fetchMyStores()
       .then((res) => active && setStores(res.stores ?? []))
@@ -18,7 +19,7 @@ export function useMyStores(storeSlug?: string) {
     return () => {
       active = false;
     };
-  }, [storeSlug]);
+  }, [storeSlug, enabled]);
 
   return stores;
 }

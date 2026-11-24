@@ -72,3 +72,55 @@ export function classifyStoreError(
     errorMessage: msg,
   };
 }
+
+export function isStoreOwner(role?: string | null): boolean {
+  return role === "OWNER";
+}
+
+export function canRenderMerchantWorkspace(
+  status: "loading" | "authorized" | "error",
+  currentStore: MerchantStoreMembership | null,
+  storeSlug: string
+): boolean {
+  return status === "authorized" && currentStore !== null && currentStore.slug === storeSlug;
+}
+
+export type MerchantPageErrorAction =
+  | { kind: "unauthenticated"; redirectTo: string }
+  | { kind: "not_found"; redirectTo: string; notice: string }
+  | { kind: "forbidden"; message: string }
+  | { kind: "error"; message: string };
+
+export function classifyMerchantPageError(
+  err: unknown,
+  storeSlug: string,
+  currentPath?: string
+): MerchantPageErrorAction {
+  const nextTarget = currentPath || `/merchant/${encodeURIComponent(storeSlug)}`;
+  if (err instanceof ApiError) {
+    if (err.status === 401) {
+      return {
+        kind: "unauthenticated",
+        redirectTo: `/login?next=${encodeURIComponent(nextTarget)}`,
+      };
+    }
+    if (err.status === 404) {
+      return {
+        kind: "not_found",
+        redirectTo: "/merchant",
+        notice: "That store isn't available on your account.",
+      };
+    }
+    if (err.status === 403) {
+      return {
+        kind: "forbidden",
+        message: err.message || "Owner permission required for this action.",
+      };
+    }
+  }
+
+  return {
+    kind: "error",
+    message: err instanceof Error ? err.message : "Failed to load workspace data.",
+  };
+}

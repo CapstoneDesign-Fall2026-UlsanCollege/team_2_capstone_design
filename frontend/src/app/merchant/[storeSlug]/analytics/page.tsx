@@ -15,11 +15,11 @@ import {
 } from "lucide-react";
 import {
   AnalyticsRange,
-  ApiError,
   fetchMerchantAnalytics,
   formatNpr,
   MerchantAnalyticsResponse,
 } from "@/lib/api";
+import { classifyMerchantPageError } from "@/lib/merchant-guard";
 import { SteepChart } from "@/components/merchant/SteepChart";
 
 interface PageProps {
@@ -56,22 +56,23 @@ export default function MerchantAnalyticsPage({ params }: PageProps) {
         setData(res);
       } catch (err: unknown) {
         if (!mounted) return;
-        const msg = err instanceof Error ? err.message : "Failed to load store analytics";
-        const isAuth =
-          (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
-          msg.includes("401") ||
-          msg.includes("403");
-        if (isAuth) {
-          setTimeout(
-            () =>
-              router.replace(
-                `/login?next=/merchant/${encodeURIComponent(storeSlug)}/analytics`
-              ),
-            0
-          );
+        const action = classifyMerchantPageError(
+          err,
+          storeSlug,
+          `/merchant/${encodeURIComponent(storeSlug)}/analytics`
+        );
+        if (action.kind === "unauthenticated") {
+          setTimeout(() => router.replace(action.redirectTo), 0);
           return;
         }
-        setError(msg);
+        if (action.kind === "not_found") {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
+          }
+          setTimeout(() => router.replace(action.redirectTo), 0);
+          return;
+        }
+        setError(action.message);
       } finally {
         if (mounted) setLoading(false);
       }

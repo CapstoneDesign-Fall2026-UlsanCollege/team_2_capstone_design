@@ -130,8 +130,16 @@ function StoreSwitcher({
           {name ? name.slice(0, 1).toUpperCase() : ""}
         </span>
         <span className="truncate text-[13px] font-semibold text-[var(--ink)]">{name}</span>
+        {current?.role && (
+          <span className="ml-auto shrink-0 rounded border border-[var(--border)] bg-[var(--surface)] px-1.5 py-0.5 font-mono text-[10px] font-medium uppercase text-[var(--ink-2)]">
+            {current.role}
+          </span>
+        )}
         {canSwitch && (
-          <ChevronsUpDown className="ml-auto size-4 shrink-0 text-[var(--ink-2)]" aria-hidden="true" />
+          <ChevronsUpDown
+            className={`${current?.role ? "ml-1" : "ml-auto"} size-4 shrink-0 text-[var(--ink-2)]`}
+            aria-hidden="true"
+          />
         )}
       </button>
 

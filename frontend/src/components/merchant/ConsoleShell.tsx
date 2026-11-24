@@ -55,7 +55,7 @@ export function ConsoleShell({
   const [shortcutLabel, setShortcutLabel] = useState("Ctrl K");
   const [notice, setNotice] = useState<string | null>(null);
 
-  const fallbackStores = useMyStores(storeSlug);
+  const fallbackStores = useMyStores(storeSlug, !initialStores);
   const stores = initialStores ?? (fallbackStores.length > 0 ? fallbackStores : []);
   const currentStore = initialCurrentStore ?? stores.find((s) => s.slug === storeSlug) ?? null;
   const ordersCount = useOrdersToDispatch(storeSlug, pathname);

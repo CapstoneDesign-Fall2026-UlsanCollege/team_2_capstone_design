@@ -1,7 +1,7 @@
 "use client";
 
 import React, { Suspense, useCallback, useEffect, useRef, useState } from "react";
-import { useParams, useSearchParams } from "next/navigation";
+import { useParams, useRouter, useSearchParams } from "next/navigation";
 import {
   RotateCcw,
   Search,
@@ -12,6 +12,7 @@ import {
   OrderQueueCounts,
   transitionMerchantOrderStatus,
 } from "@/lib/api";
+import { classifyMerchantPageError } from "@/lib/merchant-guard";
 import { OrderQueueTable } from "@/components/merchant/OrderQueueTable";
 import { OrderDetailSheet } from "@/components/merchant/OrderDetailSheet";
 import {
@@ -31,6 +32,7 @@ interface PendingUndo {
 
 function MerchantOrdersContent() {
   const params = useParams();
+  const router = useRouter();
   const searchParams = useSearchParams();
   const storeSlug = typeof params.storeSlug === "string" ? params.storeSlug : "";
   const statusQueryParam = searchParams.get("status");
@@ -48,6 +50,7 @@ function MerchantOrdersContent() {
     delivered: 0,
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
 
@@ -56,11 +59,35 @@ function MerchantOrdersContent() {
   const undoTimeoutRef = useRef<NodeJS.Timeout | null>(null);
   const loadSeqRef = useRef<number>(0);
 
+  const handleOrdersError = useCallback(
+    (err: unknown) => {
+      const action = classifyMerchantPageError(
+        err,
+        storeSlug,
+        `/merchant/${encodeURIComponent(storeSlug)}/orders`
+      );
+      if (action.kind === "unauthenticated") {
+        setTimeout(() => router.replace(action.redirectTo), 0);
+        return;
+      }
+      if (action.kind === "not_found") {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
+        }
+        setTimeout(() => router.replace(action.redirectTo), 0);
+        return;
+      }
+      setError(action.message);
+    },
+    [storeSlug, router]
+  );
+
   const loadOrders = useCallback(
     (statusFilter: OrdersQueueTab = activeTab, search: string = searchQuery) => {
       if (!storeSlug) return;
       const reqId = ++loadSeqRef.current;
       setIsLoading(true);
+      setError(null);
       fetchMerchantOrders(storeSlug, {
         status: statusFilter,
         search: search.trim() || undefined,
@@ -69,10 +96,13 @@ function MerchantOrdersContent() {
           if (reqId === loadSeqRef.current) {
             setOrders(res.orders);
             setCounts(res.counts);
+            setError(null);
           }
         })
-        .catch(() => {
-          // Handle fetch error
+        .catch((err: unknown) => {
+          if (reqId === loadSeqRef.current) {
+            handleOrdersError(err);
+          }
         })
         .finally(() => {
           if (reqId === loadSeqRef.current) {
@@ -80,7 +110,7 @@ function MerchantOrdersContent() {
           }
         });
     },
-    [storeSlug, activeTab, searchQuery]
+    [storeSlug, activeTab, searchQuery, handleOrdersError]
   );
 
   const loadOrdersRef = useRef(loadOrders);
@@ -124,9 +154,14 @@ function MerchantOrdersContent() {
         if (!ignore && reqId === loadSeqRef.current) {
           setOrders(res.orders);
           setCounts(res.counts);
+          setError(null);
         }
       })
-      .catch(() => {})
+      .catch((err: unknown) => {
+        if (!ignore && reqId === loadSeqRef.current) {
+          handleOrdersError(err);
+        }
+      })
       .finally(() => {
         if (!ignore && reqId === loadSeqRef.current) {
           setIsLoading(false);
@@ -135,7 +170,7 @@ function MerchantOrdersContent() {
     return () => {
       ignore = true;
     };
-  }, [storeSlug, activeTab, searchQuery]);
+  }, [storeSlug, activeTab, searchQuery, handleOrdersError]);
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -193,7 +228,8 @@ function MerchantOrdersContent() {
           loadOrdersRef.current(activeTab, searchQuery);
         }
       }, 5000);
-    } catch {
+    } catch (err: unknown) {
+      handleOrdersError(err);
       // Revert optimistic update
       if (refresherRef.current) {
         refresherRef.current.refreshLatest();
@@ -233,7 +269,8 @@ function MerchantOrdersContent() {
       } else {
         loadOrders(activeTab, searchQuery);
       }
-    } catch {
+    } catch (err: unknown) {
+      handleOrdersError(err);
       if (refresherRef.current) {
         refresherRef.current.refreshLatest();
       } else {
@@ -308,6 +345,18 @@ function MerchantOrdersContent() {
       </div>
 
       {/* Orders Table */}
+      {error && (
+        <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-xs text-red-700 dark:text-red-300 flex items-center justify-between gap-3">
+          <span>{error}</span>
+          <button
+            type="button"
+            onClick={() => loadOrders(activeTab, searchQuery)}
+            className="px-2.5 py-1 rounded border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium cursor-pointer"
+          >
+            Retry
+          </button>
+        </div>
+      )}
       {isLoading ? (
         <div className="p-12 text-center text-xs font-mono text-[var(--muted-foreground)]">
           Loading order queue...

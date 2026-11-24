@@ -6,12 +6,14 @@ import { useRouter, useSearchParams } from "next/navigation";
 import {
   CreditCard,
   ExternalLink,
+  Lock,
   Shield,
   Store,
   Truck,
   Users,
 } from "lucide-react";
-import { ApiError, fetchMerchantSettings, MerchantStoreSettings } from "@/lib/api";
+import { fetchMerchantSettings, MerchantStoreSettings } from "@/lib/api";
+import { classifyMerchantPageError, isStoreOwner } from "@/lib/merchant-guard";
 import { SettingsForm } from "@/components/merchant/SettingsForm";
 import {
   AuditLogPanel,
@@ -63,25 +65,23 @@ function MerchantSettingsInner({ storeSlug }: { storeSlug: string }) {
         setSettings(data);
       } catch (err: unknown) {
         if (!mounted) return;
-        const msg = err instanceof Error ? err.message : "Failed to load store settings";
-        const isAuth =
-          (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
-          msg.includes("401") ||
-          msg.includes("403") ||
-          msg.toLowerCase().includes("unauthorized") ||
-          msg.toLowerCase().includes("credentials");
-
-        if (isAuth) {
-          setTimeout(
-            () =>
-              router.replace(
-                `/login?next=/merchant/${encodeURIComponent(storeSlug)}/settings`
-              ),
-            0
-          );
+        const action = classifyMerchantPageError(
+          err,
+          storeSlug,
+          `/merchant/${encodeURIComponent(storeSlug)}/settings`
+        );
+        if (action.kind === "unauthenticated") {
+          setTimeout(() => router.replace(action.redirectTo), 0);
           return;
         }
-        setError(msg);
+        if (action.kind === "not_found") {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
+          }
+          setTimeout(() => router.replace(action.redirectTo), 0);
+          return;
+        }
+        setError(action.message);
       } finally {
         if (mounted) setLoading(false);
       }
@@ -148,6 +148,8 @@ function MerchantSettingsInner({ storeSlug }: { storeSlug: string }) {
     );
   }
 
+  const isOwner = isStoreOwner(settings.member_role);
+
   return (
     <div className="space-y-6">
       {/* Header Banner */}
@@ -184,6 +186,8 @@ function MerchantSettingsInner({ storeSlug }: { storeSlug: string }) {
         {TABS.map((tab) => {
           const TabIcon = tab.icon;
           const isActive = activeTab === tab.id;
+          const isOwnerLockedTab =
+            !isOwner && (tab.id === "audit" || tab.id === "general" || tab.id === "payments" || tab.id === "shipping");
           return (
             <button
               key={tab.id}
@@ -197,6 +201,7 @@ function MerchantSettingsInner({ storeSlug }: { storeSlug: string }) {
             >
               <TabIcon className="w-3.5 h-3.5 shrink-0" />
               <span>{tab.label}</span>
+              {isOwnerLockedTab && <Lock className="w-3 h-3 shrink-0 opacity-75" />}
             </button>
           );
         })}
@@ -214,7 +219,7 @@ function MerchantSettingsInner({ storeSlug }: { storeSlug: string }) {
 
       {activeTab === "staff" && <StaffPermissionsPanel storeSlug={storeSlug} />}
 
-      {activeTab === "audit" && <AuditLogPanel storeSlug={storeSlug} />}
+      {activeTab === "audit" && <AuditLogPanel storeSlug={storeSlug} isOwner={isOwner} />}
     </div>
   );
 }

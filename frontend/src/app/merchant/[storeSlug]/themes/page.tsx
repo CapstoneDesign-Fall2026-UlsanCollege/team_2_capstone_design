@@ -2,9 +2,11 @@
 
 import React, { use, useEffect, useState, useMemo } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Palette,
   Eye,
+  Lock,
   Smartphone,
   Monitor,
   Check,
@@ -17,6 +19,7 @@ import {
   updateMerchantSettings,
   ApiError,
 } from "@/lib/api";
+import { classifyMerchantPageError, isStoreOwner } from "@/lib/merchant-guard";
 import { ThemeMediaUpload } from "@/components/merchant/ThemeMediaUpload";
 import { STOREFRONT_THEMES, getStorefrontTheme } from "@/lib/storefront-themes";
 
@@ -26,11 +29,13 @@ interface PageProps {
 
 export default function MerchantThemesPage({ params }: PageProps) {
   const { storeSlug } = use(params);
+  const router = useRouter();
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [saveSuccess, setSaveSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [memberRole, setMemberRole] = useState<"OWNER" | "STAFF" | null>(null);
 
   // Settings State
   const [themePreset, setThemePreset] = useState("editorial-warm");
@@ -77,20 +82,40 @@ export default function MerchantThemesPage({ params }: PageProps) {
         setAboutText(data.about_text || "");
         setBannerUrl(data.banner_url || "");
         setLogoUrl(data.logo_url || "");
+        setMemberRole(data.member_role ?? null);
         setLoading(false);
       })
       .catch((err) => {
         if (!active) return;
-        setError(err instanceof Error ? err.message : "Failed to load store settings");
+        const action = classifyMerchantPageError(
+          err,
+          storeSlug,
+          `/merchant/${encodeURIComponent(storeSlug)}/themes`
+        );
+        if (action.kind === "unauthenticated") {
+          setTimeout(() => router.replace(action.redirectTo), 0);
+          return;
+        }
+        if (action.kind === "not_found") {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
+          }
+          setTimeout(() => router.replace(action.redirectTo), 0);
+          return;
+        }
+        setError(action.message);
         setLoading(false);
       });
 
     return () => {
       active = false;
     };
-  }, [storeSlug]);
+  }, [storeSlug, router]);
+
+  const isOwner = isStoreOwner(memberRole);
 
   const handleSaveTheme = async () => {
+    if (!isOwner) return;
     setSaving(true);
     setSaveSuccess(false);
     setError(null);
@@ -164,31 +189,48 @@ export default function MerchantThemesPage({ params }: PageProps) {
             <ExternalLink className="w-3.5 h-3.5" />
           </Link>
 
-          <button
-            type="button"
-            onClick={handleSaveTheme}
-            disabled={saving}
-            className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs disabled:opacity-50"
-          >
-            {saving ? (
-              <>
-                <RefreshCw className="w-3.5 h-3.5 animate-spin" />
-                <span>Publishing...</span>
-              </>
-            ) : saveSuccess ? (
-              <>
-                <Check className="w-3.5 h-3.5 text-emerald-300" />
-                <span>Published!</span>
-              </>
-            ) : (
-              <>
-                <Save className="w-3.5 h-3.5" />
-                <span>Save &amp; Publish</span>
-              </>
-            )}
-          </button>
+          {isOwner ? (
+            <button
+              type="button"
+              onClick={handleSaveTheme}
+              disabled={saving}
+              className="inline-flex items-center gap-1.5 px-4 py-1.5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] text-xs font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs disabled:opacity-50"
+            >
+              {saving ? (
+                <>
+                  <RefreshCw className="w-3.5 h-3.5 animate-spin" />
+                  <span>Publishing...</span>
+                </>
+              ) : saveSuccess ? (
+                <>
+                  <Check className="w-3.5 h-3.5 text-emerald-300" />
+                  <span>Published!</span>
+                </>
+              ) : (
+                <>
+                  <Save className="w-3.5 h-3.5" />
+                  <span>Save &amp; Publish</span>
+                </>
+              )}
+            </button>
+          ) : (
+            <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--secondary)] text-[11px] font-mono text-[var(--muted-foreground)]">
+              <Lock className="w-3.5 h-3.5" />
+              <span>Owner Only</span>
+            </span>
+          )}
         </div>
       </div>
+
+      {!isOwner && (
+        <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-800 dark:text-amber-200">
+          <Lock className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>
+            <strong>Read-only preview (Staff):</strong> Only store owners can change storefront
+            themes, upload branding media, or edit store story copy.
+          </span>
+        </div>
+      )}
 
       {error && (
         <div className="p-3 rounded-lg border border-red-500/20 bg-red-500/10 text-red-600 dark:text-red-400 text-xs font-medium">
@@ -238,6 +280,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
             </button>
           </div>
 
+          <fieldset disabled={!isOwner} className="space-y-4 disabled:opacity-90">
           {/* Tab 1: Presets & Palette */}
           {activeTab === "theme" && (
             <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--card)] space-y-3">
@@ -347,6 +390,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
                 assetType="hero"
                 storeSlug={storeSlug}
                 value={bannerUrl}
+                disabled={!isOwner}
                 onChange={(url) => {
                   setBannerUrl(url);
                   setFieldErrors((prev) => ({ ...prev, banner_url: [] }));
@@ -360,6 +404,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
                 assetType="logo"
                 storeSlug={storeSlug}
                 value={logoUrl}
+                disabled={!isOwner}
                 onChange={(url) => {
                   setLogoUrl(url);
                   setFieldErrors((prev) => ({ ...prev, logo_url: [] }));
@@ -406,6 +451,7 @@ export default function MerchantThemesPage({ params }: PageProps) {
               </div>
             </div>
           )}
+          </fieldset>
         </div>
 
         {/* Right Column: Live Viewport Preview Frame (7 Cols) */}

@@ -16,11 +16,11 @@ import {
   Filter,
 } from "lucide-react";
 import {
-  ApiError,
   formatNpr,
   fetchMerchantCustomers,
   MerchantCustomerItem,
 } from "@/lib/api";
+import { classifyMerchantPageError } from "@/lib/merchant-guard";
 import { CustomerDetailSheet } from "@/components/merchant/CustomerDetailSheet";
 
 interface PageProps {
@@ -51,22 +51,23 @@ export default function MerchantCustomersPage({ params }: PageProps) {
         })
         .catch((err: unknown) => {
           if (!active) return;
-          const msg = err instanceof Error ? err.message : "Failed to load customers";
-          const isAuth =
-            (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
-            msg.includes("401") ||
-            msg.includes("403") ||
-            msg.toLowerCase().includes("unauthorized") ||
-            msg.toLowerCase().includes("credentials");
-
-          if (isAuth) {
-            setTimeout(
-              () => router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/customers`),
-              0
-            );
+          const action = classifyMerchantPageError(
+            err,
+            storeSlug,
+            `/merchant/${encodeURIComponent(storeSlug)}/customers`
+          );
+          if (action.kind === "unauthenticated") {
+            setTimeout(() => router.replace(action.redirectTo), 0);
             return;
           }
-          setError(msg);
+          if (action.kind === "not_found") {
+            if (typeof window !== "undefined") {
+              sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
+            }
+            setTimeout(() => router.replace(action.redirectTo), 0);
+            return;
+          }
+          setError(action.message);
           setLoading(false);
         });
 

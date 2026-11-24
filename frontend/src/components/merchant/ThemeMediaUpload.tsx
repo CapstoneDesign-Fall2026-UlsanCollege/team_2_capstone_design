@@ -12,6 +12,7 @@ interface ThemeMediaUploadProps {
   value: string;
   onChange: (url: string) => void;
   error?: string | null;
+  disabled?: boolean;
 }
 
 export function ThemeMediaUpload({
@@ -22,6 +23,7 @@ export function ThemeMediaUpload({
   value,
   onChange,
   error,
+  disabled = false,
 }: ThemeMediaUploadProps) {
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [uploading, setUploading] = useState(false);
@@ -33,6 +35,7 @@ export function ThemeMediaUpload({
   const maxMb = assetType === "hero" ? 5 : 2;
 
   const handleFile = async (file: File) => {
+    if (disabled) return;
     setLocalError(null);
 
     // 1. Rejection of SVG
@@ -124,6 +127,7 @@ export function ThemeMediaUpload({
       <input
         ref={fileInputRef}
         type="file"
+        disabled={disabled}
         accept="image/jpeg,image/png,image/webp"
         onChange={handleInputChange}
         className="hidden"
@@ -182,31 +186,48 @@ export function ThemeMediaUpload({
             </div>
 
             <div className="flex items-center gap-1.5">
-              <button
-                type="button"
-                onClick={() => fileInputRef.current?.click()}
-                disabled={uploading}
-                className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-[var(--foreground)] transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
-              >
-                <Upload className="w-3.5 h-3.5 text-emerald-500" />
-                <span>Upload New {assetType === "hero" ? "Banner" : "Logo"}</span>
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  onChange("");
-                  setImageLoadError(false);
-                  setLocalError(null);
-                }}
-                disabled={uploading}
-                className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-semibold rounded-md text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
-                title="Remove image"
-              >
-                <Trash2 className="w-3.5 h-3.5" />
-                <span>Remove</span>
-              </button>
+              {disabled ? (
+                <span className="text-[11px] font-mono text-[var(--muted-foreground)]">
+                  Owner permission required to modify store media
+                </span>
+              ) : (
+                <>
+                  <button
+                    type="button"
+                    onClick={() => fileInputRef.current?.click()}
+                    disabled={uploading || disabled}
+                    className="inline-flex items-center gap-1.5 px-3 py-1.5 text-xs font-semibold rounded-md border border-[var(--border)] bg-[var(--background)] hover:bg-[var(--secondary)] text-[var(--foreground)] transition-colors cursor-pointer disabled:opacity-50 shadow-xs"
+                  >
+                    <Upload className="w-3.5 h-3.5 text-emerald-500" />
+                    <span>Upload New {assetType === "hero" ? "Banner" : "Logo"}</span>
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => {
+                      onChange("");
+                      setImageLoadError(false);
+                      setLocalError(null);
+                    }}
+                    disabled={uploading || disabled}
+                    className="inline-flex items-center gap-1 px-2 py-1.5 text-xs font-semibold rounded-md text-red-500 hover:bg-red-500/10 transition-colors cursor-pointer disabled:opacity-50"
+                    title="Remove image"
+                  >
+                    <Trash2 className="w-3.5 h-3.5" />
+                    <span>Remove</span>
+                  </button>
+                </>
+              )}
             </div>
           </div>
+        </div>
+      ) : disabled ? (
+        <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--secondary)]/30 p-5 text-center space-y-1">
+          <p className="text-xs font-medium text-[var(--muted-foreground)]">
+            No {assetType === "hero" ? "hero banner" : "store logo"} configured
+          </p>
+          <p className="text-[11px] font-mono text-[var(--muted-foreground)]">
+            Owner permission required to modify store media
+          </p>
         </div>
       ) : (
         /* Empty Upload Dropzone */
@@ -215,7 +236,7 @@ export function ThemeMediaUpload({
           onDragLeave={handleDrag}
           onDragOver={handleDrag}
           onDrop={handleDrop}
-          onClick={() => !uploading && fileInputRef.current?.click()}
+          onClick={() => !uploading && !disabled && fileInputRef.current?.click()}
           className={`border-2 border-dashed rounded-xl p-6 text-center cursor-pointer transition-all ${
             dragActive
               ? "border-emerald-500 bg-emerald-500/5 ring-2 ring-emerald-500/20"

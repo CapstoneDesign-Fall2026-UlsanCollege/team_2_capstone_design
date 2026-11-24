@@ -15,12 +15,14 @@ export interface SetupGuideCardProps {
     has_story?: boolean;
   };
   onQuickAddProduct?: () => void;
+  isOwner?: boolean;
 }
 
 export function SetupGuideCard({
   storeSlug,
   checklist,
   onQuickAddProduct,
+  isOwner = false,
 }: SetupGuideCardProps) {
   const [dismissed, setDismissed] = useState<boolean>(false);
   const [expanded, setExpanded] = useState<boolean>(false);
@@ -69,27 +71,30 @@ export function SetupGuideCard({
         title: "Set delivery fees & thresholds",
         description: "Configure Kathmandu Valley and Outside Valley rates plus free delivery threshold",
         done: Boolean(checklist.has_shipping),
-        actionLabel: "Set delivery rates",
-        href: `${baseHref}/settings?tab=shipping`,
+        actionLabel: isOwner ? "Set delivery rates" : "Owner setup",
+        href: isOwner ? `${baseHref}/settings?tab=shipping` : undefined,
+        ownerOnly: true,
       },
       {
         id: "payments",
         title: "Configure Khalti & Cash on Delivery",
         description: "Verify digital wallet credentials and enable Cash on Delivery checkout",
         done: Boolean(checklist.has_khalti),
-        actionLabel: "Configure payments",
-        href: `${baseHref}/settings?tab=payments`,
+        actionLabel: isOwner ? "Configure payments" : "Owner setup",
+        href: isOwner ? `${baseHref}/settings?tab=payments` : undefined,
+        ownerOnly: true,
       },
       {
         id: "story",
         title: "Publish your brand story & theme",
         description: "Add your store tagline, founder note, and select your storefront editorial theme",
         done: Boolean(checklist.has_story),
-        actionLabel: "Customize theme",
-        href: `${baseHref}/themes`,
+        actionLabel: isOwner ? "Customize theme" : "Owner setup",
+        href: isOwner ? `${baseHref}/themes` : undefined,
+        ownerOnly: true,
       },
     ];
-  }, [checklist, storeSlug, baseHref, onQuickAddProduct]);
+  }, [checklist, storeSlug, baseHref, onQuickAddProduct, isOwner]);
 
   const completedCount = steps.filter((s) => s.done).length;
   const totalCount = steps.length;
@@ -164,7 +169,11 @@ export function SetupGuideCard({
                   {nextStep.actionLabel}
                 </Link>
               </Button>
-            ) : null}
+            ) : (
+              <span className="shrink-0 self-start sm:self-center rounded border border-[var(--border)] bg-[var(--surface)] px-2.5 py-1 text-[11px] font-mono text-[var(--ink-2)]">
+                {nextStep.actionLabel}
+              </span>
+            )}
           </div>
         )}
 
@@ -215,7 +224,11 @@ export function SetupGuideCard({
                           {st.actionLabel}
                         </Link>
                       </Button>
-                    ) : null
+                    ) : (
+                      <span className="text-[11px] font-mono text-[var(--ink-2)]">
+                        {st.actionLabel}
+                      </span>
+                    )
                   )}
                 </div>
               ))}

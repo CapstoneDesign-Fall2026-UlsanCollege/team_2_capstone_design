@@ -14,7 +14,6 @@ import {
 } from "lucide-react";
 import {
   AnalyticsRange,
-  ApiError,
   fetchMerchantAnalytics,
   fetchMerchantProducts,
   fetchMerchantStoreOverview,
@@ -24,6 +23,7 @@ import {
   OverviewDailyPoint,
   ProductItem,
 } from "@/lib/api";
+import { classifyMerchantPageError, isStoreOwner } from "@/lib/merchant-guard";
 import { Tabs } from "@/components/ui/tabs";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
@@ -89,28 +89,24 @@ export default function MerchantOverviewPage({ params }: PageProps) {
       })
       .catch((err: unknown) => {
         if (!active) return;
-        const msg = err instanceof Error ? err.message : "Failed to load store overview";
-
-        if (err instanceof ApiError && err.status === 401) {
-          setTimeout(
-            () => router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}`),
-            0
-          );
+        const action = classifyMerchantPageError(
+          err,
+          storeSlug,
+          `/merchant/${encodeURIComponent(storeSlug)}`
+        );
+        if (action.kind === "unauthenticated") {
+          setTimeout(() => router.replace(action.redirectTo), 0);
           return;
         }
-
-        if (err instanceof ApiError && (err.status === 403 || err.status === 404)) {
+        if (action.kind === "not_found") {
           if (typeof window !== "undefined") {
-            sessionStorage.setItem(
-              "shopcraft_merchant_notice",
-              "That store isn't available on your account."
-            );
+            sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
           }
-          setTimeout(() => router.replace("/merchant"), 0);
+          setTimeout(() => router.replace(action.redirectTo), 0);
           return;
         }
 
-        setError(msg);
+        setError(action.message);
         setLoading(false);
       });
 
@@ -254,6 +250,7 @@ export default function MerchantOverviewPage({ params }: PageProps) {
         storeSlug={storeSlug}
         checklist={overview.checklist}
         onQuickAddProduct={openAddProduct}
+        isOwner={isStoreOwner(overview.member_role)}
       />
 
       {/* 3. Needs Attention Cards */}

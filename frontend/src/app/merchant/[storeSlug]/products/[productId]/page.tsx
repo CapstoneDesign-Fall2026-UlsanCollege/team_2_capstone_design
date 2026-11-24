@@ -4,6 +4,8 @@ import React, { use, useEffect, useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { fetchMerchantProduct, ProductItem } from "@/lib/api";
+import { classifyMerchantPageError, isStoreOwner } from "@/lib/merchant-guard";
+import { useMerchantStore } from "@/context/MerchantStoreContext";
 import { VariantGridEditor } from "@/components/merchant/VariantGridEditor";
 
 interface PageProps {
@@ -13,6 +15,8 @@ interface PageProps {
 export default function ProductDetailPage({ params }: PageProps) {
   const { storeSlug, productId } = use(params);
   const router = useRouter();
+  const { currentStore } = useMerchantStore();
+  const isOwner = isStoreOwner(currentStore?.role);
 
   const prodIdNum = parseInt(productId, 10);
   const isInvalidId = isNaN(prodIdNum);
@@ -34,14 +38,23 @@ export default function ProductDetailPage({ params }: PageProps) {
       })
       .catch((err: unknown) => {
         if (!active) return;
-        const msg = err instanceof Error ? err.message : "Failed to load product details";
-        if (msg.includes("401") || msg.includes("403") || msg.includes("Unauthorized")) {
-          router.replace(
-            `/login?next=/merchant/${encodeURIComponent(storeSlug)}/products/${productId}`
-          );
+        const action = classifyMerchantPageError(
+          err,
+          storeSlug,
+          `/merchant/${encodeURIComponent(storeSlug)}/products/${productId}`
+        );
+        if (action.kind === "unauthenticated") {
+          setTimeout(() => router.replace(action.redirectTo), 0);
           return;
         }
-        setError(msg);
+        if (action.kind === "not_found") {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
+          }
+          setTimeout(() => router.replace(action.redirectTo), 0);
+          return;
+        }
+        setError(action.message);
         setLoading(false);
       });
 
@@ -174,6 +187,7 @@ export default function ProductDetailPage({ params }: PageProps) {
           storeSlug={storeSlug}
           productId={product.id}
           initialVariants={product.variants}
+          isOwner={isOwner}
         />
       </section>
     </div>

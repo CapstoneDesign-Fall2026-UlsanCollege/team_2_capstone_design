@@ -16,7 +16,6 @@ import {
   X,
 } from "lucide-react";
 import {
-  ApiError,
   createMerchantDiscount,
   deleteMerchantDiscount,
   DiscountItem,
@@ -25,6 +24,7 @@ import {
   MerchantDiscountsResponse,
   updateMerchantDiscount,
 } from "@/lib/api";
+import { classifyMerchantPageError } from "@/lib/merchant-guard";
 import { resolveDiscountStatusLabel } from "@/lib/merchant-status";
 
 interface PageProps {
@@ -87,16 +87,23 @@ export default function MerchantDiscountsPage({ params }: PageProps) {
       const res = await fetchMerchantDiscounts(storeSlug);
       setData(res);
     } catch (err: unknown) {
-      const msg = err instanceof Error ? err.message : "Failed to load promo codes";
-      const isAuth =
-        (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
-        msg.includes("401") ||
-        msg.includes("403");
-      if (isAuth) {
-        router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/discounts`);
+      const action = classifyMerchantPageError(
+        err,
+        storeSlug,
+        `/merchant/${encodeURIComponent(storeSlug)}/discounts`
+      );
+      if (action.kind === "unauthenticated") {
+        router.replace(action.redirectTo);
         return;
       }
-      setError(msg);
+      if (action.kind === "not_found") {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
+        }
+        router.replace(action.redirectTo);
+        return;
+      }
+      setError(action.message);
     } finally {
       setLoading(false);
     }
@@ -111,16 +118,23 @@ export default function MerchantDiscountsPage({ params }: PageProps) {
         setData(res);
       } catch (err: unknown) {
         if (!mounted) return;
-        const msg = err instanceof Error ? err.message : "Failed to load promo codes";
-        const isAuth =
-          (err instanceof ApiError && (err.status === 401 || err.status === 403)) ||
-          msg.includes("401") ||
-          msg.includes("403");
-        if (isAuth) {
-          router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}/discounts`);
+        const action = classifyMerchantPageError(
+          err,
+          storeSlug,
+          `/merchant/${encodeURIComponent(storeSlug)}/discounts`
+        );
+        if (action.kind === "unauthenticated") {
+          router.replace(action.redirectTo);
           return;
         }
-        setError(msg);
+        if (action.kind === "not_found") {
+          if (typeof window !== "undefined") {
+            sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
+          }
+          router.replace(action.redirectTo);
+          return;
+        }
+        setError(action.message);
       } finally {
         if (mounted) setLoading(false);
       }

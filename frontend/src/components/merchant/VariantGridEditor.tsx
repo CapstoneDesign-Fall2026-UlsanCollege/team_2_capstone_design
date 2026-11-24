@@ -19,12 +19,14 @@ interface VariantGridEditorProps {
   storeSlug: string;
   productId: number;
   initialVariants: ProductVariant[];
+  isOwner?: boolean;
 }
 
 export function VariantGridEditor({
   storeSlug,
   productId,
   initialVariants,
+  isOwner = false,
 }: VariantGridEditorProps) {
   const [variants, setVariants] = useState<ProductVariant[]>(initialVariants);
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -117,11 +119,12 @@ export function VariantGridEditor({
   };
 
   const handleDelete = async (variantId: number) => {
-    if (!confirm("Remove this variant?")) return;
+    const promptMsg = isOwner ? "Permanently remove this variant?" : "Archive this variant?";
+    if (!confirm(promptMsg)) return;
     try {
-      await deleteProductVariant(storeSlug, productId, variantId, true);
+      await deleteProductVariant(storeSlug, productId, variantId, isOwner);
       setVariants((prev) => prev.filter((v) => v.id !== variantId));
-      showFeedback("Variant removed");
+      showFeedback(isOwner ? "Variant removed" : "Variant archived");
     } catch (err) {
       console.error("Failed to delete variant:", err);
       alert("Failed to remove variant.");

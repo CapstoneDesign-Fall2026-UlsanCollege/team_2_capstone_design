@@ -16,6 +16,7 @@ import {
   X,
 } from "lucide-react";
 import {
+  ApiError,
   AuditLogItem,
   fetchMerchantAuditLogs,
   fetchMerchantStaff,
@@ -28,6 +29,7 @@ import {
 
 interface StaffTabProps {
   storeSlug: string;
+  isOwner?: boolean;
 }
 
 export function StaffPermissionsPanel({ storeSlug }: StaffTabProps) {
@@ -443,28 +445,51 @@ export function StaffPermissionsPanel({ storeSlug }: StaffTabProps) {
   );
 }
 
-export function AuditLogPanel({ storeSlug }: StaffTabProps) {
-  const [loading, setLoading] = useState(true);
+export function AuditLogPanel({ storeSlug, isOwner = true }: StaffTabProps) {
+  const [loading, setLoading] = useState(isOwner);
   const [error, setError] = useState<string | null>(null);
   const [logs, setLogs] = useState<AuditLogItem[]>([]);
   const [query, setQuery] = useState("");
 
   const loadLogs = useCallback(async () => {
+    if (!isOwner) return;
     try {
       setLoading(true);
       setError(null);
       const res = await fetchMerchantAuditLogs(storeSlug);
       setLogs(res);
     } catch (err: unknown) {
-      setError(err instanceof Error ? err.message : "Failed to load security audit logs.");
+      if (err instanceof ApiError && err.status === 403) {
+        setError("Only store owners can view security audit logs.");
+      } else {
+        setError(err instanceof Error ? err.message : "Failed to load security audit logs.");
+      }
     } finally {
       setLoading(false);
     }
-  }, [storeSlug]);
+  }, [storeSlug, isOwner]);
 
   useEffect(() => {
-    loadLogs();
-  }, [loadLogs]);
+    if (!isOwner) return;
+    void Promise.resolve().then(() => loadLogs());
+  }, [isOwner, loadLogs]);
+
+  if (!isOwner) {
+    return (
+      <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] p-8 text-center space-y-2">
+        <div className="w-10 h-10 rounded-full border border-[var(--border)] bg-[var(--secondary)] flex items-center justify-center mx-auto text-[var(--muted-foreground)]">
+          <Lock className="w-4 h-4" />
+        </div>
+        <h2 className="text-sm font-semibold text-[var(--foreground)]">
+          Owner Permission Required
+        </h2>
+        <p className="text-xs text-[var(--muted-foreground)] max-w-md mx-auto">
+          Security audit logs record sensitive settings mutations and staff access events, and are
+          restricted to store owners.
+        </p>
+      </div>
+    );
+  }
 
   const filtered = logs.filter((item) => {
     if (!query.trim()) return true;

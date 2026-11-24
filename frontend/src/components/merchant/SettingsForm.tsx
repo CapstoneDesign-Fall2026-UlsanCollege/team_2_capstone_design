@@ -11,6 +11,7 @@ import {
 import { ThemeMediaUpload } from "@/components/merchant/ThemeMediaUpload";
 import { STOREFRONT_THEMES } from "@/lib/storefront-themes";
 import { resolveKhaltiSettingsBanner } from "@/lib/merchant-status";
+import { isStoreOwner } from "@/lib/merchant-guard";
 
 const NEPAL_PROVINCES = [
   "Bagmati Province",
@@ -37,7 +38,7 @@ export function SettingsForm({
   section = "general",
   onSaved,
 }: SettingsFormProps) {
-  const isOwner = (initialSettings.member_role || "OWNER") === "OWNER";
+  const isOwner = isStoreOwner(initialSettings.member_role);
 
   // 1. Identity & Story
   const [name, setName] = useState(initialSettings.name || "");
@@ -126,6 +127,7 @@ export function SettingsForm({
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
+    if (!isOwner) return;
     setSubmitting(true);
     setFeedback(null);
 
@@ -199,6 +201,17 @@ export function SettingsForm({
 
   return (
     <form onSubmit={handleSubmit} className="space-y-6">
+      {!isOwner && (
+        <div className="flex items-center gap-2.5 rounded-lg border border-amber-500/30 bg-amber-500/10 px-4 py-3 text-xs text-amber-800 dark:text-amber-200">
+          <Lock className="w-4 h-4 shrink-0 text-amber-600 dark:text-amber-400" />
+          <span>
+            <strong>View-only mode (Staff):</strong> Only store owners can modify store details,
+            shipping rates, payment settings, COD, or branding assets.
+          </span>
+        </div>
+      )}
+
+      <fieldset disabled={!isOwner} className="space-y-6 disabled:opacity-90">
       {/* SECTION A: GENERAL & STORY */}
       {section === "general" && (
         <>
@@ -289,6 +302,7 @@ export function SettingsForm({
                 assetType="logo"
                 storeSlug={storeSlug}
                 value={logoUrl}
+                disabled={!isOwner}
                 onChange={(url) => {
                   setLogoUrl(url);
                   setFieldErrors((prev) => ({ ...prev, logo_url: [] }));
@@ -302,6 +316,7 @@ export function SettingsForm({
                 assetType="hero"
                 storeSlug={storeSlug}
                 value={bannerUrl}
+                disabled={!isOwner}
                 onChange={(url) => {
                   setBannerUrl(url);
                   setFieldErrors((prev) => ({ ...prev, banner_url: [] }));
@@ -834,6 +849,8 @@ export function SettingsForm({
         </>
       )}
 
+      </fieldset>
+
       {/* Save Footer */}
       <div className="flex items-center justify-between pt-2">
         <div>
@@ -850,13 +867,20 @@ export function SettingsForm({
           )}
         </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="h-9 px-5 rounded-md font-semibold text-xs bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
-        >
-          {submitting ? "Saving..." : "Save Settings"}
-        </button>
+        {isOwner ? (
+          <button
+            type="submit"
+            disabled={submitting}
+            className="h-9 px-5 rounded-md font-semibold text-xs bg-[var(--primary)] text-[var(--primary-foreground)] hover:opacity-90 disabled:opacity-50 transition-opacity cursor-pointer"
+          >
+            {submitting ? "Saving..." : "Save Settings"}
+          </button>
+        ) : (
+          <span className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--secondary)] text-[11px] font-mono text-[var(--muted-foreground)]">
+            <Lock className="w-3 h-3" />
+            <span>Owner permission required to save changes</span>
+          </span>
+        )}
       </div>
     </form>
   );

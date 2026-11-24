@@ -319,22 +319,40 @@ export async function requestEmailOtp(email: string) {
   });
 }
 
+function clearActiveMerchantStorage(): void {
+  if (typeof window === "undefined") return;
+  try {
+    window.localStorage.removeItem("shopcraft_active_store_slug");
+    window.sessionStorage.removeItem("shopcraft_merchant_notice");
+  } catch {
+    // Storage unavailable
+  }
+}
+
 export async function verifyEmailOtp(email: string, code: string) {
-  return apiFetch<{ user: UserProfile }>("/api/auth/otp/verify/", {
+  const res = await apiFetch<{ user: UserProfile }>("/api/auth/otp/verify/", {
     method: "POST",
     body: JSON.stringify({ email, code }),
   });
+  clearActiveMerchantStorage();
+  invalidateApiGetCache();
+  return res;
 }
 
 export async function authenticateWithGoogle(credential: string) {
-  return apiFetch<{ user: UserProfile }>("/api/auth/google/", {
+  const res = await apiFetch<{ user: UserProfile }>("/api/auth/google/", {
     method: "POST",
     body: JSON.stringify({ credential }),
   });
+  clearActiveMerchantStorage();
+  invalidateApiGetCache();
+  return res;
 }
 
 export async function fetchSession() {
-  return apiFetch<{ authenticated: boolean; user: UserProfile | null }>("/api/auth/me/");
+  return apiFetch<{ authenticated: boolean; user: UserProfile | null }>("/api/auth/me/", {
+    cache: "no-store",
+  });
 }
 
 export async function updateProfile(data: { full_name?: string; phone?: string }) {
@@ -345,9 +363,14 @@ export async function updateProfile(data: { full_name?: string; phone?: string }
 }
 
 export async function logoutSession() {
-  return apiFetch<{ detail: string }>("/api/auth/logout/", {
-    method: "POST",
-  });
+  try {
+    return await apiFetch<{ detail: string }>("/api/auth/logout/", {
+      method: "POST",
+    });
+  } finally {
+    clearActiveMerchantStorage();
+    invalidateApiGetCache();
+  }
 }
 
 export async function listDeliveryAddresses() {
@@ -510,7 +533,9 @@ export interface MerchantStoreMembership {
 }
 
 export async function fetchMyStores() {
-  return apiFetch<{ stores: MerchantStoreMembership[] }>("/api/stores/my-stores/");
+  return apiFetch<{ stores: MerchantStoreMembership[] }>("/api/stores/my-stores/", {
+    cache: "no-store",
+  });
 }
 
 export async function createStore(payload: CreateStorePayload) {

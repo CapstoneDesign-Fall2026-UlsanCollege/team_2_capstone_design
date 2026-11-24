@@ -1,10 +1,14 @@
 "use client";
 
-import React, { useEffect, useState, useCallback } from "react";
+import React, { useEffect, useState, useCallback, useRef } from "react";
 import { useRouter } from "next/navigation";
 import { AlertTriangle, RefreshCw } from "lucide-react";
-import { ApiError, fetchMyStores, fetchSession, MerchantStoreMembership } from "@/lib/api";
-import { resolveMerchantStoreAccess, classifyStoreError } from "@/lib/merchant-guard";
+import { fetchMyStores, fetchSession, MerchantStoreMembership } from "@/lib/api";
+import {
+  canRenderMerchantWorkspace,
+  classifyStoreError,
+  resolveMerchantStoreAccess,
+} from "@/lib/merchant-guard";
 import { ConsoleShell } from "@/components/merchant/ConsoleShell";
 import { MerchantStoreProvider } from "@/context/MerchantStoreContext";
 import { Button } from "@/components/ui/button";
@@ -17,24 +21,33 @@ interface MerchantStoreGuardProps {
 export function MerchantStoreGuard({ storeSlug, children }: MerchantStoreGuardProps) {
   const router = useRouter();
   const [status, setStatus] = useState<"loading" | "authorized" | "error">("loading");
+  const [validatedSlug, setValidatedSlug] = useState<string | null>(null);
   const [errorMessage, setErrorMessage] = useState<string | null>(null);
   const [stores, setStores] = useState<MerchantStoreMembership[]>([]);
   const [currentStore, setCurrentStore] = useState<MerchantStoreMembership | null>(null);
+  const requestSeqRef = useRef(0);
 
   const validateAccess = useCallback(async () => {
+    const seq = ++requestSeqRef.current;
     setStatus("loading");
     setErrorMessage(null);
 
     try {
-      // 1. Verify user is authenticated
+      // 1. Verify user is authenticated (bypasses short GET cache)
       const session = await fetchSession();
+      if (seq !== requestSeqRef.current) return;
+
       if (!session.authenticated) {
+        setCurrentStore(null);
+        setValidatedSlug(storeSlug);
         router.replace(`/login?next=/merchant/${encodeURIComponent(storeSlug)}`);
         return;
       }
 
-      // 2. Fetch authenticated user's store memberships
+      // 2. Fetch authenticated user's store memberships (bypasses short GET cache)
       const res = await fetchMyStores();
+      if (seq !== requestSeqRef.current) return;
+
       const userStores = res.stores || [];
       setStores(userStores);
 
@@ -42,6 +55,7 @@ export function MerchantStoreGuard({ storeSlug, children }: MerchantStoreGuardPr
       const access = resolveMerchantStoreAccess(storeSlug, session.authenticated, userStores);
       if (access.status === "authorized") {
         setCurrentStore(access.currentStore);
+        setValidatedSlug(storeSlug);
         if (typeof window !== "undefined") {
           localStorage.setItem("shopcraft_active_store_slug", storeSlug);
         }
@@ -49,6 +63,8 @@ export function MerchantStoreGuard({ storeSlug, children }: MerchantStoreGuardPr
         return;
       }
 
+      setCurrentStore(null);
+      setValidatedSlug(storeSlug);
       if (access.status === "unauthenticated") {
         router.replace(access.redirectTo);
         return;
@@ -63,6 +79,10 @@ export function MerchantStoreGuard({ storeSlug, children }: MerchantStoreGuardPr
       }
       router.replace(access.redirectTo);
     } catch (err: unknown) {
+      if (seq !== requestSeqRef.current) return;
+
+      setCurrentStore(null);
+      setValidatedSlug(storeSlug);
       const classified = classifyStoreError(err, storeSlug);
       if (classified.type === "auth" && classified.redirectTo) {
         router.replace(classified.redirectTo);
@@ -88,11 +108,23 @@ export function MerchantStoreGuard({ storeSlug, children }: MerchantStoreGuardPr
   }, [storeSlug, router]);
 
   useEffect(() => {
-    validateAccess();
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (active) {
+        void validateAccess();
+      }
+    });
+    return () => {
+      active = false;
+      requestSeqRef.current += 1;
+    };
   }, [validateAccess]);
 
-  // Loading skeleton: neutral shell outline with NO store name or guessed text
-  if (status === "loading") {
+  const effectiveStatus = validatedSlug === storeSlug ? status : "loading";
+  const canRender = canRenderMerchantWorkspace(effectiveStatus, currentStore, storeSlug);
+
+  // Loading skeleton (also shown while switching slugs before access validation completes)
+  if (effectiveStatus === "loading" || (effectiveStatus === "authorized" && !canRender)) {
     return (
       <div
         className="flex min-h-dvh bg-[var(--canvas)] text-[var(--ink)]"
@@ -137,7 +169,7 @@ export function MerchantStoreGuard({ storeSlug, children }: MerchantStoreGuardPr
   }
 
   // Error state: reserved exclusively for genuine network or 5xx server issues
-  if (status === "error") {
+  if (effectiveStatus === "error") {
     return (
       <div className="flex min-h-dvh items-center justify-center bg-[var(--canvas)] p-4">
         <div className="mx-auto max-w-md p-8 text-center space-y-4">
