@@ -139,42 +139,47 @@ def is_local_media_allowed() -> bool:
 
 class StoreMerchantMixin(StoreTenantMixin):
     """
-    Requires authentication and verifies the user is a member of the store.
-    Raises HTTP 404 if the store does not exist or user is not a member (D-03).
+    Requires an active authenticated user and verifies an explicit StoreMembership
+    for an active store. Raises HTTP 404 if the store does not exist, is inactive,
+    the user is inactive, or the user is not a member of that store (D-03).
     """
     store = None
     membership = None
-    member_role = "OWNER"
+    member_role = None
     permission_classes = [permissions.IsAuthenticated]
 
     def initial(self, request, *args, **kwargs):
         super().initial(request, *args, **kwargs)
+        if not getattr(request.user, "is_active", False):
+            raise Http404("Store not found.")
+
         store_slug = self.kwargs.get("store_slug")
-        store = Store.objects.filter(slug=store_slug).first()
+        store = Store.objects.filter(slug=store_slug, is_active=True).first()
         if not store:
             raise Http404("Store not found.")
 
         # Activate tenant transaction before checking tenant-scoped StoreMembership
         set_current_tenant_id(store.id, is_local=True)
 
-        # Check membership & role
-        membership = StoreMembership.objects.for_store(store).filter(user=request.user).first()
-        is_member = membership is not None
-        if not is_member and (
-            getattr(request.user, "is_staff", False)
-            or getattr(request.user, "is_superuser", False)
-        ):
-            is_member = True
-        if not is_member:
+        # Strict membership check: no is_staff / is_superuser backdoor
+        membership = (
+            StoreMembership.objects.for_store(store)
+            .filter(user=request.user)
+            .first()
+        )
+        if not membership or membership.role not in ("OWNER", "STAFF"):
             raise Http404("Store not found.")
 
         self.store = store
         self.membership = membership
-        self.member_role = membership.role if membership else "OWNER"
+        self.member_role = membership.role
 
     def finalize_response(self, request, response, *args, **kwargs):
         reset_current_tenant_id()
-        return super().finalize_response(request, response, *args, **kwargs)
+        response = super().finalize_response(request, response, *args, **kwargs)
+        if hasattr(response, "headers") and not response.has_header("Cache-Control"):
+            response["Cache-Control"] = PRIVATE_NO_STORE_CACHE_CONTROL
+        return response
 
 
 class StoreScopedSerializerMixin(serializers.ModelSerializer):
@@ -1590,15 +1595,14 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
         return Response(data)
 
     def patch(self, request, store_slug):
-        store = self.store
-        data = request.data
-
-        owner_only_fields = ("khalti_secret_key", "clear_khalti_secret_key", "khalti_mode", "custom_domain")
-        if any(field in data for field in owner_only_fields) and self.member_role != "OWNER":
+        if self.member_role != "OWNER":
             return Response(
-                {"detail": "Only store owners can modify payment gateway keys or custom domains."},
+                {"detail": "Only store owners can modify store settings."},
                 status=status.HTTP_403_FORBIDDEN,
             )
+
+        store = self.store
+        data = request.data
 
         if "name" in data and str(data["name"]).strip():
             store.name = str(data["name"]).strip()
@@ -1957,7 +1961,25 @@ class MerchantProductDetailView(StoreMerchantMixin, APIView):
     def delete(self, request, store_slug, product_id):
         product = self.get_product(product_id)
         if request.query_params.get("permanent") == "true":
-            product.delete()
+            if self.member_role != "OWNER":
+                return Response(
+                    {"detail": "Only store owners can permanently delete products."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            prod_id = str(product.id)
+            prod_name = product.name
+            prod_slug = product.slug
+            with transaction.atomic():
+                product.delete()
+                MerchantAuditLog.objects.create(
+                    store=self.store,
+                    actor=request.user,
+                    action="PRODUCT_PERMANENT_DELETE",
+                    entity_type="Product",
+                    entity_id=prod_id,
+                    details={"name": prod_name, "slug": prod_slug},
+                    ip_address=request.META.get("REMOTE_ADDR"),
+                )
             return Response(status=status.HTTP_204_NO_CONTENT)
         product.is_active = False
         product.save(update_fields=["is_active"])
@@ -2070,7 +2092,25 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
     def delete(self, request, store_slug, product_id, variant_id):
         variant = self.get_variant(product_id, variant_id)
         if request.query_params.get("permanent") == "true":
-            variant.delete()
+            if self.member_role != "OWNER":
+                return Response(
+                    {"detail": "Only store owners can permanently delete variants."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
+            var_id = str(variant.id)
+            var_label = variant.label
+            var_sku = variant.sku
+            with transaction.atomic():
+                variant.delete()
+                MerchantAuditLog.objects.create(
+                    store=self.store,
+                    actor=request.user,
+                    action="VARIANT_PERMANENT_DELETE",
+                    entity_type="Variant",
+                    entity_id=var_id,
+                    details={"label": var_label, "sku": var_sku, "product_id": product_id},
+                    ip_address=request.META.get("REMOTE_ADDR"),
+                )
             return Response(status=status.HTTP_204_NO_CONTENT)
         variant.is_active = False
         variant.save(update_fields=["is_active"])
@@ -2644,25 +2684,28 @@ class StoreCreateView(APIView):
                     about_text=about_text,
                 )
                 set_current_tenant_id(store.id, is_local=True)
-                StoreMembership.objects.create(
-                    store=store,
-                    user=user,
-                    role="OWNER",
-                )
-                MerchantAuditLog.objects.create(
-                    store=store,
-                    actor=user,
-                    action="STORE_CREATE",
-                    entity_type="Store",
-                    entity_id=str(store.id),
-                    details={
-                        "name": store.name,
-                        "slug": store.slug,
-                        "category": category,
-                        "theme_preset": store.theme_preset,
-                    },
-                    ip_address=None,
-                )
+                try:
+                    StoreMembership.objects.create(
+                        store=store,
+                        user=user,
+                        role="OWNER",
+                    )
+                    MerchantAuditLog.objects.create(
+                        store=store,
+                        actor=user,
+                        action="STORE_CREATE",
+                        entity_type="Store",
+                        entity_id=str(store.id),
+                        details={
+                            "name": store.name,
+                            "slug": store.slug,
+                            "category": category,
+                            "theme_preset": store.theme_preset,
+                        },
+                        ip_address=None,
+                    )
+                finally:
+                    reset_current_tenant_id()
         except IntegrityError:
             return Response(
                 {"error": f"The store handle '{slug}' is already taken. Please choose another."},
@@ -2680,6 +2723,11 @@ class MerchantMyStoresView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def get(self, request):
+        if not getattr(request.user, "is_active", False):
+            response = Response({"stores": []})
+            response["Cache-Control"] = PRIVATE_NO_STORE_CACHE_CONTROL
+            return response
+
         with UserMembershipContext(request.user.id):
             memberships = (
                 StoreMembership.all_objects.filter(user=request.user, store__is_active=True)
@@ -2702,7 +2750,9 @@ class MerchantMyStoresView(APIView):
                     "role": m.role,
                     "created_at": st.created_at.isoformat(),
                 })
-        return Response({"stores": stores_data})
+        response = Response({"stores": stores_data})
+        response["Cache-Control"] = PRIVATE_NO_STORE_CACHE_CONTROL
+        return response
 
 
 
@@ -2728,6 +2778,11 @@ class MerchantAuditLogSerializer(serializers.ModelSerializer):
 
 class MerchantAuditLogListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
+        if self.member_role != "OWNER":
+            return Response(
+                {"detail": "Only store owners can view security audit logs."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
         logs = (
             MerchantAuditLog.objects.for_store(self.store)
             .select_related("actor")
@@ -2889,6 +2944,12 @@ class MerchantThemeMediaUploadView(StoreMerchantMixin, APIView):
         raise Http404("Store not found.")
 
     def post(self, request, store_slug):
+        if self.member_role != "OWNER":
+            return Response(
+                {"detail": "Only store owners can upload store branding media."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         asset_type = str(request.data.get("asset_type") or "hero").strip().lower()
         if asset_type not in ("hero", "logo"):
             return Response({"error": "Invalid asset_type. Must be 'hero' or 'logo'."}, status=status.HTTP_400_BAD_REQUEST)

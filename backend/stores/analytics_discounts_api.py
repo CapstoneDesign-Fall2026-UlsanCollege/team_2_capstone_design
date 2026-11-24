@@ -1,5 +1,8 @@
 import re
 from datetime import timedelta
+from django.contrib.auth.hashers import make_password
+from django.core.exceptions import ValidationError
+from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Count, Q, Sum
 from django.http import Http404
@@ -525,7 +528,11 @@ def build_slice6_views(StoreMerchantMixin):
                     "user_id": m.user_id,
                     "email": m.user.email,
                     "full_name": m.user.full_name or m.user.email.split("@")[0],
-                    "phone": getattr(m.user, "phone", "") or "",
+                    "phone": (
+                        (getattr(m.user, "phone", "") or "")
+                        if (self.member_role == "OWNER" or m.user_id == request.user.id)
+                        else ""
+                    ),
                     "role": m.role,
                     "is_current_user": m.user_id == request.user.id,
                     "created_at": m.created_at.isoformat(),
@@ -549,11 +556,19 @@ def build_slice6_views(StoreMerchantMixin):
             full_name = str(request.data.get("full_name") or "").strip()
             role = str(request.data.get("role") or "STAFF").strip().upper()
 
-            if not email or "@" not in email:
+            if not email:
                 return Response(
                     {"error": "Please enter a valid staff email address."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+            try:
+                validate_email(email)
+            except ValidationError:
+                return Response(
+                    {"error": "Please enter a valid staff email address."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
             if role not in ("OWNER", "STAFF"):
                 return Response(
                     {"error": "Role must be OWNER or STAFF."},
@@ -562,7 +577,10 @@ def build_slice6_views(StoreMerchantMixin):
 
             target_user, _ = User.objects.get_or_create(
                 email=email,
-                defaults={"full_name": full_name or email.split("@")[0]},
+                defaults={
+                    "full_name": full_name or email.split("@")[0],
+                    "password": make_password(None),
+                },
             )
             if full_name and not target_user.full_name:
                 target_user.full_name = full_name
@@ -603,13 +621,11 @@ def build_slice6_views(StoreMerchantMixin):
             )
 
     class MerchantStaffDetailView(StoreMerchantMixin, APIView):
-        def get_object(self, membership_id):
-            m = (
-                StoreMembership.objects.for_store(self.store)
-                .select_related("user")
-                .filter(id=membership_id)
-                .first()
-            )
+        def get_object(self, membership_id, *, lock: bool = False):
+            qs = StoreMembership.objects.for_store(self.store).select_related("user")
+            if lock:
+                qs = qs.select_for_update()
+            m = qs.filter(id=membership_id).first()
             if not m:
                 raise Http404("Staff membership not found.")
             return m
@@ -621,31 +637,36 @@ def build_slice6_views(StoreMerchantMixin):
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-            m = self.get_object(membership_id)
             new_role = str(request.data.get("role") or "").strip().upper()
             if new_role not in ("OWNER", "STAFF"):
                 return Response({"error": "Role must be OWNER or STAFF."}, status=status.HTTP_400_BAD_REQUEST)
 
-            if m.role == "OWNER" and new_role == "STAFF":
-                owners_count = StoreMembership.objects.for_store(self.store).filter(role="OWNER").count()
-                if owners_count <= 1:
-                    return Response(
-                        {"error": "Store must retain at least one owner."},
-                        status=status.HTTP_400_BAD_REQUEST,
+            with transaction.atomic():
+                m = self.get_object(membership_id, lock=True)
+                if m.role == "OWNER" and new_role == "STAFF":
+                    locked_owners = list(
+                        StoreMembership.objects.for_store(self.store)
+                        .select_for_update()
+                        .filter(role="OWNER")
                     )
+                    if len(locked_owners) <= 1:
+                        return Response(
+                            {"error": "Store must retain at least one owner."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
-            m.role = new_role
-            m.save(update_fields=["role"])
+                m.role = new_role
+                m.save(update_fields=["role"])
 
-            MerchantAuditLog.objects.create(
-                store=self.store,
-                actor=request.user,
-                action="STAFF_ROLE_UPDATE",
-                entity_type="StoreMembership",
-                entity_id=str(m.id),
-                details={"email": m.user.email, "role": new_role},
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
+                MerchantAuditLog.objects.create(
+                    store=self.store,
+                    actor=request.user,
+                    action="STAFF_ROLE_UPDATE",
+                    entity_type="StoreMembership",
+                    entity_id=str(m.id),
+                    details={"email": m.user.email, "role": new_role},
+                    ip_address=request.META.get("REMOTE_ADDR"),
+                )
             return Response({
                 "id": m.id,
                 "user_id": m.user_id,
@@ -663,28 +684,33 @@ def build_slice6_views(StoreMerchantMixin):
                     status=status.HTTP_403_FORBIDDEN,
                 )
 
-            m = self.get_object(membership_id)
-            if m.role == "OWNER":
-                owners_count = StoreMembership.objects.for_store(self.store).filter(role="OWNER").count()
-                if owners_count <= 1:
-                    return Response(
-                        {"error": "Cannot remove the sole owner of this store."},
-                        status=status.HTTP_400_BAD_REQUEST,
+            with transaction.atomic():
+                m = self.get_object(membership_id, lock=True)
+                if m.role == "OWNER":
+                    locked_owners = list(
+                        StoreMembership.objects.for_store(self.store)
+                        .select_for_update()
+                        .filter(role="OWNER")
                     )
+                    if len(locked_owners) <= 1:
+                        return Response(
+                            {"error": "Cannot remove the sole owner of this store."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
 
-            removed_email = m.user.email
-            m_id = str(m.id)
-            m.delete()
+                removed_email = m.user.email
+                m_id = str(m.id)
+                m.delete()
 
-            MerchantAuditLog.objects.create(
-                store=self.store,
-                actor=request.user,
-                action="STAFF_REMOVE",
-                entity_type="StoreMembership",
-                entity_id=m_id,
-                details={"email": removed_email},
-                ip_address=request.META.get("REMOTE_ADDR"),
-            )
+                MerchantAuditLog.objects.create(
+                    store=self.store,
+                    actor=request.user,
+                    action="STAFF_REMOVE",
+                    entity_type="StoreMembership",
+                    entity_id=m_id,
+                    details={"email": removed_email},
+                    ip_address=request.META.get("REMOTE_ADDR"),
+                )
             return Response({"detail": f"Removed {removed_email} from {self.store.name}."})
 
     return {
