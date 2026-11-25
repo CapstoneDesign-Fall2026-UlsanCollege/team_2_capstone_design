@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { Menu, X, Sun, Moon, LayoutDashboard } from "lucide-react";
@@ -9,15 +9,16 @@ import { ShopCraftLogo } from "@/components/platform/ShopCraftLogo";
 import { fetchMyStores, fetchSession } from "@/lib/api";
 
 interface NavItem {
+  id: string;
   label: string;
   href: string;
 }
 
 const NAV_ITEMS: NavItem[] = [
-  { label: "Looks", href: "/#looks" },
-  { label: "Made for Nepal", href: "/#made-for-nepal" },
-  { label: "Orders", href: "/#orders" },
-  { label: "Questions", href: "/#faq" },
+  { id: "looks", label: "Looks", href: "/#looks" },
+  { id: "made-for-nepal", label: "Made for Nepal", href: "/#made-for-nepal" },
+  { id: "orders", label: "Orders", href: "/#orders" },
+  { id: "faq", label: "Questions", href: "/#faq" },
 ];
 
 export function PlatformNav() {
@@ -25,7 +26,60 @@ export function PlatformNav() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasStores, setHasStores] = useState(false);
+  const [activeId, setActiveId] = useState<string>("");
+  const progressRef = useRef<HTMLDivElement>(null);
   const { theme, toggleTheme } = usePlatformTheme();
+
+  useEffect(() => {
+    if (pathname !== "/") return;
+
+    const sectionEls = NAV_ITEMS.map((item) => document.getElementById(item.id)).filter(
+      (el): el is HTMLElement => Boolean(el)
+    );
+    if (sectionEls.length === 0 || typeof IntersectionObserver === "undefined") return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        const visible = entries
+          .filter((entry) => entry.isIntersecting)
+          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
+        if (visible[0]) {
+          setActiveId(visible[0].target.id);
+        }
+      },
+      { rootMargin: "-25% 0px -55% 0px", threshold: [0.1, 0.35] }
+    );
+    sectionEls.forEach((el) => observer.observe(el));
+
+    let rafId = 0;
+    const syncScroll = () => {
+      rafId = 0;
+      const doc = document.documentElement;
+      const maxScroll = doc.scrollHeight - window.innerHeight;
+      const progress = maxScroll > 0 ? Math.min(1, Math.max(0, window.scrollY / maxScroll)) : 0;
+      if (progressRef.current) {
+        progressRef.current.style.transform = `scaleX(${progress.toFixed(4)})`;
+      }
+      if (window.scrollY < 260) {
+        setActiveId("");
+      }
+    };
+
+    const onScroll = () => {
+      if (!rafId) rafId = window.requestAnimationFrame(syncScroll);
+    };
+
+    syncScroll();
+    window.addEventListener("scroll", onScroll, { passive: true });
+    window.addEventListener("resize", onScroll, { passive: true });
+
+    return () => {
+      observer.disconnect();
+      window.removeEventListener("scroll", onScroll);
+      window.removeEventListener("resize", onScroll);
+      if (rafId) window.cancelAnimationFrame(rafId);
+    };
+  }, [pathname]);
 
   useEffect(() => {
     let mounted = true;
@@ -83,15 +137,26 @@ export function PlatformNav() {
           aria-label="Main navigation"
           className="hidden md:flex items-center gap-7 text-[13.5px] font-medium text-ink-2"
         >
-          {NAV_ITEMS.map((item) => (
-            <a
-              key={item.label}
-              href={item.href}
-              className="inline-flex items-center min-h-[44px] px-1 hover:text-ink transition-colors whitespace-nowrap"
-            >
-              {item.label}
-            </a>
-          ))}
+          {NAV_ITEMS.map((item) => {
+            const isActive = pathname === "/" && activeId === item.id;
+            return (
+              <a
+                key={item.label}
+                href={item.href}
+                className={`relative inline-flex items-center min-h-[44px] px-1 transition-colors whitespace-nowrap ${
+                  isActive ? "text-ink font-semibold" : "hover:text-ink"
+                }`}
+              >
+                {item.label}
+                <span
+                  aria-hidden="true"
+                  className={`absolute left-1 right-1 bottom-2 h-[2px] rounded-full bg-accent transition-transform duration-200 origin-center ${
+                    isActive ? "scale-x-100" : "scale-x-0"
+                  }`}
+                />
+              </a>
+            );
+          })}
         </nav>
 
         {/* Right: Desktop Action Buttons + Theme Toggle */}
@@ -171,7 +236,7 @@ export function PlatformNav() {
 
       {/* Mobile Drawer */}
       {mobileMenuOpen && (
-        <div className="md:hidden border-b border-line bg-paper px-5 py-5 space-y-3 text-left">
+        <div className="md:hidden border-b border-line bg-paper px-5 py-5 space-y-3 text-left platform-pop-in">
           <div className="flex flex-col space-y-1">
             {NAV_ITEMS.map((item) => (
               <a
@@ -205,6 +270,15 @@ export function PlatformNav() {
             )}
           </div>
         </div>
+      )}
+
+      {pathname === "/" && (
+        <div
+          aria-hidden="true"
+          ref={progressRef}
+          style={{ transform: "scaleX(0)" }}
+          className="h-[2px] w-full bg-accent origin-left will-change-transform"
+        />
       )}
     </header>
   );

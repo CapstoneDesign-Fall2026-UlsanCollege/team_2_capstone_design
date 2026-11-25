@@ -163,3 +163,84 @@
   font-variant-numeric: tabular-nums;
 }
 
+/* Modern GPU-composited platform micro-animations */
+@keyframes platformCaretBlink {
+  0%, 48% {
+    opacity: 1;
+  }
+  52%, 100% {
+    opacity: 0;
+  }
+}
+
+.platform-caret-blink {
+  animation: platformCaretBlink 1.15s steps(2, start) infinite;
+}
+
+@keyframes platformPopIn {
+  from {
+    opacity: 0;
+    transform: translate3d(0, 6px, 0) scale(0.97);
+  }
+  to {
+    opacity: 1;
+    transform: translate3d(0, 0, 0) scale(1);
+  }
+}
+
+.platform-pop-in {
+  animation: platformPopIn 220ms cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+.platform-reveal {
+  transition:
+    opacity 540ms cubic-bezier(0.22, 1, 0.36, 1),
+    transform 540ms cubic-bezier(0.22, 1, 0.36, 1);
+  will-change: opacity, transform;
+}
+
+.platform-reveal[data-reveal-state="pending"] {
+  opacity: 0;
+  transform: translate3d(0, 18px, 0);
+}
+
+.platform-reveal[data-reveal-state="visible"] {
+  opacity: 1;
+  transform: translate3d(0, 0, 0);
+}
+
+/* Smooth accordion disclosure via CSS grid rows (zero layout jump) */
+.platform-accordion-body {
+  display: grid;
+  grid-template-rows: 0fr;
+  opacity: 0;
+  transition:
+    grid-template-rows 260ms cubic-bezier(0.22, 1, 0.36, 1),
+    opacity 220ms ease;
+}
+
+.platform-accordion-body[data-open="true"] {
+  grid-template-rows: 1fr;
+  opacity: 1;
+}
+
+.platform-accordion-inner {
+  overflow: hidden;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .platform-caret-blink,
+  .platform-pop-in {
+    animation: none;
+  }
+
+  .platform-reveal,
+  .platform-reveal[data-reveal-state="pending"],
+  .platform-accordion-body {
+    opacity: 1;
+    transform: none;
+    transition: none;
+  }
+}
+
+

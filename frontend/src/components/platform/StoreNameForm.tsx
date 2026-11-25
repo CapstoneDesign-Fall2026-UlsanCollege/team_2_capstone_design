@@ -47,11 +47,14 @@ export function StoreNameForm({
     <div className="mx-auto max-w-[560px]">
       <form
         onSubmit={handleSubmit}
-        className="mt-7 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 rounded-[20px] sm:rounded-full bg-card border border-line-strong p-2 sm:p-1.5"
+        className="mt-7 flex flex-col sm:flex-row items-stretch sm:items-center gap-2 rounded-[20px] sm:rounded-full bg-card border border-line-strong focus-within:border-accent p-2 sm:p-1.5 transition-colors duration-200"
       >
         <div className="flex flex-1 min-w-0 items-center px-3 sm:pl-4">
           {storeName.length === 0 && (
-            <span aria-hidden="true" className="w-0.5 h-[18px] bg-gold shrink-0 mr-1.5" />
+            <span
+              aria-hidden="true"
+              className="w-0.5 h-[18px] bg-gold shrink-0 mr-1.5 platform-caret-blink"
+            />
           )}
           <input
             id={inputId}
@@ -65,10 +68,10 @@ export function StoreNameForm({
         </div>
         <button
           type="submit"
-          className="min-h-[48px] px-6 rounded-[14px] sm:rounded-full bg-btn hover:bg-btn-hover text-btn-ink font-semibold text-sm inline-flex items-center justify-center gap-2 shrink-0 transition-colors cursor-pointer"
+          className="group min-h-[48px] px-6 rounded-[14px] sm:rounded-full bg-btn hover:bg-btn-hover text-btn-ink font-semibold text-sm inline-flex items-center justify-center gap-2 shrink-0 transition-all duration-200 active:scale-[0.98] cursor-pointer"
         >
           <span>Create my store</span>
-          <ArrowRight className="w-4 h-4" />
+          <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
         </button>
       </form>
 

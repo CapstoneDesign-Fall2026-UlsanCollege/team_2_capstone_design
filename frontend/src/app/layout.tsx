@@ -30,7 +30,8 @@ export const metadata: Metadata = {
     "Create an online store in Nepal in minutes. Sell in NPR with Khalti, cash on delivery, and province, district, and ward addresses. Free while in beta.",
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "en_NP",
+    alternateLocale: ["ne_NP"],
     siteName: "ShopCraft",
     title: "ShopCraft — Online Store Builder for Nepal (Khalti & COD)",
     description:

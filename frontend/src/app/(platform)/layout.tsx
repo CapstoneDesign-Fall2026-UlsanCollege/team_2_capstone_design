@@ -49,12 +49,37 @@ export const metadata: Metadata = {
   },
   description:
     "Create an online store in Nepal in minutes. Sell in rupees with Khalti and cash on delivery, with province, district and ward checkout. Free during beta.",
+  keywords: [
+    "online store builder Nepal",
+    "ecommerce Nepal",
+    "Khalti online store",
+    "cash on delivery Nepal",
+    "Nepal online shop creator",
+    "ShopCraft Nepal",
+    "NPR storefront",
+  ],
+  authors: [{ name: "ShopCraft Nepal", url: "https://shopcraft.me" }],
+  creator: "ShopCraft",
+  publisher: "ShopCraft",
+  category: "E-Commerce Software",
   alternates: {
     canonical: "/",
   },
+  robots: {
+    index: true,
+    follow: true,
+    googleBot: {
+      index: true,
+      follow: true,
+      "max-image-preview": "large",
+      "max-snippet": -1,
+      "max-video-preview": -1,
+    },
+  },
   openGraph: {
     type: "website",
-    locale: "en_US",
+    locale: "en_NP",
+    alternateLocale: ["ne_NP"],
     url: "https://shopcraft.me",
     siteName: "ShopCraft",
     title: "ShopCraft — Your shop, online, before your chiya cools.",

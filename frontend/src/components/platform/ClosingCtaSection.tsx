@@ -1,10 +1,11 @@
 import React from "react";
 import { StoreNameForm } from "@/components/platform/StoreNameForm";
+import { PlatformReveal } from "@/components/platform/PlatformReveal";
 
 export function ClosingCtaSection() {
   return (
     <section className="relative overflow-hidden text-center pt-20 sm:pt-32 bg-paper border-t border-line">
-      <div className="max-w-[1180px] mx-auto px-4 sm:px-7">
+      <PlatformReveal className="max-w-[1180px] mx-auto px-4 sm:px-7">
         <p className="font-devanagari text-[34px] sm:text-[68px] lg:text-[90px] leading-[1.1] text-accent">
           तपाईंको पसल, आजै।
         </p>
@@ -13,7 +14,7 @@ export function ClosingCtaSection() {
         </h2>
 
         <StoreNameForm inputId="closing-store-name" />
-      </div>
+      </PlatformReveal>
 
       {/* Subtle Kathmandu pagoda + Himalayan ridge line art */}
       <svg

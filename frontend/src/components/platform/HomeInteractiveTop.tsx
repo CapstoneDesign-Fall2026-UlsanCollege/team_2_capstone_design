@@ -42,9 +42,15 @@ function buildPrayerFlagPoints() {
 export function HomeInteractiveTop() {
   const [storeName, setStoreName] = useState("");
   const [bagCount, setBagCount] = useState(1);
+  const [bagPulse, setBagPulse] = useState(0);
   const prayerFlags = useMemo(() => buildPrayerFlagPoints(), []);
   const resolvedSlug = slugifyStoreName(storeName);
   const previewBrand = storeName.trim() || "Himalayan Roasters";
+
+  const handleAddSample = () => {
+    setBagCount((c) => c + 1);
+    setBagPulse((k) => k + 1);
+  };
 
   return (
     <>
@@ -125,7 +131,7 @@ export function HomeInteractiveTop() {
           {/* Compact Storefront Preview Rising Into the First Fold */}
           <div className="relative z-10 w-full max-w-[340px] sm:max-w-[320px] mx-auto mt-5">
             {/* Desktop floating sample badges */}
-            <div className="hidden xl:block absolute -left-[256px] top-[76px] min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line">
+            <div className="hidden xl:block absolute -left-[256px] top-[76px] min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line transition-transform duration-300 hover:-translate-y-1">
               <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
                 Sample order
               </p>
@@ -137,7 +143,7 @@ export function HomeInteractiveTop() {
               </span>
             </div>
 
-            <div className="hidden xl:block absolute -right-[262px] top-4 min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line">
+            <div className="hidden xl:block absolute -right-[262px] top-4 min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line transition-transform duration-300 hover:-translate-y-1">
               <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
                 Deliver to
               </p>
@@ -147,7 +153,7 @@ export function HomeInteractiveTop() {
               <p className="text-xs text-ink-2 mt-0.5">Bagmati Province</p>
             </div>
 
-            <div className="hidden xl:block absolute -right-[236px] top-[146px] min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line">
+            <div className="hidden xl:block absolute -right-[236px] top-[146px] min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line transition-transform duration-300 hover:-translate-y-1">
               <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
                 Payment
               </p>
@@ -169,7 +175,10 @@ export function HomeInteractiveTop() {
                   <span className="font-serif-brand text-[18px] truncate">
                     {previewBrand}
                   </span>
-                  <span className="font-mono text-[10.5px] px-2.5 py-1 rounded-full screen-badge shrink-0">
+                  <span
+                    key={bagCount}
+                    className="font-mono text-[10.5px] px-2.5 py-1 rounded-full screen-badge shrink-0 platform-pop-in"
+                  >
                     Bag ({bagCount})
                   </span>
                 </div>
@@ -194,13 +203,24 @@ export function HomeInteractiveTop() {
 
                 <div className="mt-2.5 flex items-center justify-between gap-3">
                   <span className="font-mono text-sm font-medium">Rs. 750</span>
-                  <button
-                    type="button"
-                    onClick={() => setBagCount((c) => c + 1)}
-                    className="min-h-[44px] sm:min-h-[36px] px-4 rounded-full text-xs font-medium screen-cta cursor-pointer"
-                  >
-                    Add to bag
-                  </button>
+                  <div className="flex items-center gap-2">
+                    {bagPulse > 0 && (
+                      <span
+                        key={bagPulse}
+                        aria-live="polite"
+                        className="font-mono text-[11px] font-semibold screen-muted platform-pop-in"
+                      >
+                        +1 added
+                      </span>
+                    )}
+                    <button
+                      type="button"
+                      onClick={handleAddSample}
+                      className="min-h-[44px] sm:min-h-[36px] px-4 rounded-full text-xs font-medium screen-cta cursor-pointer transition-transform duration-150 active:scale-95"
+                    >
+                      Add to bag
+                    </button>
+                  </div>
                 </div>
               </div>
             </div>
