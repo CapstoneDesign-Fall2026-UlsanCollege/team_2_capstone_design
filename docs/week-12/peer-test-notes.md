@@ -43,7 +43,7 @@
 
 | Problem | Severity | Status | Suggested Issue / Tracker |
 |---|---|---|---|
-| **Live `brewmellow` Khalti card still shows `Unavailable — Not configured by merchant`** | **Major** (`P1` work priority) | **Reproduced** on Nov 18 & Nov 22 (`w12-05`) | Tracked in [`Issue #51`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) & [`Issue #67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67) |
+| **Pre-fix live `brewmellow` Khalti card showed `Unavailable — Not configured by merchant`** | **Major** (`P1` work priority) | **Reproduced** Nov 18 & Nov 22 (`w12-05`) -> **Fixed on live prod Nov 23** (`4464ed7`, `#BR-2026-0005` `PAID`, `w12-06`..`w12-09`); awaiting `@Kushan2191` non-author cancel repeat | Tracked in [`Issue #51`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) & [`Issue #67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67) |
 | **Checkout quote initial request aborted cleanly alongside 200 retry** | Polish | Benign prefetch/superseded quote during fast client mount | Observed 1 cancelled initial `quote/` alongside `200 OK`; UI unaffected |
 
 ---
@@ -52,8 +52,8 @@
 
 1. **Pending Uncoached Non-Author Live Gateway Repeat ([`#51`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) / [`#67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67)):**
    - *Next Owner:* Live `brewmellow` Khalti Sandbox key is now provisioned and confirmed active (`w12-06`..`w12-09`). **`@Kushan2191`** (Area 2 — outside Area 1) can now execute an uncoached checkout using Khalti Sandbox (`9800000000` / OTP `987654`), verify `User canceled` cart/promo retention (`PR #64`), and post screenshot proof directly on Issue `#51` / `#67` before Wed Nov 25 EOD.
-2. **Pending Cross-OS Clean-Clone & Console Peer Spot-Check:**
-   - While clean local tests passed on Windows SQLite + Ubuntu PostgreSQL 16 CI (`Run #82`), an uncoached teammate run on a second OS/clean worktree plus visual verification of `OrderDetailSheet`/`PackingSlipModal` unpaid Khalti vs COD (`PR #65` by `@jaasly07` or `@Kushan2191`) remains scheduled for Week 12–13 handoff prep.
+2. **Pending Uncoached Non-Area-4 Merchant-Console Confirmation (`PR #65` & `067a478`) + Cross-OS Clean Clone:**
+   - While automated suites passed on Windows SQLite + Ubuntu PostgreSQL 16 CI (`Run #86`) and `#BR-2026-0005` (`w12-09`) was observed by `@notyouradhee`, an **uncoached teammate outside Area 4** (`@Kushan2191` or `@jaasly07`) must still independently verify `/merchant/brewmellow/orders` (`OrderDetailSheet` / `PackingSlipModal` unpaid Khalti `Verifying payment` vs `Cash on Delivery` distinction on `067a478` / `https://shopcraft.me`) plus second-OS clean setup and add their own result in `#67`.
 3. **Physical Mobile Hardware Boundary ([`#52`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52)):**
    - Browser `390x844` viewport emulation does **not** establish physical iOS Safari virtual-keyboard scroll/focus behavior (kept scheduled for Week 13).
 4. **Handoff Trial Status *(Required in Week 13)*:** Setup path follows [`README.md`](../../README.md) and [`docs/week-10/ai-use-and-code-ownership-audit.md#2-codebase-area-map`](../week-10/ai-use-and-code-ownership-audit.md#2-codebase-area-map); formal Week 13 external handoff trial scheduled next week.

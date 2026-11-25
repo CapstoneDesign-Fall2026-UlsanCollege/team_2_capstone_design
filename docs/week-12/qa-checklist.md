@@ -23,7 +23,7 @@ This week follows through on Week 11's open live production observation rather t
 - [x] **Setup/view instructions are understandable:** Reproduced clean local suite run from [`README.md`](../../README.md) (`199` backend tests discovered at `067a478`; `12` Vitest files / `130` tests pass locally alongside CI Run `#86`).
 - [x] **Known problems are listed:** Production `brewmellow` pre-fix Khalti gap (fixed Nov 23), physical iOS hardware keyboard testing (`#52`), local Windows Node v24 `theme-contrast.test.ts` diagnostic (green in CI Ubuntu Node 22), and pending human non-author repeats are explicitly documented.
 - [x] **Bug Issues identify affected codebase area & link area map:** Mapped across Areas 1–4 via [`Codebase Area Map`](../week-10/ai-use-and-code-ownership-audit.md#2-codebase-area-map) and [`ai-use-and-code-ownership-audit.md`](ai-use-and-code-ownership-audit.md).
-- [ ] **A teammate outside the area reproduces a key bug or regression check:** Pending uncoached human confirmation from `@Kushan2191` (`#51` / `#67`) before Wed Nov 25 EOD (see [`peer-test-notes.md`](peer-test-notes.md) & [`work-checklist.md`](work-checklist.md)).
+- [ ] **A teammate outside the area reproduces a key bug or regression check:** Pending two uncoached non-author confirmations before Wed Nov 25 EOD: (1) `@Kushan2191` (outside Area 1) on live Khalti `User canceled` & promo release (`#51` / `#67`), and (2) `@Kushan2191` or `@jaasly07` (outside Area 4) on merchant console unpaid Khalti vs COD display (`PR #65` / `067a478`, see [`peer-test-notes.md`](peer-test-notes.md) & [`work-checklist.md`](work-checklist.md)).
 
 ---
 

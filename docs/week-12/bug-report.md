@@ -5,12 +5,13 @@
 
 ---
 
-## Primary Carried Bug / Environment Blocker: Live `brewmellow` Khalti Gateway Unavailable in Production
+## Primary Carried Bug / Environment Blocker: Live `brewmellow` Khalti Gateway Availability (`Nov 18–22` -> Resolved `Nov 23`)
 
 ### Summary
-What is broken?
+What broke and what changed?
 
-> On live production [`https://shopcraft.me/s/brewmellow/checkout`](https://shopcraft.me/s/brewmellow/checkout), the **Khalti** payment radio option remains disabled and displays **`Khalti [Unavailable] — Not configured by merchant`**, preventing end-to-end live verification of Khalti Sandbox payment redirect, cancellation recovery (`status=User%20canceled`), and promo-code release (`PR #64`) against the deployed storefront while **`Cash on Delivery`** works normally.
+> On live production [`https://shopcraft.me/s/brewmellow/checkout`](https://shopcraft.me/s/brewmellow/checkout) (`Nov 18` & `Nov 22` `fbc79ab`), **`Cash on Delivery` (`COD`) worked cleanly**, whereas the **Khalti** payment radio option was **separately unavailable** (`Khalti [Unavailable] — Not configured by merchant`), blocking end-to-end live verification of Khalti Sandbox payment redirect, cancellation recovery (`status=User%20canceled`), and promo-code release (`PR #64`).  
+> **Nov 23 Live Config Fix (`4464ed7`):** Saved encrypted BrewMellow Khalti `TEST (Sandbox)` credentials in live settings (`w12-06`), verified Khalti active alongside COD (`w12-07`), and completed live Sandbox Order `#BR-2026-0005` (`Khalti Verified`, `PAID`, zero real money, `w12-08`–`w12-09`). Only `@Kushan2191`'s uncoached non-author live `User canceled` repeat remains open in `#51` / `#67`.
 
 ### Priority — Work Order
 - **P-level:** **P1 — At Risk** *(updated from Week 11's `P2` check priority in `#51`)*
@@ -23,7 +24,7 @@ What is broken?
 
 ### Severity
 - [ ] **Blocker:** demo cannot work.
-- [x] **Major:** important feature broken *(live Khalti payment path disabled for Store #1; documented COD fallback still works).*
+- [x] **Major:** important feature broken *(before Nov 23 live key save, live Khalti was unavailable for Store #1 while `COD` fallback remained operational; live gateway verified active on Nov 23, pending `@Kushan2191` non-author cancel repeat to close).*
 - [ ] **Minor:** annoying but survivable.
 - [ ] **Polish:** nice-to-have.
 
