@@ -50,12 +50,12 @@
 
 ---
 
-## 5. Pending Non-Author Human Repeats & Explicit Negative Boundaries
+## 5. Non-Author Human Confirmations & Explicit Negative Boundaries
 
-1. **Pending Uncoached Non-Author Live Gateway Repeat ([`#51`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) / [`#67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67)):**
-   - *Next Owner:* Live `brewmellow` Khalti Sandbox key is now provisioned and confirmed active (`w12-06`..`w12-09`). **`@Kushan2191`** (Area 2 — outside Area 1) can now execute an uncoached checkout using Khalti Sandbox (`9800000000` / OTP `987654`), verify `User canceled` cart/promo retention (`PR #64`), and post screenshot proof directly on Issue `#51` / `#67` before Wed Nov 25 EOD.
-2. **Pending Uncoached Non-Area-4 Merchant-Console Confirmation (`PR #65` & `067a478`) + Cross-OS Clean Clone:**
-   - While automated suites passed on Windows SQLite + Ubuntu PostgreSQL 16 CI (`Run #86`) and `#BR-2026-0005` (`w12-09`) was observed by `@notyouradhee`, an **uncoached teammate outside Area 4** (`@Kushan2191` or `@jaasly07`) must still independently verify `/merchant/brewmellow/orders` (`OrderDetailSheet` / `PackingSlipModal` unpaid Khalti `Verifying payment` vs `Cash on Delivery` distinction on `067a478` / `https://shopcraft.me`) plus second-OS clean setup and add their own result in `#67`.
+1. **Teammate Live Gateway Confirmation ([`#67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67#issuecomment-7154959427)):**
+   - `@Kushan2191` (Area 2 — outside Area 1) posted confirmation on `58f1e51` / `f2b4096` referencing `w12-11` baseline (`Payment Failed — Payment was canceled on Khalti.` + `Retry Payment` + `COD` unaffected). *(Cross-OS clean-clone setup trial scheduled for Week 13 handoff.)*
+2. **Non-Area-4 Merchant-Console & Mobile Confirmations ([`#67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67#issuecomment-7154989940) · [`#52`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52#issuecomment-7154971949)):**
+   - `@jaasly07` (Area 3 — outside Area 4) posted non-Area-4 Merchant Console confirmation on `58f1e51` / `067a478` (`#BR-2026-0005` `Khalti verified`, unpaid/failed Khalti vs `Cash on Delivery`) and mobile verification on `#52`; `@Rohit-coder201` confirmed Area 4 integration & CI [Run #90](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45558596087) on [`#67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67#issuecomment-7155006562).
 3. **Physical Mobile Hardware Boundary ([`#52`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52)):**
    - Browser `390x844` viewport emulation does **not** establish physical iOS Safari virtual-keyboard scroll/focus behavior (kept scheduled for Week 13).
 4. **Handoff Trial Status *(Required in Week 13)*:** Setup path follows [`README.md`](../../README.md) and [`docs/week-10/ai-use-and-code-ownership-audit.md#2-codebase-area-map`](../week-10/ai-use-and-code-ownership-audit.md#2-codebase-area-map); formal Week 13 external handoff trial scheduled next week.
