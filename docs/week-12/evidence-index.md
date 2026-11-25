@@ -2,7 +2,7 @@
 
 **Team:** Team 2 — ShopCraft  
 **Week:** 12 — Carry a QA Finding to a Verified Action (Sprint 3: QA and Handoff)  
-**Latest Verified Code SHA:** [`067a478`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/067a478) · **Green CI:** [`Run #86 (45427562139)`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45427562139)  
+**Latest Verified Code SHA:** [`f2b4096`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/f2b4096) · **Green CI:** [`Run #89 (45557766494)`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45557766494)  
 **Period:** November 19–25, 2026
 
 ---
@@ -21,15 +21,15 @@
 
 ---
 
-## 2. Automated Logs, CI Runs & Machine-Readable Receipt (`067a478`)
+## 2. Automated Logs, CI Runs & Machine-Readable Receipt (`f2b4096`)
 
 | Artifact | Recorded Result | Link |
 |---|---|---|
-| **Machine-Readable Receipt (`.json`)** | SHA-256 digests, UTC timestamps, durations, Python `3.13.1` / Node `v24.22.1`, `199` backend + Vitest + CI `#86` | [`evidence/w12-verification-checks.json`](evidence/w12-verification-checks.json) |
-| **Django Backend Test Log** | `manage.py test accounts catalog orders stores --verbosity 2`: `199` tests discovered (`189` local SQLite pass, `10` Postgres RLS skipped) | [`evidence/w12-backend-tests.txt`](evidence/w12-backend-tests.txt) |
+| **Machine-Readable Receipt (`.json`)** | SHA-256 digests, UTC timestamps, durations, Python `3.13.1` / Node `v24.22.1`, `200` backend + Vitest + CI `#89` | [`evidence/w12-verification-checks.json`](evidence/w12-verification-checks.json) |
+| **Django Backend Test Log** | `manage.py test accounts catalog orders stores --verbosity 2`: `200` tests discovered (`190` local SQLite pass, `10` Postgres RLS skipped) | [`evidence/w12-backend-tests.txt`](evidence/w12-backend-tests.txt) |
 | **Frontend Checks Log** | `npm test` (`12` files / `130` tests passed; `theme-contrast.test.ts` Windows Node 24 local shebang diagnostic retained), `tsc` `0`, `SURFACE_ISOLATION_OK`, scoped ESLint `0` errors | [`evidence/w12-frontend-checks.txt`](evidence/w12-frontend-checks.txt) |
-| **GitHub Actions CI (`067a478`)** | Both `Backend (Django + Postgres FORCE RLS)` (all `199` tests, `0` skipped) and `Frontend (Next.js)` (incl. Vitest + Next build on Ubuntu Node 22) passed **Success** | [`CI Run #86 (45427562139)`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45427562139) |
-| **Prior Week 12 Green CI Runs** | Pre-RBAC milestone checks on `fbc79ab` (`Run #82`) and `4464ed7` (`Run #84`) | [`Run #82`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44989840995) · [`Run #84`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45224773179) |
+| **GitHub Actions CI (`f2b4096`)** | Both `Backend (Django + Postgres FORCE RLS)` (all `200` tests, `0` skipped) and `Frontend (Next.js)` (incl. Vitest + Next build on Ubuntu Node 22) passed **Success** | [`CI Run #89 (45557766494)`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45557766494) |
+| **Prior Week 12 Green CI Runs** | Earlier milestone checks on `fbc79ab` (`Run #82`), `4464ed7` (`Run #84`), and `067a478` (`Run #86`) | [`Run #82`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44989840995) · [`Run #84`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45224773179) · [`Run #86`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45427562139) |
 
 ---
 
@@ -48,3 +48,5 @@ Zero raw secrets, zero private user data, and zero real currency involved across
 | **W12-07** | **Checkout Active (`Nov 23`):** `/s/brewmellow/checkout` showing active **Khalti** option (`Pay with Khalti · Rs. 550`) | Retest Initiation Proof | [`w12-07-brewmellow-checkout-khalti-active.png`](evidence/screenshots/w12-07-brewmellow-checkout-khalti-active.png) |
 | **W12-08** | **Order Verified (`Nov 23`):** Order `#BR-2026-0005` **`Khalti Verified`** (`Test mode: no real money is charged`) | Retest Completion Proof | [`w12-08-khalti-sandbox-order-br-2026-0005-paid.png`](evidence/screenshots/w12-08-khalti-sandbox-order-br-2026-0005-paid.png) |
 | **W12-09** | **Merchant Queue (`Nov 23`):** `/merchant/brewmellow/orders` showing `#BR-2026-0005` (`Khalti verified`) & `#BR-2026-0004` (`Verifying payment`) | End-to-End Fulfillment Proof | [`w12-09-merchant-orders-queue-khalti-verified.png`](evidence/screenshots/w12-09-merchant-orders-queue-khalti-verified.png) |
+| **W12-10** | **Live Cancel Lookup Bug (`Nov 25` pre-`f2b4096`):** `#BR-2026-0007` canceled on `test-pay.khalti.com` hit HTTP `503` (`Verification Unavailable`) | Real Gateway Defect Repro | [`w12-10-live-khalti-cancel-503-bug.png`](evidence/screenshots/w12-10-live-khalti-cancel-503-bug.png) |
+| **W12-11** | **Live Cancel Recovery Fixed (`Nov 25` on `f2b4096`):** `#BR-2026-0007` recheck cleanly returned HTTP `400` (`Payment Failed` + `Retry Payment`) | Post-Fix Live Retest Proof | [`w12-11-live-khalti-cancel-recovered.png`](evidence/screenshots/w12-11-live-khalti-cancel-recovered.png) |

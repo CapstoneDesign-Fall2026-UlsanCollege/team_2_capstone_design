@@ -1,5 +1,5 @@
-# Commit SHA: 067a4786b80650358743a1dff72d86518051e948
-# Timestamp UTC: 2026-11-25T05:27:13.796481+00:00
+# Commit SHA: f2b4096be63b8cac06fc14a008ff2b8780a541bc
+# Timestamp UTC: 2026-11-25T06:08:42.474952+00:00
 # Node: v24.22.1 | npm: 11.19.1
 
 ## 1. Vitest (`npm test`)
@@ -10,23 +10,23 @@ Exit code: 1
 
  RUN  v3.2.7 d:/Team2_Capstone_project/team_2_capstone_design/frontend
 
- ✓ src/lib/email-validation.test.ts (10 tests) 17ms
- ✓ src/lib/product-archive.test.ts (4 tests) 19ms
- ✓ src/lib/api.test.ts (5 tests) 20ms
- ✓ src/lib/storefront-themes.test.ts (6 tests) 39ms
+ ✓ src/lib/product-archive.test.ts (4 tests) 11ms
+ ✓ src/lib/email-validation.test.ts (10 tests) 13ms
+ ✓ src/lib/storefront-themes.test.ts (6 tests) 40ms
+ ✓ src/lib/api.test.ts (5 tests) 24ms
  ✓ src/lib/khalti-return.test.ts (6 tests) 20ms
- ✓ src/lib/storefront-order-status.test.ts (5 tests) 99ms
- ✓ src/lib/theme-media-upload.test.ts (2 tests) 11ms
- ✓ src/lib/merchant-guard.test.ts (18 tests) 6ms
- ✓ src/lib/merchant-status.test.ts (34 tests) 173ms
- ✓ src/lib/merchant-rbac.test.ts (8 tests) 68ms
- ✓ src/lib/bugfixes-edge-cases.test.ts (10 tests) 233ms
- ✓ src/lib/storefront-placeholders.test.ts (22 tests) 179ms
+ ✓ src/lib/storefront-order-status.test.ts (5 tests) 102ms
+ ✓ src/lib/theme-media-upload.test.ts (2 tests) 7ms
+ ✓ src/lib/merchant-guard.test.ts (18 tests) 5ms
+ ✓ src/lib/merchant-status.test.ts (34 tests) 125ms
+ ✓ src/lib/merchant-rbac.test.ts (8 tests) 55ms
+ ✓ src/lib/bugfixes-edge-cases.test.ts (10 tests) 244ms
+ ✓ src/lib/storefront-placeholders.test.ts (22 tests) 204ms
 
  Test Files  1 failed | 12 passed (13)
       Tests  130 passed (130)
-   Start at  11:12:14
-   Duration  2.32s (transform 2.46s, setup 0ms, collect 6.39s, tests 885ms, environment 3ms, prepare 4.13s)
+   Start at  11:53:43
+   Duration  2.03s (transform 2.90s, setup 0ms, collect 5.80s, tests 851ms, environment 3ms, prepare 3.18s)
 
 
 ⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
