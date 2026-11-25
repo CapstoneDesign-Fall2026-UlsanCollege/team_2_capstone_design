@@ -1,8 +1,8 @@
 # 🛍️ ShopCraft: Multi-Tenant E-Commerce Platform for Nepal's Craft Economy
 
 [![Live Deployed App](https://img.shields.io/badge/Production-Live%20at%20shopcraft.me-success?style=for-the-badge&logo=vercel)](https://shopcraft.me)
-[![Backend Tests](https://img.shields.io/badge/Django%20Tests-154%20Tests%20OK-brightgreen?style=for-the-badge&logo=django)](backend/stores/tests/test_isolation.py)
-[![Frontend Tests](https://img.shields.io/badge/Vitest-63%2F63%20Passing-blue?style=for-the-badge&logo=vitest)](frontend/)
+[![Backend Tests](https://img.shields.io/badge/Django%20Tests-200%20Tests%20OK-brightgreen?style=for-the-badge&logo=django)](backend/stores/tests/test_isolation.py)
+[![Frontend Tests](https://img.shields.io/badge/Vitest-13%20Suites%20CI%20Pass-blue?style=for-the-badge&logo=vitest)](frontend/)
 [![TypeScript](https://img.shields.io/badge/TypeScript-0%20Errors-blue?style=for-the-badge&logo=typescript)](frontend/)
 [![Payment Gateway](https://img.shields.io/badge/Khalti-Sandbox%20v2%20Verified-purple?style=for-the-badge)](docs/week-09/core-demo-evidence-matrix.md)
 [![Course](https://img.shields.io/badge/Capstone%20Design-Fall%202026-orange?style=for-the-badge)](https://github.com/CapstoneDesign-Fall2026-UlsanCollege)
@@ -83,7 +83,7 @@ ShopCraft operates a unified Next.js + Django full-stack architecture divided in
   - **Cash on Delivery (COD):** Zero-network instant offline checkout providing an unbreakable demo fallback.
 - **Localized Nepali Address Validation:** Enforces Nepal's 7 Provinces (Bagmati, Gandaki, Koshi, Lumbini, Madhesh, Karnali, Sudurpashchim) with 10-digit mobile number validation.
 - **Merchant Operations Console (`/merchant/[storeSlug]`):** Real-time order fulfillment queue, product variant editor, and delivery packing slip generation with 5-second undo toast actions.
-- **Automated Test Quality:** `154` Django backend tests (`144` pass on local SQLite with `10` Postgres-only RLS tests executed in PostgreSQL 16 CI), `63/63` Vitest frontend unit tests, `0` TypeScript compilation errors, and zero cross-surface state leakage (`check-surfaces.mjs`).
+- **Automated Test Quality:** `200` Django backend tests (`190` pass on local SQLite with `10` Postgres-only RLS tests executed in PostgreSQL 16 CI), `13` Vitest frontend test suites (`130` tests across `12` suites on local Windows + all `13` passing in CI Ubuntu Node 22), `0` TypeScript compilation errors, and zero cross-surface state leakage (`check-surfaces.mjs`).
 
 ---
 
@@ -179,11 +179,11 @@ python manage.py send_test_email <recipient-address>
 
 Any evaluator or teammate can independently verify the core system by executing the following commands:
 
-### Test 1: Full Backend Test Suite (154 Tests)
+### Test 1: Full Backend Test Suite (200 Tests)
 ```bash
 cd backend
 python manage.py test accounts catalog orders stores
-# Output on main (6559ea2): Ran 154 tests in 17.467s — OK (skipped=10 Postgres-only RLS tests on SQLite; all 154 execute under Postgres 16 in CI)
+# Output on main (826b9bc): Ran 200 tests — OK (skipped=10 Postgres-only RLS tests on SQLite; all 200 execute under Postgres 16 in CI Run #91)
 ```
 
 ### Test 2: Multi-Tenant Data Isolation Test (HTTP 404 Security Guards)
@@ -199,7 +199,7 @@ cd frontend
 npm test
 npm run typecheck
 npm run check:surfaces
-# Output: Test Files 5 passed (63 tests), 0 type errors, SURFACE_ISOLATION_OK
+# Output (CI Ubuntu Node 22): All 13 Vitest files pass, 0 type errors, SURFACE_ISOLATION_OK
 ```
 
 ### Test 4: System Health Probe
@@ -225,13 +225,21 @@ All deliverables and evidence packages are maintained in the repository:
 
 | Week / Milestone | Document | Summary |
 |---|---|---|
-| **Week 11 (Current)** | [**MVP Verification Checklist**](docs/week-11/mvp-verification-checklist.md) | Official Week 11 Freeze Gate: 14 Expected/Actual checks, scope freeze, and negative boundaries |
-| **Week 11 (Current)** | [**Weekly Report**](docs/week-11/weekly-report.md) | Shared report with all 4 student rows, real GitHub Issues (`#49`–`#53`), and peer checks |
-| **Week 11 (Current)** | [**Tested-By Note**](docs/week-11/tested-by-note.md) | Cross-area non-author reproduction logs & what automated checks do NOT establish |
-| **Week 11 (Current)** | [**Issue Priority Guide**](docs/week-11/issue-priority-guide.md) | P0–P3 work priority register strictly separated from bug severity |
-| **Week 11 (Current)** | [**Sprint Quality Quick Checks**](docs/week-11/sprint-quality-quick-checks.md) | Completed Sprint 0, Sprint 1, and Sprint 2 exit checks |
-| **Week 11 (Current)** | [**Verification Logs (`07f1aeb`)**](docs/week-11/evidence/) | Saved backend (`154` tests) & frontend (`63/63` Vitest, `0` TS errors, `SURFACE_ISOLATION_OK`) outputs |
-| **Week 11 (Current)** | [**Individual Receipts**](docs/week-11/receipts/) | Week 11 evidence receipts for all 4 enrolled students |
+| **Week 12 (Current)** | [**Weekly Report**](docs/week-12/weekly-report.md) | Shared Week 12 report with all 4 exact-login student entries, `#67`/`#51`/`#52` links & live Khalti fix |
+| **Week 12 (Current)** | [**QA Checklist**](docs/week-12/qa-checklist.md) | Carried `#51` -> `#67` checks, live regression table, & `200`-test CI Run `#89`/`#91` results |
+| **Week 12 (Current)** | [**Work Checklist**](docs/week-12/work-checklist.md) | Complete 6-section Week 12 QA loop verification & peer attribution status |
+| **Week 12 (Current)** | [**Bug Report (`#51` / `#67`)**](docs/week-12/bug-report.md) | Live `brewmellow` Khalti config fix, `f2b4096` HTTP `400` cancel crash fix, & `#60`–`#65` triage |
+| **Week 12 (Current)** | [**Issue Priority Guide**](docs/week-12/issue-priority-guide.md) | Separate Severity vs `P0–P3` work priority & Nov 22–25 reassessment |
+| **Week 12 (Current)** | [**Peer Test Notes**](docs/week-12/peer-test-notes.md) | Live browser proof, local vs CI boundaries, & teammate issue confirmations |
+| **Week 12 (Current)** | [**Evidence Index & Receipts**](docs/week-12/evidence-index.md) | Index of [`w12-verification-checks.json`](docs/week-12/evidence/w12-verification-checks.json), logs & `w12-01`–`w12-11` screenshots |
+| **Week 12 (Current)** | [**AI Use & Ownership Audit**](docs/week-12/ai-use-and-code-ownership-audit.md) | Week 12 AI disclosures & Area 1–4 ownership boundary updates |
+| **Week 11** | [**MVP Verification Checklist**](docs/week-11/mvp-verification-checklist.md) | Official Week 11 Freeze Gate: 14 Expected/Actual checks, scope freeze, and negative boundaries |
+| **Week 11** | [**Weekly Report**](docs/week-11/weekly-report.md) | Shared report with all 4 student rows, real GitHub Issues (`#49`–`#53`), and peer checks |
+| **Week 11** | [**Tested-By Note**](docs/week-11/tested-by-note.md) | Cross-area non-author reproduction logs & what automated checks do NOT establish |
+| **Week 11** | [**Issue Priority Guide**](docs/week-11/issue-priority-guide.md) | P0–P3 work priority register strictly separated from bug severity |
+| **Week 11** | [**Sprint Quality Quick Checks**](docs/week-11/sprint-quality-quick-checks.md) | Completed Sprint 0, Sprint 1, and Sprint 2 exit checks |
+| **Week 11** | [**Verification Logs (`07f1aeb`)**](docs/week-11/evidence/) | Saved backend (`154` tests) & frontend (`63/63` Vitest, `0` TS errors, `SURFACE_ISOLATION_OK`) outputs |
+| **Week 11** | [**Individual Receipts**](docs/week-11/receipts/) | Week 11 evidence receipts for all 4 enrolled students |
 | **Week 10** | [**Code Ownership & AI Audit**](docs/week-10/ai-use-and-code-ownership-audit.md) | Official 4-area codebase map, AI-use notes, and non-author peer verification |
 | **Week 10** | [**Weekly Report**](docs/week-10/weekly-report.md) | Shared report with individual rows for all 4 students and peer check matrix |
 | **Week 10** | [**Work Checklist**](docs/week-10/work-checklist.md) | Official Week 10 checklist mapping codebase areas, slices, and checks |

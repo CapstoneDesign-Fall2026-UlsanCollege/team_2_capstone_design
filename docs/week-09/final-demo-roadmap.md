@@ -101,3 +101,12 @@ $$\text{Storefront } (/s/\text{brewmellow}) \longrightarrow \text{Product Select
 
 ### Sprint 4 (Week 15) — Final Demonstration & Course Defense
 - **Week 15 (Dec 4–10):** Rehearsed 5-minute timed presentation with live dual-rail demo (Khalti Sandbox + COD backup) and Q&A defense.
+
+---
+
+## 5. Sprint 3 QA Checkpoints (Updated Without Changing Promised Scope)
+
+| Checkpoint | Decision / Risk Change | Verifiable Link |
+|---|---|---|
+| **Week 11 Freeze (`Nov 18`, `8098426`)** | MVP feature scope frozen; live `/s/brewmellow/checkout` flagged `Khalti Unavailable — Not configured by merchant` while `COD` worked (`#49` / `#51`). | [`docs/week-11/mvp-freeze-record.md`](../week-11/mvp-freeze-record.md) · [`Issue #49`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/49) |
+| **Week 12 QA & Gateway Resolution (`Nov 22–25`, `f2b4096` -> `826b9bc`)** | Live Khalti Sandbox configured (`#BR-2026-0005` `PAID`); caught & fixed real Khalti `HTTP 400 User canceled` lookup crash (`f2b4096`, `w12-10` -> `w12-11`); `200` backend tests + Next.js green in CI [Run #91](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45562434441). Next Week 13 checks: `#52` physical iOS keyboard check & external clean-clone handoff trial. | [`docs/week-12/weekly-report.md`](../week-12/weekly-report.md) · [`Issue #67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67) · [`Issue #51`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) |
