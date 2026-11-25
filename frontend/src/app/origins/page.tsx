@@ -58,27 +58,33 @@ const origins = [
 function OriginsContent() {
   const searchParams = useSearchParams();
   const router = useRouter();
-  const [activeSection, setActiveSection] = useState<string>("catalog");
+  const sectionParam = searchParams.get("section");
+  const validParamSection =
+    sectionParam && ["catalog", "terroir", "sca-quality", "farmer-impact", "roast-schedule", "all"].includes(sectionParam)
+      ? sectionParam
+      : null;
+  const [fallbackSection, setFallbackSection] = useState<string>("catalog");
+  const activeSection = validParamSection ?? fallbackSection;
 
-  // Sync state with URL parameter or hash
+  // Sync state with URL hash when no query param is present
   useEffect(() => {
-    const sec = searchParams.get("section");
-    if (sec && ["catalog", "terroir", "sca-quality", "farmer-impact", "roast-schedule", "all"].includes(sec)) {
-      setActiveSection(sec);
-      return;
-    }
-
+    if (validParamSection) return;
     if (typeof window !== "undefined" && window.location.hash) {
       const hash = window.location.hash.replace("#", "");
-      if (["origins-catalog", "catalog"].includes(hash)) setActiveSection("catalog");
-      else if (["terroir", "sca-quality", "farmer-impact", "roast-schedule", "all"].includes(hash)) {
-        setActiveSection(hash);
+      const resolved =
+        ["origins-catalog", "catalog"].includes(hash)
+          ? "catalog"
+          : ["terroir", "sca-quality", "farmer-impact", "roast-schedule", "all"].includes(hash)
+          ? hash
+          : null;
+      if (resolved) {
+        void Promise.resolve().then(() => setFallbackSection(resolved));
       }
     }
-  }, [searchParams]);
+  }, [validParamSection]);
 
   const selectTab = (tab: string) => {
-    setActiveSection(tab);
+    setFallbackSection(tab);
     router.replace(`/origins?section=${tab}`, { scroll: false });
   };
 

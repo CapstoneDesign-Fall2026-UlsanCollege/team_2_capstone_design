@@ -3,23 +3,33 @@
 import { useState, useEffect } from "react";
 import { ShoppingBag, Download, X, Share, Plus, Smartphone } from "lucide-react";
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt: () => Promise<void>;
+  userChoice: Promise<{ outcome: "accepted" | "dismissed"; platform: string }>;
+}
+
 export default function PwaInstallBanner() {
-  const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [deferredPrompt, setDeferredPrompt] = useState<BeforeInstallPromptEvent | null>(null);
   const [isVisible, setIsVisible] = useState(false);
   const [isInstalled, setIsInstalled] = useState(false);
   const [showIosGuide, setShowIosGuide] = useState(false);
 
   useEffect(() => {
+    let active = true;
     // 1. Check if already running in standalone PWA mode
     if (window.matchMedia("(display-mode: standalone)").matches) {
-      setIsInstalled(true);
-      return;
+      void Promise.resolve().then(() => {
+        if (active) setIsInstalled(true);
+      });
+      return () => {
+        active = false;
+      };
     }
 
     // 2. Capture native beforeinstallprompt on Chromium / Android
-    const handler = (e: any) => {
+    const handler = (e: Event) => {
       e.preventDefault();
-      setDeferredPrompt(e);
+      setDeferredPrompt(e as BeforeInstallPromptEvent);
       const dismissed = localStorage.getItem("pwa_banner_dismissed");
       if (!dismissed) {
         setIsVisible(true);
@@ -29,15 +39,19 @@ export default function PwaInstallBanner() {
     window.addEventListener("beforeinstallprompt", handler);
 
     // 3. Fallback: Trigger install hint after 4 seconds if not installed and not dismissed
+    let timer: ReturnType<typeof setTimeout> | undefined;
     const dismissed = localStorage.getItem("pwa_banner_dismissed");
     if (!dismissed) {
-      const timer = setTimeout(() => {
-        setIsVisible(true);
+      timer = setTimeout(() => {
+        if (active) setIsVisible(true);
       }, 4000);
-      return () => clearTimeout(timer);
     }
 
-    return () => window.removeEventListener("beforeinstallprompt", handler);
+    return () => {
+      active = false;
+      window.removeEventListener("beforeinstallprompt", handler);
+      if (timer !== undefined) clearTimeout(timer);
+    };
   }, []);
 
   const handleInstallClick = async () => {
@@ -160,7 +174,7 @@ export default function PwaInstallBanner() {
                   2
                 </span>
                 <p className="leading-relaxed">
-                  Scroll down the share menu and select <strong>"Add to Home Screen"</strong> <Plus size={14} className="inline mx-1 text-emerald-600" />.
+                  Scroll down the share menu and select <strong>&quot;Add to Home Screen&quot;</strong> <Plus size={14} className="inline mx-1 text-emerald-600" />.
                 </p>
               </div>
 
@@ -169,7 +183,7 @@ export default function PwaInstallBanner() {
                   3
                 </span>
                 <p className="leading-relaxed">
-                  Tap <strong>"Add"</strong> in the top-right corner. ShopCraft will launch in full standalone mode with offline access.
+                  Tap <strong>&quot;Add&quot;</strong> in the top-right corner. ShopCraft will launch in full standalone mode with offline access.
                 </p>
               </div>
             </div>

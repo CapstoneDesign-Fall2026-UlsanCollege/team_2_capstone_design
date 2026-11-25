@@ -12,7 +12,7 @@ import {
 import {
   scanConsoleLine,
   scanStorefrontLine,
-} from "../../scripts/check-surfaces.mjs";
+} from "../../scripts/surface-rules.mjs";
 
 function parseThemeBlocksFromGlobalsCss(): Record<string, Record<string, string>> {
   const globalsPath = path.resolve(__dirname, "../app/globals.css");
