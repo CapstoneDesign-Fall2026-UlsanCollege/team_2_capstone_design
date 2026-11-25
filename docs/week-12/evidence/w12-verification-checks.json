@@ -1,16 +1,16 @@
 {
   "week": 12,
   "team": "Team 2 - ShopCraft",
-  "dateUTC": "2026-11-22",
-  "testedSHA": "fbc79ab7776c609dff75345874d93618319ad386",
+  "dateUTC": "2026-11-25",
+  "testedSHA": "067a4786b80650358743a1dff72d86518051e948",
   "githubActionsCIRun": {
-    "runNumber": 82,
-    "runId": 44989840995,
-    "url": "https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44989840995",
+    "runNumber": 86,
+    "runId": 45427562139,
+    "url": "https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45427562139",
     "conclusion": "success",
     "jobs": [
-      "Backend (Django + Postgres FORCE RLS): success (all 165 tests incl. test_bugfixes.py #60/#63/#64)",
-      "Frontend (Next.js): success (check:surfaces, ESLint, tsc --noEmit, Vitest 102/102, next build)"
+      "Backend (Django + Postgres FORCE RLS): success (all 199 tests incl. test_edge_cases.py & test_rbac.py)",
+      "Frontend (Next.js): success (check:surfaces, ESLint, tsc --noEmit, Vitest, next build)"
     ]
   },
   "environment": {
@@ -18,52 +18,52 @@
     "python": "Python 3.13.1",
     "node": "v24.22.1",
     "npm": "11.19.1",
-    "backendDatabase": "Local Windows SQLite (Postgres-only RLS tests skipped locally and executed in CI Run 44989840995)"
+    "backendDatabase": "Local Windows SQLite (Postgres-only RLS tests skipped locally and executed in CI Run 45427562139)"
   },
   "checks": [
     {
       "name": "backend-tests-local-sqlite",
       "command": "backend\\venv\\Scripts\\python.exe manage.py test accounts catalog orders stores --verbosity 2",
       "cwd": "backend",
-      "startedAt": "2026-11-22T15:55:36.995606+00:00",
-      "finishedAt": "2026-11-22T15:55:49.155525+00:00",
-      "durationSeconds": 12.16,
+      "startedAt": "2026-11-25T05:26:52.619901+00:00",
+      "finishedAt": "2026-11-25T05:27:13.793327+00:00",
+      "durationSeconds": 21.17,
       "exitCode": 0,
-      "stdoutSHA256": "26de067419b086b809b3a6f90fd8b4cd384ab77d35357297b1044accdbbb7fb4",
-      "stderrSHA256": "14eae9b91284719b4d2eaefb1ce9ad6ec3bbbc4697ff5ecd50b8a6d5bca51d0c",
+      "stdoutSHA256": "710aaaebf947f671ad138c4628c7cf8fd3ddf8ffc13b90f27c9434e55fb042af",
+      "stderrSHA256": "b341afb7d6bf041b61b286bfdff1b0d1c493a339ee9ef5c390edc93cdee35837",
       "counts": {
-        "discovered": 165,
-        "ran": 165,
-        "passed": 155,
+        "discovered": 199,
+        "ran": 199,
+        "passed": 189,
         "failed": 0,
         "skipped": 10,
-        "skipReason": "PostgreSQL-only FORCE RLS checks skipped on local SQLite; executed in GitHub Actions Run #82 (postgres:16-alpine NOSUPERUSER NOBYPASSRLS)."
+        "skipReason": "PostgreSQL-only FORCE RLS checks skipped on local SQLite; executed in GitHub Actions Run #86 (postgres:16-alpine NOSUPERUSER NOBYPASSRLS)."
       }
     },
     {
       "name": "frontend-vitest",
       "command": "npm test",
       "cwd": "frontend",
-      "startedAt": "2026-11-22T15:55:49.156810+00:00",
-      "finishedAt": "2026-11-22T15:55:53.111611+00:00",
-      "durationSeconds": 3.95,
-      "exitCode": 0,
-      "stdoutSHA256": "86c1f2d8bf16d93e291dda37a1b939ac5bd1308389fc3b75d7c5e9a1d712ea99",
-      "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "startedAt": "2026-11-25T05:27:13.796481+00:00",
+      "finishedAt": "2026-11-25T05:27:17.781845+00:00",
+      "durationSeconds": 3.99,
+      "exitCode": 1,
+      "stdoutSHA256": "b83a79a11b5a0e2a550fe2c1f1396f854e88d50432f9ad68d8cb425643ecd751",
+      "stderrSHA256": "f1a094f5b13990a2074ebe53ab82e6c18d24e6418700a40410a39c20558d6808",
       "counts": {
-        "filesPassed": 10,
-        "testsPassed": 102,
-        "failed": 0,
-        "skipped": 0
+        "filesPassed": 12,
+        "filesFailed": 1,
+        "testsPassed": 130,
+        "note": "src/lib/theme-contrast.test.ts failed to import ../../scripts/check-surfaces.mjs on local Windows Node v24 (shebang SyntaxError) while passing in GitHub Actions Run #86 (Ubuntu Node 22)."
       }
     },
     {
       "name": "frontend-typecheck",
       "command": "npm run typecheck",
       "cwd": "frontend",
-      "startedAt": "2026-11-22T15:55:53.111819+00:00",
-      "finishedAt": "2026-11-22T15:55:56.460753+00:00",
-      "durationSeconds": 3.35,
+      "startedAt": "2026-11-25T05:27:17.782240+00:00",
+      "finishedAt": "2026-11-25T05:27:21.059649+00:00",
+      "durationSeconds": 3.28,
       "exitCode": 0,
       "stdoutSHA256": "6395c2028d2efb2e4992400755df02dac270564d1495c7f1c6aa81f48f24e940",
       "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -72,9 +72,9 @@
       "name": "frontend-surface-isolation",
       "command": "npm run check:surfaces",
       "cwd": "frontend",
-      "startedAt": "2026-11-22T15:55:56.460858+00:00",
-      "finishedAt": "2026-11-22T15:55:56.998655+00:00",
-      "durationSeconds": 0.54,
+      "startedAt": "2026-11-25T05:27:21.059819+00:00",
+      "finishedAt": "2026-11-25T05:27:21.745610+00:00",
+      "durationSeconds": 0.69,
       "exitCode": 0,
       "stdoutSHA256": "baaad798feb115c077ba2e322403087758557dfc47e1e183f8dab88a3d218ae2",
       "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
@@ -83,11 +83,11 @@
       "name": "frontend-eslint-app-dirs",
       "command": "npx eslint \"src/app/(platform)\" \"src/app/merchant\" \"src/app/s\" \"src/components/account\" \"src/components/auth\" \"src/components/storefront\" \"src/lib\"",
       "cwd": "frontend",
-      "startedAt": "2026-11-22T15:55:56.998736+00:00",
-      "finishedAt": "2026-11-22T15:56:15.335681+00:00",
-      "durationSeconds": 18.34,
+      "startedAt": "2026-11-25T05:27:21.745779+00:00",
+      "finishedAt": "2026-11-25T05:27:38.867945+00:00",
+      "durationSeconds": 17.12,
       "exitCode": 0,
-      "stdoutSHA256": "6694ab5ead5642bc4392023ed546c83f5126e999cb534dfc806706ada35c622e",
+      "stdoutSHA256": "24aae721da59dedf0891383ebf33db318d7a7645d0725f77d7b11dc8bfd9a170",
       "stderrSHA256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855"
     }
   ]

@@ -1,18 +1,18 @@
 # Peer Test Notes and Boundary Verification — Week 12
 
-**Prepared / Run By:** Agent-assisted verification coordinated by Aditya Kumar Gupta (`@notyouradhee`) on Nov 22, 2026 (`fbc79ab`)  
+**Prepared / Run By:** Agent-assisted verification coordinated by Aditya Kumar Gupta (`@notyouradhee`) — Live prod checks on `fbc79ab` (Nov 22) & `4464ed7` (Nov 23); automated suite & RBAC verification on [`067a478`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/commit/067a478) (Nov 25, 2026)  
 **Project Tested:** ShopCraft ([`https://shopcraft.me`](https://shopcraft.me))  
-**Carried Target:** [`Issue #51`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) · [`Issue #67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67) · [`Issue #52`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52)
+**Carried Target:** [`Issue #51`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/51) · [`Issue #67`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/67) · [`Issue #52`](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/issues/52) · [`evidence-index.md`](evidence-index.md)
 
 > *Transparency Rule:* Automated local runs and Playwright browser checks recorded below are strictly distinguished from uncoached **human non-author peer checks**. Pending teammate repeats are left explicitly **Open / Pending** until posted by the named non-author teammate.
 
 ---
 
-## 1. What We Tried (Nov 22, 2026 on `fbc79ab`)
+## 1. What We Tried (Nov 22–25, 2026 · `fbc79ab` -> `067a478`)
 
-1. **Automated Suite & CI Parity Verification (`fbc79ab`):**
-   - Executed `.\venv\Scripts\python.exe manage.py test accounts catalog orders stores --verbosity 2` (`165` discovered: `155` pass in `12.16s` on local Windows SQLite, `10` Postgres-only checks skipped locally and verified passing under `postgres:16-alpine` `NOSUPERUSER NOBYPASSRLS` in GitHub Actions [Run #82](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44989840995)).
-   - Executed `npm test` (`10` Vitest files / `102` tests passing in `3.95s`), `npm run typecheck` (`0` errors), `npm run check:surfaces` (`SURFACE_ISOLATION_OK`), and scoped ESLint (`0` errors).
+1. **Automated Suite & CI Parity Verification (`067a478`):**
+   - Executed `.\venv\Scripts\python.exe manage.py test accounts catalog orders stores --verbosity 2` (`199` discovered incl. `test_edge_cases.py` and `test_rbac.py`: `189` pass in `21.17s` on local Windows SQLite, `10` Postgres-only checks skipped locally and verified passing under `postgres:16-alpine` `NOSUPERUSER NOBYPASSRLS` in GitHub Actions [Run #86](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45427562139)).
+   - Executed `npm test` on Windows Node `v24.22.1` (`12` Vitest files / `130` tests passing; `src/lib/theme-contrast.test.ts` failed locally importing `../../scripts/check-surfaces.mjs` shebang on Windows Node v24 while passing on Ubuntu Node 22 in CI [Run #86](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45427562139)), plus `npm run typecheck` (`0` errors, `3.28s`), `npm run check:surfaces` (`SURFACE_ISOLATION_OK`, `0.69s`), and scoped ESLint (`0` errors, `17.12s`).
 2. **Non-Destructive Live Production Regression (`https://shopcraft.me`):**
    - Tested `/s/brewmellow` storefront template rendering & cart persistence across page reload (`1440x900`).
    - Tested *"Sign in to your account"* `AccountSheet` modal + domain typo suggestion (`buyer@gmial.com` -> `"Did you mean buyer@gmail.com?"`).
@@ -35,7 +35,7 @@
 - **Issue `#56` Auth Sheet Fix Remains Solid — PASS:** Clicking *"Sign in to your account"* opened `AccountSheet` cleanly without error and displayed `"Did you mean buyer@gmail.com?"` (`w12-02`).
 - **Mobile `390x844` Checkout Validation & COD — PASS:** Submitting `98412345` halted client-side before any `POST` request with inline red alert (`w12-04`); `Cash on Delivery` (`Pay Rs. 550 cash to rider`) and `"Have a promo code?"` (`ENTER PROMO CODE`) rendered cleanly (`w12-05`).
 - **Khalti Sandbox Live End-to-End Resolution (`Nov 23` on `4464ed7`) — PASS:** Authenticated as BrewMellow `OWNER` via real Email OTP (`aayushman1234511@gmail.com`) -> saved custom Khalti `TEST (Sandbox)` secret key (`HTTP 200`, `Custom Test Key Connected`, [`w12-06`](evidence/screenshots/w12-06-brewmellow-khalti-sandbox-connected.png)) -> verified active Khalti radio on `/s/brewmellow/checkout` ([`w12-07`](evidence/screenshots/w12-07-brewmellow-checkout-khalti-active.png)) -> redirected to `test-pay.khalti.com`, user submitted sandbox wallet payment -> Order `#BR-2026-0005` confirmed **`Khalti Verified` (`PAID`, zero real money)** ([`w12-08`](evidence/screenshots/w12-08-khalti-sandbox-order-br-2026-0005-paid.png)) and recorded in `/merchant/brewmellow/orders` alongside `#BR-2026-0004` (`Verifying payment`) ([`w12-09`](evidence/screenshots/w12-09-merchant-orders-queue-khalti-verified.png)).
-- **Automated Regression Suite Expansion — PASS:** `165` backend tests (`fbc79ab`, CI [Run #82](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44989840995)) and `170` backend tests (`160` SQLite pass, `10` Postgres CI [Run #84](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45224773179) on `4464ed7` — with `dev_otp_hint` removed) pass cleanly in backend; `102/102` frontend Vitest passed on `fbc79ab` CI `#82` and CI `#84` passed green on `4464ed7`.
+- **Automated Regression Suite Expansion — PASS:** Expanded from `165` tests (`fbc79ab` CI [Run #82](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/44989840995)) -> `170` (`4464ed7` CI [Run #84](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45224773179)) -> **`199` backend tests** (`067a478`, CI [Run #86](https://github.com/CapstoneDesign-Fall2026-UlsanCollege/team_2_capstone_design/actions/runs/45427562139) with `test_edge_cases.py` + `test_rbac.py`) and **`12` Vitest files (`130` tests) locally + full CI Vitest pass** (`merchant-rbac.test.ts` + `bugfixes-edge-cases.test.ts`). Note: `theme-contrast.test.ts` local Windows Node v24 diagnostic failure is preserved openly in [`w12-verification-checks.json`](evidence/w12-verification-checks.json).
 
 ---
 

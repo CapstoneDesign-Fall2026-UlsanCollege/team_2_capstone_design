@@ -1,29 +1,47 @@
-# Commit SHA: fbc79ab7776c609dff75345874d93618319ad386
-# Timestamp UTC: 2026-11-22T15:55:49.156810+00:00
+# Commit SHA: 067a4786b80650358743a1dff72d86518051e948
+# Timestamp UTC: 2026-11-25T05:27:13.796481+00:00
 # Node: v24.22.1 | npm: 11.19.1
 
 ## 1. Vitest (`npm test`)
+Exit code: 1
 > frontend@0.1.0 test
 > vitest run
 
 
  RUN  v3.2.7 d:/Team2_Capstone_project/team_2_capstone_design/frontend
 
- ✓ src/lib/merchant-status.test.ts (25 tests) 10ms
- ✓ src/lib/product-archive.test.ts (4 tests) 18ms
- ✓ src/lib/email-validation.test.ts (10 tests) 15ms
+ ✓ src/lib/email-validation.test.ts (10 tests) 17ms
+ ✓ src/lib/product-archive.test.ts (4 tests) 19ms
+ ✓ src/lib/api.test.ts (5 tests) 20ms
+ ✓ src/lib/storefront-themes.test.ts (6 tests) 39ms
+ ✓ src/lib/khalti-return.test.ts (6 tests) 20ms
+ ✓ src/lib/storefront-order-status.test.ts (5 tests) 99ms
  ✓ src/lib/theme-media-upload.test.ts (2 tests) 11ms
- ✓ src/lib/merchant-guard.test.ts (18 tests) 10ms
- ✓ src/lib/storefront-themes.test.ts (6 tests) 41ms
- ✓ src/lib/theme-contrast.test.ts (6 tests) 13ms
- ✓ src/lib/api.test.ts (5 tests) 25ms
- ✓ src/lib/khalti-return.test.ts (6 tests) 19ms
- ✓ src/lib/storefront-placeholders.test.ts (20 tests) 224ms
+ ✓ src/lib/merchant-guard.test.ts (18 tests) 6ms
+ ✓ src/lib/merchant-status.test.ts (34 tests) 173ms
+ ✓ src/lib/merchant-rbac.test.ts (8 tests) 68ms
+ ✓ src/lib/bugfixes-edge-cases.test.ts (10 tests) 233ms
+ ✓ src/lib/storefront-placeholders.test.ts (22 tests) 179ms
 
- Test Files  10 passed (10)
-      Tests  102 passed (102)
-   Start at  21:40:50
-   Duration  2.14s (transform 1.80s, setup 0ms, collect 3.53s, tests 388ms, environment 3ms, prepare 3.56s)
+ Test Files  1 failed | 12 passed (13)
+      Tests  130 passed (130)
+   Start at  11:12:14
+   Duration  2.32s (transform 2.46s, setup 0ms, collect 6.39s, tests 885ms, environment 3ms, prepare 4.13s)
+
+
+⎯⎯⎯⎯⎯⎯ Failed Suites 1 ⎯⎯⎯⎯⎯⎯⎯
+
+ FAIL  src/lib/theme-contrast.test.ts [ src/lib/theme-contrast.test.ts ]
+SyntaxError: Invalid or unexpected token
+ ❯ src/lib/theme-contrast.test.ts:12:1
+     10|   VALID_STOREFRONT_THEME_PRESETS,
+     11| } from "./theme-contrast";
+     12| import {
+       | ^
+     13|   scanConsoleLine,
+     14|   scanStorefrontLine,
+
+⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯⎯[1/1]⎯
 
 ## 2. TypeScript (`npm run typecheck`)
 Exit code: 0 (tsc --noEmit, 0 errors)
@@ -51,7 +69,7 @@ frontend\src\app\merchant\[storeSlug]\page.tsx
   10:3   warning  'Package' is defined but never used            @typescript-eslint/no-unused-vars
   11:3   warning  'Plus' is defined but never used               @typescript-eslint/no-unused-vars
   13:3   warning  'ShoppingBag' is defined but never used        @typescript-eslint/no-unused-vars
-  21:3   warning  'formatNpr' is defined but never used          @typescript-eslint/no-unused-vars
+  20:3   warning  'formatNpr' is defined but never used          @typescript-eslint/no-unused-vars
   29:10  warning  'Card' is defined but never used               @typescript-eslint/no-unused-vars
   29:16  warning  'CardContent' is defined but never used        @typescript-eslint/no-unused-vars
   30:10  warning  'Chip' is defined but never used               @typescript-eslint/no-unused-vars
@@ -59,7 +77,7 @@ frontend\src\app\merchant\[storeSlug]\page.tsx
   50:10  warning  'products' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
 frontend\src\app\merchant\[storeSlug]\products\[productId]\page.tsx
-  79:9  warning  'samplePrice' is assigned a value but never used  @typescript-eslint/no-unused-vars
+  92:9  warning  'samplePrice' is assigned a value but never used  @typescript-eslint/no-unused-vars
 
 frontend\src\app\s\[storeSlug]\account\StorefrontAccountClient.tsx
    3:38  warning  'useTransition' is defined but never used  @typescript-eslint/no-unused-vars
