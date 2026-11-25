@@ -397,6 +397,7 @@ def verify_khalti_epayment(
             headers={"Authorization": auth_header, "Content-Type": "application/json"},
             timeout=5.0,
         )
+        data = None
         if resp.status_code != 200:
             if _is_khalti_invalid_key_response(resp):
                 logger.warning(
@@ -411,20 +412,35 @@ def verify_khalti_epayment(
                     None,
                     KHALTI_INVALID_KEY_MESSAGE,
                 )
-            logger.warning(
-                "Khalti lookup non-200 response: status_code=%s store_id=%s mode=%s",
-                resp.status_code,
-                store.id,
-                mode,
-            )
-            return KhaltiVerifyResult(
-                KHALTI_STATE_UNKNOWN_ERROR,
-                None,
-                None,
-                "Unable to reach Khalti payment gateway for verification.",
-            )
-
-        data = resp.json()
+            # Khalti ePayment v2 returns HTTP 400 with JSON {"status": "User canceled" | "Expired" | ...}
+            # for canceled/expired transactions. Never treat non-200 responses as Completed.
+            if resp.status_code == 400:
+                try:
+                    parsed_400 = resp.json()
+                except Exception:
+                    parsed_400 = None
+                if (
+                    isinstance(parsed_400, dict)
+                    and isinstance(parsed_400.get("status"), str)
+                    and KHALTI_STATUS_MAP.get(parsed_400["status"])
+                    not in (None, KHALTI_STATE_COMPLETED)
+                ):
+                    data = parsed_400
+            if data is None:
+                logger.warning(
+                    "Khalti lookup non-200 response: status_code=%s store_id=%s mode=%s",
+                    resp.status_code,
+                    store.id,
+                    mode,
+                )
+                return KhaltiVerifyResult(
+                    KHALTI_STATE_UNKNOWN_ERROR,
+                    None,
+                    None,
+                    "Unable to reach Khalti payment gateway for verification.",
+                )
+        else:
+            data = resp.json()
         if not isinstance(data, dict):
             logger.warning(
                 "Khalti lookup malformed JSON payload (non-dict): store_id=%s mode=%s",

@@ -462,12 +462,46 @@ class KhaltiHardenedIntegrationTests(TestCase):
                 self.assertIsNotNone(ev)
 
     @patch("stores.khalti.get_shared_http_session")
+    def test_verify_http_400_user_canceled_from_khalti_v2_marks_payment_failed(self, mock_get_session):
+        """Real Khalti v2 /epayment/lookup/ returns HTTP 400 with status='User canceled' on cancellation."""
+        for idx, khalti_status in enumerate(("User canceled", "Expired", "Refunded"), start=1):
+            order = self._create_unpaid_khalti_order(pidx=f"pidx400Fail{idx}", total_minor=55000)
+            fake_session = MagicMock()
+            fake_session.post.return_value = _mock_response(
+                status_code=400,
+                json_data={
+                    "pidx": f"pidx400Fail{idx}",
+                    "total_amount": 55000,
+                    "status": khalti_status,
+                    "transaction_id": None,
+                    "fee": 0,
+                    "refunded": False,
+                    "error_key": "khalti_error",
+                },
+            )
+            mock_get_session.return_value = fake_session
+
+            res = self.client.post(
+                f"/api/stores/{self.store.slug}/checkout/khalti-verify/",
+                {"pidx": f"pidx400Fail{idx}", "order_id": order.id},
+                format="json",
+            )
+            self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST)
+            self.assertEqual(res.json().get("state"), "failed")
+            with TenantDatabaseContext(self.store.id):
+                order.refresh_from_db()
+                self.assertEqual(order.status, "PAYMENT_FAILED")
+                self.assertEqual(order.payment_status, "FAILED")
+
+    @patch("stores.khalti.get_shared_http_session")
     def test_verify_unknown_error_network_malformed_returns_503_unchanged(self, mock_get_session):
         bad_responses = [
             requests.Timeout("lookup timed out"),
             _mock_response(status_code=502, json_data={}),
             _mock_response(status_code=200, json_exc=ValueError("bad json")),
             _mock_response(status_code=200, json_data={"status": "UnexpectedStatus", "total_amount": 130000}),
+            _mock_response(status_code=400, json_data={"status": "Completed", "total_amount": 130000}),
+            _mock_response(status_code=400, json_data={"error_key": "validation_error"}),
         ]
         for idx, outcome in enumerate(bad_responses, start=1):
             order = self._create_unpaid_khalti_order(pidx=f"pidxErr{idx}")
