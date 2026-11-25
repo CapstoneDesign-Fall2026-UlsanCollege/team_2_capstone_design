@@ -60,7 +60,7 @@ export function StaffPermissionsPanel({ storeSlug }: StaffTabProps) {
   }, [storeSlug]);
 
   useEffect(() => {
-    loadStaff();
+    void Promise.resolve().then(() => loadStaff());
   }, [loadStaff]);
 
   const isOwner = (data?.current_role || data?.current_user_role) === "OWNER";

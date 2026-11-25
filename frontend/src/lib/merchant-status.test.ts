@@ -538,7 +538,7 @@ describe("VariantGridEditor mobile custom variant form (Bug 9)", () => {
 
     const desktopMatch = html.match(/<table[\s\S]*?<\/table>/);
     expect(desktopMatch).not.toBeNull();
-    expect(desktopMatch![0]).toMatch(/colspan="2"/i);
+    expect(desktopMatch![0]).toMatch(/colspan="5"/i);
 
     const mobileSplit = html.split("sm:hidden space-y-3");
     expect(mobileSplit.length).toBeGreaterThan(1);

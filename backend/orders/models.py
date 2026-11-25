@@ -60,6 +60,7 @@ class Order(models.Model):
         related_name="orders",
     )
     discount_redeemed = models.BooleanField(default=False)
+    inventory_deducted = models.BooleanField(default=False)
     total_minor = models.PositiveIntegerField()
     currency = models.CharField(max_length=3, default="NPR")
     shipping_address_snapshot = models.JSONField(default=dict)

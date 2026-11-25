@@ -45,24 +45,35 @@ export function CustomerDetailSheet({
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    if (!open || !customer) {
-      setDetail(null);
-      setError(null);
-      return;
-    }
-
-    setLoading(true);
-    setError(null);
-    fetchMerchantCustomerDetail(storeSlug, customer.id)
-      .then((data) => {
-        setDetail(data);
-      })
-      .catch((err) => {
-        setError(err instanceof Error ? err.message : "Failed to load customer details");
-      })
-      .finally(() => {
+    let active = true;
+    void Promise.resolve().then(() => {
+      if (!active) return;
+      if (!open || !customer) {
+        setDetail(null);
+        setError(null);
         setLoading(false);
-      });
+        return;
+      }
+
+      setLoading(true);
+      setError(null);
+      fetchMerchantCustomerDetail(storeSlug, customer.id)
+        .then((data) => {
+          if (active) setDetail(data);
+        })
+        .catch((err) => {
+          if (active) {
+            setError(err instanceof Error ? err.message : "Failed to load customer details");
+          }
+        })
+        .finally(() => {
+          if (active) setLoading(false);
+        });
+    });
+
+    return () => {
+      active = false;
+    };
   }, [open, customer, storeSlug]);
 
   if (!customer) return null;

@@ -52,6 +52,9 @@ class Variant(models.Model):
     price_minor = models.PositiveIntegerField()  # Integer paisa (Rs. 1 = 100 paisa)
     allow_one_time = models.BooleanField(default=True)
     in_stock = models.BooleanField(default=True)
+    track_inventory = models.BooleanField(default=False)
+    stock_quantity = models.PositiveIntegerField(default=0)
+    low_stock_threshold = models.PositiveSmallIntegerField(default=5)
     is_active = models.BooleanField(default=True)
     sort_order = models.PositiveSmallIntegerField(default=0)
     created_at = models.DateTimeField(auto_now_add=True)
@@ -76,6 +79,21 @@ class Variant(models.Model):
             self.store = self.product.store
         self.clean()
         super().save(*args, **kwargs)
+
+    @property
+    def is_low_stock(self) -> bool:
+        return bool(
+            self.track_inventory
+            and self.is_active
+            and 0 < self.stock_quantity <= self.low_stock_threshold
+        )
+
+    @property
+    def is_out_of_stock(self) -> bool:
+        return bool(
+            (not self.in_stock)
+            or (self.track_inventory and self.stock_quantity <= 0)
+        )
 
     def __str__(self):
         return f"{self.product.name} - {self.label} ({self.sku})"

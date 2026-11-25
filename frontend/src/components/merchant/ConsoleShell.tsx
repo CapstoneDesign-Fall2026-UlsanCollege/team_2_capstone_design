@@ -27,6 +27,8 @@ function resolveSectionLabel(pathname: string, baseHref: string): string {
       return "Orders";
     case "products":
       return "Products";
+    case "inventory":
+      return "Inventory";
     case "discounts":
       return "Discounts";
     case "customers":
@@ -66,17 +68,28 @@ export function ConsoleShell({
   const storeName = currentStore?.name || "";
 
   useEffect(() => {
+    let active = true;
     if (typeof window !== "undefined") {
       const stored = sessionStorage.getItem("shopcraft_merchant_notice");
       if (stored) {
-        setNotice(stored);
         sessionStorage.removeItem("shopcraft_merchant_notice");
+        void Promise.resolve().then(() => {
+          if (active) setNotice(stored);
+        });
       }
     }
+    return () => {
+      active = false;
+    };
   }, []);
 
   useEffect(() => {
-    if (/Mac|iPhone|iPad/.test(navigator.platform)) setShortcutLabel("⌘K");
+    let active = true;
+    if (/Mac|iPhone|iPad/.test(navigator.platform)) {
+      void Promise.resolve().then(() => {
+        if (active) setShortcutLabel("⌘K");
+      });
+    }
     const handleKeyDown = (e: KeyboardEvent) => {
       if ((e.metaKey || e.ctrlKey) && e.key.toLowerCase() === "k") {
         e.preventDefault();
@@ -84,7 +97,10 @@ export function ConsoleShell({
       }
     };
     window.addEventListener("keydown", handleKeyDown);
-    return () => window.removeEventListener("keydown", handleKeyDown);
+    return () => {
+      active = false;
+      window.removeEventListener("keydown", handleKeyDown);
+    };
   }, []);
 
   const handleGlobalProductSaved = (saved: ProductItem) => {

@@ -257,6 +257,8 @@ export default function MerchantOverviewPage({ params }: PageProps) {
       <NeedsAttentionCards
         storeSlug={storeSlug}
         ordersToDispatchCount={overview.pending_fulfillment_count ?? 0}
+        lowStockCount={overview.low_stock_variants_count ?? 0}
+        outOfStockCount={overview.out_of_stock_variants_count ?? 0}
       />
 
       {/* 4. KPI Strip */}

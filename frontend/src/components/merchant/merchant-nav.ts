@@ -1,5 +1,6 @@
 import {
   BarChart3,
+  Boxes,
   Home,
   Package,
   Settings,
@@ -25,6 +26,7 @@ export function buildMerchantNav(baseHref: string) {
     { key: "home", label: "Home", href: baseHref, exact: true, icon: Home },
     { key: "orders", label: "Orders", href: `${baseHref}/orders`, icon: ShoppingBag },
     { key: "products", label: "Products", href: `${baseHref}/products`, icon: Package },
+    { key: "inventory", label: "Inventory", href: `${baseHref}/inventory`, icon: Boxes },
     { key: "customers", label: "Customers", href: `${baseHref}/customers`, icon: Users },
     { key: "discounts", label: "Discounts", href: `${baseHref}/discounts`, icon: Tag },
     { key: "analytics", label: "Analytics", href: `${baseHref}/analytics`, icon: BarChart3 },

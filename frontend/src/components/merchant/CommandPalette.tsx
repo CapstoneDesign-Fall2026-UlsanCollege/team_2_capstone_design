@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import * as Dialog from "@radix-ui/react-dialog";
 import { Search } from "lucide-react";
@@ -30,6 +30,7 @@ export function CommandPalette({ storeSlug, open, onOpenChange }: CommandPalette
       { id: "home", label: "Home", category: "Go to", onSelect: go("") },
       { id: "orders", label: "Orders", category: "Go to", onSelect: go("/orders") },
       { id: "products", label: "Products", category: "Go to", onSelect: go("/products") },
+      { id: "inventory", label: "Inventory", category: "Go to", onSelect: go("/inventory") },
       { id: "customers", label: "Customers", category: "Go to", onSelect: go("/customers") },
       { id: "discounts", label: "Discounts", category: "Go to", onSelect: go("/discounts") },
       { id: "analytics", label: "Analytics", category: "Go to", onSelect: go("/analytics") },
@@ -53,15 +54,16 @@ export function CommandPalette({ storeSlug, open, onOpenChange }: CommandPalette
       : commands;
   }, [commands, search]);
 
-  useEffect(() => {
-    if (!open) {
+  const handleOpenChange = (nextOpen: boolean) => {
+    if (!nextOpen) {
       setSearch("");
       setActive(0);
     }
-  }, [open]);
+    onOpenChange(nextOpen);
+  };
 
   const run = (item: CommandItem) => {
-    onOpenChange(false);
+    handleOpenChange(false);
     item.onSelect();
   };
 
@@ -79,7 +81,7 @@ export function CommandPalette({ storeSlug, open, onOpenChange }: CommandPalette
   };
 
   return (
-    <Dialog.Root open={open} onOpenChange={onOpenChange}>
+    <Dialog.Root open={open} onOpenChange={handleOpenChange}>
       <Dialog.Portal>
         <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40" />
         <Dialog.Content

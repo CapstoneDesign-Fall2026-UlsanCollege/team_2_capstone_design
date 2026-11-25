@@ -164,14 +164,21 @@ export function VariantGridEditor({
         <table className="w-full text-left text-xs border-collapse">
           <thead>
             <tr className="border-b border-[var(--border)] bg-[var(--secondary)]/50 text-[var(--muted-foreground)] font-medium">
-              <th className="py-2.5 px-3 font-normal w-1/3">Variant Label</th>
-              <th className="py-2.5 px-3 font-normal w-1/3">Price (NPR)</th>
+              <th className="py-2.5 px-3 font-normal w-1/4">Variant Label</th>
+              <th className="py-2.5 px-3 font-normal w-1/4">Price (NPR)</th>
+              <th className="py-2.5 px-2 font-normal text-center">Track Qty</th>
+              <th className="py-2.5 px-2 font-normal text-center">Stock</th>
+              <th className="py-2.5 px-2 font-normal text-center">Alert ≤</th>
               <th className="py-2.5 px-3 font-normal text-center">In Stock</th>
               <th className="py-2.5 px-3 font-normal text-right">Actions</th>
             </tr>
           </thead>
           <tbody className="divide-y divide-[var(--border)]">
-            {variants.map((v) => (
+            {variants.map((v) => {
+              const trackInv = Boolean(v.track_inventory);
+              const stockQty = v.stock_quantity ?? 0;
+              const lowThresh = v.low_stock_threshold ?? 5;
+              return (
               <tr key={v.id} className="hover:bg-[var(--secondary)]/30 transition-colors">
                 {/* Variant Label */}
                 <td className="py-2 px-3">
@@ -203,13 +210,74 @@ export function VariantGridEditor({
                   </div>
                 </td>
 
+                {/* Track Inventory Toggle */}
+                <td className="py-2 px-2 text-center">
+                  <input
+                    type="checkbox"
+                    aria-label={`Track inventory for ${v.label}`}
+                    checked={trackInv}
+                    onChange={(e) => handleUpdate(v, { track_inventory: e.target.checked })}
+                    className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
+                  />
+                </td>
+
+                {/* Stock Quantity */}
+                <td className="py-2 px-2 text-center">
+                  {trackInv ? (
+                    <input
+                      type="number"
+                      min={0}
+                      max={2147483647}
+                      aria-label={`Stock quantity for ${v.label}`}
+                      defaultValue={stockQty}
+                      key={`${v.id}-qty-${stockQty}`}
+                      onBlur={(e) => {
+                        const parsed = parseInt(e.target.value, 10);
+                        if (Number.isFinite(parsed) && parsed >= 0 && parsed !== stockQty) {
+                          handleUpdate(v, { stock_quantity: parsed });
+                        }
+                      }}
+                      className="w-20 h-8 px-2 rounded border border-[var(--border)] bg-[var(--background)] text-center text-xs font-mono tabular-nums text-[var(--foreground)] focus:outline-none focus:border-[var(--ring)]"
+                    />
+                  ) : (
+                    <span className="text-[11px] font-mono text-[var(--muted-foreground)]">∞</span>
+                  )}
+                </td>
+
+                {/* Low Stock Alert Threshold */}
+                <td className="py-2 px-2 text-center">
+                  <input
+                    type="number"
+                    min={0}
+                    max={32767}
+                    aria-label={`Low stock threshold for ${v.label}`}
+                    disabled={!trackInv}
+                    defaultValue={lowThresh}
+                    key={`${v.id}-thr-${lowThresh}`}
+                    onBlur={(e) => {
+                      const parsed = parseInt(e.target.value, 10);
+                      if (
+                        Number.isFinite(parsed) &&
+                        parsed >= 0 &&
+                        parsed <= 32767 &&
+                        parsed !== lowThresh
+                      ) {
+                        handleUpdate(v, { low_stock_threshold: parsed });
+                      }
+                    }}
+                    className="w-16 h-8 px-2 rounded border border-[var(--border)] bg-[var(--background)] text-center text-xs font-mono tabular-nums text-[var(--foreground)] disabled:opacity-40 focus:outline-none focus:border-[var(--ring)]"
+                  />
+                </td>
+
                 {/* In Stock */}
                 <td className="py-2 px-3 text-center">
                   <input
                     type="checkbox"
+                    aria-label={`In stock toggle for ${v.label}`}
                     checked={v.in_stock}
+                    disabled={trackInv && stockQty <= 0}
                     onChange={(e) => handleUpdate(v, { in_stock: e.target.checked })}
-                    className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer"
+                    className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)] cursor-pointer disabled:opacity-40"
                   />
                 </td>
 
@@ -232,7 +300,8 @@ export function VariantGridEditor({
                   </div>
                 </td>
               </tr>
-            ))}
+              );
+            })}
 
             {/* Quick Add Bottom Row */}
             <tr className="bg-[var(--secondary)]/20">
@@ -272,7 +341,7 @@ export function VariantGridEditor({
                   />
                 </div>
               </td>
-              <td colSpan={2} className="py-2 px-3 text-right">
+              <td colSpan={5} className="py-2 px-3 text-right">
                 <button
                   type="button"
                   disabled={creating || !newLabel.trim()}
@@ -341,11 +410,40 @@ export function VariantGridEditor({
               </div>
             </div>
 
-            <div className="flex items-center justify-between pt-1 border-t border-[var(--border)] text-xs">
+            <div className="flex flex-wrap items-center justify-between gap-3 pt-1 border-t border-[var(--border)] text-xs">
+              <label className="flex items-center gap-2 cursor-pointer">
+                <input
+                  type="checkbox"
+                  checked={Boolean(v.track_inventory)}
+                  onChange={(e) => handleUpdate(v, { track_inventory: e.target.checked })}
+                  className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)]"
+                />
+                <span>Track Qty</span>
+              </label>
+
+              {v.track_inventory && (
+                <input
+                  type="number"
+                  min={0}
+                  max={2147483647}
+                  aria-label={`Mobile stock quantity for ${v.label}`}
+                  defaultValue={v.stock_quantity ?? 0}
+                  key={`${v.id}-mqty-${v.stock_quantity ?? 0}`}
+                  onBlur={(e) => {
+                    const parsed = parseInt(e.target.value, 10);
+                    if (Number.isFinite(parsed) && parsed >= 0 && parsed !== (v.stock_quantity ?? 0)) {
+                      handleUpdate(v, { stock_quantity: parsed });
+                    }
+                  }}
+                  className="w-20 h-7 px-2 rounded border border-[var(--border)] bg-[var(--background)] text-center font-mono text-xs"
+                />
+              )}
+
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
                   checked={v.in_stock}
+                  disabled={Boolean(v.track_inventory) && (v.stock_quantity ?? 0) <= 0}
                   onChange={(e) => handleUpdate(v, { in_stock: e.target.checked })}
                   className="w-4 h-4 rounded border-[var(--border)] accent-[var(--primary)]"
                 />

@@ -53,8 +53,9 @@ export function ProductDetailView({
   const claims = useMemo(() => getStorefrontPaymentAndDeliveryClaims(store), [store]);
 
   const variants = product.variants || [];
-  const defaultVariant =
-    variants.find((v) => v.in_stock && v.is_active) || variants[0] || null;
+  const isVariantAvailable = (v: ProductVariant) =>
+    v.in_stock && v.is_active && (!v.track_inventory || (v.stock_quantity ?? 0) > 0);
+  const defaultVariant = variants.find(isVariantAvailable) || variants[0] || null;
 
   const [selectedVariantId, setSelectedVariantId] = useState<number | null>(
     defaultVariant ? defaultVariant.id : null
@@ -73,8 +74,17 @@ export function ProductDetailView({
     variants.find((v) => v.id === selectedVariantId) || defaultVariant;
 
   const unitPriceMinor = selectedVariant ? selectedVariant.price_minor : 0;
-  const totalPriceMinor = unitPriceMinor * quantity;
-  const isInStock = selectedVariant ? selectedVariant.in_stock && selectedVariant.is_active : false;
+  const maxOrderQty = selectedVariant?.track_inventory
+    ? Math.min(10, Math.max(0, selectedVariant.stock_quantity ?? 0))
+    : 10;
+  const effectiveQuantity = maxOrderQty > 0 ? Math.min(quantity, maxOrderQty) : 1;
+  const totalPriceMinor = unitPriceMinor * effectiveQuantity;
+  const isInStock = selectedVariant ? isVariantAvailable(selectedVariant) : false;
+  const showLowStockHint = Boolean(
+    selectedVariant?.track_inventory &&
+      isInStock &&
+      (selectedVariant.stock_quantity ?? 0) <= (selectedVariant.low_stock_threshold ?? 5)
+  );
 
   const finalVariantLabel = selectedVariant?.label || "Standard";
 
@@ -112,7 +122,7 @@ export function ProductDetailView({
       variantId: selectedVariant.id,
       variantLabel: finalVariantLabel,
       unitPriceMinor,
-      quantity,
+      quantity: effectiveQuantity,
       imageUrl: product.image_url,
     });
 
@@ -317,13 +327,18 @@ export function ProductDetailView({
                 <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
                   {variants.map((v) => {
                     const isSelected = v.id === selectedVariantId;
-                    const isAvailable = v.in_stock && v.is_active;
+                    const isAvailable = isVariantAvailable(v);
 
                     return (
                       <button
                         key={v.id}
                         type="button"
-                        onClick={() => setSelectedVariantId(v.id)}
+                        onClick={() => {
+                          setSelectedVariantId(v.id);
+                          if (v.track_inventory && (v.stock_quantity ?? 0) > 0) {
+                            setQuantity((q) => Math.min(q, Math.min(10, v.stock_quantity ?? 1)));
+                          }
+                        }}
                         disabled={!isAvailable}
                         className={`min-h-[44px] p-2.5 rounded-lg text-left transition-colors cursor-pointer border ${
                           isSelected
@@ -346,6 +361,12 @@ export function ProductDetailView({
 
             {/* 3. Quantity Stepper & ONE Primary Button (8px radius, 44px tap targets) */}
             <div className="space-y-4 pt-2">
+              {showLowStockHint && selectedVariant && (
+                <div className="inline-flex items-center rounded-full border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] px-2.5 py-1 text-xs font-medium text-[var(--status-warning-fg)]">
+                  Only {selectedVariant.stock_quantity} left in stock
+                </div>
+              )}
+
               <div className="flex items-center justify-between">
                 <label className="font-semibold text-xs text-[var(--ink)]">
                   Quantity
@@ -353,20 +374,20 @@ export function ProductDetailView({
                 <div className="inline-flex items-center rounded-lg border border-[var(--border)] bg-[var(--canvas)]">
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.max(1, q - 1))}
-                    disabled={quantity <= 1 || !isInStock}
+                    onClick={() => setQuantity((q) => Math.max(1, Math.min(q, maxOrderQty) - 1))}
+                    disabled={effectiveQuantity <= 1 || !isInStock}
                     aria-label="Decrease quantity"
                     className="w-11 h-11 flex items-center justify-center text-[var(--ink-2)] hover:text-[var(--ink)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
                   >
                     <Minus className="w-4 h-4" aria-hidden="true" />
                   </button>
                   <span className="w-10 text-center text-xs font-semibold text-[var(--ink)] tabular-nums">
-                    {quantity}
+                    {effectiveQuantity}
                   </span>
                   <button
                     type="button"
-                    onClick={() => setQuantity((q) => Math.min(10, q + 1))}
-                    disabled={quantity >= 10 || !isInStock}
+                    onClick={() => setQuantity((q) => Math.min(maxOrderQty, q + 1))}
+                    disabled={effectiveQuantity >= maxOrderQty || !isInStock}
                     aria-label="Increase quantity"
                     className="w-11 h-11 flex items-center justify-center text-[var(--ink-2)] hover:text-[var(--ink)] disabled:opacity-30 disabled:cursor-not-allowed cursor-pointer transition-colors"
                   >

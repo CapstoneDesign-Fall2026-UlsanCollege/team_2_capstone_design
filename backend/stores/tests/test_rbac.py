@@ -289,6 +289,7 @@ class MerchantRBACAndCrossTenantMatrixTests(APITestCase):
             ("get", f"{base}/products/{p_id}/variants/{v_id}/", None, "json"),
             ("patch", f"{base}/products/{p_id}/variants/{v_id}/", {"price_minor": 100}, "json"),
             ("delete", f"{base}/products/{p_id}/variants/{v_id}/", None, "json"),
+            ("get", f"{base}/inventory/", None, "json"),
             ("get", f"{base}/orders/", None, "json"),
             ("get", f"{base}/orders/{o_id}/", None, "json"),
             ("post", f"{base}/orders/{o_id}/transition/", {"to_status": "PROCESSING"}, "json"),

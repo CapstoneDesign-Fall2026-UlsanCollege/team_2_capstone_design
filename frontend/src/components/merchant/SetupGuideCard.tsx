@@ -29,12 +29,20 @@ export function SetupGuideCard({
   const baseHref = `/merchant/${encodeURIComponent(storeSlug)}`;
 
   useEffect(() => {
+    let active = true;
     try {
       const isDismissed = localStorage.getItem(`shopcraft_setup_dismissed_${storeSlug}`);
-      if (isDismissed === "true") setDismissed(true);
+      if (isDismissed === "true") {
+        void Promise.resolve().then(() => {
+          if (active) setDismissed(true);
+        });
+      }
     } catch {
       // LocalStorage unavailable
     }
+    return () => {
+      active = false;
+    };
   }, [storeSlug]);
 
   const handleDismiss = () => {

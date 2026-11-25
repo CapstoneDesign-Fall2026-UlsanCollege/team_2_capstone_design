@@ -575,6 +575,8 @@ export interface MerchantStoreOverview {
   pending_fulfillment_count?: number;
   cod_pending_minor?: number;
   active_discounts_count?: number;
+  low_stock_variants_count?: number;
+  out_of_stock_variants_count?: number;
   daily_sales_7d?: OverviewDailyPoint[];
   recent_orders?: OverviewRecentOrder[];
   checklist: {
@@ -682,6 +684,11 @@ export interface ProductVariant {
   price_minor: number;
   allow_one_time: boolean;
   in_stock: boolean;
+  track_inventory?: boolean;
+  stock_quantity?: number;
+  low_stock_threshold?: number;
+  is_low_stock?: boolean;
+  is_out_of_stock?: boolean;
   is_active: boolean;
   sort_order: number;
 }
@@ -771,8 +778,53 @@ export interface VariantPayload {
   weight_grams?: number | null;
   allow_one_time?: boolean;
   in_stock?: boolean;
+  track_inventory?: boolean;
+  stock_quantity?: number;
+  low_stock_threshold?: number;
   is_active?: boolean;
   sort_order?: number;
+}
+
+export interface MerchantInventoryItem {
+  id: number;
+  product_id: number;
+  product_name: string;
+  product_slug: string;
+  product_image_url: string;
+  label: string;
+  sku: string;
+  price_minor: number;
+  in_stock: boolean;
+  track_inventory: boolean;
+  stock_quantity: number;
+  low_stock_threshold: number;
+  is_low_stock: boolean;
+  is_out_of_stock: boolean;
+  updated_at: string;
+}
+
+export interface MerchantInventoryResponse {
+  summary: {
+    total_variants: number;
+    tracked_count: number;
+    low_stock_count: number;
+    out_of_stock_count: number;
+    total_units: number;
+  };
+  items: MerchantInventoryItem[];
+}
+
+export async function fetchMerchantInventory(
+  storeSlug: string,
+  params?: { status?: string; q?: string }
+) {
+  const query = new URLSearchParams();
+  if (params?.status && params.status !== "all") query.set("status", params.status);
+  if (params?.q) query.set("q", params.q);
+  const qStr = query.toString() ? `?${query.toString()}` : "";
+  return apiFetch<MerchantInventoryResponse>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/inventory/${qStr}`
+  );
 }
 
 export async function fetchProductVariants(storeSlug: string, productId: number) {

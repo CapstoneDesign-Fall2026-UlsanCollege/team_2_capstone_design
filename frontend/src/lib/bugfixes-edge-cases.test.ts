@@ -538,7 +538,7 @@ describe("Bug 9 edge cases: VariantGridEditor mobile form & desktop colSpan acro
       );
       const table = html.match(/<table[\s\S]*?<\/table>/);
       expect(table).not.toBeNull();
-      expect(table![0]).toMatch(/colspan="2"/i);
+      expect(table![0]).toMatch(/colspan="5"/i);
       expect(table![0]).toMatch(/<button[^>]*disabled[^>]*>[\s\S]*?\+ Add Row/);
 
       const mobilePart = html.split("sm:hidden space-y-3")[1] || "";

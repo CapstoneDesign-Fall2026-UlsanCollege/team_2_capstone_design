@@ -153,6 +153,18 @@ export function ProductListTable({
                   priceLabel = `${formatNpr(min)} – ${formatNpr(max)}`;
                 }
 
+                const trackedVariants = activeVariants.filter((v) => v.track_inventory);
+                const anyOutOfStock = activeVariants.some(
+                  (v) => !v.in_stock || (v.track_inventory && (v.stock_quantity ?? 0) <= 0)
+                );
+                const anyLowStock = trackedVariants.some(
+                  (v) => (v.stock_quantity ?? 0) > 0 && (v.stock_quantity ?? 0) <= (v.low_stock_threshold ?? 5)
+                );
+                const trackedUnits = trackedVariants.reduce(
+                  (sum, v) => sum + (v.stock_quantity ?? 0),
+                  0
+                );
+
                 return (
                   <tr
                     key={p.id}
@@ -195,14 +207,33 @@ export function ProductListTable({
                       </div>
                     </td>
 
-                    {/* Variants Count */}
+                    {/* Variants Count & Stock */}
                     <td className="py-3 px-4 hidden sm:table-cell text-[var(--muted-foreground)] font-mono text-[11px]">
                       <Link
                         href={`/merchant/${encodeURIComponent(storeSlug)}/products/${p.id}`}
-                        className="hover:text-[var(--foreground)] hover:underline"
+                        className="hover:text-[var(--foreground)] hover:underline block"
                       >
                         {activeVariants.length} {activeVariants.length === 1 ? "variant" : "variants"} →
                       </Link>
+                      {trackedVariants.length > 0 ? (
+                        <span
+                          className={`text-[10px] ${
+                            anyOutOfStock
+                              ? "text-[var(--st-cancelled)]"
+                              : anyLowStock
+                              ? "text-amber-600 dark:text-amber-400"
+                              : "text-[var(--muted-foreground)]"
+                          }`}
+                        >
+                          {anyOutOfStock
+                            ? `Low/Out · ${trackedUnits} units`
+                            : anyLowStock
+                            ? `Low stock · ${trackedUnits} units`
+                            : `${trackedUnits} in stock`}
+                        </span>
+                      ) : anyOutOfStock ? (
+                        <span className="text-[10px] text-[var(--st-cancelled)]">Out of stock</span>
+                      ) : null}
                     </td>
 
                     {/* Price Range */}

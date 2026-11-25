@@ -191,6 +191,30 @@ class StoreScopedSerializerMixin(serializers.ModelSerializer):
         return super().to_internal_value(clean_data)
 
 
+MAX_CHECKOUT_ITEMS = 100
+MAX_CHECKOUT_ITEM_QUANTITY = 999
+MAX_DB_POSITIVE_INT = 2_147_483_647
+MAX_SMALL_INT = 32767
+
+
+def _sync_tracked_variant_stock_flag(validated_data: dict, request_data, instance=None) -> None:
+    """Keep legacy in_stock synced when numeric inventory tracking is active."""
+    effective_track = validated_data.get(
+        "track_inventory",
+        instance.track_inventory if instance is not None else False,
+    )
+    if not effective_track:
+        return
+    effective_qty = validated_data.get(
+        "stock_quantity",
+        instance.stock_quantity if instance is not None else 0,
+    )
+    if effective_qty <= 0:
+        validated_data["in_stock"] = False
+    elif "in_stock" not in request_data:
+        validated_data["in_stock"] = True
+
+
 # -----------------------------------------------------------------------------
 # Serializers
 # -----------------------------------------------------------------------------
@@ -290,6 +314,9 @@ class CustomerSerializer(serializers.ModelSerializer):
 
 
 class VariantSerializer(StoreScopedSerializerMixin):
+    is_low_stock = serializers.BooleanField(read_only=True)
+    is_out_of_stock = serializers.BooleanField(read_only=True)
+
     class Meta:
         model = Variant
         fields = [
@@ -300,10 +327,25 @@ class VariantSerializer(StoreScopedSerializerMixin):
             "price_minor",
             "allow_one_time",
             "in_stock",
+            "track_inventory",
+            "stock_quantity",
+            "low_stock_threshold",
+            "is_low_stock",
+            "is_out_of_stock",
             "is_active",
             "sort_order",
         ]
-        read_only_fields = ["id"]
+        read_only_fields = ["id", "is_low_stock", "is_out_of_stock"]
+
+    def validate_stock_quantity(self, value):
+        if value < 0 or value > MAX_DB_POSITIVE_INT:
+            raise serializers.ValidationError("Stock quantity must be between 0 and 2,147,483,647.")
+        return value
+
+    def validate_low_stock_threshold(self, value):
+        if value < 0 or value > MAX_SMALL_INT:
+            raise serializers.ValidationError("Low stock threshold must be between 0 and 32,767.")
+        return value
 
 
 class ProductSerializer(StoreScopedSerializerMixin):
@@ -620,6 +662,100 @@ def _reclaim_order_discount(store, order) -> str | None:
     return None
 
 
+def _aggregate_variant_quantities(items_data: list[dict]) -> dict[int, int]:
+    """Sum requested quantity per variant_id across duplicate cart entries."""
+    qty_by_vid: dict[int, int] = {}
+    for it in items_data:
+        vid = it["variant_id"]
+        qty_by_vid[vid] = qty_by_vid.get(vid, 0) + it["quantity"]
+    return qty_by_vid
+
+
+def _reserve_order_inventory(store, qty_by_variant_id: dict[int, int]) -> tuple[bool, str | None]:
+    """
+    Lock checkout variants in deterministic ID order inside an active transaction,
+    verify stock availability, and atomically decrement tracked stock quantities.
+    Returns (any_tracked_deducted, error_message).
+    """
+    if not qty_by_variant_id:
+        return False, None
+
+    sorted_ids = sorted(qty_by_variant_id.keys())
+    locked_variants = {
+        v.id: v
+        for v in Variant.objects.select_for_update()
+        .for_store(store)
+        .select_related("product")
+        .filter(id__in=sorted_ids)
+        .order_by("id")
+    }
+
+    for vid in sorted_ids:
+        v, err = _validate_checkout_variant(locked_variants, vid, requested_qty=qty_by_variant_id[vid])
+        if err:
+            return False, err
+
+    any_tracked = False
+    for vid in sorted_ids:
+        v = locked_variants[vid]
+        if v.track_inventory:
+            any_tracked = True
+            v.stock_quantity = max(0, v.stock_quantity - qty_by_variant_id[vid])
+            v.in_stock = v.stock_quantity > 0
+            v.save(update_fields=["stock_quantity", "in_stock", "updated_at"])
+
+    return any_tracked, None
+
+
+def _release_order_inventory(store, order) -> bool:
+    """Restore previously reserved tracked stock when an order is cancelled or payment fails."""
+    if not order.inventory_deducted:
+        return False
+
+    qty_by_vid: dict[int, int] = {}
+    for item in order.items.all():
+        if item.variant_id:
+            qty_by_vid[item.variant_id] = qty_by_vid.get(item.variant_id, 0) + item.quantity
+
+    if qty_by_vid:
+        sorted_ids = sorted(qty_by_vid.keys())
+        locked_variants = (
+            Variant.objects.select_for_update()
+            .for_store(store)
+            .filter(id__in=sorted_ids)
+            .order_by("id")
+        )
+        for v in locked_variants:
+            if v.track_inventory:
+                v.stock_quantity = min(MAX_DB_POSITIVE_INT, v.stock_quantity + qty_by_vid[v.id])
+                if v.stock_quantity > 0:
+                    v.in_stock = True
+                v.save(update_fields=["stock_quantity", "in_stock", "updated_at"])
+
+    order.inventory_deducted = False
+    return True
+
+
+def _reclaim_order_inventory(store, order) -> str | None:
+    """Re-reserve tracked stock when retrying payment or switching a failed order to COD."""
+    if order.inventory_deducted:
+        return None
+
+    qty_by_vid: dict[int, int] = {}
+    for item in order.items.all():
+        if item.variant_id:
+            qty_by_vid[item.variant_id] = qty_by_vid.get(item.variant_id, 0) + item.quantity
+
+    if not qty_by_vid:
+        return None
+
+    deducted, inv_err = _reserve_order_inventory(store, qty_by_vid)
+    if inv_err:
+        return f"{inv_err} Please place a new order."
+    order.inventory_deducted = deducted
+    return None
+
+
 class StorePublicOrderPayView(StorePublicMixin, APIView):
     """
     Allows a shopper holding a valid unguessable order access token (e.g. from a
@@ -679,6 +815,10 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 promo_err = _reclaim_order_discount(self.store, order)
                 if promo_err:
                     return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
+                inv_err = _reclaim_order_inventory(self.store, order)
+                if inv_err:
+                    transaction.set_rollback(True)
+                    return Response({"error": inv_err}, status=status.HTTP_400_BAD_REQUEST)
                 old_status = order.status
                 order.status = "CONFIRMED"
                 order.payment_method = "COD"
@@ -689,6 +829,7 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                         "payment_method",
                         "payment_status",
                         "discount_redeemed",
+                        "inventory_deducted",
                         "updated_at",
                     ]
                 )
@@ -720,6 +861,10 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         promo_err = _reclaim_order_discount(self.store, order)
         if promo_err:
             return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
+        inv_err = _reclaim_order_inventory(self.store, order)
+        if inv_err:
+            transaction.set_rollback(True)
+            return Response({"error": inv_err}, status=status.HTTP_400_BAD_REQUEST)
 
         snap = order.shipping_address_snapshot or {}
         recipient_name = snap.get("recipient_name") or order.customer.full_name or "Shopper"
@@ -761,6 +906,7 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                     "payment_ref",
                     "is_test",
                     "discount_redeemed",
+                    "inventory_deducted",
                     "updated_at",
                 ]
             )
@@ -785,11 +931,6 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         if is_mock:
             payload["is_mock"] = True
         return Response(payload)
-
-
-MAX_CHECKOUT_ITEMS = 100
-MAX_CHECKOUT_ITEM_QUANTITY = 999
-MAX_DB_POSITIVE_INT = 2_147_483_647
 
 
 def _parse_positive_int(raw_val, max_val=MAX_DB_POSITIVE_INT):
@@ -840,8 +981,8 @@ def _parse_checkout_items(raw_items):
     return parsed_items, None
 
 
-def _validate_checkout_variant(variants: dict[int, Variant], v_id):
-    """Ensure a checkout line item refers to an active, in-stock variant of an active product."""
+def _validate_checkout_variant(variants: dict[int, Variant], v_id, requested_qty: int | None = None):
+    """Ensure a checkout line item refers to an active, in-stock variant with enough stock."""
     v = variants.get(v_id)
     if not v:
         return None, f"Product variant {v_id} not available in this store."
@@ -849,6 +990,14 @@ def _validate_checkout_variant(variants: dict[int, Variant], v_id):
         return None, f"{v.product.name} ({v.label}) is no longer available in this store."
     if not v.in_stock:
         return None, f"{v.product.name} ({v.label}) is currently out of stock."
+    if v.track_inventory:
+        if v.stock_quantity <= 0:
+            return None, f"{v.product.name} ({v.label}) is currently out of stock."
+        if requested_qty is not None and requested_qty > v.stock_quantity:
+            return (
+                None,
+                f"Only {v.stock_quantity} left in stock for {v.product.name} ({v.label}).",
+            )
     return v, None
 
 
@@ -863,7 +1012,8 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
         if items_err:
             return Response({"error": items_err}, status=status.HTTP_400_BAD_REQUEST)
 
-        variant_ids = [it["variant_id"] for it in items_data]
+        qty_by_variant_id = _aggregate_variant_quantities(items_data)
+        variant_ids = list(qty_by_variant_id.keys())
         variants = {
             v.id: v
             for v in Variant.objects.for_store(self.store)
@@ -875,7 +1025,11 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
         computed_items = []
 
         for it in items_data:
-            v, variant_err = _validate_checkout_variant(variants, it["variant_id"])
+            v, variant_err = _validate_checkout_variant(
+                variants,
+                it["variant_id"],
+                requested_qty=qty_by_variant_id[it["variant_id"]],
+            )
             if variant_err:
                 return Response(
                     {"error": variant_err},
@@ -1065,7 +1219,8 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             if khalti_cfg_err:
                 return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
 
-        variant_ids = [it["variant_id"] for it in items_data]
+        qty_by_variant_id = _aggregate_variant_quantities(items_data)
+        variant_ids = list(qty_by_variant_id.keys())
         variants = {
             v.id: v
             for v in Variant.objects.for_store(self.store)
@@ -1077,7 +1232,11 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
         order_items_to_create = []
 
         for it in items_data:
-            v, variant_err = _validate_checkout_variant(variants, it["variant_id"])
+            v, variant_err = _validate_checkout_variant(
+                variants,
+                it["variant_id"],
+                requested_qty=qty_by_variant_id[it["variant_id"]],
+            )
             if variant_err:
                 return Response(
                     {"error": variant_err},
@@ -1152,6 +1311,11 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             if applied_discount is not None:
                 Discount.objects.for_store(self.store).filter(id=applied_discount.id).update(used_count=F("used_count") + 1)
 
+            inventory_deducted, inv_err = _reserve_order_inventory(self.store, qty_by_variant_id)
+            if inv_err:
+                transaction.set_rollback(True)
+                return Response({"error": inv_err}, status=status.HTTP_400_BAD_REQUEST)
+
             count = Order.objects.for_store(self.store).count() + 1
             order_number = f"#{prefix}-{count:04d}"
             while Order.objects.filter(store=self.store, order_number=order_number).exists():
@@ -1174,6 +1338,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 discount_minor=discount_minor,
                 discount=applied_discount,
                 discount_redeemed=(applied_discount is not None),
+                inventory_deducted=inventory_deducted,
                 total_minor=total_minor,
                 currency=self.store.currency,
                 shipping_address_snapshot=shipping_address,
@@ -1282,7 +1447,16 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
         order.status = "PAYMENT_FAILED"
         order.payment_status = "FAILED"
         _release_order_discount(self.store, order)
-        order.save(update_fields=["status", "payment_status", "discount_redeemed", "updated_at"])
+        _release_order_inventory(self.store, order)
+        order.save(
+            update_fields=[
+                "status",
+                "payment_status",
+                "discount_redeemed",
+                "inventory_deducted",
+                "updated_at",
+            ]
+        )
 
         OrderEvent.objects.create(
             store=self.store,
@@ -1502,6 +1676,25 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
         active_discounts_count = Discount.objects.for_store(self.store).filter(
             is_active=True
         ).count()
+        inventory_agg = Variant.objects.for_store(self.store).filter(
+            is_active=True,
+            product__is_active=True,
+        ).aggregate(
+            low_stock_variants_count=Count(
+                "id",
+                filter=Q(
+                    track_inventory=True,
+                    stock_quantity__gt=0,
+                    stock_quantity__lte=F("low_stock_threshold"),
+                ),
+            ),
+            out_of_stock_variants_count=Count(
+                "id",
+                filter=Q(in_stock=False) | Q(track_inventory=True, stock_quantity=0),
+            ),
+        )
+        low_stock_variants_count = inventory_agg["low_stock_variants_count"] or 0
+        out_of_stock_variants_count = inventory_agg["out_of_stock_variants_count"] or 0
 
         # 7-day daily revenue & order count series (single query)
         daily_buckets = {}
@@ -1564,6 +1757,8 @@ class MerchantStoreOverviewView(StoreMerchantMixin, APIView):
             "pending_fulfillment_count": pending_fulfillment_count,
             "cod_pending_minor": cod_pending_minor,
             "active_discounts_count": active_discounts_count,
+            "low_stock_variants_count": low_stock_variants_count,
+            "out_of_stock_variants_count": out_of_stock_variants_count,
             "daily_sales_7d": list(daily_buckets.values()),
             "recent_orders": recent_orders,
             "checklist": checklist,
@@ -1880,6 +2075,45 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
             )
 
         if initial_price_minor is not None:
+            raw_track = data.get("initial_track_inventory", False)
+            if isinstance(raw_track, bool):
+                initial_track = raw_track
+            elif isinstance(raw_track, str):
+                initial_track = raw_track.strip().lower() in ("true", "1", "yes")
+            else:
+                initial_track = False
+
+            initial_qty = 0
+            if "initial_stock_quantity" in data and data["initial_stock_quantity"] not in (None, ""):
+                try:
+                    initial_qty = int(data["initial_stock_quantity"])
+                except (ValueError, TypeError):
+                    return Response(
+                        {"error": "Initial stock quantity must be a non-negative integer."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if initial_qty < 0 or initial_qty > MAX_DB_POSITIVE_INT:
+                    return Response(
+                        {"error": "Initial stock quantity must be within 0..2,147,483,647."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            initial_thresh = 5
+            if "initial_low_stock_threshold" in data and data["initial_low_stock_threshold"] not in (None, ""):
+                try:
+                    initial_thresh = int(data["initial_low_stock_threshold"])
+                except (ValueError, TypeError):
+                    return Response(
+                        {"error": "Low stock threshold must be a non-negative integer."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                if initial_thresh < 0 or initial_thresh > MAX_SMALL_INT:
+                    return Response(
+                        {"error": "Low stock threshold must be within 0..32,767."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+
+            initial_in_stock = True if not initial_track else (initial_qty > 0)
             idx = 1
             base_sku = f"{self.store.slug.upper()[:4]}-{product.id}"
             candidate_sku = f"{base_sku}-{idx:02d}"
@@ -1893,7 +2127,10 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
                 label=data.get("initial_variant_label", "Standard"),
                 price_minor=initial_price_minor,
                 allow_one_time=product.allow_one_time,
-                in_stock=True,
+                in_stock=initial_in_stock,
+                track_inventory=initial_track,
+                stock_quantity=initial_qty,
+                low_stock_threshold=initial_thresh,
                 is_active=True,
             )
 
@@ -2019,6 +2256,7 @@ class MerchantVariantListCreateView(StoreMerchantMixin, APIView):
 
         serializer = VariantSerializer(data=data)
         serializer.is_valid(raise_exception=True)
+        _sync_tracked_variant_stock_flag(serializer.validated_data, data)
         try:
             with transaction.atomic():
                 variant = serializer.save(store=self.store, product=product)
@@ -2047,6 +2285,12 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
     def patch(self, request, store_slug, product_id, variant_id):
         variant = self.get_variant(product_id, variant_id)
         old_price_minor = variant.price_minor
+        old_inv = {
+            "track_inventory": variant.track_inventory,
+            "stock_quantity": variant.stock_quantity,
+            "low_stock_threshold": variant.low_stock_threshold,
+            "in_stock": variant.in_stock,
+        }
         if "sku" in request.data:
             raw_patch_sku = request.data.get("sku")
             if raw_patch_sku is None or not str(raw_patch_sku).strip():
@@ -2074,6 +2318,7 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
                     {"sku": ["A variant with this SKU already exists in this store."]},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
+        _sync_tracked_variant_stock_flag(serializer.validated_data, request.data, instance=variant)
         try:
             with transaction.atomic():
                 serializer.save()
@@ -2081,6 +2326,27 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
             return Response(
                 {"sku": ["A variant with this SKU already exists in this store."]},
                 status=status.HTTP_400_BAD_REQUEST,
+            )
+        inv_changed = any(getattr(variant, k) != v for k, v in old_inv.items())
+        if inv_changed:
+            MerchantAuditLog.objects.create(
+                store=self.store,
+                actor=request.user,
+                action="INVENTORY_UPDATE",
+                entity_type="Variant",
+                entity_id=str(variant.id),
+                details={
+                    "sku": variant.sku,
+                    "label": variant.label,
+                    "old": old_inv,
+                    "new": {
+                        "track_inventory": variant.track_inventory,
+                        "stock_quantity": variant.stock_quantity,
+                        "low_stock_threshold": variant.low_stock_threshold,
+                        "in_stock": variant.in_stock,
+                    },
+                },
+                ip_address=request.META.get("REMOTE_ADDR"),
             )
         if variant.price_minor != old_price_minor:
             Product.objects.for_store(self.store).filter(
@@ -2245,6 +2511,7 @@ class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
                     note = "Undone delivery · Reverted cash collection."
             elif target_status == "CANCELLED":
                 _release_order_discount(self.store, order)
+                _release_order_inventory(self.store, order)
 
             order.save()
 
@@ -3043,6 +3310,93 @@ class MerchantThemeMediaUploadView(StoreMerchantMixin, APIView):
             status=status.HTTP_201_CREATED,
         )
 
+class MerchantInventoryListView(StoreMerchantMixin, APIView):
+    """
+    Store-scoped inventory overview & SKU stock listing for shop owners and staff.
+    Supports ?status=all|low|out|tracked and ?q=<search> filtering.
+    """
+
+    def get(self, request, store_slug):
+        status_filter = str(request.query_params.get("status", "all")).strip().lower()
+        q = str(request.query_params.get("q", "")).strip()
+
+        base_qs = (
+            Variant.objects.for_store(self.store)
+            .select_related("product")
+            .filter(is_active=True, product__is_active=True)
+        )
+
+        summary_agg = base_qs.aggregate(
+            total_variants=Count("id"),
+            tracked_count=Count("id", filter=Q(track_inventory=True)),
+            low_stock_count=Count(
+                "id",
+                filter=Q(
+                    track_inventory=True,
+                    stock_quantity__gt=0,
+                    stock_quantity__lte=F("low_stock_threshold"),
+                ),
+            ),
+            out_of_stock_count=Count(
+                "id",
+                filter=Q(in_stock=False) | Q(track_inventory=True, stock_quantity=0),
+            ),
+            total_units=Sum("stock_quantity", filter=Q(track_inventory=True)),
+        )
+
+        qs = base_qs
+        if status_filter == "low":
+            qs = qs.filter(
+                track_inventory=True,
+                stock_quantity__gt=0,
+                stock_quantity__lte=F("low_stock_threshold"),
+            )
+        elif status_filter == "out":
+            qs = qs.filter(Q(in_stock=False) | Q(track_inventory=True, stock_quantity=0))
+        elif status_filter == "tracked":
+            qs = qs.filter(track_inventory=True)
+
+        if q:
+            qs = qs.filter(
+                Q(product__name__icontains=q)
+                | Q(label__icontains=q)
+                | Q(sku__icontains=q)
+            )
+
+        items_list = list(qs.order_by("-track_inventory", "stock_quantity", "product__name", "id"))
+        items = [
+            {
+                "id": v.id,
+                "product_id": v.product_id,
+                "product_name": v.product.name,
+                "product_slug": v.product.slug,
+                "product_image_url": v.product.image_url,
+                "label": v.label,
+                "sku": v.sku,
+                "price_minor": v.price_minor,
+                "in_stock": v.in_stock,
+                "track_inventory": v.track_inventory,
+                "stock_quantity": v.stock_quantity,
+                "low_stock_threshold": v.low_stock_threshold,
+                "is_low_stock": v.is_low_stock,
+                "is_out_of_stock": v.is_out_of_stock,
+                "updated_at": v.updated_at.isoformat(),
+            }
+            for v in items_list
+        ]
+
+        return Response({
+            "summary": {
+                "total_variants": summary_agg["total_variants"] or 0,
+                "tracked_count": summary_agg["tracked_count"] or 0,
+                "low_stock_count": summary_agg["low_stock_count"] or 0,
+                "out_of_stock_count": summary_agg["out_of_stock_count"] or 0,
+                "total_units": summary_agg["total_units"] or 0,
+            },
+            "items": items,
+        })
+
+
 # -----------------------------------------------------------------------------
 # Slice 6 Views (Analytics, Discounts, Staff RBAC) & URL Patterns
 # -----------------------------------------------------------------------------
@@ -3105,6 +3459,7 @@ urlpatterns = [
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/", MerchantProductDetailView.as_view(), name="merchant_product_detail"),
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/variants/", MerchantVariantListCreateView.as_view(), name="merchant_variant_list_create"),
     path("merchant/stores/<slug:store_slug>/products/<int:product_id>/variants/<int:variant_id>/", MerchantVariantDetailView.as_view(), name="merchant_variant_detail"),
+    path("merchant/stores/<slug:store_slug>/inventory/", MerchantInventoryListView.as_view(), name="merchant_inventory_list"),
     path("merchant/stores/<slug:store_slug>/orders/", MerchantOrderListView.as_view(), name="merchant_order_list"),
     path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/", MerchantOrderDetailView.as_view(), name="merchant_order_detail"),
     path("merchant/stores/<slug:store_slug>/orders/<int:order_id>/transition/", MerchantOrderStatusTransitionView.as_view(), name="merchant_order_transition"),
