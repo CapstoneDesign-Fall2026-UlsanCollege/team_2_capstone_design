@@ -11,6 +11,16 @@ import {
 } from "lucide-react";
 import { formatNpr, OrderDetail } from "@/lib/api";
 import { orderTerminalActionView, paymentView } from "@/lib/merchant-status";
+import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 
 export interface OrderQueueTableProps {
   orders: OrderDetail[];
@@ -33,6 +43,73 @@ function getRelativeTime(isoDate: string): string {
   }
 }
 
+function renderActionCell(
+  order: OrderDetail,
+  onQuickAdvance: (order: OrderDetail) => void
+) {
+  const statusUpper = order.status.toUpperCase();
+  const terminalAction = orderTerminalActionView(order);
+
+  if (statusUpper === "CONFIRMED" || statusUpper === "PAID") {
+    return (
+      <Button
+        type="button"
+        variant="primary"
+        size="sm"
+        onClick={() => onQuickAdvance(order)}
+      >
+        Pack
+      </Button>
+    );
+  }
+  if (statusUpper === "PROCESSING" || statusUpper === "PACKED") {
+    return (
+      <Button
+        type="button"
+        variant="primary"
+        size="sm"
+        onClick={() => onQuickAdvance(order)}
+      >
+        Ship
+      </Button>
+    );
+  }
+  if (statusUpper === "SHIPPED") {
+    return (
+      <Button
+        type="button"
+        variant="secondary"
+        size="sm"
+        onClick={() => onQuickAdvance(order)}
+      >
+        Deliver
+      </Button>
+    );
+  }
+  if (terminalAction.kind === "delivered") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--status-success-fg)]">
+        <CheckCircle2 className="size-3.5 shrink-0" aria-hidden="true" />
+        <span>{terminalAction.tableLabel}</span>
+      </span>
+    );
+  }
+  if (terminalAction.kind === "cancelled" || terminalAction.kind === "failed") {
+    return (
+      <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--status-error-fg)]">
+        <XCircle className="size-3.5 shrink-0" aria-hidden="true" />
+        <span>{terminalAction.tableLabel}</span>
+      </span>
+    );
+  }
+  return (
+    <span className="inline-flex items-center gap-1 text-xs font-medium text-[var(--status-warning-fg)]">
+      <Clock className="size-3.5 shrink-0" aria-hidden="true" />
+      <span>{terminalAction.tableLabel}</span>
+    </span>
+  );
+}
+
 export function OrderQueueTable({
   orders,
   onSelectOrder,
@@ -40,17 +117,17 @@ export function OrderQueueTable({
 }: OrderQueueTableProps) {
   if (orders.length === 0) {
     return (
-      <div className="rounded-lg border border-dashed border-[var(--border)] bg-[var(--card)] p-12 text-center space-y-3">
-        <div className="w-12 h-12 rounded-full bg-[var(--muted)] border border-[var(--border)] mx-auto flex items-center justify-center text-[var(--muted-foreground)]">
-          <ShoppingBag className="w-6 h-6" aria-hidden="true" />
+      <div className="rounded-xl border border-dashed border-[var(--border)] bg-[var(--surface)] p-12 text-center space-y-3">
+        <div className="size-12 rounded-full bg-[var(--canvas)] border border-[var(--border)] mx-auto flex items-center justify-center text-[var(--ink-2)]">
+          <ShoppingBag className="size-5" aria-hidden="true" />
         </div>
         <div className="space-y-1">
-          <h3 className="font-semibold text-[var(--foreground)] text-sm sm:text-base">
-            No Orders Found
+          <h3 className="font-semibold text-[var(--ink)] text-sm">
+            No orders found
           </h3>
-          <p className="text-xs text-[var(--muted-foreground)] max-w-sm mx-auto leading-relaxed">
-            No orders match this status tab yet. Share your store link on Instagram, TikTok, or
-            WhatsApp to get your first customer.
+          <p className="text-xs text-[var(--ink-2)] max-w-sm mx-auto leading-relaxed">
+            No orders match this status filter yet. Share your store link to start
+            receiving orders.
           </p>
         </div>
       </div>
@@ -58,164 +135,107 @@ export function OrderQueueTable({
   }
 
   return (
-    <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] overflow-hidden shadow-xs">
-      <div className="overflow-x-auto">
-        <table className="w-full text-left border-collapse text-xs">
-          <thead>
-            <tr className="border-b border-[var(--border)] bg-[var(--muted)]/50 text-[var(--muted-foreground)] font-mono text-[11px] uppercase tracking-wider">
-              <th className="py-3 px-4 font-medium">Order</th>
-              <th className="py-3 px-4 font-medium">Customer</th>
-              <th className="py-3 px-4 font-medium hidden sm:table-cell">Items</th>
-              <th className="py-3 px-4 font-medium">Total</th>
-              <th className="py-3 px-4 font-medium">Payment</th>
-              <th className="py-3 px-4 font-medium hidden md:table-cell">Age</th>
-              <th className="py-3 px-4 font-medium text-right">Action</th>
-            </tr>
-          </thead>
-          <tbody className="divide-y divide-[var(--border)]">
-            {orders.map((order) => {
-              const statusUpper = order.status.toUpperCase();
-              const isCOD = order.payment_method === "COD";
-              const payBadge = paymentView(order);
-              const terminalAction = orderTerminalActionView(order);
+    <Table>
+      <TableHeader>
+        <TableRow>
+          <TableHead>Order</TableHead>
+          <TableHead>Customer</TableHead>
+          <TableHead className="hidden sm:table-cell">Items</TableHead>
+          <TableHead className="text-right">Total</TableHead>
+          <TableHead>Payment</TableHead>
+          <TableHead className="hidden md:table-cell">Age</TableHead>
+          <TableHead className="text-right">Action</TableHead>
+        </TableRow>
+      </TableHeader>
+      <TableBody>
+        {orders.map((order) => {
+          const isCOD = order.payment_method === "COD";
+          const payBadge = paymentView(order);
 
-              const recipientName =
-                order.customer_name ||
-                order.shipping_address_snapshot?.recipient_name ||
-                order.customer_email ||
-                "Customer";
+          const recipientName =
+            order.customer_name ||
+            order.shipping_address_snapshot?.recipient_name ||
+            order.customer_email ||
+            "Customer";
+          const phone =
+            order.shipping_address_snapshot?.phone || order.customer_phone || "";
 
-              const totalItemsCount = order.items.reduce(
-                (sum, it) => sum + (it.quantity || 1),
-                0
-              );
+          const totalItemsCount = order.items.reduce(
+            (sum, it) => sum + (it.quantity || 1),
+            0
+          );
 
-              return (
-                <tr
-                  key={order.id}
-                  onClick={() => onSelectOrder(order)}
-                  className="hover:bg-[var(--muted)]/40 transition-colors cursor-pointer group"
-                >
-                  {/* Order Number */}
-                  <td className="py-3.5 px-4 font-mono font-bold text-[var(--foreground)] tabular-nums whitespace-nowrap">
-                    <span>{order.order_number}</span>
-                  </td>
+          const payIcon =
+            payBadge.tone === "success"
+              ? CreditCard
+              : payBadge.tone === "error"
+              ? XCircle
+              : isCOD
+              ? Banknote
+              : Clock;
 
-                  {/* Customer */}
-                  <td className="py-3.5 px-4">
-                    <div className="space-y-0.5">
-                      <p className="font-semibold text-[var(--foreground)] truncate max-w-[130px] sm:max-w-none">
-                        {recipientName}
-                      </p>
-                      <p className="text-[11px] font-mono text-[var(--muted-foreground)] truncate max-w-[130px] sm:max-w-none">
-                        {order.shipping_address_snapshot?.phone || order.customer_phone || ""}
-                      </p>
-                    </div>
-                  </td>
+          return (
+            <TableRow
+              key={order.id}
+              onClick={() => onSelectOrder(order)}
+              className="cursor-pointer group"
+            >
+              <TableCell className="font-semibold text-[var(--ink)] tabular-nums whitespace-nowrap">
+                {order.order_number}
+              </TableCell>
 
-                  {/* Items */}
-                  <td className="py-3.5 px-4 hidden sm:table-cell">
-                    <div className="space-y-0.5">
-                      <p className="font-medium text-[var(--foreground)] truncate max-w-[180px]">
-                        {order.items[0]?.product_name_snapshot || "Items"}
-                      </p>
-                      <p className="text-[11px] font-mono text-[var(--muted-foreground)]">
-                        {totalItemsCount} {totalItemsCount === 1 ? "unit" : "units"}
-                        {order.items.length > 1 && ` (+${order.items.length - 1} more)`}
-                      </p>
-                    </div>
-                  </td>
+              <TableCell>
+                <div className="space-y-0.5">
+                  <p className="font-medium text-[var(--ink)] truncate max-w-[130px] sm:max-w-[200px]">
+                    {recipientName}
+                  </p>
+                  {phone && (
+                    <p className="text-xs text-[var(--ink-2)] tabular-nums truncate max-w-[130px] sm:max-w-[200px]">
+                      {phone}
+                    </p>
+                  )}
+                </div>
+              </TableCell>
 
-                  {/* Total Amount */}
-                  <td className="py-3.5 px-4 font-mono font-bold text-[var(--foreground)] tabular-nums whitespace-nowrap">
-                    {formatNpr(order.total_minor)}
-                  </td>
+              <TableCell className="hidden sm:table-cell">
+                <div className="space-y-0.5">
+                  <p className="font-medium text-[var(--ink)] truncate max-w-[180px]">
+                    {order.items[0]?.product_name_snapshot || "Items"}
+                  </p>
+                  <p className="text-xs text-[var(--ink-2)] tabular-nums">
+                    {totalItemsCount} {totalItemsCount === 1 ? "unit" : "units"}
+                    {order.items.length > 1 && ` (+${order.items.length - 1} more)`}
+                  </p>
+                </div>
+              </TableCell>
 
-                  {/* Payment Badge */}
-                  <td className="py-3.5 px-4 whitespace-nowrap">
-                    {payBadge.tone === "success" ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-emerald-50 text-emerald-700 dark:bg-emerald-950/40 dark:text-emerald-400 border border-emerald-200 dark:border-emerald-800 text-[10px] font-mono font-medium">
-                        <CreditCard className="w-2.5 h-2.5" />
-                        <span>{payBadge.label}</span>
-                      </span>
-                    ) : payBadge.tone === "error" ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-red-50 text-red-700 dark:bg-red-950/40 dark:text-red-400 border border-red-200 dark:border-red-800 text-[10px] font-mono font-medium">
-                        <XCircle className="w-2.5 h-2.5" />
-                        <span>{payBadge.label}</span>
-                      </span>
-                    ) : isCOD ? (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[10px] font-mono font-medium">
-                        <Banknote className="w-2.5 h-2.5" />
-                        <span>{payBadge.label}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 px-2 py-0.5 rounded-full bg-amber-50 text-amber-700 dark:bg-amber-950/40 dark:text-amber-400 border border-amber-200 dark:border-amber-800 text-[10px] font-mono font-medium">
-                        <Clock className="w-2.5 h-2.5" />
-                        <span>{payBadge.label}</span>
-                      </span>
-                    )}
-                  </td>
+              <TableCell className="text-right font-semibold text-[var(--ink)] tabular-nums whitespace-nowrap">
+                {formatNpr(order.total_minor)}
+              </TableCell>
 
-                  {/* Order Age */}
-                  <td className="py-3.5 px-4 hidden md:table-cell font-mono text-[11px] text-[var(--muted-foreground)] whitespace-nowrap">
-                    <span className="inline-flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-[var(--muted-foreground)]" />
-                      {getRelativeTime(order.created_at)}
-                    </span>
-                  </td>
+              <TableCell className="whitespace-nowrap">
+                <Chip tone={payBadge.tone} icon={payIcon}>
+                  {payBadge.label}
+                </Chip>
+              </TableCell>
 
-                  {/* Next Action Button */}
-                  <td
-                    className="py-3.5 px-4 text-right whitespace-nowrap"
-                    onClick={(e) => e.stopPropagation()}
-                  >
-                    {statusUpper === "CONFIRMED" || statusUpper === "PAID" ? (
-                      <button
-                        type="button"
-                        onClick={() => onQuickAdvance(order)}
-                        className="px-2.5 py-1.5 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-mono text-[11px] font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
-                      >
-                        Pack
-                      </button>
-                    ) : statusUpper === "PROCESSING" || statusUpper === "PACKED" ? (
-                      <button
-                        type="button"
-                        onClick={() => onQuickAdvance(order)}
-                        className="px-2.5 py-1.5 rounded-md bg-blue-600 text-white font-mono text-[11px] font-semibold hover:bg-blue-700 transition-colors cursor-pointer shadow-xs"
-                      >
-                        Ship
-                      </button>
-                    ) : statusUpper === "SHIPPED" ? (
-                      <button
-                        type="button"
-                        onClick={() => onQuickAdvance(order)}
-                        className="px-2.5 py-1.5 rounded-md bg-emerald-600 text-white font-mono text-[11px] font-semibold hover:bg-emerald-700 transition-colors cursor-pointer shadow-xs"
-                      >
-                        Deliver
-                      </button>
-                    ) : terminalAction.kind === "delivered" ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-emerald-600 dark:text-emerald-400 font-medium">
-                        <CheckCircle2 className="w-3.5 h-3.5" />
-                        <span>{terminalAction.tableLabel}</span>
-                      </span>
-                    ) : terminalAction.kind === "cancelled" || terminalAction.kind === "failed" ? (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-red-600 dark:text-red-400 font-medium">
-                        <XCircle className="w-3.5 h-3.5" />
-                        <span>{terminalAction.tableLabel}</span>
-                      </span>
-                    ) : (
-                      <span className="inline-flex items-center gap-1 text-[11px] font-mono text-amber-600 dark:text-amber-400 font-medium">
-                        <Clock className="w-3.5 h-3.5" />
-                        <span>{terminalAction.tableLabel}</span>
-                      </span>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </tbody>
-        </table>
-      </div>
-    </div>
+              <TableCell className="hidden md:table-cell text-xs text-[var(--ink-2)] tabular-nums whitespace-nowrap">
+                <span className="inline-flex items-center gap-1">
+                  <Clock className="size-3.5 text-[var(--ink-2)]" aria-hidden="true" />
+                  {getRelativeTime(order.created_at)}
+                </span>
+              </TableCell>
+
+              <TableCell
+                className="text-right whitespace-nowrap"
+                onClick={(e) => e.stopPropagation()}
+              >
+                {renderActionCell(order, onQuickAdvance)}
+              </TableCell>
+            </TableRow>
+          );
+        })}
+      </TableBody>
+    </Table>
   );
 }

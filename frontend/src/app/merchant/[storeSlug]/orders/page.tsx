@@ -292,29 +292,29 @@ function MerchantOrdersContent() {
       {/* Workspace Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-[var(--foreground)]">
-            Orders Fulfillment
+          <h1 className="text-xl sm:text-2xl font-semibold tracking-tight text-[var(--ink)]">
+            Orders
           </h1>
-          <p className="text-xs text-[var(--muted-foreground)] font-mono">
+          <p className="text-[13px] text-[var(--ink-2)]">
             Manage customer orders, packing workflows, and delivery confirmation
           </p>
         </div>
 
         {/* Search Input */}
         <form onSubmit={handleSearchSubmit} className="relative w-full sm:w-64">
-          <Search className="w-3.5 h-3.5 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--muted-foreground)]" />
+          <Search className="size-4 absolute left-3 top-1/2 -translate-y-1/2 text-[var(--ink-2)]" aria-hidden="true" />
           <input
             type="search"
             inputMode="search"
             placeholder="Search order #, phone..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full pl-8 pr-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--card)] text-xs font-mono text-[var(--foreground)] placeholder:text-[var(--muted-foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+            className="w-full h-10 pl-9 pr-3 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[13px] text-[var(--ink)] placeholder:text-[var(--ink-2)] focus:outline-none focus:ring-1 focus:ring-[var(--ink)]"
           />
         </form>
       </div>
 
-      {/* Linear Status Tabs (DESIGN.md §4c) */}
+      {/* Linear Status Tabs */}
       <div className="border-b border-[var(--border)] flex items-center gap-1 sm:gap-2 overflow-x-auto pb-px">
         {tabs.map((tab) => {
           const isActive = activeTab === tab.id;
@@ -323,18 +323,18 @@ function MerchantOrdersContent() {
               key={tab.id}
               type="button"
               onClick={() => { setActiveTab(tab.id); setIsLoading(true); }}
-              className={`px-3 py-2 text-xs font-mono font-medium rounded-t-md transition-colors whitespace-nowrap flex items-center gap-1.5 cursor-pointer border-b-2 -mb-px ${
+              className={`min-h-10 px-3 py-2 text-[13px] font-medium rounded-t-lg transition-colors whitespace-nowrap flex items-center gap-2 cursor-pointer border-b-2 -mb-px ${
                 isActive
-                  ? "border-[var(--primary)] text-[var(--foreground)] font-bold bg-[var(--muted)]/40"
-                  : "border-transparent text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
+                  ? "border-[var(--ink)] text-[var(--ink)] font-semibold bg-[var(--nav-active)]/60"
+                  : "border-transparent text-[var(--ink-2)] hover:text-[var(--ink)]"
               }`}
             >
               <span>{tab.label}</span>
               <span
-                className={`px-1.5 py-0.2 rounded-full text-[10px] tabular-nums ${
+                className={`inline-flex min-w-5 items-center justify-center px-1.5 py-0.5 rounded-full text-xs tabular-nums ${
                   isActive
-                    ? "bg-[var(--primary)] text-[var(--primary-foreground)]"
-                    : "bg-[var(--muted)] text-[var(--muted-foreground)]"
+                    ? "bg-[var(--ink)] text-[var(--primary-foreground)]"
+                    : "border border-[var(--border)] bg-[var(--surface)] text-[var(--ink-2)]"
                 }`}
               >
                 {tab.count}
@@ -346,19 +346,19 @@ function MerchantOrdersContent() {
 
       {/* Orders Table */}
       {error && (
-        <div className="p-3 rounded-lg border border-red-500/30 bg-red-500/10 text-xs text-red-700 dark:text-red-300 flex items-center justify-between gap-3">
+        <div className="p-3 rounded-xl border border-[var(--status-error-border)] bg-[var(--status-error-bg)] text-xs text-[var(--status-error-fg)] flex items-center justify-between gap-3">
           <span>{error}</span>
           <button
             type="button"
             onClick={() => loadOrders(activeTab, searchQuery)}
-            className="px-2.5 py-1 rounded border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium cursor-pointer"
+            className="px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] font-medium cursor-pointer"
           >
             Retry
           </button>
         </div>
       )}
       {isLoading ? (
-        <div className="p-12 text-center text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="p-12 text-center text-xs text-[var(--ink-2)]">
           Loading order queue...
         </div>
       ) : (
@@ -378,21 +378,21 @@ function MerchantOrdersContent() {
         storeSlug={storeSlug}
       />
 
-      {/* 5-Second Non-Blocking Undo Bar (DESIGN.md §4c) */}
+      {/* 5-Second Non-Blocking Undo Bar */}
       {pendingUndo && (
         <div className="fixed bottom-6 right-6 z-50 animate-in slide-in-from-bottom duration-200">
-          <div className="p-3.5 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] shadow-xl flex items-center gap-3 text-xs font-mono">
+          <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] flex items-center gap-3 text-xs">
             <span>
-              Order <span className="font-bold">{pendingUndo.orderNumber}</span> marked as{" "}
-              <span className="font-bold uppercase">{pendingUndo.nextStatus}</span>
+              Order <span className="font-semibold">{pendingUndo.orderNumber}</span> marked as{" "}
+              <span className="font-semibold uppercase">{pendingUndo.nextStatus}</span>
             </span>
 
             <button
               type="button"
               onClick={handleExecuteUndo}
-              className="inline-flex items-center gap-1 px-2.5 py-1 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-semibold hover:opacity-90 transition-opacity cursor-pointer shadow-xs"
+              className="inline-flex items-center gap-1 px-3 py-1.5 rounded-lg bg-[var(--primary)] text-[var(--primary-foreground)] font-medium hover:bg-[var(--primary-hover)] transition-colors cursor-pointer"
             >
-              <RotateCcw className="w-3 h-3" />
+              <RotateCcw className="size-3.5" aria-hidden="true" />
               <span>Undo (5s)</span>
             </button>
           </div>
@@ -406,7 +406,7 @@ export default function MerchantOrdersPage() {
   return (
     <Suspense
       fallback={
-        <div className="p-12 text-center text-xs font-mono text-[var(--muted-foreground)]">
+        <div className="p-12 text-center text-xs text-[var(--ink-2)]">
           Loading order queue...
         </div>
       }

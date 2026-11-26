@@ -22,6 +22,8 @@ import {
 import { PackingSlipModal } from "./PackingSlipModal";
 import { formatNpr, OrderDetail } from "@/lib/api";
 import { orderTerminalActionView, paymentView } from "@/lib/merchant-status";
+import { Button } from "@/components/ui/button";
+import { Chip } from "@/components/ui/chip";
 
 export interface OrderDetailSheetProps {
   order: OrderDetail | null;
@@ -72,7 +74,6 @@ export function OrderDetailSheet({
     setTimeout(() => setCopiedPhone(false), 1500);
   };
 
-  // Determine next action
   let nextStatus: string | null = null;
   let actionLabel = "";
 
@@ -99,37 +100,38 @@ export function OrderDetailSheet({
   return (
     <Dialog.Root open={open} onOpenChange={onOpenChange}>
       <Dialog.Portal>
-        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 backdrop-blur-xs transition-opacity duration-200" />
-        <Dialog.Content className="fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-50 w-full sm:max-w-lg border-t sm:border-t-0 sm:border-l border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] flex flex-col justify-between max-h-[90dvh] sm:max-h-dvh overflow-hidden outline-none rounded-t-xl sm:rounded-none animate-in slide-in-from-bottom sm:slide-in-from-right duration-200 shadow-2xl">
+        <Dialog.Overlay className="fixed inset-0 z-50 bg-black/40 transition-opacity duration-200" />
+        <Dialog.Content className="console fixed inset-x-0 bottom-0 sm:inset-y-0 sm:right-0 sm:left-auto z-50 w-full sm:max-w-lg border-t sm:border-t-0 sm:border-l border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] flex flex-col justify-between max-h-[90dvh] sm:max-h-dvh overflow-hidden outline-none rounded-t-xl sm:rounded-none animate-in slide-in-from-bottom sm:slide-in-from-right duration-200">
           {/* Header */}
           <div className="p-4 sm:p-5 border-b border-[var(--border)] flex items-center justify-between">
             <div className="flex items-center gap-2.5">
-              <Dialog.Title className="font-mono text-base font-bold text-[var(--foreground)] tabular-nums">
+              <Dialog.Title className="text-base font-semibold text-[var(--ink)] tabular-nums">
                 {order.order_number}
               </Dialog.Title>
-              <span className="px-2 py-0.5 rounded-full border border-[var(--border)] bg-[var(--muted)] text-[11px] font-mono font-semibold uppercase">
+              <span className="px-2 py-0.5 rounded-full border border-[var(--border)] bg-[var(--canvas)] text-xs font-medium text-[var(--ink-2)] uppercase">
                 {order.status}
               </span>
             </div>
 
             <div className="flex items-center gap-2">
-              <button
+              <Button
                 type="button"
+                variant="secondary"
+                size="sm"
                 onClick={() => setSlipOpen(true)}
-                className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-md border border-[var(--border)] bg-[var(--secondary)] hover:bg-[var(--muted)] text-xs font-mono font-medium text-[var(--foreground)] transition-colors cursor-pointer"
                 title="Print Courier Packing Slip"
               >
-                <Printer className="w-3.5 h-3.5 text-[var(--foreground)]" />
+                <Printer className="size-3.5" aria-hidden="true" />
                 <span className="hidden sm:inline">Print Slip</span>
-              </button>
+              </Button>
 
               <button
                 type="button"
                 onClick={() => onOpenChange(false)}
                 aria-label="Close details"
-                className="p-1.5 rounded-md border border-[var(--border)] text-[var(--muted-foreground)] hover:text-[var(--foreground)] hover:bg-[var(--muted)] transition-colors cursor-pointer"
+                className="min-h-9 min-w-9 inline-flex items-center justify-center rounded-lg border border-[var(--border)] text-[var(--ink-2)] hover:text-[var(--ink)] hover:bg-[var(--canvas)] transition-colors cursor-pointer"
               >
-                <X className="w-4 h-4" aria-hidden="true" />
+                <X className="size-4" aria-hidden="true" />
               </button>
             </div>
           </div>
@@ -142,52 +144,40 @@ export function OrderDetailSheet({
           <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
             {/* Customer Contact & Quick Actions */}
             <section className="space-y-3">
-              <h4 className="font-semibold text-xs text-[var(--muted-foreground)] uppercase tracking-wider font-mono flex items-center gap-1.5">
-                <User className="w-3.5 h-3.5" />
+              <h4 className="font-semibold text-xs text-[var(--ink-2)] uppercase tracking-wider flex items-center gap-1.5">
+                <User className="size-3.5" aria-hidden="true" />
                 <span>Customer Contact</span>
               </h4>
 
-              <div className="p-4 rounded-lg border border-[var(--border)] bg-[var(--muted)]/40 space-y-3">
+              <div className="p-4 rounded-xl border border-[var(--border)] bg-[var(--canvas)] space-y-3">
                 <div className="flex items-start justify-between gap-2">
-                  <div>
-                    <p className="font-bold text-sm text-[var(--foreground)]">
+                  <div className="space-y-0.5">
+                    <p className="font-semibold text-sm text-[var(--ink)]">
                       {order.shipping_address_snapshot?.recipient_name ||
                         order.customer_name ||
                         "Customer"}
                     </p>
-                    <p className="text-xs font-mono text-[var(--muted-foreground)]">
+                    <p className="text-xs text-[var(--ink-2)] tabular-nums">
                       {customerPhone}
                     </p>
                     {order.customer_email && (
-                      <p className="text-[11px] font-mono text-[var(--muted-foreground)]">
+                      <p className="text-xs text-[var(--ink-2)]">
                         {order.customer_email}
                       </p>
                     )}
                   </div>
 
-                  <span
-                    className={`px-2 py-0.5 rounded-md text-[10px] font-mono font-bold border ${
-                      payBadge.tone === "success"
-                        ? "bg-emerald-50 text-emerald-700 border-emerald-200 dark:bg-emerald-950/40 dark:text-emerald-400 dark:border-emerald-800"
-                        : payBadge.tone === "error"
-                        ? "bg-red-50 text-red-700 border-red-200 dark:bg-red-950/40 dark:text-red-400 dark:border-red-800"
-                        : payBadge.tone === "warning"
-                        ? "bg-amber-50 text-amber-700 border-amber-200 dark:bg-amber-950/40 dark:text-amber-400 dark:border-amber-800"
-                        : "bg-zinc-100 text-zinc-700 border-zinc-200 dark:bg-zinc-800 dark:text-zinc-300 dark:border-zinc-700"
-                    }`}
-                  >
-                    {payBadge.label}
-                  </span>
+                  <Chip tone={payBadge.tone}>{payBadge.label}</Chip>
                 </div>
 
-                {/* Direct Action Chips: Call, WhatsApp, Copy */}
-                <div className="flex flex-wrap items-center gap-2 pt-1 border-t border-[var(--border)]/60">
+                {/* Direct Action Links */}
+                <div className="flex flex-wrap items-center gap-2 pt-2 border-t border-[var(--border)]">
                   {customerPhone && (
                     <a
                       href={`tel:${customerPhone}`}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--card)] text-xs font-mono font-medium hover:bg-[var(--muted)] transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--ink)] hover:bg-[var(--nav-active)] transition-colors"
                     >
-                      <Phone className="w-3.5 h-3.5 text-blue-600" />
+                      <Phone className="size-3.5 text-[var(--ink-2)]" aria-hidden="true" />
                       <span>Call</span>
                     </a>
                   )}
@@ -197,11 +187,11 @@ export function OrderDetailSheet({
                       href={whatsappUrl}
                       target="_blank"
                       rel="noopener noreferrer"
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--card)] text-xs font-mono font-medium text-emerald-600 hover:bg-[var(--muted)] transition-colors"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--ink)] hover:bg-[var(--nav-active)] transition-colors"
                     >
-                      <MessageCircle className="w-3.5 h-3.5" />
+                      <MessageCircle className="size-3.5 text-[var(--status-success-fg)]" aria-hidden="true" />
                       <span>WhatsApp</span>
-                      <ExternalLink className="w-3 h-3 opacity-60" />
+                      <ExternalLink className="size-3 text-[var(--ink-2)]" aria-hidden="true" />
                     </a>
                   )}
 
@@ -209,16 +199,16 @@ export function OrderDetailSheet({
                     <button
                       type="button"
                       onClick={handleCopyPhone}
-                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-md border border-[var(--border)] bg-[var(--card)] text-xs font-mono font-medium hover:bg-[var(--muted)] transition-colors cursor-pointer"
+                      className="inline-flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs font-medium text-[var(--ink)] hover:bg-[var(--nav-active)] transition-colors cursor-pointer"
                     >
                       {copiedPhone ? (
                         <>
-                          <Check className="w-3.5 h-3.5 text-emerald-600" />
-                          <span>Copied!</span>
+                          <Check className="size-3.5 text-[var(--status-success-fg)]" aria-hidden="true" />
+                          <span>Copied</span>
                         </>
                       ) : (
                         <>
-                          <Copy className="w-3.5 h-3.5 text-[var(--muted-foreground)]" />
+                          <Copy className="size-3.5 text-[var(--ink-2)]" aria-hidden="true" />
                           <span>Copy</span>
                         </>
                       )}
@@ -230,24 +220,24 @@ export function OrderDetailSheet({
 
             {/* Delivery Address Details */}
             <section className="space-y-3">
-              <h4 className="font-semibold text-xs text-[var(--muted-foreground)] uppercase tracking-wider font-mono flex items-center gap-1.5">
-                <MapPin className="w-3.5 h-3.5" />
+              <h4 className="font-semibold text-xs text-[var(--ink-2)] uppercase tracking-wider flex items-center gap-1.5">
+                <MapPin className="size-3.5" aria-hidden="true" />
                 <span>Shipping Address</span>
               </h4>
 
-              <div className="p-3.5 rounded-lg border border-[var(--border)] bg-[var(--card)] text-xs font-mono space-y-1 text-[var(--foreground)]">
+              <div className="p-3.5 rounded-xl border border-[var(--border)] bg-[var(--surface)] text-xs space-y-1 text-[var(--ink)]">
                 <p className="font-semibold">
                   Ward {order.shipping_address_snapshot?.ward},{" "}
                   {order.shipping_address_snapshot?.municipality}
                 </p>
-                <p className="text-[var(--muted-foreground)]">
+                <p className="text-[var(--ink-2)]">
                   {order.shipping_address_snapshot?.district},{" "}
                   {order.shipping_address_snapshot?.province}
                 </p>
                 {order.shipping_address_snapshot?.street_landmark && (
-                  <p className="text-[11px] text-[var(--muted-foreground)] pt-0.5">
+                  <p className="text-xs text-[var(--ink-2)] pt-0.5">
                     Landmark:{" "}
-                    <span className="text-[var(--foreground)] font-medium">
+                    <span className="text-[var(--ink)] font-medium">
                       {order.shipping_address_snapshot.street_landmark}
                     </span>
                   </p>
@@ -257,53 +247,53 @@ export function OrderDetailSheet({
 
             {/* Line Items Breakdown */}
             <section className="space-y-3">
-              <h4 className="font-semibold text-xs text-[var(--muted-foreground)] uppercase tracking-wider font-mono flex items-center gap-1.5">
-                <Package className="w-3.5 h-3.5" />
+              <h4 className="font-semibold text-xs text-[var(--ink-2)] uppercase tracking-wider flex items-center gap-1.5">
+                <Package className="size-3.5" aria-hidden="true" />
                 <span>Items ({order.items.length})</span>
               </h4>
 
-              <div className="rounded-lg border border-[var(--border)] bg-[var(--card)] divide-y divide-[var(--border)] overflow-hidden">
+              <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] divide-y divide-[var(--border)] overflow-hidden">
                 {order.items.map((it) => (
                   <div
                     key={it.id}
-                    className="p-3 flex items-center justify-between text-xs font-mono"
+                    className="p-3 flex items-center justify-between text-xs"
                   >
                     <div className="space-y-0.5 min-w-0 pr-2">
-                      <p className="font-bold text-[var(--foreground)] truncate">
+                      <p className="font-semibold text-[var(--ink)] truncate">
                         {it.product_name_snapshot}
                       </p>
-                      <p className="text-[11px] text-[var(--muted-foreground)]">
+                      <p className="text-xs text-[var(--ink-2)] tabular-nums">
                         {it.variant_label_snapshot} × {it.quantity}
                       </p>
                     </div>
 
-                    <span className="font-bold text-[var(--foreground)] tabular-nums whitespace-nowrap">
+                    <span className="font-semibold text-[var(--ink)] tabular-nums whitespace-nowrap">
                       {formatNpr(it.line_total_minor)}
                     </span>
                   </div>
                 ))}
 
                 {/* Subtotal & Delivery Totals */}
-                <div className="p-3 bg-[var(--muted)]/40 text-xs font-mono space-y-1.5 text-[var(--muted-foreground)]">
+                <div className="p-3 bg-[var(--canvas)] text-xs space-y-1.5 text-[var(--ink-2)]">
                   <div className="flex justify-between">
                     <span>Subtotal</span>
-                    <span className="text-[var(--foreground)] tabular-nums">
+                    <span className="text-[var(--ink)] tabular-nums">
                       {formatNpr(order.subtotal_minor)}
                     </span>
                   </div>
                   {order.discount_minor > 0 && (
-                    <div className="flex justify-between text-emerald-600 dark:text-emerald-400 font-medium">
+                    <div className="flex justify-between text-[var(--status-success-fg)] font-medium">
                       <span>Discount</span>
                       <span className="tabular-nums">-{formatNpr(order.discount_minor)}</span>
                     </div>
                   )}
                   <div className="flex justify-between">
                     <span>Delivery</span>
-                    <span className="text-[var(--foreground)] tabular-nums">
-                      {order.shipping_minor === 0 ? "FREE" : formatNpr(order.shipping_minor)}
+                    <span className="text-[var(--ink)] tabular-nums">
+                      {order.shipping_minor === 0 ? "Free" : formatNpr(order.shipping_minor)}
                     </span>
                   </div>
-                  <div className="flex justify-between pt-1 border-t border-[var(--border)] font-bold text-sm text-[var(--foreground)]">
+                  <div className="flex justify-between pt-1.5 border-t border-[var(--border)] font-semibold text-sm text-[var(--ink)]">
                     <span>Total Amount</span>
                     <span className="tabular-nums">{formatNpr(order.total_minor)}</span>
                   </div>
@@ -311,14 +301,14 @@ export function OrderDetailSheet({
               </div>
             </section>
 
-            {/* Courier Tracking Note Input (When Packing or Shipping) */}
+            {/* Courier Tracking Note Input */}
             {(statusUpper === "PROCESSING" || statusUpper === "PACKED") && (
               <section className="space-y-2">
                 <label
                   htmlFor="courier-note"
-                  className="font-mono text-xs font-medium text-[var(--foreground)] flex items-center gap-1.5"
+                  className="text-xs font-medium text-[var(--ink)] flex items-center gap-1.5"
                 >
-                  <Truck className="w-3.5 h-3.5 text-blue-600" />
+                  <Truck className="size-3.5 text-[var(--ink-2)]" aria-hidden="true" />
                   <span>Courier / Tracking Reference (Optional)</span>
                 </label>
                 <input
@@ -327,7 +317,7 @@ export function OrderDetailSheet({
                   placeholder="e.g. Pathao Rider 9801999888 / Tracking #PTH-402"
                   value={trackingNote}
                   onChange={(e) => setTrackingNote(e.target.value)}
-                  className="w-full px-3 py-2 rounded-md border border-[var(--border)] bg-[var(--card)] text-xs font-mono text-[var(--foreground)] focus:outline-none focus:ring-1 focus:ring-[var(--primary)]"
+                  className="w-full px-3 py-2 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-xs text-[var(--ink)] placeholder:text-[var(--ink-2)] focus:outline-none focus:ring-1 focus:ring-[var(--ink)]"
                 />
               </section>
             )}
@@ -335,8 +325,8 @@ export function OrderDetailSheet({
             {/* Event Timeline History */}
             {order.events && order.events.length > 0 && (
               <section className="space-y-3">
-                <h4 className="font-semibold text-xs text-[var(--muted-foreground)] uppercase tracking-wider font-mono flex items-center gap-1.5">
-                  <Clock className="w-3.5 h-3.5" />
+                <h4 className="font-semibold text-xs text-[var(--ink-2)] uppercase tracking-wider flex items-center gap-1.5">
+                  <Clock className="size-3.5" aria-hidden="true" />
                   <span>Lifecycle Timeline</span>
                 </h4>
 
@@ -344,15 +334,15 @@ export function OrderDetailSheet({
                   {order.events.map((ev) => (
                     <div
                       key={ev.id}
-                      className="p-2.5 rounded-md border border-[var(--border)] bg-[var(--muted)]/20 text-xs font-mono flex items-start gap-2.5"
+                      className="p-3 rounded-lg border border-[var(--border)] bg-[var(--canvas)] text-xs flex items-start gap-2.5"
                     >
-                      <div className="w-2 h-2 rounded-full bg-[var(--primary)] mt-1 shrink-0" />
+                      <div className="size-2 rounded-full bg-[var(--ink)] mt-1.5 shrink-0" />
                       <div className="flex-1 min-w-0">
                         <div className="flex items-center justify-between gap-2">
-                          <span className="font-bold text-[var(--foreground)] uppercase text-[11px]">
+                          <span className="font-semibold text-[var(--ink)] uppercase text-xs">
                             {ev.to_status}
                           </span>
-                          <span className="text-[10px] text-[var(--muted-foreground)] tabular-nums">
+                          <span className="text-xs text-[var(--ink-2)] tabular-nums">
                             {new Date(ev.created_at).toLocaleTimeString([], {
                               hour: "2-digit",
                               minute: "2-digit",
@@ -360,7 +350,7 @@ export function OrderDetailSheet({
                           </span>
                         </div>
                         {ev.note && (
-                          <p className="text-[11px] text-[var(--muted-foreground)] mt-0.5">
+                          <p className="text-xs text-[var(--ink-2)] mt-0.5">
                             {ev.note}
                           </p>
                         )}
@@ -373,29 +363,30 @@ export function OrderDetailSheet({
           </div>
 
           {/* Sticky Next Action Footer */}
-          <div className="p-4 sm:p-5 border-t border-[var(--border)] bg-[var(--card)]">
+          <div className="p-4 sm:p-5 border-t border-[var(--border)] bg-[var(--surface)]">
             {nextStatus ? (
-              <button
+              <Button
                 type="button"
+                variant="primary"
+                className="w-full h-11 text-xs sm:text-sm"
                 onClick={handleExecuteNextAction}
-                className="w-full h-11 rounded-md bg-[var(--primary)] text-[var(--primary-foreground)] font-mono text-xs sm:text-sm font-semibold tracking-wide hover:opacity-90 active:scale-[0.99] transition-all flex items-center justify-center gap-2 shadow-sm cursor-pointer"
               >
                 <span>{actionLabel}</span>
-                <ArrowRight className="w-4 h-4" aria-hidden="true" />
-              </button>
+                <ArrowRight className="size-4" aria-hidden="true" />
+              </Button>
             ) : terminalAction.kind === "delivered" ? (
-              <div className="w-full py-2.5 rounded-md border border-emerald-200 bg-emerald-50 dark:bg-emerald-950/40 dark:border-emerald-800 text-emerald-700 dark:text-emerald-400 font-mono text-xs font-semibold text-center flex items-center justify-center gap-1.5">
-                <CheckCircle2 className="w-4 h-4" />
+              <div className="w-full py-2.5 px-3 rounded-lg border border-[var(--status-success-border)] bg-[var(--status-success-bg)] text-[var(--status-success-fg)] text-xs font-semibold text-center flex items-center justify-center gap-1.5">
+                <CheckCircle2 className="size-4 shrink-0" aria-hidden="true" />
                 <span>{terminalAction.sheetLabel}</span>
               </div>
             ) : terminalAction.kind === "cancelled" || terminalAction.kind === "failed" ? (
-              <div className="w-full py-2.5 rounded-md border border-red-200 bg-red-50 dark:bg-red-950/40 dark:border-red-800 text-red-700 dark:text-red-400 font-mono text-xs font-semibold text-center flex items-center justify-center gap-1.5">
-                <XCircle className="w-4 h-4" />
+              <div className="w-full py-2.5 px-3 rounded-lg border border-[var(--status-error-border)] bg-[var(--status-error-bg)] text-[var(--status-error-fg)] text-xs font-semibold text-center flex items-center justify-center gap-1.5">
+                <XCircle className="size-4 shrink-0" aria-hidden="true" />
                 <span>{terminalAction.sheetLabel}</span>
               </div>
             ) : (
-              <div className="w-full py-2.5 rounded-md border border-amber-200 bg-amber-50 dark:bg-amber-950/40 dark:border-amber-800 text-amber-700 dark:text-amber-400 font-mono text-xs font-semibold text-center flex items-center justify-center gap-1.5">
-                <Clock className="w-4 h-4" />
+              <div className="w-full py-2.5 px-3 rounded-lg border border-[var(--status-warning-border)] bg-[var(--status-warning-bg)] text-[var(--status-warning-fg)] text-xs font-semibold text-center flex items-center justify-center gap-1.5">
+                <Clock className="size-4 shrink-0" aria-hidden="true" />
                 <span>{terminalAction.sheetLabel}</span>
               </div>
             )}
@@ -403,7 +394,6 @@ export function OrderDetailSheet({
         </Dialog.Content>
       </Dialog.Portal>
 
-      {/* 1-Click Nepali Courier Packing Slip (Shopify Shipping) */}
       <PackingSlipModal
         storeName={storeName || "ShopCraft Store"}
         storeSlug={storeSlug || "store"}
