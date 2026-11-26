@@ -1,8 +1,10 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
+import { motion, useReducedMotion } from "framer-motion";
+import { ArrowRight } from "lucide-react";
 import { STOREFRONT_THEMES } from "@/lib/storefront-themes";
 import { PlatformReveal } from "@/components/platform/PlatformReveal";
 
@@ -11,14 +13,18 @@ interface ThemeTemplateStudioProps {
   slug?: string;
 }
 
+const EASE_APPLE: [number, number, number, number] = [0.16, 1, 0.3, 1];
+
 export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps) {
+  const [activeIdx, setActiveIdx] = useState(0);
+  const reduceMotion = useReducedMotion();
   const trimmedName = storeName.trim();
   const displayStoreName = trimmedName || "Your Store";
 
   return (
     <section
       id="looks"
-      className="py-20 sm:py-32 bg-paper border-t border-line scroll-mt-16 overflow-x-clip"
+      className="relative z-20 -mt-7 rounded-t-[28px] pt-16 sm:pt-24 pb-20 sm:pb-32 bg-paper border-t border-line scroll-mt-16 overflow-x-clip"
     >
       <div className="max-w-[1180px] mx-auto px-4 sm:px-7">
         <PlatformReveal className="max-w-[820px] mx-auto text-center">
@@ -33,30 +39,45 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
           </p>
         </PlatformReveal>
 
-        {/* Mobile horizontal snap peek carousel; Desktop 4-col staggered grid */}
-        <div className="mt-10 sm:mt-16 flex overflow-x-auto snap-x snap-mandatory gap-4 px-4 -mx-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5 no-scrollbar pb-2 lg:pb-8">
+        {/* Mobile horizontal snap peek carousel; Desktop 4-col even grid */}
+        <div className="mt-10 sm:mt-16 flex overflow-x-auto snap-x snap-mandatory gap-4 px-4 -mx-4 sm:mx-0 sm:px-0 sm:grid sm:grid-cols-2 lg:grid-cols-4 sm:gap-5 sm:items-stretch no-scrollbar pb-2">
           {STOREFRONT_THEMES.map((theme, idx) => {
             const nextWizard = trimmedName
               ? `/merchant/new?theme=${encodeURIComponent(theme.id)}&name=${encodeURIComponent(trimmedName)}`
               : `/merchant/new?theme=${encodeURIComponent(theme.id)}`;
             const href = `/signup?next=${encodeURIComponent(nextWizard)}`;
             const isOutline = theme.preview.outlineCtaInShowcase;
+            const isActive = activeIdx === idx;
 
             return (
-              <PlatformReveal
+              <motion.div
                 key={theme.id}
-                delayMs={idx * 70}
-                className={`w-[74%] shrink-0 snap-start sm:w-auto flex flex-col ${
-                  theme.preview.staggeredInShowcase ? "lg:translate-y-7" : ""
-                }`}
+                initial={reduceMotion ? false : { opacity: 0, y: 18 }}
+                whileInView={{ opacity: 1, y: 0 }}
+                viewport={{ once: true, amount: 0.2 }}
+                transition={{
+                  duration: 0.48,
+                  delay: reduceMotion ? 0 : idx * 0.06,
+                  ease: EASE_APPLE,
+                }}
+                whileHover={
+                  reduceMotion
+                    ? undefined
+                    : { y: -6, transition: { type: "spring", stiffness: 380, damping: 28 } }
+                }
+                onMouseEnter={() => setActiveIdx(idx)}
+                onFocus={() => setActiveIdx(idx)}
+                className="w-[74%] shrink-0 snap-start sm:w-auto flex flex-col"
               >
                 <div
-                  className="group flex-1 p-5 border flex flex-col justify-between transition-transform duration-300 ease-out hover:-translate-y-1.5"
+                  data-look-card={theme.id}
+                  className={`group flex-1 rounded-[22px] p-5 border flex flex-col justify-between transition-shadow duration-300 ${
+                    isActive ? "ring-1 ring-accent/40 shadow-lg" : "ring-1 ring-transparent"
+                  }`}
                   style={{
                     backgroundColor: theme.tokens.canvas,
                     color: theme.tokens.ink,
                     borderColor: theme.tokens.borderSubtle,
-                    borderRadius: theme.radius.card,
                     fontFamily: theme.fontPairing.uiCssStack,
                   }}
                 >
@@ -80,10 +101,9 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
                     </div>
 
                     <div
-                      className="my-4 overflow-hidden aspect-[1/0.88]"
+                      className="my-4 rounded-[14px] overflow-hidden aspect-[1/0.88]"
                       style={{
                         backgroundColor: theme.preview.photoBackdropHex,
-                        borderRadius: theme.radius.control,
                       }}
                     >
                       <Image
@@ -92,7 +112,7 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
                         width={800}
                         height={800}
                         unoptimized
-                        className="w-full h-full object-cover block transition-transform duration-500 ease-out group-hover:scale-[1.04]"
+                        className="w-full h-full object-cover block transition-transform duration-500 ease-out group-hover:scale-[1.05]"
                       />
                     </div>
 
@@ -118,33 +138,42 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
 
                   <Link
                     href={href}
-                    className="mt-4 min-h-[44px] px-3 grid place-items-center text-[13px] font-semibold transition-all duration-150 hover:opacity-90 active:scale-[0.98] border"
+                    data-look-cta={theme.id}
+                    className="mt-5 min-h-[44px] px-4 rounded-full inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold border transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
                     style={
                       isOutline
                         ? {
                             backgroundColor: "transparent",
                             color: theme.tokens.ink,
                             borderColor: theme.tokens.ink,
-                            borderRadius: theme.radius.control,
                           }
                         : {
                             backgroundColor: theme.tokens.primary,
                             color: theme.tokens.primaryForeground,
                             borderColor: theme.tokens.primary,
-                            borderRadius: theme.radius.control,
                           }
                     }
                   >
-                    Use {theme.displayName}
+                    <span>Use {theme.displayName}</span>
+                    <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
                   </Link>
                 </div>
 
-                <div className="mt-4 text-center space-y-0.5">
+                <div className="mt-4 text-center space-y-1">
                   <p className="text-[15px] font-semibold text-ink">{theme.displayName}</p>
                   <p className="text-[13px] text-ink-2">{theme.bestForLabel}</p>
                   <p className="font-mono text-[11px] text-ink-3">{theme.fontPairing.label}</p>
+                  <div className="pt-1.5 h-2 flex items-center justify-center">
+                    {isActive && (
+                      <motion.span
+                        layoutId="active-look-bar"
+                        transition={{ type: "spring", stiffness: 380, damping: 32 }}
+                        className="block h-[2px] w-10 rounded-full bg-accent"
+                      />
+                    )}
+                  </div>
                 </div>
-              </PlatformReveal>
+              </motion.div>
             );
           })}
         </div>
