@@ -3,7 +3,7 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight, Pause, Play } from "lucide-react";
+import { ArrowRight } from "lucide-react";
 import { slugifyStoreName } from "@/components/platform/StoreNameForm";
 import { ThemeTemplateStudio } from "@/components/platform/ThemeTemplateStudio";
 
@@ -12,7 +12,6 @@ const HERO_SCENES = [
     src: "/images/platform/hero-patan-roaster.webp",
     alt: "Coffee roaster scooping roasted whole beans into an unbranded kraft pouch in Patan",
     phrase: "for coffee roasters",
-    label: "01 · Patan dispatch",
     focalClass: "object-[74%_24%]",
     motionClass: "platform-cinema-a",
   },
@@ -20,7 +19,6 @@ const HERO_SCENES = [
     src: "/images/platform/hero-studio-parcels.webp",
     alt: "Kathmandu ceramic maker wrapping a stoneware cup in kraft paper and cotton twine",
     phrase: "for studio parcels",
-    label: "02 · Studio counter",
     focalClass: "object-[72%_40%]",
     motionClass: "platform-cinema-b",
   },
@@ -28,7 +26,6 @@ const HERO_SCENES = [
     src: "/images/platform/hero-lalitpur-handloom.webp",
     alt: "Artisan straightening handwoven shawl fringes in a Lalitpur textile studio",
     phrase: "for handloom weaves",
-    label: "03 · Lalitpur craft",
     focalClass: "object-[72%_48%]",
     motionClass: "platform-cinema-c",
   },
@@ -37,14 +34,12 @@ const HERO_SCENES = [
 export function HomeInteractiveTop() {
   const [storeName, setStoreName] = useState("");
   const [activeCut, setActiveCut] = useState(0);
-  const [paused, setPaused] = useState(false);
   const parallaxRef = useRef<HTMLDivElement>(null);
 
   const resolvedSlug = slugifyStoreName(storeName);
   const currentScene = HERO_SCENES[activeCut] ?? HERO_SCENES[0];
 
   useEffect(() => {
-    if (paused) return;
     if (
       typeof window !== "undefined" &&
       window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
@@ -55,10 +50,10 @@ export function HomeInteractiveTop() {
       setActiveCut((prev) => (prev + 1) % HERO_SCENES.length);
     }, 5000);
     return () => window.clearInterval(timer);
-  }, [paused]);
+  }, []);
 
   const handleStageMove = (e: React.MouseEvent<HTMLDivElement>) => {
-    if (paused || !parallaxRef.current) return;
+    if (!parallaxRef.current) return;
     const rect = e.currentTarget.getBoundingClientRect();
     const nx = (e.clientX - rect.left) / rect.width - 0.5;
     const ny = (e.clientY - rect.top) / rect.height - 0.5;
@@ -83,9 +78,7 @@ export function HomeInteractiveTop() {
       {/* 1. Documentary Multi-Cut Hero */}
       <section
         aria-label="ShopCraft introduction"
-        className={`relative overflow-hidden platform-hero-cinema ${
-          paused ? "platform-hero-paused" : ""
-        }`}
+        className="relative overflow-hidden platform-hero-cinema"
       >
         <div
           onMouseMove={handleStageMove}
@@ -155,82 +148,40 @@ export function HomeInteractiveTop() {
               in minutes. Price in rupees, accept Khalti test mode or 98/97 Cash on Delivery, down to the ward.
             </p>
 
-            <div className="mt-8 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-3 max-w-[700px] w-full">
-                <form
-                  onSubmit={handleSubmit}
-                  className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 p-1.5 rounded-[20px] sm:rounded-full platform-hero-form transition-colors"
-                >
-                  <div className="flex items-center px-3.5 min-w-0 flex-1">
-                    <span className="font-mono text-[13px] platform-hero-muted select-none shrink-0">
-                      shopcraft.me/s/
-                    </span>
-                    <input
-                      id="hero-store-name"
-                      type="text"
-                      value={storeName}
-                      onChange={(e) => setStoreName(e.target.value)}
-                      placeholder="himalayan-roasters"
-                      aria-label="Store name"
-                      className="w-full min-h-[46px] bg-transparent font-mono text-[13.5px] text-white placeholder:opacity-45 focus:outline-none"
-                    />
-                  </div>
-                  <button
-                    type="submit"
-                    className="group min-h-[46px] px-6 rounded-[14px] sm:rounded-full platform-hero-btn-primary text-[14px] font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 transition-colors cursor-pointer"
-                  >
-                    <span>Create my store</span>
-                    <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
-                  </button>
-                </form>
-
-                <Link
-                  href="/s/himalayan-roasters"
-                  className="min-h-[48px] px-5 rounded-full platform-hero-btn-secondary text-[14px] font-medium inline-flex items-center justify-center whitespace-nowrap shrink-0 transition-colors"
-                >
-                  See live store →
-                </Link>
-              </div>
-
-              <div className="inline-flex items-center gap-3 self-start lg:self-auto rounded-full platform-hero-reel px-3 py-1.5">
+            <div className="mt-8 flex flex-col sm:flex-row sm:items-center gap-3 max-w-[700px] w-full">
+              <form
+                onSubmit={handleSubmit}
+                className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 p-1.5 rounded-[20px] sm:rounded-full platform-hero-form transition-colors"
+              >
+                <div className="flex items-center px-3.5 min-w-0 flex-1">
+                  <span className="font-mono text-[13px] platform-hero-muted select-none shrink-0">
+                    shopcraft.me/s/
+                  </span>
+                  <input
+                    id="hero-store-name"
+                    type="text"
+                    value={storeName}
+                    onChange={(e) => setStoreName(e.target.value)}
+                    placeholder="himalayan-roasters"
+                    aria-label="Store name"
+                    className="w-full min-h-[46px] bg-transparent font-mono text-[13.5px] text-white placeholder:opacity-45 focus:outline-none"
+                  />
+                </div>
                 <button
-                  type="button"
-                  onClick={() => setPaused((prev) => !prev)}
-                  aria-label={paused ? "Resume background reel" : "Pause background reel"}
-                  aria-pressed={paused}
-                  className="w-9 h-9 rounded-full platform-hero-reel-btn inline-flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                  type="submit"
+                  className="group min-h-[46px] px-6 rounded-[14px] sm:rounded-full platform-hero-btn-primary text-[14px] font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 transition-colors cursor-pointer"
                 >
-                  {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                  <span>Create my store</span>
+                  <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
                 </button>
-                <div className="pr-2 min-w-[162px]">
-                  <div className="flex items-center justify-between gap-2 text-[11px] font-mono">
-                    <span className="text-white">{currentScene.label}</span>
-                    <span className="platform-hero-accent">REEL</span>
-                  </div>
-                  <div className="mt-1.5 h-[2px] w-full rounded-full platform-hero-reel-track overflow-hidden">
-                    <div
-                      key={`${activeCut}-${paused ? "p" : "r"}`}
-                      className="h-full w-full platform-hero-reel-fill platform-reel-progress"
-                    />
-                  </div>
-                </div>
-                <div className="flex items-center gap-1 pr-1">
-                  {HERO_SCENES.map((scene, idx) => (
-                    <button
-                      key={scene.label}
-                      type="button"
-                      onClick={() => setActiveCut(idx)}
-                      aria-label={`Show ${scene.label}`}
-                      aria-current={idx === activeCut ? "true" : undefined}
-                      className={`h-2 rounded-full cursor-pointer transition-all ${
-                        idx === activeCut
-                          ? "w-4 platform-hero-dot-active"
-                          : "w-2 platform-hero-dot"
-                      }`}
-                    />
-                  ))}
-                </div>
-              </div>
+              </form>
+
+              <Link
+                href="/s/himalayan-roasters"
+                className="min-h-[48px] px-5 rounded-full platform-hero-btn-secondary text-[14px] font-medium inline-flex items-center justify-center whitespace-nowrap shrink-0 transition-colors"
+              >
+                See live store →
+              </Link>
             </div>
 
             <p className="mt-4 text-[12.5px] font-mono platform-hero-muted">
