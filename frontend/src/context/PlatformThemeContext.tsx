@@ -7,8 +7,8 @@ export type ThemeMode = "light" | "dark";
 const STORAGE_KEY = "shopcraft-platform-theme";
 
 const THEME_COLOR_HEX: Record<ThemeMode, string> = {
-  dark: "#0C111C",
-  light: "#F5F7FA",
+  dark: "#000000",
+  light: "#FFFFFF",
 };
 
 interface ThemeContextType {
@@ -18,7 +18,7 @@ interface ThemeContextType {
 }
 
 const ThemeContext = createContext<ThemeContextType>({
-  theme: "light",
+  theme: "dark",
   toggleTheme: () => {},
   setTheme: () => {},
 });
@@ -46,14 +46,14 @@ function subscribeTheme(listener: () => void): () => void {
 
 function getThemeSnapshot(): ThemeMode {
   try {
-    return localStorage.getItem(STORAGE_KEY) === "dark" ? "dark" : "light";
+    return localStorage.getItem(STORAGE_KEY) === "light" ? "light" : "dark";
   } catch {
-    return "light";
+    return "dark";
   }
 }
 
 function getServerThemeSnapshot(): ThemeMode {
-  return "light";
+  return "dark";
 }
 
 function syncThemeColorMeta(mode: ThemeMode) {

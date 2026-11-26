@@ -122,7 +122,7 @@ export function PlatformNav() {
     : "Create my store";
 
   return (
-    <header className="sticky top-0 left-0 right-0 z-50 bg-paper border-b border-line">
+    <header className="sticky top-0 left-0 right-0 z-50 bg-paper/85 backdrop-blur-xl border-b border-line">
       <div className="max-w-[1180px] mx-auto px-4 sm:px-7 h-16 grid grid-cols-[1fr_auto] md:grid-cols-[1fr_auto_1fr] items-center gap-4">
         {/* Left: Brand logo */}
         <Link
