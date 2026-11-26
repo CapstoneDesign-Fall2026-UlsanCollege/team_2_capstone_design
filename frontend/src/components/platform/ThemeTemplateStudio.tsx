@@ -15,6 +15,13 @@ interface ThemeTemplateStudioProps {
 
 const EASE_APPLE: [number, number, number, number] = [0.16, 1, 0.3, 1];
 
+const LOOK_SHOWCASE_PHOTOS: Record<string, string> = {
+  "editorial-warm": "/images/platform/look-editorial-coffee.webp",
+  "pahadi-sage": "/images/platform/look-pahadi-honey.webp",
+  "ktm-bold": "/images/platform/look-ktm-roast.webp",
+  "midnight-obsidian": "/images/platform/look-obsidian-tea.webp",
+};
+
 export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps) {
   const [activeIdx, setActiveIdx] = useState(0);
   const reduceMotion = useReducedMotion();
@@ -107,11 +114,11 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
                       }}
                     >
                       <Image
-                        src={theme.preview.sampleImageSrc}
+                        src={LOOK_SHOWCASE_PHOTOS[theme.id] ?? theme.preview.sampleImageSrc}
                         alt={theme.preview.sampleProductTitle}
                         width={800}
-                        height={800}
-                        unoptimized
+                        height={600}
+                        sizes="(max-width: 640px) 74vw, (max-width: 1024px) 48vw, 270px"
                         className="w-full h-full object-cover block transition-transform duration-500 ease-out group-hover:scale-[1.05]"
                       />
                     </div>
