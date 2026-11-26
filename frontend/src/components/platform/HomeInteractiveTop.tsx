@@ -1,229 +1,241 @@
 "use client";
 
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
-import { StoreNameForm, slugifyStoreName } from "@/components/platform/StoreNameForm";
+import Link from "next/link";
+import { ArrowRight, Pause, Play } from "lucide-react";
+import { slugifyStoreName } from "@/components/platform/StoreNameForm";
 import { ThemeTemplateStudio } from "@/components/platform/ThemeTemplateStudio";
 
-const PRAYER_FLAG_COLORS = [
-  "var(--sc-flag-blue)",
-  "var(--sc-card)",
-  "var(--sc-flag-red)",
-  "var(--sc-flag-green)",
-  "var(--sc-flag-yellow)",
-];
-
-function buildPrayerFlagPoints() {
-  const p0 = [-20, 14];
-  const p1 = [720, 62];
-  const p2 = [1460, 14];
-  const count = 44;
-  const items: { x: number; y: number; angle: number; color: string }[] = [];
-
-  for (let i = 1; i < count; i++) {
-    const t = i / count;
-    const oneMinus = 1 - t;
-    const x = oneMinus * oneMinus * p0[0] + 2 * oneMinus * t * p1[0] + t * t * p2[0];
-    const y = oneMinus * oneMinus * p0[1] + 2 * oneMinus * t * p1[1] + t * t * p2[1];
-    const dx = 2 * oneMinus * (p1[0] - p0[0]) + 2 * t * (p2[0] - p1[0]);
-    const dy = 2 * oneMinus * (p1[1] - p0[1]) + 2 * t * (p2[1] - p1[1]);
-    const angle = (Math.atan2(dy, dx) * 180) / Math.PI;
-    items.push({
-      x,
-      y,
-      angle,
-      color: PRAYER_FLAG_COLORS[i % PRAYER_FLAG_COLORS.length],
-    });
-  }
-
-  return items;
-}
+const HERO_SCENES = [
+  {
+    src: "/images/platform/hero-patan-roaster.webp",
+    alt: "Coffee roaster scooping roasted whole beans into an unbranded kraft pouch in Patan",
+    phrase: "for coffee roasters",
+    label: "01 · Patan dispatch",
+    focalClass: "object-[74%_24%]",
+    motionClass: "platform-cinema-a",
+  },
+  {
+    src: "/images/platform/hero-studio-parcels.webp",
+    alt: "Kathmandu ceramic maker wrapping a stoneware cup in kraft paper and cotton twine",
+    phrase: "for studio parcels",
+    label: "02 · Studio counter",
+    focalClass: "object-[72%_40%]",
+    motionClass: "platform-cinema-b",
+  },
+  {
+    src: "/images/platform/hero-lalitpur-handloom.webp",
+    alt: "Artisan straightening handwoven shawl fringes in a Lalitpur textile studio",
+    phrase: "for handloom weaves",
+    label: "03 · Lalitpur craft",
+    focalClass: "object-[72%_48%]",
+    motionClass: "platform-cinema-c",
+  },
+] as const;
 
 export function HomeInteractiveTop() {
   const [storeName, setStoreName] = useState("");
-  const [bagCount, setBagCount] = useState(1);
-  const [bagPulse, setBagPulse] = useState(0);
-  const prayerFlags = useMemo(() => buildPrayerFlagPoints(), []);
-  const resolvedSlug = slugifyStoreName(storeName);
-  const previewBrand = storeName.trim() || "Himalayan Roasters";
+  const [activeCut, setActiveCut] = useState(0);
+  const [paused, setPaused] = useState(false);
+  const parallaxRef = useRef<HTMLDivElement>(null);
 
-  const handleAddSample = () => {
-    setBagCount((c) => c + 1);
-    setBagPulse((k) => k + 1);
+  const resolvedSlug = slugifyStoreName(storeName);
+  const currentScene = HERO_SCENES[activeCut] ?? HERO_SCENES[0];
+
+  useEffect(() => {
+    if (paused) return;
+    if (
+      typeof window !== "undefined" &&
+      window.matchMedia?.("(prefers-reduced-motion: reduce)").matches
+    ) {
+      return;
+    }
+    const timer = window.setInterval(() => {
+      setActiveCut((prev) => (prev + 1) % HERO_SCENES.length);
+    }, 5000);
+    return () => window.clearInterval(timer);
+  }, [paused]);
+
+  const handleStageMove = (e: React.MouseEvent<HTMLDivElement>) => {
+    if (paused || !parallaxRef.current) return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    const nx = (e.clientX - rect.left) / rect.width - 0.5;
+    const ny = (e.clientY - rect.top) / rect.height - 0.5;
+    parallaxRef.current.style.transform = `translate3d(${(-nx * 14).toFixed(1)}px, ${(-ny * 10).toFixed(1)}px, 0)`;
+  };
+
+  const handleStageLeave = () => {
+    if (!parallaxRef.current) return;
+    parallaxRef.current.style.transform = "translate3d(0px, 0px, 0)";
+  };
+
+  const handleSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    const trimmed = storeName.trim();
+    window.location.href = trimmed
+      ? `/signup?name=${encodeURIComponent(trimmed)}&next=/merchant/new`
+      : "/signup?next=/merchant/new";
   };
 
   return (
     <>
-      {/* 1. Hero: Mountain silhouette, prayer flags, one input, storefront peek above the fold */}
-      <section className="relative pt-6 sm:pt-8 pb-0 overflow-hidden bg-paper text-center">
+      {/* 1. Documentary Multi-Cut Hero */}
+      <section
+        aria-label="ShopCraft introduction"
+        className={`relative overflow-hidden platform-hero-cinema ${
+          paused ? "platform-hero-paused" : ""
+        }`}
+      >
         <div
-          aria-hidden="true"
-          className="pointer-events-none absolute top-0 left-0 right-0 h-[560px] sm:h-[740px] platform-mtn-wrap"
+          onMouseMove={handleStageMove}
+          onMouseLeave={handleStageLeave}
+          className="relative min-h-[660px] sm:min-h-[760px] flex flex-col justify-center overflow-hidden"
         >
-          <Image
-            src="/images/hero-mountain.jpg"
-            alt=""
-            width={1024}
-            height={572}
-            priority
-            fetchPriority="high"
-            sizes="100vw"
-            className="w-full h-full object-cover object-[center_22%] platform-mtn-img"
-          />
-        </div>
-
-        {/* Lungta Prayer Flag String (decorative only) */}
-        <svg
-          aria-hidden="true"
-          viewBox="0 0 1440 96"
-          preserveAspectRatio="xMidYMin slice"
-          className="pointer-events-none absolute top-0 left-0 w-full h-11 sm:h-20 z-[2]"
-        >
-          <path
-            d="M-20,14 Q720,62 1460,14"
-            fill="none"
-            stroke="var(--sc-line-strong)"
-            strokeWidth="1.2"
-          />
-          {prayerFlags.map((flag, idx) => (
-            <g
-              key={idx}
-              transform={`translate(${flag.x.toFixed(1)},${flag.y.toFixed(1)}) rotate(${flag.angle.toFixed(1)})`}
+          {/* Animated Multi-Cut Documentary Backdrop */}
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+            <div
+              ref={parallaxRef}
+              className="platform-cinema-parallax absolute -inset-4"
             >
-              <rect
-                x="-8"
-                y="0"
-                width="16"
-                height="20"
-                rx="1"
-                fill={flag.color}
-                fillOpacity="0.92"
-              />
-            </g>
-          ))}
-        </svg>
-
-        <div className="relative z-10 max-w-[1180px] mx-auto px-4 sm:px-7 pt-6 sm:pt-5">
-          <div className="inline-flex items-center gap-3 text-[13.5px] font-medium text-ink-2">
-            <span className="font-devanagari text-[22px] text-accent leading-none">
-              नमस्ते
-            </span>
-            <span aria-hidden="true" className="w-6 h-px bg-line-strong" />
-            <span>Welcome to ShopCraft</span>
-          </div>
-
-          <h1 className="mt-4 mx-auto max-w-[1040px] font-display font-semibold tracking-[-0.048em] leading-none text-ink text-[38px] sm:text-[64px] lg:text-[82px]">
-            Your shop, online, before your{" "}
-            <span className="text-accent">chiya</span> cools.
-          </h1>
-
-          <p className="mt-4 sm:mt-5 mx-auto max-w-[560px] text-base sm:text-[19px] text-ink-2 leading-relaxed">
-            Set up your online store in Nepal and add your products. Customers pay with Khalti or cash on delivery.
-          </p>
-
-          <StoreNameForm
-            value={storeName}
-            onChange={setStoreName}
-            showMeta
-            inputId="hero-store-name"
-          />
-
-          {/* Compact Storefront Preview Rising Into the First Fold */}
-          <div className="relative z-10 w-full max-w-[340px] sm:max-w-[320px] mx-auto mt-5">
-            {/* Desktop floating sample badges */}
-            <div className="hidden xl:block absolute -left-[256px] top-[76px] min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line transition-transform duration-300 hover:-translate-y-1">
-              <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
-                Sample order
-              </p>
-              <p className="text-[14.5px] font-semibold text-ink mt-1">
-                #HR-1044 · Rs. 1,450
-              </p>
-              <span className="inline-block mt-2 text-[11px] font-semibold px-2.5 py-0.5 rounded-full bg-cash-bg text-cash-ink">
-                Cash to collect
-              </span>
-            </div>
-
-            <div className="hidden xl:block absolute -right-[262px] top-4 min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line transition-transform duration-300 hover:-translate-y-1">
-              <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
-                Deliver to
-              </p>
-              <p className="text-[14.5px] font-semibold text-ink mt-1">
-                Ward 04, Kathmandu
-              </p>
-              <p className="text-xs text-ink-2 mt-0.5">Bagmati Province</p>
-            </div>
-
-            <div className="hidden xl:block absolute -right-[236px] top-[146px] min-w-[214px] rounded-2xl p-4 text-left bg-card border border-line transition-transform duration-300 hover:-translate-y-1">
-              <p className="font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
-                Payment
-              </p>
-              <p className="text-[14.5px] font-semibold text-ink mt-1">
-                Khalti · test mode
-              </p>
-              <p className="text-xs text-ink-2 mt-0.5">Until you add your live key</p>
-            </div>
-
-            {/* Hardware bezel on sm+, borderless native store card on <640px */}
-            <div className="sm:rounded-t-[42px] sm:p-2.5 sm:pb-0 sm:platform-phone-shell sm:border sm:border-line-strong sm:border-b-0">
-              <div className="relative rounded-t-[18px] sm:rounded-t-[33px] border border-line sm:border-0 border-b-0 platform-screen-editorial px-[18px] pt-5 sm:pt-10 pb-7 text-left overflow-hidden">
+              {HERO_SCENES.map((scene, idx) => (
                 <div
-                  aria-hidden="true"
-                  className="hidden sm:block absolute top-2.5 left-1/2 -translate-x-1/2 w-[84px] h-[22px] rounded-full platform-phone-island"
-                />
-
-                <div className="flex items-center justify-between gap-2">
-                  <span className="font-serif-brand text-[18px] truncate">
-                    {previewBrand}
-                  </span>
-                  <span
-                    key={bagCount}
-                    className="font-mono text-[10.5px] px-2.5 py-1 rounded-full screen-badge shrink-0 platform-pop-in"
-                  >
-                    Bag ({bagCount})
-                  </span>
-                </div>
-
-                <div className="mt-3 rounded-[14px] overflow-hidden aspect-[16/9] screen-photo">
+                  key={scene.src}
+                  className={`platform-cinema-layer ${scene.motionClass} ${
+                    idx === activeCut ? "is-active" : ""
+                  }`}
+                >
                   <Image
-                    src="/images/products/gulmi-reserve.svg"
-                    alt="Gulmi Reserve Bourbon"
-                    width={800}
-                    height={800}
-                    unoptimized
-                    className="w-full h-full object-cover block"
+                    src={scene.src}
+                    alt={scene.alt}
+                    width={1376}
+                    height={768}
+                    priority={idx === 0}
+                    sizes="100vw"
+                    className={`w-full h-full object-cover ${scene.focalClass}`}
                   />
                 </div>
+              ))}
+            </div>
 
-                <p className="text-[11px] screen-muted mt-3">
-                  Single-origin coffee · 250g
-                </p>
-                <p className="font-serif-brand text-[20px] leading-tight mt-0.5">
-                  Gulmi Reserve Bourbon
-                </p>
+            <div className="platform-hero-sun" />
+            <span className="platform-hero-mote platform-hero-mote-1" />
+            <span className="platform-hero-mote platform-hero-mote-2" />
+            <span className="platform-hero-mote platform-hero-mote-3" />
+            <div className="platform-hero-scrim-h" />
+            <div className="platform-hero-scrim-b" />
+          </div>
 
-                <div className="mt-2.5 flex items-center justify-between gap-3">
-                  <span className="font-mono text-sm font-medium">Rs. 750</span>
-                  <div className="flex items-center gap-2">
-                    {bagPulse > 0 && (
-                      <span
-                        key={bagPulse}
-                        aria-live="polite"
-                        className="font-mono text-[11px] font-semibold screen-muted platform-pop-in"
-                      >
-                        +1 added
-                      </span>
-                    )}
-                    <button
-                      type="button"
-                      onClick={handleAddSample}
-                      className="min-h-[44px] sm:min-h-[36px] px-4 rounded-full text-xs font-medium screen-cta cursor-pointer transition-transform duration-150 active:scale-95"
-                    >
-                      Add to bag
-                    </button>
+          <div className="relative z-10 max-w-[1180px] w-full mx-auto px-4 sm:px-7 pt-14 sm:pt-20 pb-20 sm:pb-24">
+            <p className="text-[14px] font-medium platform-hero-muted flex items-center gap-2">
+              <span className="font-devanagari text-[20px] leading-none platform-hero-accent font-semibold">
+                नमस्ते
+              </span>
+              <span aria-hidden="true">·</span>
+              <span>Built for independent shops in Nepal</span>
+            </p>
+
+            <h1 className="mt-4 font-display font-semibold tracking-[-0.044em] leading-[1.02] text-[40px] sm:text-[64px] lg:text-[76px] max-w-[12.5ch]">
+              Open your shop
+              <span className="block overflow-hidden pb-2 -mb-2">
+                <span
+                  key={currentScene.phrase}
+                  className="inline-block platform-hero-accent platform-word-rise"
+                >
+                  {currentScene.phrase}
+                </span>
+              </span>
+            </h1>
+
+            <p className="mt-4 text-[16px] sm:text-[18.5px] leading-[1.6] platform-hero-body max-w-[46ch]">
+              Launch at{" "}
+              <span className="font-mono text-white" aria-live="polite">
+                shopcraft.me/s/{resolvedSlug || "your-store"}
+              </span>{" "}
+              in minutes. Price in rupees, accept Khalti test mode or 98/97 Cash on Delivery, down to the ward.
+            </p>
+
+            <div className="mt-8 flex flex-col lg:flex-row lg:items-center justify-between gap-5">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-3 max-w-[700px] w-full">
+                <form
+                  onSubmit={handleSubmit}
+                  className="flex-1 flex flex-col sm:flex-row sm:items-center gap-2 p-1.5 rounded-[20px] sm:rounded-full platform-hero-form transition-colors"
+                >
+                  <div className="flex items-center px-3.5 min-w-0 flex-1">
+                    <span className="font-mono text-[13px] platform-hero-muted select-none shrink-0">
+                      shopcraft.me/s/
+                    </span>
+                    <input
+                      id="hero-store-name"
+                      type="text"
+                      value={storeName}
+                      onChange={(e) => setStoreName(e.target.value)}
+                      placeholder="himalayan-roasters"
+                      aria-label="Store name"
+                      className="w-full min-h-[46px] bg-transparent font-mono text-[13.5px] text-white placeholder:opacity-45 focus:outline-none"
+                    />
                   </div>
+                  <button
+                    type="submit"
+                    className="group min-h-[46px] px-6 rounded-[14px] sm:rounded-full platform-hero-btn-primary text-[14px] font-semibold inline-flex items-center justify-center gap-2 whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                  >
+                    <span>Create my store</span>
+                    <ArrowRight className="w-4 h-4 transition-transform duration-200 group-hover:translate-x-0.5" />
+                  </button>
+                </form>
+
+                <Link
+                  href="/s/himalayan-roasters"
+                  className="min-h-[48px] px-5 rounded-full platform-hero-btn-secondary text-[14px] font-medium inline-flex items-center justify-center whitespace-nowrap shrink-0 transition-colors"
+                >
+                  See live store →
+                </Link>
+              </div>
+
+              <div className="inline-flex items-center gap-3 self-start lg:self-auto rounded-full platform-hero-reel px-3 py-1.5">
+                <button
+                  type="button"
+                  onClick={() => setPaused((prev) => !prev)}
+                  aria-label={paused ? "Resume background reel" : "Pause background reel"}
+                  aria-pressed={paused}
+                  className="w-9 h-9 rounded-full platform-hero-reel-btn inline-flex items-center justify-center cursor-pointer transition-colors shrink-0"
+                >
+                  {paused ? <Play className="w-3.5 h-3.5" /> : <Pause className="w-3.5 h-3.5" />}
+                </button>
+                <div className="pr-2 min-w-[162px]">
+                  <div className="flex items-center justify-between gap-2 text-[11px] font-mono">
+                    <span className="text-white">{currentScene.label}</span>
+                    <span className="platform-hero-accent">REEL</span>
+                  </div>
+                  <div className="mt-1.5 h-[2px] w-full rounded-full platform-hero-reel-track overflow-hidden">
+                    <div
+                      key={`${activeCut}-${paused ? "p" : "r"}`}
+                      className="h-full w-full platform-hero-reel-fill platform-reel-progress"
+                    />
+                  </div>
+                </div>
+                <div className="flex items-center gap-1 pr-1">
+                  {HERO_SCENES.map((scene, idx) => (
+                    <button
+                      key={scene.label}
+                      type="button"
+                      onClick={() => setActiveCut(idx)}
+                      aria-label={`Show ${scene.label}`}
+                      aria-current={idx === activeCut ? "true" : undefined}
+                      className={`h-2 rounded-full cursor-pointer transition-all ${
+                        idx === activeCut
+                          ? "w-4 platform-hero-dot-active"
+                          : "w-2 platform-hero-dot"
+                      }`}
+                    />
+                  ))}
                 </div>
               </div>
             </div>
+
+            <p className="mt-4 text-[12.5px] font-mono platform-hero-muted">
+              Free while in beta · No credit card needed · Built in Nepal
+            </p>
           </div>
         </div>
       </section>
