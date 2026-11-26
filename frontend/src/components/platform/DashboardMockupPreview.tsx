@@ -51,20 +51,22 @@ export function DashboardMockupPreview() {
         </PlatformReveal>
 
         <PlatformReveal delayMs={90} className="relative max-w-[1080px] mx-auto mt-12 sm:mt-16">
-          <div className="relative aspect-[16/9.2] sm:aspect-[16/5.9] overflow-hidden rounded-2xl sm:rounded-3xl bg-card border border-line">
-            <Image
-              src="/images/merchant-orders-real.png"
-              alt="ShopCraft merchant orders fulfillment table showing sample order #HR-2026-0001 paid via Khalti"
-              width={2560}
-              height={1600}
-              loading="eager"
-              decoding="sync"
-              sizes="(max-width: 1080px) 100vw, 1080px"
-              className="absolute max-w-none w-[174%] -left-[27%] -top-[15.5%] sm:w-[140%] sm:-left-[29.5%] sm:-top-[16%]"
-            />
+          <div className="rounded-[24px] sm:rounded-[28px] bg-card border border-line p-2.5 sm:p-4 shadow-sm">
+            <div className="relative rounded-[16px] sm:rounded-[18px] overflow-hidden border border-line aspect-[16/9.6] sm:aspect-[16/8.8] bg-paper-2">
+              <Image
+                src="/images/merchant-orders-real.png"
+                alt="ShopCraft merchant orders fulfillment table showing sample order #HR-2026-0001 paid via Khalti"
+                width={2560}
+                height={1600}
+                loading="eager"
+                decoding="sync"
+                sizes="(max-width: 1080px) 100vw, 1080px"
+                className="w-full h-full object-cover object-top block"
+              />
+            </div>
           </div>
 
-          <div className="mt-3.5 lg:mt-0 lg:absolute lg:-right-6 lg:-bottom-12 w-full lg:w-[332px] rounded-xl bg-card text-ink p-5 border border-line-strong lg:rotate-[1.5deg] transition-transform duration-300 hover:lg:rotate-0">
+          <div className="mt-4 lg:mt-0 lg:absolute lg:right-8 lg:-bottom-10 w-full lg:w-[340px] rounded-2xl bg-card text-ink p-5 border border-line-strong shadow-xl transition-transform duration-300 hover:-translate-y-1">
             <div className="flex items-center justify-between gap-2 font-mono text-[10px] tracking-[0.1em] uppercase text-ink-3">
               <span>Packing slip</span>
               <div className="flex items-center gap-1">
@@ -136,7 +138,7 @@ export function DashboardMockupPreview() {
           </div>
         </PlatformReveal>
 
-        <p className="mt-6 lg:mt-20 text-center text-[13px] text-ink-3">
+        <p className="mt-6 lg:mt-16 text-center text-[13px] text-ink-3">
           Screenshot of the live merchant console. Switch between Khalti &amp; COD packing slips.
         </p>
       </div>
