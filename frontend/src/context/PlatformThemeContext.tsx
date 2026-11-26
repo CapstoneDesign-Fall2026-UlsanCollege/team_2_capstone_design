@@ -4,7 +4,7 @@ import React, { createContext, useCallback, useContext, useEffect, useSyncExtern
 
 export type ThemeMode = "light" | "dark";
 
-const STORAGE_KEY = "shopcraft-platform-theme";
+const STORAGE_KEY = "shopcraft-platform-theme-v2";
 
 const THEME_COLOR_HEX: Record<ThemeMode, string> = {
   dark: "#000000",
