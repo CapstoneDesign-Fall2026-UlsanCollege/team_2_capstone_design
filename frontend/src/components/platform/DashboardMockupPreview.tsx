@@ -2,7 +2,8 @@
 
 import React, { useState } from "react";
 import Image from "next/image";
-import { Printer } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { Lock, Printer } from "lucide-react";
 import { PlatformReveal } from "@/components/platform/PlatformReveal";
 
 const SLIP_ORDERS = [
@@ -29,6 +30,7 @@ const SLIP_ORDERS = [
 export function DashboardMockupPreview() {
   const [selectedIdx, setSelectedIdx] = useState(0);
   const [printed, setPrinted] = useState(false);
+  const reduceMotion = useReducedMotion();
   const order = SLIP_ORDERS[selectedIdx] ?? SLIP_ORDERS[0];
 
   return (
@@ -52,17 +54,33 @@ export function DashboardMockupPreview() {
 
         <PlatformReveal delayMs={90} className="relative max-w-[1080px] mx-auto mt-12 sm:mt-16">
           <div className="rounded-[24px] sm:rounded-[28px] bg-card border border-line p-2.5 sm:p-4 shadow-sm">
-            <div className="relative rounded-[16px] sm:rounded-[18px] overflow-hidden border border-line aspect-[16/9.6] sm:aspect-[16/8.8] bg-paper-2">
-              <Image
-                src="/images/merchant-orders-real.png"
-                alt="ShopCraft merchant orders fulfillment table showing sample order #HR-2026-0001 paid via Khalti"
-                width={2560}
-                height={1600}
-                loading="eager"
-                decoding="sync"
-                sizes="(max-width: 1080px) 100vw, 1080px"
-                className="w-full h-full object-cover object-top block"
-              />
+            <div className="rounded-[16px] sm:rounded-[18px] overflow-hidden border border-line bg-paper-2">
+              <div className="flex items-center justify-between gap-3 px-3.5 sm:px-4 py-2.5 border-b border-line bg-card/80">
+                <div className="flex items-center gap-1.5" aria-hidden="true">
+                  <span className="w-2.5 h-2.5 rounded-full bg-line-strong" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-line-strong" />
+                  <span className="w-2.5 h-2.5 rounded-full bg-line-strong" />
+                </div>
+                <div className="inline-flex items-center gap-1.5 rounded-full bg-paper-2 border border-line px-3 py-1 font-mono text-[10.5px] text-ink-2 truncate max-w-[320px]">
+                  <Lock className="w-3 h-3 text-accent shrink-0" />
+                  <span className="truncate">shopcraft.me/merchant/himalayan-roasters/orders</span>
+                </div>
+                <span className="hidden sm:inline font-mono text-[10.5px] uppercase tracking-[0.08em] text-ink-3 shrink-0">
+                  Orders
+                </span>
+              </div>
+              <div className="relative aspect-[16/9.6] sm:aspect-[16/8.8] bg-paper-2">
+                <Image
+                  src="/images/merchant-orders-real.png"
+                  alt="ShopCraft merchant orders fulfillment table showing sample order #HR-2026-0001 paid via Khalti"
+                  width={2560}
+                  height={1600}
+                  loading="eager"
+                  decoding="sync"
+                  sizes="(max-width: 1080px) 100vw, 1080px"
+                  className="w-full h-full object-cover object-top block"
+                />
+              </div>
             </div>
           </div>
 
@@ -91,50 +109,62 @@ export function DashboardMockupPreview() {
               </div>
             </div>
 
-            <div key={order.id} className="platform-pop-in">
-              <p className="font-mono text-[15px] font-semibold text-ink mt-2.5">
-                {order.id}
-              </p>
-              <hr className="border-0 border-t border-dashed border-line-strong my-3" />
-              <div className="text-[12.5px] text-ink-2 leading-relaxed">
-                <p className="font-semibold text-ink">{order.customer}</p>
-                <p>{order.ward}</p>
-                <p>{order.province}</p>
-              </div>
-              <hr className="border-0 border-t border-dashed border-line-strong my-3" />
-              <p className="text-[12.5px] text-ink-2">{order.items}</p>
-
-              <div className="mt-3.5 flex items-center justify-between gap-2">
-                <span
-                  className={`inline-block rounded-lg px-2.5 py-1.5 font-mono text-[11px] font-semibold tracking-[0.04em] ${
-                    order.paid
-                      ? "bg-paid-bg text-paid-ink"
-                      : "bg-cash-bg text-cash-ink"
-                  }`}
-                >
-                  {order.badge}
-                </span>
-
-                <button
-                  type="button"
-                  onClick={() => setPrinted(true)}
-                  aria-label="Preview packing slip print formatting"
-                  className="min-h-[44px] sm:min-h-[32px] px-2.5 rounded-lg border border-line text-[11px] font-medium text-ink-2 hover:text-ink hover:bg-paper-2 inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0"
-                >
-                  <Printer className="w-3.5 h-3.5" />
-                  <span>Print</span>
-                </button>
-              </div>
-
-              {printed && (
-                <p
-                  aria-live="polite"
-                  className="mt-2 font-mono text-[11px] text-accent platform-pop-in"
-                >
-                  Ready for A4 / 80mm thermal slip
+            <AnimatePresence mode="wait">
+              <motion.div
+                key={order.id}
+                initial={reduceMotion ? false : { opacity: 0, y: 6 }}
+                animate={{ opacity: 1, y: 0 }}
+                exit={reduceMotion ? undefined : { opacity: 0, y: -4 }}
+                transition={{ duration: 0.2, ease: [0.16, 1, 0.3, 1] }}
+              >
+                <p className="font-mono text-[15px] font-semibold text-ink mt-2.5">
+                  {order.id}
                 </p>
-              )}
-            </div>
+                <hr className="border-0 border-t border-dashed border-line-strong my-3" />
+                <div className="text-[12.5px] text-ink-2 leading-relaxed">
+                  <p className="font-semibold text-ink">{order.customer}</p>
+                  <p>{order.ward}</p>
+                  <p>{order.province}</p>
+                </div>
+                <hr className="border-0 border-t border-dashed border-line-strong my-3" />
+                <p className="text-[12.5px] text-ink-2">{order.items}</p>
+
+                <div className="mt-3.5 flex items-center justify-between gap-2">
+                  <motion.span
+                    key={order.badge}
+                    initial={reduceMotion ? false : { scale: 0.94 }}
+                    animate={{ scale: 1 }}
+                    transition={{ type: "spring", stiffness: 420, damping: 24 }}
+                    className={`inline-block rounded-lg px-2.5 py-1.5 font-mono text-[11px] font-semibold tracking-[0.04em] ${
+                      order.paid
+                        ? "bg-paid-bg text-paid-ink"
+                        : "bg-cash-bg text-cash-ink"
+                    }`}
+                  >
+                    {order.badge}
+                  </motion.span>
+
+                  <button
+                    type="button"
+                    onClick={() => setPrinted(true)}
+                    aria-label="Preview packing slip print formatting"
+                    className="min-h-[44px] sm:min-h-[32px] px-2.5 rounded-lg border border-line text-[11px] font-medium text-ink-2 hover:text-ink hover:bg-paper-2 inline-flex items-center gap-1 transition-colors cursor-pointer shrink-0"
+                  >
+                    <Printer className="w-3.5 h-3.5" />
+                    <span>Print</span>
+                  </button>
+                </div>
+
+                {printed && (
+                  <p
+                    aria-live="polite"
+                    className="mt-2 font-mono text-[11px] text-accent platform-pop-in"
+                  >
+                    Ready for A4 / 80mm thermal slip
+                  </p>
+                )}
+              </motion.div>
+            </AnimatePresence>
           </div>
         </PlatformReveal>
 
