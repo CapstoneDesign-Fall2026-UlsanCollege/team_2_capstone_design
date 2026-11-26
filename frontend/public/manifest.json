@@ -4,8 +4,8 @@
   "description": "Create an online store in Nepal in minutes. Sell in rupees with Khalti and cash on delivery.",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#F5F7FA",
-  "theme_color": "#1A2A4A",
+  "background_color": "#000000",
+  "theme_color": "#090B0A",
   "icons": [
     {
       "src": "/icon-192x192.png",
