@@ -3,6 +3,7 @@
 import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { motion, useReducedMotion } from "framer-motion";
 import { Menu, X, Sun, Moon, LayoutDashboard } from "lucide-react";
 import { usePlatformTheme } from "@/context/PlatformThemeContext";
 import { ShopCraftLogo } from "@/components/platform/ShopCraftLogo";
@@ -27,29 +28,13 @@ export function PlatformNav() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [hasStores, setHasStores] = useState(false);
   const [activeId, setActiveId] = useState<string>("");
+  const lastActiveRef = useRef<string>("");
   const progressRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
   const { theme, toggleTheme } = usePlatformTheme();
 
   useEffect(() => {
     if (pathname !== "/") return;
-
-    const sectionEls = NAV_ITEMS.map((item) => document.getElementById(item.id)).filter(
-      (el): el is HTMLElement => Boolean(el)
-    );
-    if (sectionEls.length === 0 || typeof IntersectionObserver === "undefined") return;
-
-    const observer = new IntersectionObserver(
-      (entries) => {
-        const visible = entries
-          .filter((entry) => entry.isIntersecting)
-          .sort((a, b) => b.intersectionRatio - a.intersectionRatio);
-        if (visible[0]) {
-          setActiveId(visible[0].target.id);
-        }
-      },
-      { rootMargin: "-25% 0px -55% 0px", threshold: [0.1, 0.35] }
-    );
-    sectionEls.forEach((el) => observer.observe(el));
 
     let rafId = 0;
     const syncScroll = () => {
@@ -60,8 +45,33 @@ export function PlatformNav() {
       if (progressRef.current) {
         progressRef.current.style.transform = `scaleX(${progress.toFixed(4)})`;
       }
-      if (window.scrollY < 260) {
-        setActiveId("");
+
+      if (window.scrollY < 220) {
+        if (lastActiveRef.current !== "") {
+          lastActiveRef.current = "";
+          setActiveId("");
+        }
+        return;
+      }
+
+      const sectionEls = NAV_ITEMS.map((item) => document.getElementById(item.id)).filter(
+        (el): el is HTMLElement => Boolean(el)
+      );
+      if (sectionEls.length === 0) return;
+
+      const triggerY = Math.min(220, window.innerHeight * 0.34);
+      let nextActive = "";
+      for (const el of sectionEls) {
+        if (el.getBoundingClientRect().top <= triggerY) {
+          nextActive = el.id;
+        }
+      }
+      if (window.scrollY + window.innerHeight >= doc.scrollHeight - 24) {
+        nextActive = sectionEls[sectionEls.length - 1].id;
+      }
+      if (lastActiveRef.current !== nextActive) {
+        lastActiveRef.current = nextActive;
+        setActiveId(nextActive);
       }
     };
 
@@ -74,7 +84,6 @@ export function PlatformNav() {
     window.addEventListener("resize", onScroll, { passive: true });
 
     return () => {
-      observer.disconnect();
       window.removeEventListener("scroll", onScroll);
       window.removeEventListener("resize", onScroll);
       if (rafId) window.cancelAnimationFrame(rafId);
@@ -143,17 +152,27 @@ export function PlatformNav() {
               <a
                 key={item.label}
                 href={item.href}
+                onClick={() => {
+                  lastActiveRef.current = item.id;
+                  setActiveId(item.id);
+                }}
                 className={`relative inline-flex items-center min-h-[44px] px-1 transition-colors whitespace-nowrap ${
                   isActive ? "text-ink font-semibold" : "hover:text-ink"
                 }`}
               >
                 {item.label}
-                <span
-                  aria-hidden="true"
-                  className={`absolute left-1 right-1 bottom-2 h-[2px] rounded-full bg-accent transition-transform duration-200 origin-center ${
-                    isActive ? "scale-x-100" : "scale-x-0"
-                  }`}
-                />
+                {isActive && (
+                  <motion.span
+                    layoutId="platform-nav-underline"
+                    aria-hidden="true"
+                    transition={
+                      reduceMotion
+                        ? { duration: 0 }
+                        : { type: "spring", stiffness: 420, damping: 34 }
+                    }
+                    className="absolute left-1 right-1 bottom-2 h-[2px] rounded-full bg-accent"
+                  />
+                )}
               </a>
             );
           })}
