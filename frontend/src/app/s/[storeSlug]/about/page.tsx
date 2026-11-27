@@ -18,6 +18,7 @@ import { StorePublicMetadata } from "@/lib/api";
 import { fetchPublicStoreOutcome } from "@/lib/storefront-fetch";
 import {
   buildWhatsAppUrl,
+  sanitizeExternalHttpUrl,
   sanitizeStorefrontImageUrl,
 } from "@/lib/storefront-helpers";
 
@@ -208,32 +209,37 @@ export default async function StorefrontAboutPage({
             )}
           </div>
 
-          {(store.instagram_url || store.facebook_url) && (
-            <div className="pt-2 flex items-center gap-3 text-xs text-[var(--ink-2)]">
-              <span className="font-semibold text-[var(--ink)]">Follow Socials:</span>
-              {store.instagram_url && (
-                <a
-                  href={store.instagram_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-[var(--ink)] hover:underline"
-                >
-                  <Globe className="w-3.5 h-3.5" />
-                  <span>Instagram</span>
-                </a>
-              )}
-              {store.facebook_url && (
-                <a
-                  href={store.facebook_url}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  className="inline-flex items-center gap-1 hover:text-[var(--ink)] hover:underline"
-                >
-                  <span>Facebook</span>
-                </a>
-              )}
-            </div>
-          )}
+          {(() => {
+            const safeInstagramUrl = sanitizeExternalHttpUrl(store.instagram_url);
+            const safeFacebookUrl = sanitizeExternalHttpUrl(store.facebook_url);
+            if (!safeInstagramUrl && !safeFacebookUrl) return null;
+            return (
+              <div className="pt-2 flex items-center gap-3 text-xs text-[var(--ink-2)]">
+                <span className="font-semibold text-[var(--ink)]">Follow Socials:</span>
+                {safeInstagramUrl && (
+                  <a
+                    href={safeInstagramUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-[var(--ink)] hover:underline"
+                  >
+                    <Globe className="w-3.5 h-3.5" />
+                    <span>Instagram</span>
+                  </a>
+                )}
+                {safeFacebookUrl && (
+                  <a
+                    href={safeFacebookUrl}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="inline-flex items-center gap-1 hover:text-[var(--ink)] hover:underline"
+                  >
+                    <span>Facebook</span>
+                  </a>
+                )}
+              </div>
+            );
+          })()}
         </section>
 
         {/* Direct Link back to Catalog */}

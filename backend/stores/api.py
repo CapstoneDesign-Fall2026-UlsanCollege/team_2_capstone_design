@@ -1897,6 +1897,27 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                     if not valid_cdn:
                         field_errors["logo_url"] = ["Store logo URL must be hosted on our CDN within your store's folder."]
 
+        if "instagram_url" in data:
+            raw_ig = str(data["instagram_url"] or "").strip()
+            if raw_ig:
+                if len(raw_ig) > 200:
+                    field_errors["instagram_url"] = ["Instagram URL cannot exceed 200 characters."]
+                else:
+                    try:
+                        URLValidator(schemes=["http", "https"])(raw_ig)
+                    except ValidationError:
+                        field_errors["instagram_url"] = ["Enter a valid http:// or https:// Instagram URL."]
+        if "facebook_url" in data:
+            raw_fb = str(data["facebook_url"] or "").strip()
+            if raw_fb:
+                if len(raw_fb) > 200:
+                    field_errors["facebook_url"] = ["Facebook URL cannot exceed 200 characters."]
+                else:
+                    try:
+                        URLValidator(schemes=["http", "https"])(raw_fb)
+                    except ValidationError:
+                        field_errors["facebook_url"] = ["Enter a valid http:// or https:// Facebook URL."]
+
         if field_errors:
             return Response(field_errors, status=status.HTTP_400_BAD_REQUEST)
 
@@ -1915,9 +1936,9 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
         if "about_text" in data:
             store.about_text = str(data["about_text"]).strip()
         if "instagram_url" in data:
-            store.instagram_url = str(data["instagram_url"]).strip()
+            store.instagram_url = str(data["instagram_url"] or "").strip()
         if "facebook_url" in data:
-            store.facebook_url = str(data["facebook_url"]).strip()
+            store.facebook_url = str(data["facebook_url"] or "").strip()
 
         if "cod_enabled" in data:
             raw_cod = data["cod_enabled"]
@@ -2985,9 +3006,11 @@ class StoreCreateView(APIView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
-        name = request.data.get("name", "").strip()
-        slug = request.data.get("slug", "").strip().lower()
-        theme_preset = request.data.get("theme_preset", "editorial-warm")
+        name = str(request.data.get("name") or "").strip()
+        slug = str(request.data.get("slug") or "").strip().lower()
+        theme_preset = str(request.data.get("theme_preset") or "editorial-warm").strip()
+        if theme_preset not in [c[0] for c in Store.THEME_PRESET_CHOICES]:
+            return Response({"error": "Invalid theme preset."}, status=status.HTTP_400_BAD_REQUEST)
         category = request.data.get("category", "").strip()[:64]
         city = request.data.get("city", "").strip() or "Kathmandu"
         province = request.data.get("province", "").strip() or "Bagmati"
@@ -3020,7 +3043,26 @@ class StoreCreateView(APIView):
             )
 
         # 4. Resolve optional banner image (leave empty when unset so storefront renders store hero fallback)
-        banner_url = request.data.get("banner_url", "").strip()
+        banner_url = str(request.data.get("banner_url") or "").strip()
+        if banner_url:
+            lower_banner = banner_url.lower()
+            if (
+                len(banner_url) > 200
+                or not banner_url.startswith("/images/")
+                or len(banner_url) <= len("/images/")
+                or ".." in banner_url
+                or "\\" in banner_url
+                or banner_url.startswith("//")
+                or "%2e" in lower_banner
+                or "%2f" in lower_banner
+                or "%5c" in lower_banner
+                or any(ch in banner_url for ch in '<>"\'`')
+                or any(c.isspace() or ord(c) < 32 for c in banner_url)
+            ):
+                return Response(
+                    {"error": "Enter a valid store banner path."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # 5. Atomic check & store creation: lock user row with select_for_update() so concurrent
         # requests serialize and strictly obey the 3-store cap.
