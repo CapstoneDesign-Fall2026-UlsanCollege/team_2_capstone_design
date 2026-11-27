@@ -960,13 +960,14 @@ class AuditLogClientIpTests(APITestCase):
         from stores.models import MerchantAuditLog
 
         # Without TRUSTED_PROXY_HEADER configured, spoofed X-Forwarded-For is ignored.
-        untrusted = self.client.patch(
-            f"/api/merchant/stores/{self.store.slug}/settings/",
-            {"tagline": "Untrusted Proxy Tagline"},
-            format="json",
-            HTTP_X_FORWARDED_FOR="198.51.100.77",
-            REMOTE_ADDR="127.0.0.1",
-        )
+        with override_settings(TRUSTED_PROXY_HEADER=None):
+            untrusted = self.client.patch(
+                f"/api/merchant/stores/{self.store.slug}/settings/",
+                {"tagline": "Untrusted Proxy Tagline"},
+                format="json",
+                HTTP_X_FORWARDED_FOR="198.51.100.77",
+                REMOTE_ADDR="127.0.0.1",
+            )
         self.assertEqual(untrusted.status_code, status.HTTP_200_OK, untrusted.content)
 
         # With TRUSTED_PROXY_HEADER configured, rightmost valid X-Forwarded-For entry is recorded.
