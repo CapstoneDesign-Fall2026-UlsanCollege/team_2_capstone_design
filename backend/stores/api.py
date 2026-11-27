@@ -1,6 +1,8 @@
 import logging
 import math
+import re
 from datetime import timedelta
+from urllib.parse import urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.validators import URLValidator
@@ -46,6 +48,43 @@ from stores.khalti import (
 khalti_logger = logging.getLogger("shopcraft.payments")
 
 
+def _resolve_safe_khalti_return_url(request, store) -> str:
+    """Only allow return_url matching the server host or trusted CORS origins with fixed return path."""
+    canonical = request.build_absolute_uri(f"/s/{store.slug}/checkout/khalti-return/")
+    raw = str(request.data.get("return_url") or "").strip() if hasattr(request, "data") else ""
+    if not raw:
+        return canonical
+
+    parsed = urlparse(raw)
+    hostname = (parsed.hostname or "").lower()
+    is_local = hostname in ("localhost", "127.0.0.1")
+    is_testserver = bool(getattr(settings, "IS_TEST_COMMAND", False) and hostname == "testserver")
+    if parsed.scheme not in ("https", "http"):
+        return canonical
+    if parsed.scheme == "http" and not (getattr(settings, "DEBUG", False) or is_local or is_testserver):
+        return canonical
+    if not parsed.netloc or parsed.query or parsed.fragment:
+        return canonical
+
+    expected_path = f"/s/{store.slug}/checkout/khalti-return"
+    if parsed.path.rstrip("/") != expected_path:
+        return canonical
+
+    candidate_origin = f"{parsed.scheme}://{parsed.netloc}".lower()
+    req_host = (request.get_host() or "").lower()
+    req_scheme = getattr(request, "scheme", "https") or "https"
+    same_origin = bool(req_host and candidate_origin == f"{req_scheme}://{req_host}".lower())
+    allowed_origins = {o.rstrip("/").lower() for o in getattr(settings, "CORS_ALLOWED_ORIGINS", [])}
+    regexes = getattr(settings, "CORS_ALLOWED_ORIGIN_REGEXES", [])
+    if (
+        same_origin
+        or candidate_origin in allowed_origins
+        or any(re.match(pat, candidate_origin, re.IGNORECASE) for pat in regexes)
+    ):
+        return raw
+    return canonical
+
+
 def _build_khalti_initiate_body(
     *,
     request,
@@ -57,9 +96,7 @@ def _build_khalti_initiate_body(
     phone: str,
 ) -> dict:
     """Build a canonical Khalti /epayment/initiate/ payload using paisa integer totals."""
-    return_url = request.data.get("return_url") or request.build_absolute_uri(
-        f"/s/{store.slug}/checkout/khalti-return/"
-    )
+    return_url = _resolve_safe_khalti_return_url(request, store)
     return {
         "return_url": return_url,
         "website_url": request.build_absolute_uri(f"/s/{store.slug}/"),

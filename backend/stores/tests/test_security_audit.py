@@ -6,7 +6,9 @@ from rest_framework import status
 from rest_framework.test import APITestCase
 
 from core.tenant_context import TenantDatabaseContext
+from stores.api import _resolve_safe_khalti_return_url
 from stores.models import Store, StoreMembership
+from rest_framework.test import APIRequestFactory
 
 User = get_user_model()
 
@@ -100,3 +102,35 @@ class SocialUrlAndStoreCreateValidationTests(APITestCase):
         )
         self.assertEqual(ok_res.status_code, status.HTTP_201_CREATED)
         self.assertEqual(ok_res.json()["banner_url"], "/images/themes/sage-hero.jpg")
+
+
+class KhaltiReturnUrlAuditTests(APITestCase):
+    """Issue #72: only allow allowlisted origins and exact return path in Khalti return_url."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.store = Store.objects.create(slug="khalti-url-72", name="Khalti Shop 72", is_active=True)
+
+    def _req(self, return_url):
+        req = APIRequestFactory().post("/checkout/place/", {"return_url": return_url}, format="json")
+        req.data = {"return_url": return_url}
+        return req
+
+    def test_untrusted_origin_or_wrong_path_falls_back_to_canonical(self):
+        canonical_suffix = f"/s/{self.store.slug}/checkout/khalti-return/"
+        for evil in (
+            "https://attacker.com/s/khalti-url-72/checkout/khalti-return/",
+            "https://evil.vercel.app/s/khalti-url-72/checkout/khalti-return/",
+            "https://shop.shopcraft.me/steal-token",
+            "https://shop.shopcraft.me/s/khalti-url-72/checkout/khalti-return/?evil=1",
+            "javascript:alert(1)",
+        ):
+            resolved = _resolve_safe_khalti_return_url(self._req(evil), self.store)
+            self.assertTrue(resolved.endswith(canonical_suffix), evil)
+            self.assertNotIn("attacker.com", resolved)
+            self.assertNotIn("evil.vercel.app", resolved)
+            self.assertNotIn("evil=1", resolved)
+
+    def test_allowlisted_frontend_origin_with_exact_path_is_preserved(self):
+        good = "https://shop.shopcraft.me/s/khalti-url-72/checkout/khalti-return/"
+        self.assertEqual(_resolve_safe_khalti_return_url(self._req(good), self.store), good)
