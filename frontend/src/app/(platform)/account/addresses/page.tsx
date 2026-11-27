@@ -18,6 +18,7 @@ import {
   listDeliveryAddresses,
 } from "@/lib/api";
 import { AddressSheet } from "@/components/account/AddressSheet";
+import { sanitizeOptionalRedirectTarget } from "@/lib/merchant-guard";
 
 interface PendingDeletion {
   address: DeliveryAddressItem;
@@ -43,7 +44,7 @@ export default function AddressesPage() {
 function AddressesContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const nextUrl = searchParams.get("next");
+  const nextUrl = sanitizeOptionalRedirectTarget(searchParams.get("next"));
 
   const [loading, setLoading] = useState(true);
   const [addresses, setAddresses] = useState<DeliveryAddressItem[]>([]);
