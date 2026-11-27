@@ -11,6 +11,7 @@ from rest_framework import status
 from rest_framework.test import APIRequestFactory, APITestCase
 from rest_framework.throttling import ScopedRateThrottle
 
+from accounts.models import EmailOTPChallenge
 from catalog.models import Discount, Product, Variant
 from core.tenant_context import TenantDatabaseContext
 from orders.models import Order, OrderItem
@@ -286,3 +287,77 @@ class ThrottlingAndOrderExpiryAuditTests(APITestCase):
             self.assertEqual(self.abandoned.status, "PAYMENT_FAILED")
             self.assertEqual(self.variant.stock_quantity, 2)
             self.assertTrue(self.variant.in_stock)
+
+
+class DeactivatedUserAuthAuditTests(APITestCase):
+    """Issue #74: block deactivated users from OTP login, Google login, and store creation."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.store = Store.objects.create(slug="audit74-shop", name="Audit 74 Shop", is_active=True)
+        cls.inactive_user = User.objects.create_user(
+            "deactivated74@example.com",
+            full_name="Deactivated User",
+            is_active=False,
+        )
+
+    def test_inactive_user_blocked_from_platform_otp_and_google_login(self):
+        _, code = EmailOTPChallenge.issue_for_email(self.inactive_user.email, ip_address="127.0.0.1")
+        otp_res = self.client.post(
+            "/api/auth/otp/verify/",
+            {"email": self.inactive_user.email, "code": code},
+            format="json",
+        )
+        self.assertEqual(otp_res.status_code, status.HTTP_403_FORBIDDEN, otp_res.content)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+        with (
+            patch("accounts.api.get_configured_google_client_id", return_value="test-client-id"),
+            patch(
+                "accounts.api.verify_google_id_token",
+                return_value={"email": self.inactive_user.email, "full_name": "Deactivated User"},
+            ),
+        ):
+            google_res = self.client.post(
+                "/api/auth/google/",
+                {"credential": "dummy-google-token"},
+                format="json",
+            )
+        self.assertEqual(google_res.status_code, status.HTTP_403_FORBIDDEN, google_res.content)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_inactive_user_blocked_from_storefront_otp_and_google_login(self):
+        _, code = EmailOTPChallenge.issue_for_email(self.inactive_user.email, ip_address="127.0.0.1")
+        otp_res = self.client.post(
+            f"/api/stores/{self.store.slug}/account/otp/verify/",
+            {"email": self.inactive_user.email, "code": code},
+            format="json",
+        )
+        self.assertEqual(otp_res.status_code, status.HTTP_403_FORBIDDEN, otp_res.content)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+        with (
+            patch("stores.storefront_account_api.get_configured_google_client_id", return_value="test-client-id"),
+            patch(
+                "stores.storefront_account_api.verify_google_id_token",
+                return_value={"email": self.inactive_user.email, "full_name": "Deactivated User"},
+            ),
+        ):
+            google_res = self.client.post(
+                f"/api/stores/{self.store.slug}/account/google/",
+                {"credential": "dummy-google-token"},
+                format="json",
+            )
+        self.assertEqual(google_res.status_code, status.HTTP_403_FORBIDDEN, google_res.content)
+        self.assertNotIn("_auth_user_id", self.client.session)
+
+    def test_inactive_user_blocked_from_store_creation(self):
+        self.client.force_authenticate(user=self.inactive_user)
+        res = self.client.post(
+            "/api/stores/create/",
+            {"name": "Blocked Shop 74", "slug": "blocked-shop-74"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN, res.content)
+        self.assertFalse(Store.objects.filter(slug="blocked-shop-74").exists())
+

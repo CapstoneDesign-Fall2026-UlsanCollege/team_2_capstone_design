@@ -3105,6 +3105,12 @@ class StoreCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        if not getattr(request.user, "is_active", False):
+            return Response(
+                {"error": "This account is inactive."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         # 1. Multi-worker shared rate limiting per IP (max 10 store creations per IP in 24 hours)
         client_ip = get_client_ip(request)
         ip_hash = compute_salted_ip_hash(client_ip, "store_create")

@@ -209,6 +209,11 @@ class OTPVerifyView(NoStoreAuthAPIView):
             email=email,
             defaults={"full_name": "", "password": make_password(None)},
         )
+        if not user.is_active:
+            return Response(
+                {"error": "This account has been deactivated."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
 
         login(request, user, backend="django.contrib.auth.backends.ModelBackend")
         return Response({"user": UserSerializer(user).data}, status=status.HTTP_200_OK)
@@ -270,6 +275,11 @@ class GoogleAuthView(NoStoreAuthAPIView):
                 email=email,
                 defaults={"full_name": full_name, "password": make_password(None)},
             )
+            if not user.is_active:
+                return Response(
+                    {"error": "This account has been deactivated."},
+                    status=status.HTTP_403_FORBIDDEN,
+                )
             if not created and not user.full_name and full_name:
                 user.full_name = full_name
                 user.save(update_fields=["full_name"])
