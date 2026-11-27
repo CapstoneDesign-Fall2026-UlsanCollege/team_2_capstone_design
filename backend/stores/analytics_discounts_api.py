@@ -582,9 +582,6 @@ def build_slice6_views(StoreMerchantMixin):
                     "password": make_password(None),
                 },
             )
-            if full_name and not target_user.full_name:
-                target_user.full_name = full_name
-                target_user.save(update_fields=["full_name"])
 
             if StoreMembership.objects.for_store(self.store).filter(user=target_user).exists():
                 return Response(
@@ -611,8 +608,9 @@ def build_slice6_views(StoreMerchantMixin):
                     "id": membership.id,
                     "user_id": target_user.id,
                     "email": target_user.email,
-                    "full_name": target_user.full_name or email.split("@")[0],
-                    "phone": getattr(target_user, "phone", "") or "",
+                    # Do not leak existing users' stored full_name or phone across stores on invite.
+                    "full_name": full_name or email.split("@")[0],
+                    "phone": "",
                     "role": membership.role,
                     "is_current_user": target_user.id == request.user.id,
                     "created_at": membership.created_at.isoformat(),

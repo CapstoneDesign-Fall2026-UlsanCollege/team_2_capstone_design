@@ -461,3 +461,52 @@ class ProductMediaUploadAuditTests(APITestCase):
             self.assertEqual(blocked.status_code, status.HTTP_429_TOO_MANY_REQUESTS, blocked.content)
 
 
+class StaffInvitePiiAuditTests(APITestCase):
+    """Issue #76: never disclose or overwrite unrelated user phone/full_name on staff invite."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create_user("audit76-owner@example.com", full_name="Owner 76")
+        cls.victim = User.objects.create_user(
+            "victim76@example.com",
+            full_name="Victim Secret Name",
+            phone="9801112233",
+        )
+        cls.blank_victim = User.objects.create_user(
+            "blank76@example.com",
+            full_name="",
+            phone="9809998877",
+        )
+        cls.store = Store.objects.create(slug="audit76-shop", name="Audit 76 Shop", is_active=True)
+        with TenantDatabaseContext(cls.store.id):
+            StoreMembership.objects.create(store=cls.store, user=cls.owner, role="OWNER")
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.owner)
+
+    def test_staff_invite_redacts_existing_user_pii_and_does_not_overwrite_profile(self):
+        res = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/staff/",
+            {"email": self.victim.email, "role": "STAFF"},
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.content)
+        data = res.json()
+        self.assertEqual(data["email"], self.victim.email)
+        self.assertEqual(data["phone"], "")
+        self.assertEqual(data["full_name"], "victim76")
+        self.assertNotIn("Victim Secret Name", str(data))
+
+        res_blank = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/staff/",
+            {"email": self.blank_victim.email, "full_name": "Attacker Label", "role": "STAFF"},
+            format="json",
+        )
+        self.assertEqual(res_blank.status_code, status.HTTP_201_CREATED, res_blank.content)
+        self.assertEqual(res_blank.json()["phone"], "")
+        self.assertEqual(res_blank.json()["full_name"], "Attacker Label")
+        self.blank_victim.refresh_from_db()
+        self.assertEqual(self.blank_victim.full_name, "")
+
+
+
