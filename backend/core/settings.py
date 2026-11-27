@@ -188,7 +188,7 @@ else:
         os.getenv("DIRECT_DATABASE_URL", "").strip()
         or os.getenv("DATABASE_URL_DIRECT", "").strip()
     )
-    is_migration = any(cmd in sys.argv for cmd in ["migrate", "makemigrations", "showmigrations"])
+    is_migration = any(cmd in sys.argv for cmd in ["migrate", "makemigrations", "showmigrations", "createcachetable"])
 
     # Release-phase schema migrations: use unpooled direct connection when DATABASE_URL_DIRECT is set
     if is_migration and direct_db_url:
@@ -314,12 +314,29 @@ ALLOW_LOCAL_MEDIA_UPLOADS = (DEBUG or IS_TEST_COMMAND) and (
 )
 
 # Cache Configuration
-CACHES = {
-    "default": {
-        "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
-        "LOCATION": "shopcraft-cache",
+# Rate-limit counters (DRF scoped throttles, Google login limiter) must be shared by every
+# gunicorn worker and every dyno. A per-process LocMemCache multiplies the real limit by the
+# number of workers, so on PostgreSQL we use Django's database cache (table `shopcraft_cache`,
+# created in the release phase by `manage.py createcachetable`). SQLite/dev/tests keep LocMemCache.
+# Override with SHOPCRAFT_CACHE_BACKEND=locmem|db.
+_cache_backend_choice = os.getenv("SHOPCRAFT_CACHE_BACKEND", "").strip().lower()
+_db_is_postgres = "postgresql" in str(DATABASES["default"].get("ENGINE", ""))
+if _cache_backend_choice == "db" or (
+    _cache_backend_choice == "" and _db_is_postgres and not IS_TEST_COMMAND
+):
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.db.DatabaseCache",
+            "LOCATION": "shopcraft_cache",
+        }
     }
-}
+else:
+    CACHES = {
+        "default": {
+            "BACKEND": "django.core.cache.backends.locmem.LocMemCache",
+            "LOCATION": "shopcraft-cache",
+        }
+    }
 
 # CORS & CSRF
 CORS_ALLOW_ALL_ORIGINS = False
@@ -349,7 +366,6 @@ else:
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://([a-zA-Z0-9-]+\.)*shopcraft\.me$",
-    r"^https://([a-zA-Z0-9-]+\.)*vercel\.app$",
 ]
 
 default_csrf = [
@@ -357,7 +373,6 @@ default_csrf = [
     "https://*.shopcraft.me",
     "https://shop.shopcraft.me",
     "https://api.shopcraft.me",
-    "https://*.vercel.app",
 ]
 if DEBUG:
     default_csrf.extend([
@@ -412,6 +427,9 @@ CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax").strip() or "Lax"
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_DOMAIN = os.getenv("CSRF_COOKIE_DOMAIN", "").strip() or None
 
+# Pending unpaid Khalti orders expire and release reserved stock/discounts after this window
+PENDING_PAYMENT_EXPIRY_MINUTES = max(5, int(os.getenv("PENDING_PAYMENT_EXPIRY_MINUTES", "30")))
+
 # Django REST Framework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -420,13 +438,24 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
     "DEFAULT_THROTTLE_RATES": {
         "otp_request": "5/min",
         "otp_verify": "10/min",
+        "storefront_otp_request": "1000/min" if IS_TEST_COMMAND else "5/min",
+        "storefront_otp_verify": "1000/min" if IS_TEST_COMMAND else "10/min",
         "auth_google": "15/min",
         "theme_media_upload": "30/min",
-        "anon": "60/min",
-        "user": "120/min",
+        "media_upload": "1000/min" if IS_TEST_COMMAND else "30/min",
+        "checkout_quote": "1000/min" if IS_TEST_COMMAND else "60/min",
+        "checkout_place": "1000/min" if IS_TEST_COMMAND else "20/min",
+        "khalti_verify": "1000/min" if IS_TEST_COMMAND else "30/min",
+        "public_order_pay": "1000/min" if IS_TEST_COMMAND else "15/min",
+        "anon": "10000/min" if IS_TEST_COMMAND else "120/min",
+        "user": "10000/min" if IS_TEST_COMMAND else "300/min",
     },
 }
 

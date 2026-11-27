@@ -10,6 +10,7 @@ import {
   fetchMerchantOrders,
   OrderDetail,
   OrderQueueCounts,
+  PaginationMeta,
   transitionMerchantOrderStatus,
 } from "@/lib/api";
 import { classifyMerchantPageError } from "@/lib/merchant-guard";
@@ -50,6 +51,8 @@ function MerchantOrdersContent() {
     delivered: 0,
   });
   const [isLoading, setIsLoading] = useState<boolean>(true);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+  const [isLoadingMore, setIsLoadingMore] = useState<boolean>(false);
   const [error, setError] = useState<string | null>(null);
   const [selectedOrder, setSelectedOrder] = useState<OrderDetail | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState<boolean>(false);
@@ -95,6 +98,7 @@ function MerchantOrdersContent() {
         .then((res) => {
           if (reqId === loadSeqRef.current) {
             setOrders(res.orders);
+            setPagination(res.pagination ?? null);
             setCounts(res.counts);
             setError(null);
           }
@@ -153,6 +157,7 @@ function MerchantOrdersContent() {
       .then((res) => {
         if (!ignore && reqId === loadSeqRef.current) {
           setOrders(res.orders);
+            setPagination(res.pagination ?? null);
           setCounts(res.counts);
           setError(null);
         }
@@ -171,6 +176,28 @@ function MerchantOrdersContent() {
       ignore = true;
     };
   }, [storeSlug, activeTab, searchQuery, handleOrdersError]);
+
+  const handleLoadMore = () => {
+    if (!storeSlug || !pagination?.has_more || isLoadingMore) return;
+    const seq = loadSeqRef.current;
+    setIsLoadingMore(true);
+    fetchMerchantOrders(storeSlug, {
+      status: activeTab,
+      search: searchQuery.trim() || undefined,
+      page: pagination.page + 1,
+    })
+      .then((res) => {
+        if (seq !== loadSeqRef.current) return; // filters changed while loading
+        setOrders((prev) => {
+          const seen = new Set(prev.map((o) => o.id));
+          return [...prev, ...res.orders.filter((o) => !seen.has(o.id))];
+        });
+        setCounts(res.counts);
+        setPagination(res.pagination ?? null);
+      })
+      .catch((err: unknown) => handleOrdersError(err))
+      .finally(() => setIsLoadingMore(false));
+  };
 
   const handleSearchSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -367,6 +394,23 @@ function MerchantOrdersContent() {
           onSelectOrder={handleSelectOrder}
           onQuickAdvance={handleQuickAdvance}
         />
+      )}
+      {!isLoading && pagination && pagination.total > 0 && (
+        <div className="flex items-center justify-between gap-3 text-xs text-[var(--ink-2)]">
+          <span>
+            Showing {orders.length} of {pagination.total} orders
+          </span>
+          {pagination.has_more && (
+            <button
+              type="button"
+              onClick={handleLoadMore}
+              disabled={isLoadingMore}
+              className="px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] font-medium cursor-pointer disabled:opacity-60"
+            >
+              {isLoadingMore ? "Loading..." : "Load more"}
+            </button>
+          )}
+        </div>
       )}
 
       {/* Slide-Over Order Detail Drawer */}

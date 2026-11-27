@@ -1,7 +1,7 @@
 import type { Metadata } from "next";
 import { notFound } from "next/navigation";
 import { StorefrontCatalogView } from "@/components/storefront/StorefrontCatalogView";
-import { ProductItem, StorePublicMetadata } from "@/lib/api";
+import { PaginationMeta, ProductItem, StorePublicMetadata } from "@/lib/api";
 import { getServerApiOrigin } from "@/lib/env";
 import { fetchPublicStoreOutcome } from "@/lib/storefront-fetch";
 
@@ -34,6 +34,7 @@ export async function generateMetadata({
 
 interface StoreCatalogData {
   products: ProductItem[];
+  pagination?: PaginationMeta | null;
 }
 
 async function fetchStoreData(
@@ -88,6 +89,7 @@ export default async function StorefrontHomePage({
     <StorefrontCatalogView
       store={store}
       products={catalog.products}
+      initialPagination={catalog.pagination ?? null}
       isThemePreview={isThemePreview}
       initialSearchOpen={resolvedSearchParams?.search === "1"}
     />

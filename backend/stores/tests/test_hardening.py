@@ -693,7 +693,9 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
             CLOUDINARY_API_KEY="",
             CLOUDINARY_API_SECRET="",
         ):
-            img = SimpleUploadedFile("item.png", b"png-bytes", content_type="image/png")
+            png_buf = io.BytesIO()
+            Image.new("RGB", (2, 2), color="red").save(png_buf, format="PNG")
+            img = SimpleUploadedFile("item.png", png_buf.getvalue(), content_type="image/png")
             res_503 = self.client.post(
                 f"/api/merchant/stores/{self.store.slug}/media/upload/",
                 {"file": img},
@@ -716,7 +718,9 @@ class ProductionHardeningAndKhaltiSafetyTests(TestCase):
             CLOUDINARY_API_KEY="123456789",
             CLOUDINARY_API_SECRET="cloudinary-unit-test-placeholder",
         ), patch("stores.cloudinary_upload.get_shared_http_session", return_value=mock_session):
-            img2 = SimpleUploadedFile("shawl.png", b"png-bytes", content_type="image/png")
+            png_buf2 = io.BytesIO()
+            Image.new("RGB", (2, 2), color="blue").save(png_buf2, format="PNG")
+            img2 = SimpleUploadedFile("shawl.png", png_buf2.getvalue(), content_type="image/png")
             res_ok = self.client.post(
                 f"/api/merchant/stores/{self.store.slug}/media/upload/",
                 {"file": img2},

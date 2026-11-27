@@ -1,6 +1,8 @@
+import io
 from datetime import timedelta
 import os
 import unittest.mock
+from PIL import Image
 from django.contrib.auth import get_user_model
 from django.core.management import call_command
 from django.db import connection, transaction
@@ -722,9 +724,14 @@ class TenantIsolationTests(APITestCase):
         Verifies store-prefixed media uploads require merchant authentication,
         block cross-tenant uploads, and record MerchantAuditLog.
         """
+        def _tiny_png() -> bytes:
+            buf = io.BytesIO()
+            Image.new("RGB", (2, 2), color="green").save(buf, format="PNG")
+            return buf.getvalue()
+
         # 1. Anonymous upload blocked
         self.client.logout()
-        dummy_file = SimpleUploadedFile("product.png", b"fake-png-binary-content", content_type="image/png")
+        dummy_file = SimpleUploadedFile("product.png", _tiny_png(), content_type="image/png")
         anon_res = self.client.post(
             f"/api/merchant/stores/{self.store_a.slug}/media/upload/",
             {"file": dummy_file},
@@ -734,7 +741,7 @@ class TenantIsolationTests(APITestCase):
 
         # 2. Cross-tenant upload blocked (Owner B cannot upload to Store A)
         self.client.force_login(self.owner_b)
-        dummy_file = SimpleUploadedFile("product.png", b"fake-png-binary-content", content_type="image/png")
+        dummy_file = SimpleUploadedFile("product.png", _tiny_png(), content_type="image/png")
         cross_res = self.client.post(
             f"/api/merchant/stores/{self.store_a.slug}/media/upload/",
             {"file": dummy_file},
@@ -744,7 +751,7 @@ class TenantIsolationTests(APITestCase):
 
         # 3. Authorized Owner A upload succeeds with store prefix
         self.client.force_login(self.owner_a)
-        dummy_file = SimpleUploadedFile("dark-roast.png", b"fake-png-binary-content", content_type="image/png")
+        dummy_file = SimpleUploadedFile("dark-roast.png", _tiny_png(), content_type="image/png")
         auth_res = self.client.post(
             f"/api/merchant/stores/{self.store_a.slug}/media/upload/",
             {"file": dummy_file},

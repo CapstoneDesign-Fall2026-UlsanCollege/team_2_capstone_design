@@ -27,6 +27,36 @@ const withPWA = withPWAInit({
   },
 });
 
+const isDev = process.env.NODE_ENV !== "production";
+
+const cspConnectSrc = [
+  "'self'",
+  "https://accounts.google.com/gsi/",
+  ...(configuredApiOrigin ? [configuredApiOrigin] : []),
+  ...(isDev ? ["http://127.0.0.1:8000", "http://localhost:8000"] : []),
+].join(" ");
+
+const cspScriptSrc = [
+  "'self'",
+  "'unsafe-inline'",
+  "https://accounts.google.com/gsi/client",
+  ...(isDev ? ["'unsafe-eval'"] : []),
+].join(" ");
+
+const contentSecurityPolicy = [
+  "default-src 'self'",
+  "base-uri 'self'",
+  "frame-ancestors 'self'",
+  "object-src 'none'",
+  "form-action 'self'",
+  `script-src ${cspScriptSrc}`,
+  "style-src 'self' 'unsafe-inline' https://accounts.google.com/gsi/style",
+  "img-src 'self' data: blob: https://res.cloudinary.com https://images.unsplash.com https://lh3.googleusercontent.com",
+  "font-src 'self' data:",
+  `connect-src ${cspConnectSrc}`,
+  "frame-src 'self' https://accounts.google.com/gsi/",
+].join("; ");
+
 const nextConfig: NextConfig = {
   turbopack: {},
   skipTrailingSlashRedirect: true,
@@ -65,6 +95,10 @@ const nextConfig: NextConfig = {
           {
             key: "Permissions-Policy",
             value: "camera=(), microphone=(), geolocation=()",
+          },
+          {
+            key: "Content-Security-Policy",
+            value: contentSecurityPolicy,
           },
         ],
       },

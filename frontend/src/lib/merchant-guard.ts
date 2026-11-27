@@ -124,3 +124,19 @@ export function classifyMerchantPageError(
     message: err instanceof Error ? err.message : "Failed to load workspace data.",
   };
 }
+
+/**
+ * Returns a safe same-origin relative path (starting with a single `/`) or `null`.
+ * Blocks external origins, protocol-relative `//`, backslashes, and `javascript:`/`data:` schemes.
+ */
+export function sanitizeOptionalRedirectTarget(raw?: string | null): string | null {
+  if (!raw || typeof raw !== "string") return null;
+  const trimmed = raw.trim();
+  if (!trimmed.startsWith("/") || trimmed.startsWith("//") || trimmed.startsWith("/\\")) {
+    return null;
+  }
+  if (/[\x00-\x1f\\]/.test(trimmed)) {
+    return null;
+  }
+  return trimmed;
+}

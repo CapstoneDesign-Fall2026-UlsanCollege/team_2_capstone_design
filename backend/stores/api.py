@@ -1,9 +1,12 @@
 import logging
 import math
+import re
 from datetime import timedelta
+from urllib.parse import urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
-from django.core.validators import URLValidator
+from django.core.files.uploadedfile import SimpleUploadedFile
+from django.core.validators import URLValidator, validate_email
 from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Prefetch, Q, Sum
 from django.http import Http404
@@ -19,7 +22,12 @@ import io
 from accounts.models import User
 from catalog.models import Discount, Product, Variant
 from orders.models import Order, OrderItem, OrderEvent
-from core.tenant_context import set_current_tenant_id, reset_current_tenant_id, UserMembershipContext
+from core.tenant_context import (
+    TenantDatabaseContext,
+    UserMembershipContext,
+    reset_current_tenant_id,
+    set_current_tenant_id,
+)
 from stores.cloudinary_upload import (
     CloudinaryUploadError,
     is_cloudinary_configured,
@@ -46,6 +54,43 @@ from stores.khalti import (
 khalti_logger = logging.getLogger("shopcraft.payments")
 
 
+def _resolve_safe_khalti_return_url(request, store) -> str:
+    """Only allow return_url matching the server host or trusted CORS origins with fixed return path."""
+    canonical = request.build_absolute_uri(f"/s/{store.slug}/checkout/khalti-return/")
+    raw = str(request.data.get("return_url") or "").strip() if hasattr(request, "data") else ""
+    if not raw:
+        return canonical
+
+    parsed = urlparse(raw)
+    hostname = (parsed.hostname or "").lower()
+    is_local = hostname in ("localhost", "127.0.0.1")
+    is_testserver = bool(getattr(settings, "IS_TEST_COMMAND", False) and hostname == "testserver")
+    if parsed.scheme not in ("https", "http"):
+        return canonical
+    if parsed.scheme == "http" and not (getattr(settings, "DEBUG", False) or is_local or is_testserver):
+        return canonical
+    if not parsed.netloc or parsed.query or parsed.fragment:
+        return canonical
+
+    expected_path = f"/s/{store.slug}/checkout/khalti-return"
+    if parsed.path.rstrip("/") != expected_path:
+        return canonical
+
+    candidate_origin = f"{parsed.scheme}://{parsed.netloc}".lower()
+    req_host = (request.get_host() or "").lower()
+    req_scheme = getattr(request, "scheme", "https") or "https"
+    same_origin = bool(req_host and candidate_origin == f"{req_scheme}://{req_host}".lower())
+    allowed_origins = {o.rstrip("/").lower() for o in getattr(settings, "CORS_ALLOWED_ORIGINS", [])}
+    regexes = getattr(settings, "CORS_ALLOWED_ORIGIN_REGEXES", [])
+    if (
+        same_origin
+        or candidate_origin in allowed_origins
+        or any(re.match(pat, candidate_origin, re.IGNORECASE) for pat in regexes)
+    ):
+        return raw
+    return canonical
+
+
 def _build_khalti_initiate_body(
     *,
     request,
@@ -57,9 +102,7 @@ def _build_khalti_initiate_body(
     phone: str,
 ) -> dict:
     """Build a canonical Khalti /epayment/initiate/ payload using paisa integer totals."""
-    return_url = request.data.get("return_url") or request.build_absolute_uri(
-        f"/s/{store.slug}/checkout/khalti-return/"
-    )
+    return_url = _resolve_safe_khalti_return_url(request, store)
     return {
         "return_url": return_url,
         "website_url": request.build_absolute_uri(f"/s/{store.slug}/"),
@@ -100,10 +143,21 @@ class StoreTenantMixin:
     for all tenant-scoped requests. No tenant state survives the transaction or HTTP request.
     Guarantees atomic rollback whenever DRF catches an exception (response.exception = True)
     or an error response with status >= 500 is returned.
+
+    Views that perform outbound payment HTTP calls (and manage short explicit
+    TenantDatabaseContext phases themselves) may set `atomic_requests = False`
+    so database row locks are never held across external network I/O.
     """
     store = None
+    atomic_requests = True
 
     def dispatch(self, request, *args, **kwargs):
+        if not self.atomic_requests:
+            response = super().dispatch(request, *args, **kwargs)
+            if hasattr(response, "headers") and "Cache-Control" not in response:
+                response["Cache-Control"] = PRIVATE_NO_STORE_CACHE_CONTROL
+            return response
+
         with transaction.atomic():
             response = super().dispatch(request, *args, **kwargs)
             if getattr(response, "exception", False) or (hasattr(response, "status_code") and response.status_code >= 500):
@@ -123,10 +177,12 @@ class StorePublicMixin(StoreTenantMixin):
         self.store = Store.objects.filter(slug=store_slug, is_active=True).first()
         if not self.store:
             raise Http404("Store not found or inactive.")
-        set_current_tenant_id(self.store.id, is_local=True)
+        if self.atomic_requests:
+            set_current_tenant_id(self.store.id, is_local=True)
 
     def finalize_response(self, request, response, *args, **kwargs):
-        reset_current_tenant_id()
+        if self.atomic_requests:
+            reset_current_tenant_id()
         return super().finalize_response(request, response, *args, **kwargs)
 
 
@@ -502,22 +558,58 @@ class StoreDetailView(StorePublicMixin, APIView):
         return response
 
 
+LIST_PAGE_SIZE_DEFAULT = 50
+LIST_PAGE_SIZE_MAX = 200
+
+
+def _page_params(request, default=LIST_PAGE_SIZE_DEFAULT, max_size=LIST_PAGE_SIZE_MAX):
+    """Parse ?page= / ?page_size= safely. Garbage falls back to defaults; size is hard-capped."""
+    def _int(raw, fallback):
+        try:
+            value = int(str(raw).strip())
+        except (TypeError, ValueError):
+            return fallback
+        return value
+
+    page = max(1, _int(request.query_params.get("page"), 1))
+    page_size = _int(request.query_params.get("page_size"), default)
+    page_size = min(max(1, page_size), max_size)
+    return page, page_size, (page - 1) * page_size
+
+
+def _page_meta(total, page, page_size):
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "has_more": page * page_size < total,
+    }
+
+
 class StoreCatalogView(StorePublicMixin, APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, store_slug):
+        q = str(request.query_params.get("q", "")).strip()
+        page, page_size, offset = _page_params(request, default=48)
+        base_qs = Product.objects.for_store(self.store).filter(is_active=True)
+        if q:
+            base_qs = base_qs.filter(Q(name__icontains=q) | Q(description__icontains=q))
         active_variants_qs = Variant.objects.filter(is_active=True).order_by("sort_order", "price_minor")
-        products = (
-            Product.objects.for_store(self.store)
-            .filter(is_active=True)
-            .prefetch_related(
+        products = list(
+            base_qs.prefetch_related(
                 Prefetch("variants", queryset=active_variants_qs, to_attr="prefetched_active_variants")
-            )
-            .order_by("sort_order", "id")
+            ).order_by("sort_order", "id")[offset:offset + page_size]
         )
+        # Skip COUNT(*) on page 1 when fewer than a full page came back (common for small stores).
+        if offset == 0 and len(products) < page_size:
+            total = len(products)
+        else:
+            total = base_qs.count()
         response = Response({
             "products": ProductSerializer(products, many=True).data,
+            "pagination": _page_meta(total, page, page_size),
         })
         response["Cache-Control"] = PUBLIC_STOREFRONT_CACHE_CONTROL
         return response
@@ -756,46 +848,79 @@ def _reclaim_order_inventory(store, order) -> str | None:
     return None
 
 
+def _release_expired_pending_orders(
+    store,
+    *,
+    expiry_minutes: int | None = None,
+    limit: int = 25,
+    exclude_order_id: int | None = None,
+) -> int:
+    """
+    Lazy cleanup for abandoned PENDING_PAYMENT orders older than PENDING_PAYMENT_EXPIRY_MINUTES.
+    Releases reserved tracked stock and discount usage so attackers cannot lock inventory with unpaid orders.
+    """
+    minutes = expiry_minutes if expiry_minutes is not None else int(getattr(settings, "PENDING_PAYMENT_EXPIRY_MINUTES", 30))
+    cutoff = timezone.now() - timedelta(minutes=max(1, minutes))
+    qs = Order.objects.for_store(store).filter(
+        status="PENDING_PAYMENT",
+        payment_status="UNPAID",
+        created_at__lt=cutoff,
+    )
+    if exclude_order_id is not None:
+        qs = qs.exclude(id=exclude_order_id)
+    expired_ids = list(qs.order_by("id").values_list("id", flat=True)[:limit])
+    if not expired_ids:
+        return 0
+
+    released_count = 0
+    locked_orders = (
+        Order.objects.select_for_update()
+        .for_store(store)
+        .filter(id__in=expired_ids, status="PENDING_PAYMENT", payment_status="UNPAID")
+        .prefetch_related("items")
+        .order_by("id")
+    )
+    for exp_order in locked_orders:
+        exp_order.status = "PAYMENT_FAILED"
+        exp_order.payment_status = "FAILED"
+        _release_order_discount(store, exp_order)
+        _release_order_inventory(store, exp_order)
+        exp_order.save(
+            update_fields=[
+                "status",
+                "payment_status",
+                "discount_redeemed",
+                "inventory_deducted",
+                "updated_at",
+            ]
+        )
+        OrderEvent.objects.create(
+            store=store,
+            order=exp_order,
+            from_status="PENDING_PAYMENT",
+            to_status="PAYMENT_FAILED",
+            note="Payment session expired automatically; reserved stock and promo usage released.",
+            actor=None,
+        )
+        released_count += 1
+    return released_count
+
+
 class StorePublicOrderPayView(StorePublicMixin, APIView):
     """
     Allows a shopper holding a valid unguessable order access token (e.g. from a
     pay-per-delivery renewal link or failed Khalti return) to pay via Khalti or confirm COD.
     """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "public_order_pay"
+    atomic_requests = False
 
     def post(self, request, store_slug, order_id):
         import uuid
         token_param = str(
             request.data.get("token") or request.query_params.get("token") or ""
         ).strip()
-        order = None
-
-        qs = Order.objects.for_store(self.store).select_for_update()
-        try:
-            uuid_token = uuid.UUID(str(order_id))
-            order = qs.filter(token=uuid_token).first()
-        except ValueError:
-            try:
-                oid = int(order_id)
-                if token_param:
-                    try:
-                        param_uuid = uuid.UUID(token_param)
-                        order = qs.filter(id=oid, token=param_uuid).first()
-                    except ValueError:
-                        pass
-                elif request.user.is_authenticated:
-                    order = qs.filter(id=oid, customer__user=request.user).first()
-            except ValueError:
-                pass
-
-        if not order:
-            raise Http404("Order not found.")
-
-        if order.payment_status == "PAID" or order.status not in ["PENDING_PAYMENT", "PAYMENT_FAILED"]:
-            return Response(
-                {"error": "This order does not have a pending payment balance."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         payment_method = str(request.data.get("payment_method", "KHALTI")).strip().upper()
         if payment_method not in ["KHALTI", "COD"]:
@@ -810,15 +935,52 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if payment_method == "COD":
-            with transaction.atomic():
-                promo_err = _reclaim_order_discount(self.store, order)
-                if promo_err:
-                    return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
-                inv_err = _reclaim_order_inventory(self.store, order)
-                if inv_err:
-                    transaction.set_rollback(True)
-                    return Response({"error": inv_err}, status=status.HTTP_400_BAD_REQUEST)
+        if payment_method == "KHALTI":
+            _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
+            if khalti_cfg_err:
+                return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Phase 1: lock order, validate state, claim discount/inventory, and release DB locks before HTTP I/O.
+        with TenantDatabaseContext(self.store.id):
+            order = None
+            qs = Order.objects.for_store(self.store).select_for_update()
+            try:
+                uuid_token = uuid.UUID(str(order_id))
+                order = qs.filter(token=uuid_token).first()
+            except ValueError:
+                try:
+                    oid = int(order_id)
+                    if token_param:
+                        try:
+                            param_uuid = uuid.UUID(token_param)
+                            order = qs.filter(id=oid, token=param_uuid).first()
+                        except ValueError:
+                            pass
+                    elif request.user.is_authenticated:
+                        order = qs.filter(id=oid, customer__user=request.user).first()
+                except ValueError:
+                    pass
+
+            if not order:
+                raise Http404("Order not found.")
+
+            if order.payment_status == "PAID" or order.status not in ["PENDING_PAYMENT", "PAYMENT_FAILED"]:
+                return Response(
+                    {"error": "This order does not have a pending payment balance."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            _release_expired_pending_orders(self.store, exclude_order_id=order.id)
+            promo_err = _reclaim_order_discount(self.store, order)
+            if promo_err:
+                transaction.set_rollback(True)
+                return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
+            inv_err = _reclaim_order_inventory(self.store, order)
+            if inv_err:
+                transaction.set_rollback(True)
+                return Response({"error": inv_err}, status=status.HTTP_400_BAD_REQUEST)
+
+            if payment_method == "COD":
                 old_status = order.status
                 order.status = "CONFIRMED"
                 order.payment_method = "COD"
@@ -843,94 +1005,127 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                     actor=request.user if request.user.is_authenticated else None,
                 )
 
-            return Response({
-                "order_id": order.id,
-                "token": str(order.token),
-                "order_number": order.order_number,
-                "status": order.status,
-                "payment_method": "COD",
-                "payment_status": order.payment_status,
-                "total_minor": order.total_minor,
-            })
+                return Response({
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "order_number": order.order_number,
+                    "status": order.status,
+                    "payment_method": "COD",
+                    "payment_status": order.payment_status,
+                    "total_minor": order.total_minor,
+                })
 
-        # Khalti initiation for renewal / retry payment
-        _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
-        if khalti_cfg_err:
-            return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
-
-        promo_err = _reclaim_order_discount(self.store, order)
-        if promo_err:
-            return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
-        inv_err = _reclaim_order_inventory(self.store, order)
-        if inv_err:
-            transaction.set_rollback(True)
-            return Response({"error": inv_err}, status=status.HTTP_400_BAD_REQUEST)
-
-        snap = order.shipping_address_snapshot or {}
-        recipient_name = snap.get("recipient_name") or order.customer.full_name or "Shopper"
-        phone = snap.get("phone") or order.customer.phone or "9800000000"
-
-        khalti_body = _build_khalti_initiate_body(
-            request=request,
-            store=self.store,
-            order=order,
-            purchase_order_name=f"{self.store.name} Order {order.order_number}",
-            recipient_name=recipient_name,
-            customer_email=order.customer.email,
-            phone=phone,
-        )
-
-        pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
-            store=self.store,
-            order=order,
-            khalti_body=khalti_body,
-        )
-        if gw_err or not pidx or not payment_url:
-            return Response(
-                {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
-
-        with transaction.atomic():
             prev_status = order.status
             order.payment_method = "KHALTI"
             order.payment_status = "UNPAID"
             order.status = "PENDING_PAYMENT"
-            order.payment_ref = pidx
-            order.is_test = bool(is_mock or self.store.khalti_mode != "LIVE")
             order.save(
                 update_fields=[
                     "payment_method",
                     "payment_status",
                     "status",
-                    "payment_ref",
-                    "is_test",
                     "discount_redeemed",
                     "inventory_deducted",
                     "updated_at",
                 ]
             )
-            OrderEvent.objects.create(
+
+            snap = order.shipping_address_snapshot or {}
+            recipient_name = snap.get("recipient_name") or order.customer.full_name or "Shopper"
+            phone = snap.get("phone") or order.customer.phone or "9800000000"
+            customer_email = order.customer.email
+            order_id_val = order.id
+
+            khalti_body = _build_khalti_initiate_body(
+                request=request,
                 store=self.store,
                 order=order,
+                purchase_order_name=f"{self.store.name} Order {order.order_number}",
+                recipient_name=recipient_name,
+                customer_email=customer_email,
+                phone=phone,
+            )
+
+        # Outbound Khalti call strictly outside any DB transaction/lock.
+        try:
+            pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
+                store=self.store,
+                order=order,
+                khalti_body=khalti_body,
+            )
+        except Exception:
+            with TenantDatabaseContext(self.store.id):
+                locked_order = Order.objects.for_store(self.store).select_for_update().filter(id=order_id_val).first()
+                if locked_order:
+                    _release_order_discount(self.store, locked_order)
+                    _release_order_inventory(self.store, locked_order)
+                    locked_order.status = "PAYMENT_FAILED"
+                    locked_order.payment_status = "FAILED"
+                    locked_order.save(
+                        update_fields=[
+                            "status",
+                            "payment_status",
+                            "discount_redeemed",
+                            "inventory_deducted",
+                            "updated_at",
+                        ]
+                    )
+            raise
+
+        # Phase 2: persist Khalti reference or release reservation on gateway error.
+        with TenantDatabaseContext(self.store.id):
+            locked_order = Order.objects.for_store(self.store).select_for_update().get(id=order_id_val)
+            if gw_err or not pidx or not payment_url:
+                _release_order_discount(self.store, locked_order)
+                _release_order_inventory(self.store, locked_order)
+                locked_order.status = "PAYMENT_FAILED"
+                locked_order.payment_status = "FAILED"
+                locked_order.save(
+                    update_fields=[
+                        "status",
+                        "payment_status",
+                        "discount_redeemed",
+                        "inventory_deducted",
+                        "updated_at",
+                    ]
+                )
+                OrderEvent.objects.create(
+                    store=self.store,
+                    order=locked_order,
+                    from_status="PENDING_PAYMENT",
+                    to_status="PAYMENT_FAILED",
+                    note="Khalti payment initiation failed; reservation released.",
+                    actor=request.user if request.user.is_authenticated else None,
+                )
+                return Response(
+                    {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            locked_order.payment_ref = pidx
+            locked_order.is_test = bool(is_mock or self.store.khalti_mode != "LIVE")
+            locked_order.save(update_fields=["payment_ref", "is_test", "updated_at"])
+            OrderEvent.objects.create(
+                store=self.store,
+                order=locked_order,
                 from_status=prev_status,
                 to_status="PENDING_PAYMENT",
                 note="Khalti payment retry initiated.",
                 actor=request.user if request.user.is_authenticated else None,
             )
 
-        payload = {
-            "order_id": order.id,
-            "token": str(order.token),
-            "order_number": order.order_number,
-            "pidx": pidx,
-            "payment_url": payment_url,
-            "status": order.status,
-            "is_test": order.is_test,
-        }
-        if is_mock:
-            payload["is_mock"] = True
-        return Response(payload)
+            payload = {
+                "order_id": locked_order.id,
+                "token": str(locked_order.token),
+                "order_number": locked_order.order_number,
+                "pidx": pidx,
+                "payment_url": payment_url,
+                "status": locked_order.status,
+                "is_test": locked_order.is_test,
+            }
+            if is_mock:
+                payload["is_mock"] = True
+            return Response(payload)
 
 
 def _parse_positive_int(raw_val, max_val=MAX_DB_POSITIVE_INT):
@@ -1003,6 +1198,8 @@ def _validate_checkout_variant(variants: dict[int, Variant], v_id, requested_qty
 
 class StoreCheckoutQuoteView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "checkout_quote"
 
     def post(self, request, store_slug):
         if not isinstance(request.data, dict):
@@ -1011,6 +1208,8 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
         items_data, items_err = _parse_checkout_items(request.data.get("items"))
         if items_err:
             return Response({"error": items_err}, status=status.HTTP_400_BAD_REQUEST)
+
+        _release_expired_pending_orders(self.store)
 
         qty_by_variant_id = _aggregate_variant_quantities(items_data)
         variant_ids = list(qty_by_variant_id.keys())
@@ -1105,6 +1304,9 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
 
 class StoreCheckoutPlaceView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "checkout_place"
+    atomic_requests = False
 
     def post(self, request, store_slug):
         if not isinstance(request.data, dict):
@@ -1177,32 +1379,18 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 {"error": "Customer email is required for order confirmation."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
-
-        user_email_norm = (
-            request.user.email.strip().lower()
-            if getattr(request.user, "is_authenticated", False) and request.user.email
-            else None
-        )
-
-        if user_email_norm and customer_email == user_email_norm:
-            customer = provision_store_customer(
-                self.store,
-                request.user,
-                full_name=recipient_name,
-                phone=phone
+        if len(customer_email) > 254:
+            return Response(
+                {"error": "Please enter a valid email address."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-        else:
-            customer, _ = Customer.objects.for_store(self.store).get_or_create(
-                store=self.store,
-                email=customer_email,
-                defaults={"full_name": recipient_name, "phone": phone},
+        try:
+            validate_email(customer_email)
+        except ValidationError:
+            return Response(
+                {"error": "Please enter a valid email address."},
+                status=status.HTTP_400_BAD_REQUEST,
             )
-            if not customer.phone and phone:
-                customer.phone = phone
-                customer.save(update_fields=["phone"])
-            if not customer.full_name and recipient_name:
-                customer.full_name = recipient_name
-                customer.save(update_fields=["full_name"])
 
         payment_method = str(request.data.get("payment_method", "KHALTI")).strip().upper()
         if payment_method not in ["KHALTI", "COD"]:
@@ -1219,83 +1407,123 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             if khalti_cfg_err:
                 return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
 
-        qty_by_variant_id = _aggregate_variant_quantities(items_data)
-        variant_ids = list(qty_by_variant_id.keys())
-        variants = {
-            v.id: v
-            for v in Variant.objects.for_store(self.store)
-            .select_related("product")
-            .filter(id__in=variant_ids)
-        }
+        user_email_norm = (
+            request.user.email.strip().lower()
+            if getattr(request.user, "is_authenticated", False) and request.user.email
+            else None
+        )
 
-        subtotal_minor = 0
-        order_items_to_create = []
+        # Phase 1: provision customer, release expired holds, validate/reserve stock & discount, and create Order.
+        # DB transaction closes and releases all row locks before any Khalti network call begins.
+        with TenantDatabaseContext(self.store.id):
+            _release_expired_pending_orders(self.store)
 
-        for it in items_data:
-            v, variant_err = _validate_checkout_variant(
-                variants,
-                it["variant_id"],
-                requested_qty=qty_by_variant_id[it["variant_id"]],
-            )
-            if variant_err:
-                return Response(
-                    {"error": variant_err},
-                    status=status.HTTP_400_BAD_REQUEST,
+            if user_email_norm and customer_email == user_email_norm:
+                customer = provision_store_customer(
+                    self.store,
+                    request.user,
+                    full_name=recipient_name,
+                    phone=phone,
                 )
-
-            quantity = it["quantity"]
-            unit_price = v.price_minor
-            line_total = unit_price * quantity
-            if line_total > MAX_DB_POSITIVE_INT or subtotal_minor + line_total > MAX_DB_POSITIVE_INT:
-                return Response(
-                    {"error": "Order total exceeds maximum supported amount."},
-                    status=status.HTTP_400_BAD_REQUEST,
+            else:
+                customer, _ = Customer.objects.for_store(self.store).get_or_create(
+                    store=self.store,
+                    email=customer_email,
+                    defaults={"full_name": recipient_name, "phone": phone},
                 )
-            variant_label = v.label
+                # Only backfill missing profile fields on unlinked guest records;
+                # never let unauthenticated guest checkout mutate a user-linked Customer profile.
+                if customer.user_id is None:
+                    if not customer.phone and phone:
+                        customer.phone = phone
+                        customer.save(update_fields=["phone"])
+                    if not customer.full_name and recipient_name:
+                        customer.full_name = recipient_name
+                        customer.save(update_fields=["full_name"])
 
-            subtotal_minor += line_total
-            order_items_to_create.append({
-                "variant": v,
-                "product_name_snapshot": v.product.name,
-                "variant_label_snapshot": variant_label,
-                "unit_price_minor": unit_price,
-                "quantity": quantity,
-                "line_total_minor": line_total,
-            })
+            customer_email_val = customer.email
+            qty_by_variant_id = _aggregate_variant_quantities(items_data)
+            variant_ids = list(qty_by_variant_id.keys())
+            variants = {
+                v.id: v
+                for v in Variant.objects.for_store(self.store)
+                .select_related("product")
+                .filter(id__in=variant_ids)
+            }
 
-        inside_valley_districts = {"kathmandu", "lalitpur", "bhaktapur"}
-        if district.lower() in inside_valley_districts:
-            shipping_minor = self.store.inside_valley_shipping_minor
-        else:
-            shipping_minor = self.store.outside_valley_shipping_minor
+            subtotal_minor = 0
+            order_items_to_create = []
 
-        if self.store.free_shipping_threshold_minor and subtotal_minor >= self.store.free_shipping_threshold_minor:
-            shipping_minor = 0
-
-        raw_discount_code = str(request.data.get("discount_code") or "").strip().upper()
-        disc_candidate = None
-        if raw_discount_code:
-            disc_candidate = Discount.objects.for_store(self.store).filter(code__iexact=raw_discount_code).first()
-            if not disc_candidate:
-                return Response(
-                    {"error": f"Promo code '{raw_discount_code}' is not valid for this store."},
-                    status=status.HTTP_400_BAD_REQUEST,
+            for it in items_data:
+                v, variant_err = _validate_checkout_variant(
+                    variants,
+                    it["variant_id"],
+                    requested_qty=qty_by_variant_id[it["variant_id"]],
                 )
-            ok, reason = disc_candidate.check_eligibility(subtotal_minor)
-            if not ok:
-                return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
+                if variant_err:
+                    transaction.set_rollback(True)
+                    return Response(
+                        {"error": variant_err},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-        prefix = f"{self.store.slug[:2].upper()}-{timezone.now().year}"
-        with transaction.atomic():
+                quantity = it["quantity"]
+                unit_price = v.price_minor
+                line_total = unit_price * quantity
+                if line_total > MAX_DB_POSITIVE_INT or subtotal_minor + line_total > MAX_DB_POSITIVE_INT:
+                    transaction.set_rollback(True)
+                    return Response(
+                        {"error": "Order total exceeds maximum supported amount."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                variant_label = v.label
+
+                subtotal_minor += line_total
+                order_items_to_create.append({
+                    "variant": v,
+                    "product_name_snapshot": v.product.name,
+                    "variant_label_snapshot": variant_label,
+                    "unit_price_minor": unit_price,
+                    "quantity": quantity,
+                    "line_total_minor": line_total,
+                })
+
+            inside_valley_districts = {"kathmandu", "lalitpur", "bhaktapur"}
+            if district.lower() in inside_valley_districts:
+                shipping_minor = self.store.inside_valley_shipping_minor
+            else:
+                shipping_minor = self.store.outside_valley_shipping_minor
+
+            if self.store.free_shipping_threshold_minor and subtotal_minor >= self.store.free_shipping_threshold_minor:
+                shipping_minor = 0
+
+            raw_discount_code = str(request.data.get("discount_code") or "").strip().upper()
+            disc_candidate = None
+            if raw_discount_code:
+                disc_candidate = Discount.objects.for_store(self.store).filter(code__iexact=raw_discount_code).first()
+                if not disc_candidate:
+                    transaction.set_rollback(True)
+                    return Response(
+                        {"error": f"Promo code '{raw_discount_code}' is not valid for this store."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                ok, reason = disc_candidate.check_eligibility(subtotal_minor)
+                if not ok:
+                    transaction.set_rollback(True)
+                    return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
+
+            prefix = f"{self.store.slug[:2].upper()}-{timezone.now().year}"
             discount_minor = 0
             applied_promo_note = ""
             applied_discount = None
             if disc_candidate is not None:
                 locked_disc = Discount.objects.select_for_update().for_store(self.store).filter(id=disc_candidate.id).first()
                 if not locked_disc:
+                    transaction.set_rollback(True)
                     return Response({"error": "Promo code is no longer valid."}, status=status.HTTP_400_BAD_REQUEST)
                 ok, reason = locked_disc.check_eligibility(subtotal_minor)
                 if not ok:
+                    transaction.set_rollback(True)
                     return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
                 discount_minor = locked_disc.compute_discount_minor(subtotal_minor)
                 applied_discount = locked_disc
@@ -1303,6 +1531,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
 
             total_minor = max(0, subtotal_minor - discount_minor) + shipping_minor
             if total_minor > MAX_DB_POSITIVE_INT:
+                transaction.set_rollback(True)
                 return Response(
                     {"error": "Order total exceeds maximum supported amount."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -1368,53 +1597,77 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 actor=request.user if request.user.is_authenticated else None,
             )
 
-        if payment_method == "COD":
-            return Response({
-                "order_id": order.id,
-                "token": str(order.token),
-                "order_number": order.order_number,
-                "status": order.status,
-                "payment_method": "COD",
-                "payment_status": order.payment_status,
-                "total_minor": order.total_minor,
-            }, status=status.HTTP_201_CREATED)
+            if payment_method == "COD":
+                return Response({
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "order_number": order.order_number,
+                    "status": order.status,
+                    "payment_method": "COD",
+                    "payment_status": order.payment_status,
+                    "total_minor": order.total_minor,
+                }, status=status.HTTP_201_CREATED)
 
-        khalti_body = _build_khalti_initiate_body(
-            request=request,
-            store=self.store,
-            order=order,
-            purchase_order_name=f"{self.store.name} Order {order.order_number}",
-            recipient_name=recipient_name,
-            customer_email=customer.email,
-            phone=phone,
-        )
+            order_id_val = order.id
+            order_token_str = str(order.token)
+            order_number_val = order.order_number
+            order_status_val = order.status
+            order_is_test_val = order.is_test
 
-        pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
-            store=self.store,
-            order=order,
-            khalti_body=khalti_body,
-        )
-        if gw_err or not pidx or not payment_url:
-            return Response(
-                {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
-                status=status.HTTP_502_BAD_GATEWAY,
+            khalti_body = _build_khalti_initiate_body(
+                request=request,
+                store=self.store,
+                order=order,
+                purchase_order_name=f"{self.store.name} Order {order.order_number}",
+                recipient_name=recipient_name,
+                customer_email=customer_email_val,
+                phone=phone,
             )
 
-        order.payment_ref = pidx
-        if is_mock:
-            order.is_test = True
-            order.save(update_fields=["payment_ref", "is_test"])
-        else:
-            order.save(update_fields=["payment_ref"])
+        # Outbound Khalti call strictly outside any DB transaction/lock.
+        try:
+            pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
+                store=self.store,
+                order=order,
+                khalti_body=khalti_body,
+            )
+        except Exception:
+            with TenantDatabaseContext(self.store.id):
+                locked_order = Order.objects.for_store(self.store).select_for_update().filter(id=order_id_val).first()
+                if locked_order:
+                    _release_order_discount(self.store, locked_order)
+                    _release_order_inventory(self.store, locked_order)
+                    locked_order.delete()
+            raise
+
+        # Phase 2: attach payment reference or release reservation & delete draft order on failure.
+        with TenantDatabaseContext(self.store.id):
+            locked_order = Order.objects.for_store(self.store).select_for_update().get(id=order_id_val)
+            if gw_err or not pidx or not payment_url:
+                _release_order_discount(self.store, locked_order)
+                _release_order_inventory(self.store, locked_order)
+                locked_order.delete()
+                return Response(
+                    {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            locked_order.payment_ref = pidx
+            if is_mock:
+                locked_order.is_test = True
+                locked_order.save(update_fields=["payment_ref", "is_test"])
+                order_is_test_val = True
+            else:
+                locked_order.save(update_fields=["payment_ref"])
 
         payload = {
-            "order_id": order.id,
-            "token": str(order.token),
-            "order_number": order.order_number,
+            "order_id": order_id_val,
+            "token": order_token_str,
+            "order_number": order_number_val,
             "pidx": pidx,
             "payment_url": payment_url,
-            "status": order.status,
-            "is_test": order.is_test,
+            "status": order_status_val,
+            "is_test": order_is_test_val,
         }
         if is_mock:
             payload["is_mock"] = True
@@ -1423,6 +1676,9 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
 
 class StoreKhaltiVerifyView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "khalti_verify"
+    atomic_requests = False
 
     _FAILURE_REASON_MAP = {
         KHALTI_STATE_CANCELED: (
@@ -1501,8 +1757,9 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
 
         actor = request.user if request.user.is_authenticated else None
 
-        with transaction.atomic():
-            order = Order.objects.for_store(self.store).select_for_update().filter(id=oid).first()
+        # Phase 1: short read outside row lock to validate reference and check idempotency.
+        with TenantDatabaseContext(self.store.id):
+            order = Order.objects.for_store(self.store).filter(id=oid).first()
             if not order:
                 raise Http404("Order not found for this store.")
 
@@ -1536,12 +1793,52 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
                     payload["token"] = str(order.token)
                 return Response(payload, status=status.HTTP_409_CONFLICT)
 
-            result = verify_khalti_epayment(
-                store=self.store,
-                pidx=pidx,
-                expected_pidx=order.payment_ref,
-                mock_amount_paisa=order.total_minor,
-            )
+            expected_pidx = order.payment_ref
+            expected_total_minor = order.total_minor
+
+        # Outbound Khalti lookup strictly outside any DB transaction/lock.
+        result = verify_khalti_epayment(
+            store=self.store,
+            pidx=pidx,
+            expected_pidx=expected_pidx,
+            mock_amount_paisa=expected_total_minor,
+        )
+
+        # Phase 2: lock order row and apply state transition atomically.
+        with TenantDatabaseContext(self.store.id):
+            order = Order.objects.for_store(self.store).select_for_update().filter(id=oid).first()
+            if not order:
+                raise Http404("Order not found for this store.")
+
+            if not order.payment_ref or pidx != order.payment_ref:
+                return Response(
+                    {"error": "Payment reference does not match this order."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if order.payment_status == "PAID":
+                return Response({
+                    "success": True,
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "order_number": order.order_number,
+                    "status": order.status,
+                    "payment_status": order.payment_status,
+                    "is_test": order.is_test,
+                })
+
+            if order.payment_method != "KHALTI" or order.payment_status != "UNPAID":
+                payload = {
+                    "error": "This order is not awaiting Khalti payment verification.",
+                    "state": "failed",
+                    "order_id": order.id,
+                    "payment_status": order.payment_status,
+                    "status": order.status,
+                    "is_test": order.is_test,
+                }
+                if order.payment_method == "KHALTI":
+                    payload["token"] = str(order.token)
+                return Response(payload, status=status.HTTP_409_CONFLICT)
 
             if result.state == KHALTI_STATE_COMPLETED:
                 if result.total_amount_paisa != order.total_minor:
@@ -1798,29 +2095,81 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
 
         store = self.store
         data = request.data
+        field_errors = {}
 
-        if "name" in data and str(data["name"]).strip():
-            store.name = str(data["name"]).strip()
+        def _parse_shipping_int(raw_val):
+            if isinstance(raw_val, (bool, float)):
+                return None
+            try:
+                val = int(raw_val)
+            except (ValueError, TypeError):
+                return None
+            if val < 0 or val > MAX_DB_POSITIVE_INT:
+                return None
+            return val
+
+        pending_name = None
+        if "name" in data:
+            raw_name = str(data["name"] or "").strip()
+            if raw_name:
+                if len(raw_name) > 120:
+                    field_errors["name"] = ["Store name cannot exceed 120 characters."]
+                else:
+                    pending_name = raw_name
+
+        pending_tagline = None
         if "tagline" in data:
-            store.tagline = str(data["tagline"]).strip()
-        if "category" in data:
-            store.category = str(data["category"] or "").strip()[:64]
-        if "city" in data and str(data["city"]).strip():
-            store.city = str(data["city"]).strip()
-        if "province" in data and str(data["province"]).strip():
-            store.province = str(data["province"]).strip()
+            raw_tagline = str(data["tagline"] or "").strip()
+            if len(raw_tagline) > 200:
+                field_errors["tagline"] = ["Tagline cannot exceed 200 characters."]
+            else:
+                pending_tagline = raw_tagline
+
+        pending_city = None
+        if "city" in data:
+            raw_city = str(data["city"] or "").strip()
+            if raw_city:
+                if len(raw_city) > 64:
+                    field_errors["city"] = ["City cannot exceed 64 characters."]
+                else:
+                    pending_city = raw_city
+
+        pending_province = None
+        if "province" in data:
+            raw_province = str(data["province"] or "").strip()
+            if raw_province:
+                if len(raw_province) > 64:
+                    field_errors["province"] = ["Province cannot exceed 64 characters."]
+                else:
+                    pending_province = raw_province
+
+        pending_contact_phone = None
         if "contact_phone" in data:
-            store.contact_phone = str(data["contact_phone"]).strip()
+            raw_phone = str(data["contact_phone"] or "").strip()
+            if len(raw_phone) > 16:
+                field_errors["contact_phone"] = ["Contact phone cannot exceed 16 characters."]
+            else:
+                pending_contact_phone = raw_phone
+
+        pending_theme_preset = None
         if "theme_preset" in data:
-            preset = str(data["theme_preset"]).strip()
-            if preset in [c[0] for c in Store.THEME_PRESET_CHOICES]:
-                store.theme_preset = preset
+            preset = str(data["theme_preset"] or "").strip()
+            if preset not in [c[0] for c in Store.THEME_PRESET_CHOICES]:
+                field_errors["theme_preset"] = ["Invalid theme preset."]
+            else:
+                pending_theme_preset = preset
+
+        pending_accent_color = None
         if "accent_color" in data:
-            store.accent_color = str(data["accent_color"]).strip()
+            raw_color = str(data["accent_color"] or "").strip()
+            if raw_color and not re.match(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$", raw_color):
+                field_errors["accent_color"] = ["Enter a valid hex color code (e.g. #1F2937)."]
+            else:
+                pending_accent_color = raw_color
+
         # Strict CDN host and store folder validation (only if changed)
         cloud_name = getattr(settings, "CLOUDINARY_CLOUD_NAME", "").strip()
         allow_local = is_local_media_allowed()
-        field_errors = {}
 
         old_banner_url = store.banner_url
         old_logo_url = store.logo_url
@@ -1828,7 +2177,7 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
         logo_changed = False
 
         if "banner_url" in data:
-            candidate_banner = str(data["banner_url"]).strip()
+            candidate_banner = str(data["banner_url"] or "").strip()
             if candidate_banner != (store.banner_url or "").strip():
                 banner_changed = True
                 if candidate_banner:
@@ -1845,7 +2194,7 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                         field_errors["banner_url"] = ["Hero cover image URL must be hosted on our CDN within your store's folder."]
 
         if "logo_url" in data:
-            candidate_logo = str(data["logo_url"]).strip()
+            candidate_logo = str(data["logo_url"] or "").strip()
             if candidate_logo != (store.logo_url or "").strip():
                 logo_changed = True
                 if candidate_logo:
@@ -1861,27 +2210,119 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                     if not valid_cdn:
                         field_errors["logo_url"] = ["Store logo URL must be hosted on our CDN within your store's folder."]
 
+        for email_field in ("contact_email", "support_email"):
+            if email_field in data:
+                raw_em = str(data[email_field] or "").strip()
+                if raw_em:
+                    if len(raw_em) > 254:
+                        field_errors[email_field] = ["Email address cannot exceed 254 characters."]
+                    else:
+                        try:
+                            validate_email(raw_em)
+                        except ValidationError:
+                            field_errors[email_field] = ["Enter a valid email address."]
+
+        if "address" in data and len(str(data["address"] or "").strip()) > 255:
+            field_errors["address"] = ["Address cannot exceed 255 characters."]
+        if "story_headline" in data and len(str(data["story_headline"] or "").strip()) > 240:
+            field_errors["story_headline"] = ["Story headline cannot exceed 240 characters."]
+        if "about_text" in data and len(str(data["about_text"] or "").strip()) > 5000:
+            field_errors["about_text"] = ["About text cannot exceed 5000 characters."]
+
+        if "instagram_url" in data:
+            raw_ig = str(data["instagram_url"] or "").strip()
+            if raw_ig:
+                if len(raw_ig) > 200:
+                    field_errors["instagram_url"] = ["Instagram URL cannot exceed 200 characters."]
+                else:
+                    try:
+                        URLValidator(schemes=["http", "https"])(raw_ig)
+                    except ValidationError:
+                        field_errors["instagram_url"] = ["Enter a valid http:// or https:// Instagram URL."]
+        if "facebook_url" in data:
+            raw_fb = str(data["facebook_url"] or "").strip()
+            if raw_fb:
+                if len(raw_fb) > 200:
+                    field_errors["facebook_url"] = ["Facebook URL cannot exceed 200 characters."]
+                else:
+                    try:
+                        URLValidator(schemes=["http", "https"])(raw_fb)
+                    except ValidationError:
+                        field_errors["facebook_url"] = ["Enter a valid http:// or https:// Facebook URL."]
+
+        pending_inside_shipping = None
+        if "inside_valley_shipping_minor" in data:
+            parsed_in = _parse_shipping_int(data["inside_valley_shipping_minor"])
+            if parsed_in is None:
+                field_errors["inside_valley_shipping_minor"] = [
+                    f"Shipping fee must be an integer between 0 and {MAX_DB_POSITIVE_INT}."
+                ]
+            else:
+                pending_inside_shipping = parsed_in
+
+        pending_outside_shipping = None
+        if "outside_valley_shipping_minor" in data:
+            parsed_out = _parse_shipping_int(data["outside_valley_shipping_minor"])
+            if parsed_out is None:
+                field_errors["outside_valley_shipping_minor"] = [
+                    f"Shipping fee must be an integer between 0 and {MAX_DB_POSITIVE_INT}."
+                ]
+            else:
+                pending_outside_shipping = parsed_out
+
+        free_threshold_set = False
+        pending_free_threshold = None
+        if "free_shipping_threshold_minor" in data:
+            free_threshold_set = True
+            raw_threshold = data["free_shipping_threshold_minor"]
+            if raw_threshold in (None, ""):
+                pending_free_threshold = None
+            else:
+                parsed_thresh = _parse_shipping_int(raw_threshold)
+                if parsed_thresh is None:
+                    field_errors["free_shipping_threshold_minor"] = [
+                        f"Free shipping threshold must be an integer between 0 and {MAX_DB_POSITIVE_INT}."
+                    ]
+                else:
+                    pending_free_threshold = parsed_thresh
+
         if field_errors:
             return Response(field_errors, status=status.HTTP_400_BAD_REQUEST)
 
+        if pending_name is not None:
+            store.name = pending_name
+        if pending_tagline is not None:
+            store.tagline = pending_tagline
+        if "category" in data:
+            store.category = str(data["category"] or "").strip()[:64]
+        if pending_city is not None:
+            store.city = pending_city
+        if pending_province is not None:
+            store.province = pending_province
+        if pending_contact_phone is not None:
+            store.contact_phone = pending_contact_phone
+        if pending_theme_preset is not None:
+            store.theme_preset = pending_theme_preset
+        if pending_accent_color is not None:
+            store.accent_color = pending_accent_color
         if banner_changed:
-            store.banner_url = str(data["banner_url"]).strip()
+            store.banner_url = str(data["banner_url"] or "").strip()
         if logo_changed:
-            store.logo_url = str(data["logo_url"]).strip()
+            store.logo_url = str(data["logo_url"] or "").strip()
         if "contact_email" in data:
-            store.contact_email = str(data["contact_email"]).strip()
+            store.contact_email = str(data["contact_email"] or "").strip()
         if "support_email" in data:
-            store.support_email = str(data["support_email"]).strip()
+            store.support_email = str(data["support_email"] or "").strip()
         if "address" in data:
-            store.address = str(data["address"]).strip()
+            store.address = str(data["address"] or "").strip()
         if "story_headline" in data:
-            store.story_headline = str(data["story_headline"]).strip()
+            store.story_headline = str(data["story_headline"] or "").strip()
         if "about_text" in data:
-            store.about_text = str(data["about_text"]).strip()
+            store.about_text = str(data["about_text"] or "").strip()
         if "instagram_url" in data:
-            store.instagram_url = str(data["instagram_url"]).strip()
+            store.instagram_url = str(data["instagram_url"] or "").strip()
         if "facebook_url" in data:
-            store.facebook_url = str(data["facebook_url"]).strip()
+            store.facebook_url = str(data["facebook_url"] or "").strip()
 
         if "cod_enabled" in data:
             raw_cod = data["cod_enabled"]
@@ -1899,32 +2340,14 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
         old_outside_shipping = store.outside_valley_shipping_minor
         old_free_threshold = store.free_shipping_threshold_minor
 
-        if "inside_valley_shipping_minor" in data:
-            try:
-                val = int(data["inside_valley_shipping_minor"])
-                if val >= 0:
-                    store.inside_valley_shipping_minor = val
-            except (ValueError, TypeError):
-                pass
+        if pending_inside_shipping is not None:
+            store.inside_valley_shipping_minor = pending_inside_shipping
 
-        if "outside_valley_shipping_minor" in data:
-            try:
-                val = int(data["outside_valley_shipping_minor"])
-                if val >= 0:
-                    store.outside_valley_shipping_minor = val
-            except (ValueError, TypeError):
-                pass
+        if pending_outside_shipping is not None:
+            store.outside_valley_shipping_minor = pending_outside_shipping
 
-        if "free_shipping_threshold_minor" in data:
-            raw_threshold = data["free_shipping_threshold_minor"]
-            if raw_threshold is None or raw_threshold == "":
-                store.free_shipping_threshold_minor = None
-            else:
-                try:
-                    val = int(raw_threshold)
-                    store.free_shipping_threshold_minor = val if val >= 0 else None
-                except (ValueError, TypeError):
-                    pass
+        if free_threshold_set:
+            store.free_shipping_threshold_minor = pending_free_threshold
 
         shipping_rate_changed = (
             store.inside_valley_shipping_minor != old_inside_shipping
@@ -2004,22 +2427,62 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
             entity_type="Store",
             entity_id=str(self.store.id),
             details={"updated_fields": list(data.keys())},
-            ip_address=request.META.get("REMOTE_ADDR"),
+            ip_address=get_client_ip(request),
         )
         return self.get(request, store_slug)
 
 
 class MerchantProductListCreateView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
+        status_filter = str(request.query_params.get("status", "")).strip().lower()
+        q = str(request.query_params.get("q", "")).strip()
+        page, page_size, offset = _page_params(request)
+
+        all_qs = Product.objects.for_store(self.store)
+        counts = all_qs.aggregate(
+            all_count=Count("id"),
+            active_count=Count("id", filter=Q(is_active=True)),
+            draft_count=Count("id", filter=Q(is_active=False)),
+        )
+
+        filtered_qs = all_qs
+        if status_filter == "active":
+            filtered_qs = filtered_qs.filter(is_active=True)
+        elif status_filter == "draft":
+            filtered_qs = filtered_qs.filter(is_active=False)
+        if q:
+            filtered_qs = filtered_qs.filter(
+                Q(name__icontains=q) | Q(slug__icontains=q) | Q(description__icontains=q)
+            )
+
+        total = filtered_qs.count()
+        page_ids = list(
+            filtered_qs.order_by("sort_order", "-id").values_list("id", flat=True)[offset:offset + page_size]
+        )
         active_variants_qs = Variant.objects.all().order_by("sort_order", "price_minor")
         products = (
             Product.objects.for_store(self.store)
+            .filter(id__in=page_ids)
             .prefetch_related(
                 Prefetch("variants", queryset=active_variants_qs, to_attr="prefetched_active_variants")
             )
             .order_by("sort_order", "-id")
+            if page_ids
+            else []
         )
-        return Response(ProductSerializer(products, many=True).data)
+        response = Response(ProductSerializer(products, many=True).data)
+        meta = _page_meta(total, page, page_size)
+        response["X-Total-Count"] = str(meta["total"])
+        response["X-Page"] = str(meta["page"])
+        response["X-Page-Size"] = str(meta["page_size"])
+        response["X-Has-More"] = "1" if meta["has_more"] else "0"
+        response["X-All-Count"] = str(counts["all_count"] or 0)
+        response["X-Active-Count"] = str(counts["active_count"] or 0)
+        response["X-Draft-Count"] = str(counts["draft_count"] or 0)
+        response["Access-Control-Expose-Headers"] = (
+            "X-Total-Count, X-Page, X-Page-Size, X-Has-More, X-All-Count, X-Active-Count, X-Draft-Count"
+        )
+        return response
 
     def post(self, request, store_slug):
         data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
@@ -2141,7 +2604,7 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
             entity_type="Product",
             entity_id=str(product.id),
             details={"name": product.name, "slug": product.slug},
-            ip_address=request.META.get("REMOTE_ADDR"),
+            ip_address=get_client_ip(request),
         )
         return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
 
@@ -2215,7 +2678,7 @@ class MerchantProductDetailView(StoreMerchantMixin, APIView):
                     entity_type="Product",
                     entity_id=prod_id,
                     details={"name": prod_name, "slug": prod_slug},
-                    ip_address=request.META.get("REMOTE_ADDR"),
+                    ip_address=get_client_ip(request),
                 )
             return Response(status=status.HTTP_204_NO_CONTENT)
         product.is_active = False
@@ -2346,7 +2809,7 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
                         "in_stock": variant.in_stock,
                     },
                 },
-                ip_address=request.META.get("REMOTE_ADDR"),
+                ip_address=get_client_ip(request),
             )
         if variant.price_minor != old_price_minor:
             Product.objects.for_store(self.store).filter(
@@ -2375,7 +2838,7 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
                     entity_type="Variant",
                     entity_id=var_id,
                     details={"label": var_label, "sku": var_sku, "product_id": product_id},
-                    ip_address=request.META.get("REMOTE_ADDR"),
+                    ip_address=get_client_ip(request),
                 )
             return Response(status=status.HTTP_204_NO_CONTENT)
         variant.is_active = False
@@ -2399,7 +2862,7 @@ class MerchantOrderListView(StoreMerchantMixin, APIView):
         qs = (
             base_qs.select_related("customer")
             .prefetch_related("items", "events")
-            .order_by("-created_at")
+            .order_by("-created_at", "-id")
         )
 
         status_filter = request.query_params.get("status", "").strip().lower()
@@ -2421,8 +2884,12 @@ class MerchantOrderListView(StoreMerchantMixin, APIView):
                 | Q(customer__phone__icontains=search)
             )
 
+        page, page_size, offset = _page_params(request)
+        total = qs.count()
+        page_orders = list(qs[offset:offset + page_size])
+
         return Response({
-            "orders": OrderSerializer(qs, many=True).data,
+            "orders": OrderSerializer(page_orders, many=True).data,
             "counts": {
                 "all": counts_agg["all_count"] or 0,
                 "new": counts_agg["new_count"] or 0,
@@ -2430,6 +2897,7 @@ class MerchantOrderListView(StoreMerchantMixin, APIView):
                 "shipped": counts_agg["shipped_count"] or 0,
                 "delivered": counts_agg["delivered_count"] or 0,
             },
+            "pagination": _page_meta(total, page, page_size),
         })
 
 
@@ -2530,6 +2998,30 @@ class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
 class MerchantCustomerListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
         q = request.query_params.get("q", "").strip()
+        page, page_size, offset = _page_params(request)
+
+        # 1) Cheap filtered + ordered id query; only this page is ever annotated/serialised.
+        base_qs = Customer.objects.for_store(self.store)
+        if q:
+            base_qs = base_qs.filter(
+                Q(full_name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
+            )
+        total = base_qs.count()
+        page_ids = list(
+            base_qs.order_by("-created_at", "-id").values_list("id", flat=True)[offset:offset + page_size]
+        )
+
+        # 2) Store-wide (filter-aware) KPIs from a single grouped order query, not from loaded rows.
+        order_scope = Order.objects.for_store(self.store)
+        if q:
+            order_scope = order_scope.filter(customer_id__in=base_qs.values("id"))
+        repeat_customers = (
+            order_scope.values("customer_id").annotate(n=Count("id")).filter(n__gt=1).count()
+        )
+        spent_agg = order_scope.filter(payment_status="PAID").exclude(
+            status__in=["CANCELLED", "PAYMENT_FAILED"]
+        ).aggregate(total=Sum("total_minor"))
+
         orders_prefetch = Prefetch(
             "orders",
             queryset=Order.objects.order_by("-created_at").only("id", "customer_id", "shipping_address_snapshot", "created_at"),
@@ -2537,6 +3029,7 @@ class MerchantCustomerListView(StoreMerchantMixin, APIView):
         )
         customers = (
             Customer.objects.for_store(self.store)
+            .filter(id__in=page_ids)
             .prefetch_related(orders_prefetch)
             .annotate(
                 orders_count=Count("orders", distinct=True),
@@ -2549,13 +3042,20 @@ class MerchantCustomerListView(StoreMerchantMixin, APIView):
                     default=0,
                 ),
             )
-            .order_by("-created_at")
+            .order_by("-created_at", "-id")
         )
-        if q:
-            customers = customers.filter(
-                Q(full_name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
-            )
-        return Response(CustomerSerializer(customers, many=True).data)
+        response = Response(CustomerSerializer(customers, many=True).data)
+        meta = _page_meta(total, page, page_size)
+        response["X-Total-Count"] = str(meta["total"])
+        response["X-Page"] = str(meta["page"])
+        response["X-Page-Size"] = str(meta["page_size"])
+        response["X-Has-More"] = "1" if meta["has_more"] else "0"
+        response["X-Repeat-Customers"] = str(repeat_customers)
+        response["X-Total-Spent-Minor"] = str(spent_agg["total"] or 0)
+        response["Access-Control-Expose-Headers"] = (
+            "X-Total-Count, X-Page, X-Page-Size, X-Has-More, X-Repeat-Customers, X-Total-Spent-Minor"
+        )
+        return response
 
 
 class MerchantCustomerDetailView(StoreMerchantMixin, APIView):
@@ -2862,6 +3362,12 @@ class StoreCreateView(APIView):
     permission_classes = [permissions.IsAuthenticated]
 
     def post(self, request):
+        if not getattr(request.user, "is_active", False):
+            return Response(
+                {"error": "This account is inactive."},
+                status=status.HTTP_403_FORBIDDEN,
+            )
+
         # 1. Multi-worker shared rate limiting per IP (max 10 store creations per IP in 24 hours)
         client_ip = get_client_ip(request)
         ip_hash = compute_salted_ip_hash(client_ip, "store_create")
@@ -2872,9 +3378,11 @@ class StoreCreateView(APIView):
                 status=status.HTTP_429_TOO_MANY_REQUESTS,
             )
 
-        name = request.data.get("name", "").strip()
-        slug = request.data.get("slug", "").strip().lower()
-        theme_preset = request.data.get("theme_preset", "editorial-warm")
+        name = str(request.data.get("name") or "").strip()
+        slug = str(request.data.get("slug") or "").strip().lower()
+        theme_preset = str(request.data.get("theme_preset") or "editorial-warm").strip()
+        if theme_preset not in [c[0] for c in Store.THEME_PRESET_CHOICES]:
+            return Response({"error": "Invalid theme preset."}, status=status.HTTP_400_BAD_REQUEST)
         category = request.data.get("category", "").strip()[:64]
         city = request.data.get("city", "").strip() or "Kathmandu"
         province = request.data.get("province", "").strip() or "Bagmati"
@@ -2907,7 +3415,26 @@ class StoreCreateView(APIView):
             )
 
         # 4. Resolve optional banner image (leave empty when unset so storefront renders store hero fallback)
-        banner_url = request.data.get("banner_url", "").strip()
+        banner_url = str(request.data.get("banner_url") or "").strip()
+        if banner_url:
+            lower_banner = banner_url.lower()
+            if (
+                len(banner_url) > 200
+                or not banner_url.startswith("/images/")
+                or len(banner_url) <= len("/images/")
+                or ".." in banner_url
+                or "\\" in banner_url
+                or banner_url.startswith("//")
+                or "%2e" in lower_banner
+                or "%2f" in lower_banner
+                or "%5c" in lower_banner
+                or any(ch in banner_url for ch in '<>"\'`')
+                or any(c.isspace() or ord(c) < 32 for c in banner_url)
+            ):
+                return Response(
+                    {"error": "Enter a valid store banner path."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
 
         # 5. Atomic check & store creation: lock user row with select_for_update() so concurrent
         # requests serialize and strictly obey the 3-store cap.
@@ -3058,46 +3585,106 @@ class MerchantAuditLogListView(StoreMerchantMixin, APIView):
         return Response(MerchantAuditLogSerializer(logs, many=True).data)
 
 
+def _validate_and_strip_image(
+    uploaded_file,
+    *,
+    max_size: int,
+    size_error: str,
+    allowed_formats: tuple[str, ...],
+    unsupported_error: str,
+) -> tuple[bytes, str, str]:
+    """
+    Validates uploaded image bytes via Pillow, rejects SVGs, re-encodes to strip EXIF/GPS
+    metadata, and returns (cleaned_bytes, extension, mime_type).
+    """
+    if uploaded_file.size > max_size:
+        raise serializers.ValidationError(size_error)
+
+    filename_lower = (uploaded_file.name or "").lower()
+    content_type_lower = getattr(uploaded_file, "content_type", "").lower()
+    if filename_lower.endswith(".svg") or "svg" in content_type_lower:
+        raise serializers.ValidationError("SVG files are not supported. Please upload JPEG, PNG, or WebP.")
+
+    uploaded_file.seek(0)
+    try:
+        with Image.open(uploaded_file) as img:
+            img.verify()
+    except Exception:
+        raise serializers.ValidationError("Invalid or corrupted image file.")
+
+    # Re-open image since verify() invalidates the image state
+    uploaded_file.seek(0)
+    try:
+        with Image.open(uploaded_file) as img:
+            fmt = (img.format or "").upper()
+            if fmt not in allowed_formats:
+                raise serializers.ValidationError(unsupported_error)
+
+            buf = io.BytesIO()
+            if fmt == "JPEG":
+                target = img.convert("RGB") if img.mode in ("RGBA", "P", "LA") else img
+                target.save(buf, format="JPEG", quality=90)
+                ext, mime = ".jpg", "image/jpeg"
+            elif fmt == "PNG":
+                img.save(buf, format="PNG", optimize=True)
+                ext, mime = ".png", "image/png"
+            elif fmt == "WEBP":
+                img.save(buf, format="WEBP", quality=90)
+                ext, mime = ".webp", "image/webp"
+            elif fmt == "GIF":
+                img.save(buf, format="GIF")
+                ext, mime = ".gif", "image/gif"
+            else:
+                raise serializers.ValidationError(unsupported_error)
+    except serializers.ValidationError:
+        raise
+    except Exception:
+        raise serializers.ValidationError("Invalid image format.")
+
+    return buf.getvalue(), ext, mime
+
+
 class MerchantMediaUploadView(StoreMerchantMixin, APIView):
     """
     Store-prefixed and authenticated image upload for merchant product catalog and branding.
-    Scopes uploads strictly to uploads/stores/<store_slug>/products/.
+    Enforces rate limiting, Pillow verification, and EXIF stripping, scoping uploads strictly
+    to uploads/stores/<store_slug>/products/.
     """
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "media_upload"
+
     def post(self, request, store_slug):
         uploaded_file = request.FILES.get("file")
         if not uploaded_file:
             return Response({"error": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if uploaded_file.size > 5 * 1024 * 1024:
-            return Response({"error": "Image size exceeds 5MB limit."}, status=status.HTTP_400_BAD_REQUEST)
-
-        allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]
-        content_type = getattr(uploaded_file, "content_type", "")
-        if content_type not in allowed_types:
-            return Response(
-                {"error": "Unsupported image format. Please upload JPG, PNG, or WebP."},
-                status=status.HTTP_400_BAD_REQUEST,
+        try:
+            cleaned_bytes, ext, mime = _validate_and_strip_image(
+                uploaded_file,
+                max_size=5 * 1024 * 1024,
+                size_error="Image size exceeds 5MB limit.",
+                allowed_formats=("JPEG", "PNG", "WEBP", "GIF"),
+                unsupported_error="Unsupported image format. Please upload JPG, PNG, WebP, or GIF.",
             )
+        except serializers.ValidationError as exc:
+            msg = exc.detail if isinstance(exc.detail, str) else exc.detail[0]
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
         import re
         import secrets
-        from pathlib import Path
 
         clean_slug = re.sub(r"[^a-z0-9_-]", "", self.store.slug.lower())
         if not clean_slug:
             return Response({"error": "Invalid store context."}, status=status.HTTP_400_BAD_REQUEST)
 
-        allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"}
-        raw_ext = Path(uploaded_file.name).suffix.lower()
-        ext = raw_ext if raw_ext in allowed_exts else ".jpg"
-
         stem = f"prod_{int(timezone.now().timestamp())}_{secrets.token_hex(8)}"
         filename = f"{stem}{ext}"
 
         if is_cloudinary_configured():
+            sanitized_file = SimpleUploadedFile(filename, cleaned_bytes, content_type=mime)
             try:
                 url = upload_store_image_to_cloudinary(
-                    uploaded_file=uploaded_file,
+                    uploaded_file=sanitized_file,
                     clean_store_slug=clean_slug,
                     public_id=stem,
                     store_id=self.store.id,
@@ -3115,8 +3702,7 @@ class MerchantMediaUploadView(StoreMerchantMixin, APIView):
             file_path = base_dir / filename
 
             with open(file_path, "wb+") as dest:
-                for chunk in uploaded_file.chunks():
-                    dest.write(chunk)
+                dest.write(cleaned_bytes)
 
             url = f"/uploads/stores/{clean_slug}/products/{filename}"
         else:
@@ -3131,8 +3717,8 @@ class MerchantMediaUploadView(StoreMerchantMixin, APIView):
             action="MEDIA_UPLOAD",
             entity_type="MediaAsset",
             entity_id=filename,
-            details={"filename": filename, "url": url, "size": uploaded_file.size},
-            ip_address=request.META.get("REMOTE_ADDR"),
+            details={"filename": filename, "url": url, "size": len(cleaned_bytes)},
+            ip_address=get_client_ip(request),
         )
 
         return Response({
@@ -3150,51 +3736,14 @@ def process_theme_image(uploaded_file, asset_type: str) -> tuple[bytes, str, str
     strips EXIF/GPS metadata, and returns (cleaned_bytes, extension, mime_type).
     """
     max_size = 5 * 1024 * 1024 if asset_type == "hero" else 2 * 1024 * 1024
-    if uploaded_file.size > max_size:
-        limit_mb = 5 if asset_type == "hero" else 2
-        raise serializers.ValidationError(f"{asset_type.capitalize()} image size exceeds {limit_mb}MB limit.")
-
-    filename_lower = (uploaded_file.name or "").lower()
-    content_type_lower = getattr(uploaded_file, "content_type", "").lower()
-    if filename_lower.endswith(".svg") or "svg" in content_type_lower:
-        raise serializers.ValidationError("SVG files are not supported. Please upload JPEG, PNG, or WebP.")
-
-    # Inspect genuine image content using Pillow
-    uploaded_file.seek(0)
-    try:
-        with Image.open(uploaded_file) as img:
-            img.verify()
-    except Exception:
-        raise serializers.ValidationError("Invalid or corrupted image file.")
-
-    # Re-open image since verify() invalidates the image state
-    uploaded_file.seek(0)
-    try:
-        img = Image.open(uploaded_file)
-    except Exception:
-        raise serializers.ValidationError("Invalid image format.")
-
-    fmt = (img.format or "").upper()
-    if fmt not in ("JPEG", "PNG", "WEBP"):
-        raise serializers.ValidationError("Unsupported image format. Please upload JPG, PNG, or WebP.")
-
-    buf = io.BytesIO()
-    if fmt == "JPEG":
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-        img.save(buf, format="JPEG", quality=90)
-        ext = ".jpg"
-        mime = "image/jpeg"
-    elif fmt == "PNG":
-        img.save(buf, format="PNG", optimize=True)
-        ext = ".png"
-        mime = "image/png"
-    elif fmt == "WEBP":
-        img.save(buf, format="WEBP", quality=90)
-        ext = ".webp"
-        mime = "image/webp"
-
-    return buf.getvalue(), ext, mime
+    limit_mb = 5 if asset_type == "hero" else 2
+    return _validate_and_strip_image(
+        uploaded_file,
+        max_size=max_size,
+        size_error=f"{asset_type.capitalize()} image size exceeds {limit_mb}MB limit.",
+        allowed_formats=("JPEG", "PNG", "WEBP"),
+        unsupported_error="Unsupported image format. Please upload JPG, PNG, or WebP.",
+    )
 
 
 class MerchantThemeMediaUploadView(StoreMerchantMixin, APIView):
@@ -3295,7 +3844,7 @@ class MerchantThemeMediaUploadView(StoreMerchantMixin, APIView):
                 "url": url,
                 "size": len(cleaned_bytes),
             },
-            ip_address=request.META.get("REMOTE_ADDR"),
+            ip_address=get_client_ip(request),
         )
 
         full_public_id = f"shopcraft/stores/{self.store.id}_{clean_slug}/theme/{stem}"
@@ -3363,7 +3912,11 @@ class MerchantInventoryListView(StoreMerchantMixin, APIView):
                 | Q(sku__icontains=q)
             )
 
-        items_list = list(qs.order_by("-track_inventory", "stock_quantity", "product__name", "id"))
+        page, page_size, offset = _page_params(request)
+        total = qs.count()
+        items_list = list(
+            qs.order_by("-track_inventory", "stock_quantity", "product__name", "id")[offset:offset + page_size]
+        )
         items = [
             {
                 "id": v.id,
@@ -3394,6 +3947,7 @@ class MerchantInventoryListView(StoreMerchantMixin, APIView):
                 "total_units": summary_agg["total_units"] or 0,
             },
             "items": items,
+            "pagination": _page_meta(total, page, page_size),
         })
 
 

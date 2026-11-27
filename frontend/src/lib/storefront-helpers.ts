@@ -244,3 +244,17 @@ export function formatShippingRateLabel(
 ): string {
   return formatNpr(resolveShippingRateMinor(rateMinor, fallbackMinor));
 }
+
+export function sanitizeExternalHttpUrl(raw?: string | null): string | null {
+  const cleaned = (raw || "").trim();
+  if (!cleaned) return null;
+  try {
+    const parsed = new URL(cleaned);
+    if (parsed.protocol === "https:" || parsed.protocol === "http:") {
+      return cleaned;
+    }
+  } catch {
+    return null;
+  }
+  return null;
+}
