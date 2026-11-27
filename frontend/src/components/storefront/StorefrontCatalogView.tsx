@@ -13,7 +13,14 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { formatNpr, ProductItem, ProductVariant, StorePublicMetadata } from "@/lib/api";
+import {
+  fetchStoreCatalog,
+  formatNpr,
+  PaginationMeta,
+  ProductItem,
+  ProductVariant,
+  StorePublicMetadata,
+} from "@/lib/api";
 import {
   buildThemePreviewDemoProducts,
   cleanStoreCategory,
@@ -73,6 +80,7 @@ function StoreHeroFallback({
 export interface StorefrontCatalogViewProps {
   store: StorePublicMetadata;
   products: ProductItem[];
+  initialPagination?: PaginationMeta | null;
   isThemePreview?: boolean;
   initialSearchOpen?: boolean;
 }
@@ -80,6 +88,7 @@ export interface StorefrontCatalogViewProps {
 export function StorefrontCatalogView({
   store,
   products = [],
+  initialPagination = null,
   isThemePreview = false,
   initialSearchOpen = false,
 }: StorefrontCatalogViewProps) {
@@ -96,17 +105,54 @@ export function StorefrontCatalogView({
   const [inStockOnly, setInStockOnly] = useState<boolean>(false);
   const [sortBy, setSortBy] = useState<"featured" | "price-asc" | "price-desc">("featured");
   const [searchOpen, setSearchOpen] = useState<boolean>(Boolean(initialSearchOpen));
+  const catalogScope = `${store.slug}:${products.length}:${initialPagination?.total ?? 0}`;
+  const [pagedState, setPagedState] = useState<{
+    scope: string;
+    extra: ProductItem[];
+    pagination: PaginationMeta | null;
+  } | null>(null);
+  const [loadingMore, setLoadingMore] = useState<boolean>(false);
+
+  const extraProducts = useMemo(
+    () => (pagedState && pagedState.scope === catalogScope ? pagedState.extra : []),
+    [pagedState, catalogScope]
+  );
+  const pagination =
+    pagedState && pagedState.scope === catalogScope
+      ? pagedState.pagination
+      : (initialPagination ?? null);
+
+  const handleLoadMoreProducts = async () => {
+    if (!pagination?.has_more || loadingMore || isThemePreview) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetchStoreCatalog(store.slug, { page: pagination.page + 1 });
+      setPagedState((prev) => {
+        const baseExtra = prev && prev.scope === catalogScope ? prev.extra : [];
+        const seen = new Set([...products, ...baseExtra].map((p) => p.id));
+        return {
+          scope: catalogScope,
+          extra: [...baseExtra, ...res.products.filter((p) => !seen.has(p.id))],
+          pagination: res.pagination ?? null,
+        };
+      });
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   // Real catalog unless theme-editor preview explicitly requests ephemeral preview items
   const fullCatalog: ProductItem[] = useMemo(() => {
     if (products && products.length > 0) {
-      return products;
+      if (extraProducts.length === 0) return products;
+      const seen = new Set(products.map((p) => p.id));
+      return [...products, ...extraProducts.filter((p) => !seen.has(p.id))];
     }
     if (isThemePreview) {
       return buildThemePreviewDemoProducts(store);
     }
     return [];
-  }, [products, isThemePreview, store]);
+  }, [products, extraProducts, isThemePreview, store]);
 
   // Derived category list (ignoring placeholders)
   const availableCategories = useMemo(() => {
@@ -796,6 +842,22 @@ export function StorefrontCatalogView({
             themePreset={store.theme_preset}
             defaultCategory={store.category}
           />
+        )}
+        {!isThemePreview && pagination?.has_more && (
+          <div className="mt-8 flex flex-col items-center gap-2">
+            <p className="text-xs text-[var(--ink-2)]">
+              Showing {fullCatalog.length} of {pagination.total} products
+            </p>
+            <Button
+              type="button"
+              variant="secondary"
+              disabled={loadingMore}
+              onClick={() => void handleLoadMoreProducts()}
+              className="px-6 py-2.5 text-xs font-semibold border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[var(--canvas)]"
+            >
+              {loadingMore ? "Loading..." : "Load more products"}
+            </Button>
+          </div>
         )}
 
       </section>

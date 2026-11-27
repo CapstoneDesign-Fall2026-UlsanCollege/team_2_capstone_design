@@ -1,6 +1,6 @@
 "use client";
 
-import React, { use, useEffect, useState, useMemo, useCallback } from "react";
+import React, { use, useEffect, useState, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -17,8 +17,9 @@ import {
 } from "lucide-react";
 import {
   formatNpr,
-  fetchMerchantCustomers,
+  fetchMerchantCustomersPage,
   MerchantCustomerItem,
+  PaginationMeta,
 } from "@/lib/api";
 import { classifyMerchantPageError } from "@/lib/merchant-guard";
 import { CustomerDetailSheet } from "@/components/merchant/CustomerDetailSheet";
@@ -34,49 +35,79 @@ export default function MerchantCustomersPage({ params }: PageProps) {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [customers, setCustomers] = useState<MerchantCustomerItem[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+  const [repeatCustomersTotal, setRepeatCustomersTotal] = useState(0);
+  const [totalSpentAll, setTotalSpentAll] = useState(0);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedCustomer, setSelectedCustomer] = useState<MerchantCustomerItem | null>(null);
   const [isSheetOpen, setIsSheetOpen] = useState(false);
 
+  const handleCustomersError = useCallback(
+    (err: unknown) => {
+      const action = classifyMerchantPageError(
+        err,
+        storeSlug,
+        `/merchant/${encodeURIComponent(storeSlug)}/customers`
+      );
+      if (action.kind === "unauthenticated") {
+        setTimeout(() => router.replace(action.redirectTo), 0);
+        return;
+      }
+      if (action.kind === "not_found") {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
+        }
+        setTimeout(() => router.replace(action.redirectTo), 0);
+        return;
+      }
+      setError(action.message);
+      setLoading(false);
+    },
+    [storeSlug, router]
+  );
+
   const loadCustomers = useCallback(
     (query?: string) => {
       let active = true;
-      fetchMerchantCustomers(storeSlug, query)
-        .then((data) => {
+      fetchMerchantCustomersPage(storeSlug, { query })
+        .then((res) => {
           if (active) {
-            setCustomers(data);
+            setCustomers(res.customers);
+            setPagination(res.pagination);
+            setRepeatCustomersTotal(res.repeatCustomers);
+            setTotalSpentAll(res.totalSpentMinor);
             setError(null);
             setLoading(false);
           }
         })
         .catch((err: unknown) => {
           if (!active) return;
-          const action = classifyMerchantPageError(
-            err,
-            storeSlug,
-            `/merchant/${encodeURIComponent(storeSlug)}/customers`
-          );
-          if (action.kind === "unauthenticated") {
-            setTimeout(() => router.replace(action.redirectTo), 0);
-            return;
-          }
-          if (action.kind === "not_found") {
-            if (typeof window !== "undefined") {
-              sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
-            }
-            setTimeout(() => router.replace(action.redirectTo), 0);
-            return;
-          }
-          setError(action.message);
-          setLoading(false);
+          handleCustomersError(err);
         });
 
       return () => {
         active = false;
       };
     },
-    [storeSlug, router]
+    [storeSlug, handleCustomersError]
   );
+
+  const handleLoadMore = () => {
+    if (!pagination?.has_more || loadingMore) return;
+    const query = searchQuery.trim() || undefined;
+    setLoadingMore(true);
+    fetchMerchantCustomersPage(storeSlug, { query, page: pagination.page + 1 })
+      .then((res) => {
+        setCustomers((prev) => {
+          const seen = new Set(prev.map((c) => c.id));
+          return [...prev, ...res.customers.filter((c) => !seen.has(c.id))];
+        });
+        setPagination(res.pagination);
+      })
+      .catch((err: unknown) => handleCustomersError(err))
+      .finally(() => setLoadingMore(false));
+  };
 
   useEffect(() => {
     const cleanup = loadCustomers();
@@ -91,17 +122,11 @@ export default function MerchantCustomersPage({ params }: PageProps) {
     return () => clearTimeout(handler);
   }, [searchQuery, loadCustomers]);
 
-  // Metrics aggregations
-  const totalCustomers = customers.length;
-  const repeatCustomers = useMemo(
-    () => customers.filter((c) => c.orders_count > 1).length,
-    [customers]
-  );
+  // Metrics come from server-side, store-wide aggregates (not from the loaded page only)
+  const totalCustomers = pagination?.total ?? customers.length;
+  const repeatCustomers = repeatCustomersTotal;
   const repeatRate = totalCustomers > 0 ? Math.round((repeatCustomers / totalCustomers) * 100) : 0;
-  const totalSpentMinor = useMemo(
-    () => customers.reduce((acc, c) => acc + (c.total_spent_minor || 0), 0),
-    [customers]
-  );
+  const totalSpentMinor = totalSpentAll;
   const avgSpentMinor = totalCustomers > 0 ? Math.round(totalSpentMinor / totalCustomers) : 0;
 
   const handleSelectCustomer = (cust: MerchantCustomerItem) => {
@@ -207,7 +232,7 @@ export default function MerchantCustomersPage({ params }: PageProps) {
         </div>
 
         <div className="text-xs font-mono text-[var(--muted-foreground)] text-right">
-          Showing {customers.length} {customers.length === 1 ? "customer" : "customers"}
+          Showing {customers.length} of {totalCustomers} {totalCustomers === 1 ? "customer" : "customers"}
         </div>
       </div>
 
@@ -353,6 +378,18 @@ export default function MerchantCustomersPage({ params }: PageProps) {
               </tbody>
             </table>
           </div>
+          {pagination?.has_more && (
+            <div className="border-t border-[var(--border)] p-3 text-center">
+              <button
+                type="button"
+                onClick={handleLoadMore}
+                disabled={loadingMore}
+                className="px-3 py-1.5 rounded border border-[var(--border)] bg-[var(--secondary)] text-xs font-medium cursor-pointer disabled:opacity-60"
+              >
+                {loadingMore ? "Loading..." : "Load more customers"}
+              </button>
+            </div>
+          )}
         </div>
       )}
 

@@ -502,22 +502,58 @@ class StoreDetailView(StorePublicMixin, APIView):
         return response
 
 
+LIST_PAGE_SIZE_DEFAULT = 50
+LIST_PAGE_SIZE_MAX = 200
+
+
+def _page_params(request, default=LIST_PAGE_SIZE_DEFAULT, max_size=LIST_PAGE_SIZE_MAX):
+    """Parse ?page= / ?page_size= safely. Garbage falls back to defaults; size is hard-capped."""
+    def _int(raw, fallback):
+        try:
+            value = int(str(raw).strip())
+        except (TypeError, ValueError):
+            return fallback
+        return value
+
+    page = max(1, _int(request.query_params.get("page"), 1))
+    page_size = _int(request.query_params.get("page_size"), default)
+    page_size = min(max(1, page_size), max_size)
+    return page, page_size, (page - 1) * page_size
+
+
+def _page_meta(total, page, page_size):
+    return {
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "has_more": page * page_size < total,
+    }
+
+
 class StoreCatalogView(StorePublicMixin, APIView):
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
 
     def get(self, request, store_slug):
+        q = str(request.query_params.get("q", "")).strip()
+        page, page_size, offset = _page_params(request, default=48)
+        base_qs = Product.objects.for_store(self.store).filter(is_active=True)
+        if q:
+            base_qs = base_qs.filter(Q(name__icontains=q) | Q(description__icontains=q))
         active_variants_qs = Variant.objects.filter(is_active=True).order_by("sort_order", "price_minor")
-        products = (
-            Product.objects.for_store(self.store)
-            .filter(is_active=True)
-            .prefetch_related(
+        products = list(
+            base_qs.prefetch_related(
                 Prefetch("variants", queryset=active_variants_qs, to_attr="prefetched_active_variants")
-            )
-            .order_by("sort_order", "id")
+            ).order_by("sort_order", "id")[offset:offset + page_size]
         )
+        # Skip COUNT(*) on page 1 when fewer than a full page came back (common for small stores).
+        if offset == 0 and len(products) < page_size:
+            total = len(products)
+        else:
+            total = base_qs.count()
         response = Response({
             "products": ProductSerializer(products, many=True).data,
+            "pagination": _page_meta(total, page, page_size),
         })
         response["Cache-Control"] = PUBLIC_STOREFRONT_CACHE_CONTROL
         return response
@@ -2011,15 +2047,55 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
 
 class MerchantProductListCreateView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
+        status_filter = str(request.query_params.get("status", "")).strip().lower()
+        q = str(request.query_params.get("q", "")).strip()
+        page, page_size, offset = _page_params(request)
+
+        all_qs = Product.objects.for_store(self.store)
+        counts = all_qs.aggregate(
+            all_count=Count("id"),
+            active_count=Count("id", filter=Q(is_active=True)),
+            draft_count=Count("id", filter=Q(is_active=False)),
+        )
+
+        filtered_qs = all_qs
+        if status_filter == "active":
+            filtered_qs = filtered_qs.filter(is_active=True)
+        elif status_filter == "draft":
+            filtered_qs = filtered_qs.filter(is_active=False)
+        if q:
+            filtered_qs = filtered_qs.filter(
+                Q(name__icontains=q) | Q(slug__icontains=q) | Q(description__icontains=q)
+            )
+
+        total = filtered_qs.count()
+        page_ids = list(
+            filtered_qs.order_by("sort_order", "-id").values_list("id", flat=True)[offset:offset + page_size]
+        )
         active_variants_qs = Variant.objects.all().order_by("sort_order", "price_minor")
         products = (
             Product.objects.for_store(self.store)
+            .filter(id__in=page_ids)
             .prefetch_related(
                 Prefetch("variants", queryset=active_variants_qs, to_attr="prefetched_active_variants")
             )
             .order_by("sort_order", "-id")
+            if page_ids
+            else []
         )
-        return Response(ProductSerializer(products, many=True).data)
+        response = Response(ProductSerializer(products, many=True).data)
+        meta = _page_meta(total, page, page_size)
+        response["X-Total-Count"] = str(meta["total"])
+        response["X-Page"] = str(meta["page"])
+        response["X-Page-Size"] = str(meta["page_size"])
+        response["X-Has-More"] = "1" if meta["has_more"] else "0"
+        response["X-All-Count"] = str(counts["all_count"] or 0)
+        response["X-Active-Count"] = str(counts["active_count"] or 0)
+        response["X-Draft-Count"] = str(counts["draft_count"] or 0)
+        response["Access-Control-Expose-Headers"] = (
+            "X-Total-Count, X-Page, X-Page-Size, X-Has-More, X-All-Count, X-Active-Count, X-Draft-Count"
+        )
+        return response
 
     def post(self, request, store_slug):
         data = request.data.copy() if hasattr(request.data, "copy") else dict(request.data)
@@ -2399,7 +2475,7 @@ class MerchantOrderListView(StoreMerchantMixin, APIView):
         qs = (
             base_qs.select_related("customer")
             .prefetch_related("items", "events")
-            .order_by("-created_at")
+            .order_by("-created_at", "-id")
         )
 
         status_filter = request.query_params.get("status", "").strip().lower()
@@ -2421,8 +2497,12 @@ class MerchantOrderListView(StoreMerchantMixin, APIView):
                 | Q(customer__phone__icontains=search)
             )
 
+        page, page_size, offset = _page_params(request)
+        total = qs.count()
+        page_orders = list(qs[offset:offset + page_size])
+
         return Response({
-            "orders": OrderSerializer(qs, many=True).data,
+            "orders": OrderSerializer(page_orders, many=True).data,
             "counts": {
                 "all": counts_agg["all_count"] or 0,
                 "new": counts_agg["new_count"] or 0,
@@ -2430,6 +2510,7 @@ class MerchantOrderListView(StoreMerchantMixin, APIView):
                 "shipped": counts_agg["shipped_count"] or 0,
                 "delivered": counts_agg["delivered_count"] or 0,
             },
+            "pagination": _page_meta(total, page, page_size),
         })
 
 
@@ -2530,6 +2611,30 @@ class MerchantOrderStatusTransitionView(StoreMerchantMixin, APIView):
 class MerchantCustomerListView(StoreMerchantMixin, APIView):
     def get(self, request, store_slug):
         q = request.query_params.get("q", "").strip()
+        page, page_size, offset = _page_params(request)
+
+        # 1) Cheap filtered + ordered id query; only this page is ever annotated/serialised.
+        base_qs = Customer.objects.for_store(self.store)
+        if q:
+            base_qs = base_qs.filter(
+                Q(full_name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
+            )
+        total = base_qs.count()
+        page_ids = list(
+            base_qs.order_by("-created_at", "-id").values_list("id", flat=True)[offset:offset + page_size]
+        )
+
+        # 2) Store-wide (filter-aware) KPIs from a single grouped order query, not from loaded rows.
+        order_scope = Order.objects.for_store(self.store)
+        if q:
+            order_scope = order_scope.filter(customer_id__in=base_qs.values("id"))
+        repeat_customers = (
+            order_scope.values("customer_id").annotate(n=Count("id")).filter(n__gt=1).count()
+        )
+        spent_agg = order_scope.filter(payment_status="PAID").exclude(
+            status__in=["CANCELLED", "PAYMENT_FAILED"]
+        ).aggregate(total=Sum("total_minor"))
+
         orders_prefetch = Prefetch(
             "orders",
             queryset=Order.objects.order_by("-created_at").only("id", "customer_id", "shipping_address_snapshot", "created_at"),
@@ -2537,6 +2642,7 @@ class MerchantCustomerListView(StoreMerchantMixin, APIView):
         )
         customers = (
             Customer.objects.for_store(self.store)
+            .filter(id__in=page_ids)
             .prefetch_related(orders_prefetch)
             .annotate(
                 orders_count=Count("orders", distinct=True),
@@ -2549,13 +2655,20 @@ class MerchantCustomerListView(StoreMerchantMixin, APIView):
                     default=0,
                 ),
             )
-            .order_by("-created_at")
+            .order_by("-created_at", "-id")
         )
-        if q:
-            customers = customers.filter(
-                Q(full_name__icontains=q) | Q(email__icontains=q) | Q(phone__icontains=q)
-            )
-        return Response(CustomerSerializer(customers, many=True).data)
+        response = Response(CustomerSerializer(customers, many=True).data)
+        meta = _page_meta(total, page, page_size)
+        response["X-Total-Count"] = str(meta["total"])
+        response["X-Page"] = str(meta["page"])
+        response["X-Page-Size"] = str(meta["page_size"])
+        response["X-Has-More"] = "1" if meta["has_more"] else "0"
+        response["X-Repeat-Customers"] = str(repeat_customers)
+        response["X-Total-Spent-Minor"] = str(spent_agg["total"] or 0)
+        response["Access-Control-Expose-Headers"] = (
+            "X-Total-Count, X-Page, X-Page-Size, X-Has-More, X-Repeat-Customers, X-Total-Spent-Minor"
+        )
+        return response
 
 
 class MerchantCustomerDetailView(StoreMerchantMixin, APIView):
@@ -3363,7 +3476,11 @@ class MerchantInventoryListView(StoreMerchantMixin, APIView):
                 | Q(sku__icontains=q)
             )
 
-        items_list = list(qs.order_by("-track_inventory", "stock_quantity", "product__name", "id"))
+        page, page_size, offset = _page_params(request)
+        total = qs.count()
+        items_list = list(
+            qs.order_by("-track_inventory", "stock_quantity", "product__name", "id")[offset:offset + page_size]
+        )
         items = [
             {
                 "id": v.id,
@@ -3394,6 +3511,7 @@ class MerchantInventoryListView(StoreMerchantMixin, APIView):
                 "total_units": summary_agg["total_units"] or 0,
             },
             "items": items,
+            "pagination": _page_meta(total, page, page_size),
         })
 
 

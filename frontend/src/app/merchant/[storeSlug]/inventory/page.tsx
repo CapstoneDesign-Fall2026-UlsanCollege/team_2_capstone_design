@@ -72,6 +72,7 @@ function MerchantInventoryInner({ storeSlug }: { storeSlug: string }) {
   );
   const [searchQuery, setSearchQuery] = useState("");
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [data, setData] = useState<MerchantInventoryResponse | null>(null);
   const [savingId, setSavingId] = useState<number | null>(null);
@@ -84,6 +85,7 @@ function MerchantInventoryInner({ storeSlug }: { storeSlug: string }) {
         const res = await fetchMerchantInventory(storeSlug, {
           status: nextFilter,
           q: nextQuery.trim() || undefined,
+          page: 1,
         });
         setData(res);
       } catch (err: unknown) {
@@ -110,6 +112,32 @@ function MerchantInventoryInner({ storeSlug }: { storeSlug: string }) {
     },
     [storeSlug, filter, searchQuery, router]
   );
+
+  const handleLoadMore = async () => {
+    const pagination = data?.pagination;
+    if (!pagination?.has_more || loadingMore) return;
+    setLoadingMore(true);
+    try {
+      const res = await fetchMerchantInventory(storeSlug, {
+        status: filter,
+        q: searchQuery.trim() || undefined,
+        page: pagination.page + 1,
+      });
+      setData((prev) => {
+        if (!prev) return res;
+        const seen = new Set(prev.items.map((row) => row.id));
+        return {
+          summary: res.summary,
+          items: [...prev.items, ...res.items.filter((row) => !seen.has(row.id))],
+          pagination: res.pagination,
+        };
+      });
+    } catch (err: unknown) {
+      setError(err instanceof Error ? err.message : "Failed to load more inventory.");
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   useEffect(() => {
     let active = true;
@@ -476,6 +504,23 @@ function MerchantInventoryInner({ storeSlug }: { storeSlug: string }) {
               </tbody>
             </table>
           </div>
+          {data?.pagination && data.pagination.total > 0 && (
+            <div className="flex items-center justify-between gap-3 px-4 py-3 border-t border-[var(--border)] bg-[var(--canvas)] text-xs text-[var(--ink-2)]">
+              <span>
+                Showing {items.length} of {data.pagination.total} SKUs
+              </span>
+              {data.pagination.has_more && (
+                <button
+                  type="button"
+                  onClick={() => void handleLoadMore()}
+                  disabled={loadingMore}
+                  className="px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--surface)] text-[var(--ink)] font-medium cursor-pointer disabled:opacity-60"
+                >
+                  {loadingMore ? "Loading..." : "Load more SKUs"}
+                </button>
+              )}
+            </div>
+          )}
         </div>
       )}
     </div>

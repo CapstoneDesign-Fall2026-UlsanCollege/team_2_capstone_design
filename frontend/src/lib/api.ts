@@ -181,7 +181,11 @@ export function invalidateApiGetCache(prefix?: string): void {
   }
 }
 
-export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> {
+export async function apiFetch<T>(
+  path: string,
+  init?: RequestInit,
+  opts?: { onHeaders?: (headers: Headers) => void }
+): Promise<T> {
   const method = (init?.method || "GET").toUpperCase();
   const isMutating = ["POST", "PUT", "PATCH", "DELETE"].includes(method);
   const bypassCache = init?.cache === "no-store" || init?.cache === "reload";
@@ -253,6 +257,9 @@ export async function apiFetch<T>(path: string, init?: RequestInit): Promise<T> 
       const isJson = contentType && contentType.includes("application/json");
       const data = isJson ? await res.json() : null;
 
+      if (res.ok) {
+        opts?.onHeaders?.(res.headers);
+      }
       if (!res.ok) {
         let detail = "An unexpected error occurred.";
         let fieldErrors: Record<string, string[]> | undefined;
@@ -492,11 +499,25 @@ export async function fetchStorePublic(storeSlug: string) {
 
 export interface StoreCatalogResponse {
   products: ProductItem[];
+  pagination?: {
+    total: number;
+    page: number;
+    page_size: number;
+    has_more: boolean;
+  };
 }
 
-export async function fetchStoreCatalog(storeSlug: string) {
+export async function fetchStoreCatalog(
+  storeSlug: string,
+  params?: { page?: number; pageSize?: number; q?: string }
+) {
+  const qs = new URLSearchParams();
+  if (params?.page && params.page > 1) qs.set("page", String(params.page));
+  if (params?.pageSize) qs.set("page_size", String(params.pageSize));
+  if (params?.q) qs.set("q", params.q);
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
   return apiFetch<StoreCatalogResponse>(
-    `/api/stores/${encodeURIComponent(storeSlug)}/catalog/`
+    `/api/stores/${encodeURIComponent(storeSlug)}/catalog/${suffix}`
   );
 }
 
@@ -721,6 +742,52 @@ export interface ProductPayload {
   initial_variant_label?: string;
 }
 
+export interface MerchantProductsPage {
+  products: ProductItem[];
+  pagination: PaginationMeta;
+  allCount: number;
+  activeCount: number;
+  draftCount: number;
+}
+
+export async function fetchMerchantProductsPage(
+  storeSlug: string,
+  params?: { status?: string; q?: string; page?: number; pageSize?: number }
+): Promise<MerchantProductsPage> {
+  const qs = new URLSearchParams();
+  if (params?.status && params.status !== "all") qs.set("status", params.status);
+  if (params?.q) qs.set("q", params.q);
+  if (params?.page && params.page > 1) qs.set("page", String(params.page));
+  if (params?.pageSize) qs.set("page_size", String(params.pageSize));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  let headers: Headers | null = null;
+  const products = await apiFetch<ProductItem[]>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/${suffix}`,
+    { cache: "no-store" },
+    { onHeaders: (h) => (headers = h) }
+  );
+  const h = headers as Headers | null;
+  const num = (name: string, fallback: number) => {
+    const raw = h?.get(name);
+    const parsed = raw === null || raw === undefined ? NaN : Number(raw);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const page = num("X-Page", params?.page ?? 1);
+  const pageSize = num("X-Page-Size", params?.pageSize ?? products.length);
+  return {
+    products,
+    pagination: {
+      total: num("X-Total-Count", products.length),
+      page,
+      page_size: pageSize,
+      has_more: h?.get("X-Has-More") === "1",
+    },
+    allCount: num("X-All-Count", products.length),
+    activeCount: num("X-Active-Count", products.filter((p) => p.is_active).length),
+    draftCount: num("X-Draft-Count", products.filter((p) => !p.is_active).length),
+  };
+}
+
 export async function fetchMerchantProducts(storeSlug: string) {
   return apiFetch<ProductItem[]>(
     `/api/merchant/stores/${encodeURIComponent(storeSlug)}/products/`
@@ -812,15 +879,18 @@ export interface MerchantInventoryResponse {
     total_units: number;
   };
   items: MerchantInventoryItem[];
+  pagination?: PaginationMeta;
 }
 
 export async function fetchMerchantInventory(
   storeSlug: string,
-  params?: { status?: string; q?: string }
+  params?: { status?: string; q?: string; page?: number; pageSize?: number }
 ) {
   const query = new URLSearchParams();
   if (params?.status && params.status !== "all") query.set("status", params.status);
   if (params?.q) query.set("q", params.q);
+  if (params?.page && params.page > 1) query.set("page", String(params.page));
+  if (params?.pageSize) query.set("page_size", String(params.pageSize));
   const qStr = query.toString() ? `?${query.toString()}` : "";
   return apiFetch<MerchantInventoryResponse>(
     `/api/merchant/stores/${encodeURIComponent(storeSlug)}/inventory/${qStr}`
@@ -1083,18 +1153,28 @@ export interface OrderQueueCounts {
   delivered: number;
 }
 
+export interface PaginationMeta {
+  total: number;
+  page: number;
+  page_size: number;
+  has_more: boolean;
+}
+
 export interface MerchantOrdersResponse {
   orders: OrderDetail[];
   counts: OrderQueueCounts;
+  pagination?: PaginationMeta;
 }
 
 export async function fetchMerchantOrders(
   storeSlug: string,
-  params?: { status?: string; search?: string }
+  params?: { status?: string; search?: string; page?: number; pageSize?: number }
 ) {
   const query = new URLSearchParams();
   if (params?.status && params.status !== "all") query.set("status", params.status);
   if (params?.search) query.set("search", params.search);
+  if (params?.page && params.page > 1) query.set("page", String(params.page));
+  if (params?.pageSize) query.set("page_size", String(params.pageSize));
   const qStr = query.toString() ? `?${query.toString()}` : "";
 
   return apiFetch<MerchantOrdersResponse>(
@@ -1141,6 +1221,52 @@ export interface MerchantCustomerItem {
 export interface MerchantCustomerDetail {
   customer: MerchantCustomerItem;
   orders: OrderDetail[];
+}
+
+export interface MerchantCustomersPage {
+  customers: MerchantCustomerItem[];
+  pagination: PaginationMeta;
+  repeatCustomers: number;
+  totalSpentMinor: number;
+}
+
+export async function fetchMerchantCustomersPage(
+  storeSlug: string,
+  params?: { query?: string; page?: number; pageSize?: number }
+): Promise<MerchantCustomersPage> {
+  const qs = new URLSearchParams();
+  if (params?.query) qs.set("q", params.query);
+  if (params?.page && params.page > 1) qs.set("page", String(params.page));
+  if (params?.pageSize) qs.set("page_size", String(params.pageSize));
+  const suffix = qs.toString() ? `?${qs.toString()}` : "";
+  let headers: Headers | null = null;
+  const customers = await apiFetch<MerchantCustomerItem[]>(
+    `/api/merchant/stores/${encodeURIComponent(storeSlug)}/customers/${suffix}`,
+    { cache: "no-store" },
+    { onHeaders: (h) => (headers = h) }
+  );
+  const h = headers as Headers | null;
+  const num = (name: string, fallback: number) => {
+    const raw = h?.get(name);
+    const parsed = raw === null || raw === undefined ? NaN : Number(raw);
+    return Number.isFinite(parsed) ? parsed : fallback;
+  };
+  const page = num("X-Page", params?.page ?? 1);
+  const pageSize = num("X-Page-Size", params?.pageSize ?? customers.length);
+  return {
+    customers,
+    pagination: {
+      total: num("X-Total-Count", customers.length),
+      page,
+      page_size: pageSize,
+      has_more: h?.get("X-Has-More") === "1",
+    },
+    repeatCustomers: num("X-Repeat-Customers", customers.filter((c) => c.orders_count > 1).length),
+    totalSpentMinor: num(
+      "X-Total-Spent-Minor",
+      customers.reduce((acc, c) => acc + (c.total_spent_minor || 0), 0)
+    ),
+  };
 }
 
 export async function fetchMerchantCustomers(storeSlug: string, query?: string) {

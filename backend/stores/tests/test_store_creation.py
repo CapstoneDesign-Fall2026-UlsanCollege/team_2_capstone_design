@@ -362,7 +362,8 @@ class StoreCreationNoPlaceholdersTests(TestCase):
         self.client.force_authenticate(user=None)
         cat_res = self.client.get("/api/stores/zero-item-shop/catalog/")
         self.assertEqual(cat_res.status_code, status.HTTP_200_OK)
-        self.assertEqual(cat_res.json(), {"products": []})
+        self.assertEqual(cat_res.json()["products"], [])
+        self.assertEqual(cat_res.json()["pagination"]["total"], 0)
 
         self.client.force_authenticate(user=self.merchant)
         ov_res = self.client.get("/api/merchant/stores/zero-item-shop/overview/")

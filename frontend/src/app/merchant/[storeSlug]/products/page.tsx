@@ -1,10 +1,10 @@
 "use client";
 
-import React, { use, useEffect, useState, useMemo, useCallback } from "react";
+import React, { use, useEffect, useState, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { ExternalLink, Plus, Search } from "lucide-react";
-import { fetchMerchantProducts, ProductItem } from "@/lib/api";
+import { fetchMerchantProductsPage, PaginationMeta, ProductItem } from "@/lib/api";
 import { classifyMerchantPageError } from "@/lib/merchant-guard";
 import { ProductListTable } from "@/components/merchant/ProductListTable";
 import { ProductSheet } from "@/components/merchant/ProductSheet";
@@ -19,12 +19,17 @@ export default function MerchantProductsPage({ params }: PageProps) {
   const searchParams = useSearchParams();
 
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [products, setProducts] = useState<ProductItem[]>([]);
+  const [pagination, setPagination] = useState<PaginationMeta | null>(null);
+  const [counts, setCounts] = useState({ all: 0, active: 0, draft: 0 });
 
   // Filtering state
   const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedQuery, setDebouncedQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<"all" | "active" | "draft">("all");
+  const reqSeqRef = useRef(0);
 
   // Sheet state: controlled via local state or URL ?action=new
   const actionNew = searchParams.get("action") === "new";
@@ -33,42 +38,92 @@ export default function MerchantProductsPage({ params }: PageProps) {
 
   const [selectedProduct, setSelectedProduct] = useState<ProductItem | null>(null);
 
-  const loadProducts = useCallback(() => {
-    let active = true;
-    fetchMerchantProducts(storeSlug)
-      .then((data) => {
-        if (active) {
-          setProducts(data);
-          setError(null);
-          setLoading(false);
+  useEffect(() => {
+    const timer = setTimeout(() => setDebouncedQuery(searchQuery.trim()), 200);
+    return () => clearTimeout(timer);
+  }, [searchQuery]);
+
+  const handleProductsError = useCallback(
+    (err: unknown) => {
+      const action = classifyMerchantPageError(
+        err,
+        storeSlug,
+        `/merchant/${encodeURIComponent(storeSlug)}/products`
+      );
+      if (action.kind === "unauthenticated") {
+        setTimeout(() => router.replace(action.redirectTo), 0);
+        return;
+      }
+      if (action.kind === "not_found") {
+        if (typeof window !== "undefined") {
+          sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
         }
+        setTimeout(() => router.replace(action.redirectTo), 0);
+        return;
+      }
+      setError(action.message);
+      setLoading(false);
+    },
+    [storeSlug, router]
+  );
+
+  const loadProducts = useCallback(() => {
+    const seq = ++reqSeqRef.current;
+    fetchMerchantProductsPage(storeSlug, {
+      status: statusFilter,
+      q: debouncedQuery || undefined,
+      page: 1,
+    })
+      .then((res) => {
+        if (seq !== reqSeqRef.current) return;
+        setProducts(res.products);
+        setPagination(res.pagination);
+        setCounts({
+          all: res.allCount,
+          active: res.activeCount,
+          draft: res.draftCount,
+        });
+        setError(null);
+        setLoading(false);
       })
       .catch((err: unknown) => {
-        if (!active) return;
-        const action = classifyMerchantPageError(
-          err,
-          storeSlug,
-          `/merchant/${encodeURIComponent(storeSlug)}/products`
-        );
-        if (action.kind === "unauthenticated") {
-          setTimeout(() => router.replace(action.redirectTo), 0);
-          return;
-        }
-        if (action.kind === "not_found") {
-          if (typeof window !== "undefined") {
-            sessionStorage.setItem("shopcraft_merchant_notice", action.notice);
-          }
-          setTimeout(() => router.replace(action.redirectTo), 0);
-          return;
-        }
-        setError(action.message);
-        setLoading(false);
+        if (seq !== reqSeqRef.current) return;
+        handleProductsError(err);
       });
 
     return () => {
-      active = false;
+      // invalidate stale response if unmounted/re-queried
+      if (reqSeqRef.current === seq) {
+        reqSeqRef.current += 1;
+      }
     };
-  }, [storeSlug, router]);
+  }, [storeSlug, statusFilter, debouncedQuery, handleProductsError]);
+
+  const handleLoadMore = () => {
+    if (!pagination?.has_more || loadingMore) return;
+    const seq = reqSeqRef.current;
+    setLoadingMore(true);
+    fetchMerchantProductsPage(storeSlug, {
+      status: statusFilter,
+      q: debouncedQuery || undefined,
+      page: pagination.page + 1,
+    })
+      .then((res) => {
+        if (seq !== reqSeqRef.current) return;
+        setProducts((prev) => {
+          const seen = new Set(prev.map((p) => p.id));
+          return [...prev, ...res.products.filter((p) => !seen.has(p.id))];
+        });
+        setPagination(res.pagination);
+        setCounts({
+          all: res.allCount,
+          active: res.activeCount,
+          draft: res.draftCount,
+        });
+      })
+      .catch((err: unknown) => handleProductsError(err))
+      .finally(() => setLoadingMore(false));
+  };
 
   useEffect(() => {
     const cleanup = loadProducts();
@@ -95,23 +150,7 @@ export default function MerchantProductsPage({ params }: PageProps) {
     };
   }, [loadProducts]);
 
-  const filteredProducts = useMemo(() => {
-    return products.filter((p) => {
-      if (statusFilter === "active" && !p.is_active) return false;
-      if (statusFilter === "draft" && p.is_active) return false;
-
-      if (!searchQuery.trim()) return true;
-      const q = searchQuery.toLowerCase().trim();
-      const inName = p.name.toLowerCase().includes(q);
-      const inSlug = p.slug.toLowerCase().includes(q);
-      const inDesc = p.description.toLowerCase().includes(q);
-      const inAttrs = Object.values(p.attributes || {}).some((v) =>
-        String(v ?? "").toLowerCase().includes(q)
-      );
-
-      return inName || inSlug || inDesc || inAttrs;
-    });
-  }, [products, statusFilter, searchQuery]);
+  const filteredProducts = products;
 
   const handleEdit = (prod: ProductItem) => {
     setSelectedProduct(prod);
@@ -199,7 +238,7 @@ export default function MerchantProductsPage({ params }: PageProps) {
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
-            All ({products.length})
+            All ({counts.all || products.length})
           </button>
           <button
             type="button"
@@ -210,7 +249,7 @@ export default function MerchantProductsPage({ params }: PageProps) {
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
-            Active ({products.filter((p) => p.is_active).length})
+            Active ({counts.active})
           </button>
           <button
             type="button"
@@ -221,7 +260,7 @@ export default function MerchantProductsPage({ params }: PageProps) {
                 : "text-[var(--muted-foreground)] hover:text-[var(--foreground)]"
             }`}
           >
-            Draft ({products.filter((p) => !p.is_active).length})
+            Draft ({counts.draft})
           </button>
         </div>
       </div>
@@ -248,13 +287,32 @@ export default function MerchantProductsPage({ params }: PageProps) {
           </button>
         </div>
       ) : (
-        <ProductListTable
-          storeSlug={storeSlug}
-          products={filteredProducts}
-          onEdit={handleEdit}
-          onRefresh={loadProducts}
-          onAddNew={handleAddNew}
-        />
+        <>
+          <ProductListTable
+            storeSlug={storeSlug}
+            products={filteredProducts}
+            onEdit={handleEdit}
+            onRefresh={loadProducts}
+            onAddNew={handleAddNew}
+          />
+          {pagination && pagination.total > 0 && (
+            <div className="flex items-center justify-between gap-3 text-xs text-[var(--muted-foreground)]">
+              <span>
+                Showing {filteredProducts.length} of {pagination.total} products
+              </span>
+              {pagination.has_more && (
+                <button
+                  type="button"
+                  onClick={handleLoadMore}
+                  disabled={loadingMore}
+                  className="px-3 py-1.5 rounded-lg border border-[var(--border)] bg-[var(--card)] text-[var(--foreground)] font-medium cursor-pointer disabled:opacity-60"
+                >
+                  {loadingMore ? "Loading..." : "Load more products"}
+                </button>
+              )}
+            </div>
+          )}
+        </>
       )}
 
       {/* Product Drawer Sheet */}
