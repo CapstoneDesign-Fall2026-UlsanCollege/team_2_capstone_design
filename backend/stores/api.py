@@ -22,7 +22,12 @@ import io
 from accounts.models import User
 from catalog.models import Discount, Product, Variant
 from orders.models import Order, OrderItem, OrderEvent
-from core.tenant_context import set_current_tenant_id, reset_current_tenant_id, UserMembershipContext
+from core.tenant_context import (
+    TenantDatabaseContext,
+    UserMembershipContext,
+    reset_current_tenant_id,
+    set_current_tenant_id,
+)
 from stores.cloudinary_upload import (
     CloudinaryUploadError,
     is_cloudinary_configured,
@@ -138,10 +143,21 @@ class StoreTenantMixin:
     for all tenant-scoped requests. No tenant state survives the transaction or HTTP request.
     Guarantees atomic rollback whenever DRF catches an exception (response.exception = True)
     or an error response with status >= 500 is returned.
+
+    Views that perform outbound payment HTTP calls (and manage short explicit
+    TenantDatabaseContext phases themselves) may set `atomic_requests = False`
+    so database row locks are never held across external network I/O.
     """
     store = None
+    atomic_requests = True
 
     def dispatch(self, request, *args, **kwargs):
+        if not self.atomic_requests:
+            response = super().dispatch(request, *args, **kwargs)
+            if hasattr(response, "headers") and "Cache-Control" not in response:
+                response["Cache-Control"] = PRIVATE_NO_STORE_CACHE_CONTROL
+            return response
+
         with transaction.atomic():
             response = super().dispatch(request, *args, **kwargs)
             if getattr(response, "exception", False) or (hasattr(response, "status_code") and response.status_code >= 500):
@@ -161,10 +177,12 @@ class StorePublicMixin(StoreTenantMixin):
         self.store = Store.objects.filter(slug=store_slug, is_active=True).first()
         if not self.store:
             raise Http404("Store not found or inactive.")
-        set_current_tenant_id(self.store.id, is_local=True)
+        if self.atomic_requests:
+            set_current_tenant_id(self.store.id, is_local=True)
 
     def finalize_response(self, request, response, *args, **kwargs):
-        reset_current_tenant_id()
+        if self.atomic_requests:
+            reset_current_tenant_id()
         return super().finalize_response(request, response, *args, **kwargs)
 
 
@@ -896,40 +914,13 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "public_order_pay"
+    atomic_requests = False
 
     def post(self, request, store_slug, order_id):
         import uuid
         token_param = str(
             request.data.get("token") or request.query_params.get("token") or ""
         ).strip()
-        order = None
-
-        qs = Order.objects.for_store(self.store).select_for_update()
-        try:
-            uuid_token = uuid.UUID(str(order_id))
-            order = qs.filter(token=uuid_token).first()
-        except ValueError:
-            try:
-                oid = int(order_id)
-                if token_param:
-                    try:
-                        param_uuid = uuid.UUID(token_param)
-                        order = qs.filter(id=oid, token=param_uuid).first()
-                    except ValueError:
-                        pass
-                elif request.user.is_authenticated:
-                    order = qs.filter(id=oid, customer__user=request.user).first()
-            except ValueError:
-                pass
-
-        if not order:
-            raise Http404("Order not found.")
-
-        if order.payment_status == "PAID" or order.status not in ["PENDING_PAYMENT", "PAYMENT_FAILED"]:
-            return Response(
-                {"error": "This order does not have a pending payment balance."},
-                status=status.HTTP_400_BAD_REQUEST,
-            )
 
         payment_method = str(request.data.get("payment_method", "KHALTI")).strip().upper()
         if payment_method not in ["KHALTI", "COD"]:
@@ -944,16 +935,52 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        if payment_method == "COD":
-            with transaction.atomic():
-                _release_expired_pending_orders(self.store, exclude_order_id=order.id)
-                promo_err = _reclaim_order_discount(self.store, order)
-                if promo_err:
-                    return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
-                inv_err = _reclaim_order_inventory(self.store, order)
-                if inv_err:
-                    transaction.set_rollback(True)
-                    return Response({"error": inv_err}, status=status.HTTP_400_BAD_REQUEST)
+        if payment_method == "KHALTI":
+            _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
+            if khalti_cfg_err:
+                return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
+
+        # Phase 1: lock order, validate state, claim discount/inventory, and release DB locks before HTTP I/O.
+        with TenantDatabaseContext(self.store.id):
+            order = None
+            qs = Order.objects.for_store(self.store).select_for_update()
+            try:
+                uuid_token = uuid.UUID(str(order_id))
+                order = qs.filter(token=uuid_token).first()
+            except ValueError:
+                try:
+                    oid = int(order_id)
+                    if token_param:
+                        try:
+                            param_uuid = uuid.UUID(token_param)
+                            order = qs.filter(id=oid, token=param_uuid).first()
+                        except ValueError:
+                            pass
+                    elif request.user.is_authenticated:
+                        order = qs.filter(id=oid, customer__user=request.user).first()
+                except ValueError:
+                    pass
+
+            if not order:
+                raise Http404("Order not found.")
+
+            if order.payment_status == "PAID" or order.status not in ["PENDING_PAYMENT", "PAYMENT_FAILED"]:
+                return Response(
+                    {"error": "This order does not have a pending payment balance."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            _release_expired_pending_orders(self.store, exclude_order_id=order.id)
+            promo_err = _reclaim_order_discount(self.store, order)
+            if promo_err:
+                transaction.set_rollback(True)
+                return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
+            inv_err = _reclaim_order_inventory(self.store, order)
+            if inv_err:
+                transaction.set_rollback(True)
+                return Response({"error": inv_err}, status=status.HTTP_400_BAD_REQUEST)
+
+            if payment_method == "COD":
                 old_status = order.status
                 order.status = "CONFIRMED"
                 order.payment_method = "COD"
@@ -978,95 +1005,127 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
                     actor=request.user if request.user.is_authenticated else None,
                 )
 
-            return Response({
-                "order_id": order.id,
-                "token": str(order.token),
-                "order_number": order.order_number,
-                "status": order.status,
-                "payment_method": "COD",
-                "payment_status": order.payment_status,
-                "total_minor": order.total_minor,
-            })
+                return Response({
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "order_number": order.order_number,
+                    "status": order.status,
+                    "payment_method": "COD",
+                    "payment_status": order.payment_status,
+                    "total_minor": order.total_minor,
+                })
 
-        # Khalti initiation for renewal / retry payment
-        _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
-        if khalti_cfg_err:
-            return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
-
-        _release_expired_pending_orders(self.store, exclude_order_id=order.id)
-        promo_err = _reclaim_order_discount(self.store, order)
-        if promo_err:
-            return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
-        inv_err = _reclaim_order_inventory(self.store, order)
-        if inv_err:
-            transaction.set_rollback(True)
-            return Response({"error": inv_err}, status=status.HTTP_400_BAD_REQUEST)
-
-        snap = order.shipping_address_snapshot or {}
-        recipient_name = snap.get("recipient_name") or order.customer.full_name or "Shopper"
-        phone = snap.get("phone") or order.customer.phone or "9800000000"
-
-        khalti_body = _build_khalti_initiate_body(
-            request=request,
-            store=self.store,
-            order=order,
-            purchase_order_name=f"{self.store.name} Order {order.order_number}",
-            recipient_name=recipient_name,
-            customer_email=order.customer.email,
-            phone=phone,
-        )
-
-        pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
-            store=self.store,
-            order=order,
-            khalti_body=khalti_body,
-        )
-        if gw_err or not pidx or not payment_url:
-            return Response(
-                {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
-                status=status.HTTP_502_BAD_GATEWAY,
-            )
-
-        with transaction.atomic():
             prev_status = order.status
             order.payment_method = "KHALTI"
             order.payment_status = "UNPAID"
             order.status = "PENDING_PAYMENT"
-            order.payment_ref = pidx
-            order.is_test = bool(is_mock or self.store.khalti_mode != "LIVE")
             order.save(
                 update_fields=[
                     "payment_method",
                     "payment_status",
                     "status",
-                    "payment_ref",
-                    "is_test",
                     "discount_redeemed",
                     "inventory_deducted",
                     "updated_at",
                 ]
             )
-            OrderEvent.objects.create(
+
+            snap = order.shipping_address_snapshot or {}
+            recipient_name = snap.get("recipient_name") or order.customer.full_name or "Shopper"
+            phone = snap.get("phone") or order.customer.phone or "9800000000"
+            customer_email = order.customer.email
+            order_id_val = order.id
+
+            khalti_body = _build_khalti_initiate_body(
+                request=request,
                 store=self.store,
                 order=order,
+                purchase_order_name=f"{self.store.name} Order {order.order_number}",
+                recipient_name=recipient_name,
+                customer_email=customer_email,
+                phone=phone,
+            )
+
+        # Outbound Khalti call strictly outside any DB transaction/lock.
+        try:
+            pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
+                store=self.store,
+                order=order,
+                khalti_body=khalti_body,
+            )
+        except Exception:
+            with TenantDatabaseContext(self.store.id):
+                locked_order = Order.objects.for_store(self.store).select_for_update().filter(id=order_id_val).first()
+                if locked_order:
+                    _release_order_discount(self.store, locked_order)
+                    _release_order_inventory(self.store, locked_order)
+                    locked_order.status = "PAYMENT_FAILED"
+                    locked_order.payment_status = "FAILED"
+                    locked_order.save(
+                        update_fields=[
+                            "status",
+                            "payment_status",
+                            "discount_redeemed",
+                            "inventory_deducted",
+                            "updated_at",
+                        ]
+                    )
+            raise
+
+        # Phase 2: persist Khalti reference or release reservation on gateway error.
+        with TenantDatabaseContext(self.store.id):
+            locked_order = Order.objects.for_store(self.store).select_for_update().get(id=order_id_val)
+            if gw_err or not pidx or not payment_url:
+                _release_order_discount(self.store, locked_order)
+                _release_order_inventory(self.store, locked_order)
+                locked_order.status = "PAYMENT_FAILED"
+                locked_order.payment_status = "FAILED"
+                locked_order.save(
+                    update_fields=[
+                        "status",
+                        "payment_status",
+                        "discount_redeemed",
+                        "inventory_deducted",
+                        "updated_at",
+                    ]
+                )
+                OrderEvent.objects.create(
+                    store=self.store,
+                    order=locked_order,
+                    from_status="PENDING_PAYMENT",
+                    to_status="PAYMENT_FAILED",
+                    note="Khalti payment initiation failed; reservation released.",
+                    actor=request.user if request.user.is_authenticated else None,
+                )
+                return Response(
+                    {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            locked_order.payment_ref = pidx
+            locked_order.is_test = bool(is_mock or self.store.khalti_mode != "LIVE")
+            locked_order.save(update_fields=["payment_ref", "is_test", "updated_at"])
+            OrderEvent.objects.create(
+                store=self.store,
+                order=locked_order,
                 from_status=prev_status,
                 to_status="PENDING_PAYMENT",
                 note="Khalti payment retry initiated.",
                 actor=request.user if request.user.is_authenticated else None,
             )
 
-        payload = {
-            "order_id": order.id,
-            "token": str(order.token),
-            "order_number": order.order_number,
-            "pidx": pidx,
-            "payment_url": payment_url,
-            "status": order.status,
-            "is_test": order.is_test,
-        }
-        if is_mock:
-            payload["is_mock"] = True
-        return Response(payload)
+            payload = {
+                "order_id": locked_order.id,
+                "token": str(locked_order.token),
+                "order_number": locked_order.order_number,
+                "pidx": pidx,
+                "payment_url": payment_url,
+                "status": locked_order.status,
+                "is_test": locked_order.is_test,
+            }
+            if is_mock:
+                payload["is_mock"] = True
+            return Response(payload)
 
 
 def _parse_positive_int(raw_val, max_val=MAX_DB_POSITIVE_INT):
@@ -1247,6 +1306,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "checkout_place"
+    atomic_requests = False
 
     def post(self, request, store_slug):
         if not isinstance(request.data, dict):
@@ -1320,32 +1380,6 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 status=status.HTTP_400_BAD_REQUEST,
             )
 
-        user_email_norm = (
-            request.user.email.strip().lower()
-            if getattr(request.user, "is_authenticated", False) and request.user.email
-            else None
-        )
-
-        if user_email_norm and customer_email == user_email_norm:
-            customer = provision_store_customer(
-                self.store,
-                request.user,
-                full_name=recipient_name,
-                phone=phone
-            )
-        else:
-            customer, _ = Customer.objects.for_store(self.store).get_or_create(
-                store=self.store,
-                email=customer_email,
-                defaults={"full_name": recipient_name, "phone": phone},
-            )
-            if not customer.phone and phone:
-                customer.phone = phone
-                customer.save(update_fields=["phone"])
-            if not customer.full_name and recipient_name:
-                customer.full_name = recipient_name
-                customer.save(update_fields=["full_name"])
-
         payment_method = str(request.data.get("payment_method", "KHALTI")).strip().upper()
         if payment_method not in ["KHALTI", "COD"]:
             return Response({"error": "Invalid payment method. Choose KHALTI or COD."}, status=status.HTTP_400_BAD_REQUEST)
@@ -1361,85 +1395,120 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             if khalti_cfg_err:
                 return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
 
-        _release_expired_pending_orders(self.store)
+        user_email_norm = (
+            request.user.email.strip().lower()
+            if getattr(request.user, "is_authenticated", False) and request.user.email
+            else None
+        )
 
-        qty_by_variant_id = _aggregate_variant_quantities(items_data)
-        variant_ids = list(qty_by_variant_id.keys())
-        variants = {
-            v.id: v
-            for v in Variant.objects.for_store(self.store)
-            .select_related("product")
-            .filter(id__in=variant_ids)
-        }
+        # Phase 1: provision customer, release expired holds, validate/reserve stock & discount, and create Order.
+        # DB transaction closes and releases all row locks before any Khalti network call begins.
+        with TenantDatabaseContext(self.store.id):
+            _release_expired_pending_orders(self.store)
 
-        subtotal_minor = 0
-        order_items_to_create = []
-
-        for it in items_data:
-            v, variant_err = _validate_checkout_variant(
-                variants,
-                it["variant_id"],
-                requested_qty=qty_by_variant_id[it["variant_id"]],
-            )
-            if variant_err:
-                return Response(
-                    {"error": variant_err},
-                    status=status.HTTP_400_BAD_REQUEST,
+            if user_email_norm and customer_email == user_email_norm:
+                customer = provision_store_customer(
+                    self.store,
+                    request.user,
+                    full_name=recipient_name,
+                    phone=phone,
                 )
-
-            quantity = it["quantity"]
-            unit_price = v.price_minor
-            line_total = unit_price * quantity
-            if line_total > MAX_DB_POSITIVE_INT or subtotal_minor + line_total > MAX_DB_POSITIVE_INT:
-                return Response(
-                    {"error": "Order total exceeds maximum supported amount."},
-                    status=status.HTTP_400_BAD_REQUEST,
+            else:
+                customer, _ = Customer.objects.for_store(self.store).get_or_create(
+                    store=self.store,
+                    email=customer_email,
+                    defaults={"full_name": recipient_name, "phone": phone},
                 )
-            variant_label = v.label
+                if not customer.phone and phone:
+                    customer.phone = phone
+                    customer.save(update_fields=["phone"])
+                if not customer.full_name and recipient_name:
+                    customer.full_name = recipient_name
+                    customer.save(update_fields=["full_name"])
 
-            subtotal_minor += line_total
-            order_items_to_create.append({
-                "variant": v,
-                "product_name_snapshot": v.product.name,
-                "variant_label_snapshot": variant_label,
-                "unit_price_minor": unit_price,
-                "quantity": quantity,
-                "line_total_minor": line_total,
-            })
+            customer_email_val = customer.email
+            qty_by_variant_id = _aggregate_variant_quantities(items_data)
+            variant_ids = list(qty_by_variant_id.keys())
+            variants = {
+                v.id: v
+                for v in Variant.objects.for_store(self.store)
+                .select_related("product")
+                .filter(id__in=variant_ids)
+            }
 
-        inside_valley_districts = {"kathmandu", "lalitpur", "bhaktapur"}
-        if district.lower() in inside_valley_districts:
-            shipping_minor = self.store.inside_valley_shipping_minor
-        else:
-            shipping_minor = self.store.outside_valley_shipping_minor
+            subtotal_minor = 0
+            order_items_to_create = []
 
-        if self.store.free_shipping_threshold_minor and subtotal_minor >= self.store.free_shipping_threshold_minor:
-            shipping_minor = 0
-
-        raw_discount_code = str(request.data.get("discount_code") or "").strip().upper()
-        disc_candidate = None
-        if raw_discount_code:
-            disc_candidate = Discount.objects.for_store(self.store).filter(code__iexact=raw_discount_code).first()
-            if not disc_candidate:
-                return Response(
-                    {"error": f"Promo code '{raw_discount_code}' is not valid for this store."},
-                    status=status.HTTP_400_BAD_REQUEST,
+            for it in items_data:
+                v, variant_err = _validate_checkout_variant(
+                    variants,
+                    it["variant_id"],
+                    requested_qty=qty_by_variant_id[it["variant_id"]],
                 )
-            ok, reason = disc_candidate.check_eligibility(subtotal_minor)
-            if not ok:
-                return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
+                if variant_err:
+                    transaction.set_rollback(True)
+                    return Response(
+                        {"error": variant_err},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
-        prefix = f"{self.store.slug[:2].upper()}-{timezone.now().year}"
-        with transaction.atomic():
+                quantity = it["quantity"]
+                unit_price = v.price_minor
+                line_total = unit_price * quantity
+                if line_total > MAX_DB_POSITIVE_INT or subtotal_minor + line_total > MAX_DB_POSITIVE_INT:
+                    transaction.set_rollback(True)
+                    return Response(
+                        {"error": "Order total exceeds maximum supported amount."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                variant_label = v.label
+
+                subtotal_minor += line_total
+                order_items_to_create.append({
+                    "variant": v,
+                    "product_name_snapshot": v.product.name,
+                    "variant_label_snapshot": variant_label,
+                    "unit_price_minor": unit_price,
+                    "quantity": quantity,
+                    "line_total_minor": line_total,
+                })
+
+            inside_valley_districts = {"kathmandu", "lalitpur", "bhaktapur"}
+            if district.lower() in inside_valley_districts:
+                shipping_minor = self.store.inside_valley_shipping_minor
+            else:
+                shipping_minor = self.store.outside_valley_shipping_minor
+
+            if self.store.free_shipping_threshold_minor and subtotal_minor >= self.store.free_shipping_threshold_minor:
+                shipping_minor = 0
+
+            raw_discount_code = str(request.data.get("discount_code") or "").strip().upper()
+            disc_candidate = None
+            if raw_discount_code:
+                disc_candidate = Discount.objects.for_store(self.store).filter(code__iexact=raw_discount_code).first()
+                if not disc_candidate:
+                    transaction.set_rollback(True)
+                    return Response(
+                        {"error": f"Promo code '{raw_discount_code}' is not valid for this store."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                ok, reason = disc_candidate.check_eligibility(subtotal_minor)
+                if not ok:
+                    transaction.set_rollback(True)
+                    return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
+
+            prefix = f"{self.store.slug[:2].upper()}-{timezone.now().year}"
             discount_minor = 0
             applied_promo_note = ""
             applied_discount = None
             if disc_candidate is not None:
                 locked_disc = Discount.objects.select_for_update().for_store(self.store).filter(id=disc_candidate.id).first()
                 if not locked_disc:
+                    transaction.set_rollback(True)
                     return Response({"error": "Promo code is no longer valid."}, status=status.HTTP_400_BAD_REQUEST)
                 ok, reason = locked_disc.check_eligibility(subtotal_minor)
                 if not ok:
+                    transaction.set_rollback(True)
                     return Response({"error": reason}, status=status.HTTP_400_BAD_REQUEST)
                 discount_minor = locked_disc.compute_discount_minor(subtotal_minor)
                 applied_discount = locked_disc
@@ -1447,6 +1516,7 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
 
             total_minor = max(0, subtotal_minor - discount_minor) + shipping_minor
             if total_minor > MAX_DB_POSITIVE_INT:
+                transaction.set_rollback(True)
                 return Response(
                     {"error": "Order total exceeds maximum supported amount."},
                     status=status.HTTP_400_BAD_REQUEST,
@@ -1512,53 +1582,77 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 actor=request.user if request.user.is_authenticated else None,
             )
 
-        if payment_method == "COD":
-            return Response({
-                "order_id": order.id,
-                "token": str(order.token),
-                "order_number": order.order_number,
-                "status": order.status,
-                "payment_method": "COD",
-                "payment_status": order.payment_status,
-                "total_minor": order.total_minor,
-            }, status=status.HTTP_201_CREATED)
+            if payment_method == "COD":
+                return Response({
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "order_number": order.order_number,
+                    "status": order.status,
+                    "payment_method": "COD",
+                    "payment_status": order.payment_status,
+                    "total_minor": order.total_minor,
+                }, status=status.HTTP_201_CREATED)
 
-        khalti_body = _build_khalti_initiate_body(
-            request=request,
-            store=self.store,
-            order=order,
-            purchase_order_name=f"{self.store.name} Order {order.order_number}",
-            recipient_name=recipient_name,
-            customer_email=customer.email,
-            phone=phone,
-        )
+            order_id_val = order.id
+            order_token_str = str(order.token)
+            order_number_val = order.order_number
+            order_status_val = order.status
+            order_is_test_val = order.is_test
 
-        pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
-            store=self.store,
-            order=order,
-            khalti_body=khalti_body,
-        )
-        if gw_err or not pidx or not payment_url:
-            return Response(
-                {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
-                status=status.HTTP_502_BAD_GATEWAY,
+            khalti_body = _build_khalti_initiate_body(
+                request=request,
+                store=self.store,
+                order=order,
+                purchase_order_name=f"{self.store.name} Order {order.order_number}",
+                recipient_name=recipient_name,
+                customer_email=customer_email_val,
+                phone=phone,
             )
 
-        order.payment_ref = pidx
-        if is_mock:
-            order.is_test = True
-            order.save(update_fields=["payment_ref", "is_test"])
-        else:
-            order.save(update_fields=["payment_ref"])
+        # Outbound Khalti call strictly outside any DB transaction/lock.
+        try:
+            pidx, payment_url, is_mock, gw_err = initiate_khalti_epayment(
+                store=self.store,
+                order=order,
+                khalti_body=khalti_body,
+            )
+        except Exception:
+            with TenantDatabaseContext(self.store.id):
+                locked_order = Order.objects.for_store(self.store).select_for_update().filter(id=order_id_val).first()
+                if locked_order:
+                    _release_order_discount(self.store, locked_order)
+                    _release_order_inventory(self.store, locked_order)
+                    locked_order.delete()
+            raise
+
+        # Phase 2: attach payment reference or release reservation & delete draft order on failure.
+        with TenantDatabaseContext(self.store.id):
+            locked_order = Order.objects.for_store(self.store).select_for_update().get(id=order_id_val)
+            if gw_err or not pidx or not payment_url:
+                _release_order_discount(self.store, locked_order)
+                _release_order_inventory(self.store, locked_order)
+                locked_order.delete()
+                return Response(
+                    {"error": gw_err or "Unable to reach Khalti payment gateway. Please try again shortly."},
+                    status=status.HTTP_502_BAD_GATEWAY,
+                )
+
+            locked_order.payment_ref = pidx
+            if is_mock:
+                locked_order.is_test = True
+                locked_order.save(update_fields=["payment_ref", "is_test"])
+                order_is_test_val = True
+            else:
+                locked_order.save(update_fields=["payment_ref"])
 
         payload = {
-            "order_id": order.id,
-            "token": str(order.token),
-            "order_number": order.order_number,
+            "order_id": order_id_val,
+            "token": order_token_str,
+            "order_number": order_number_val,
             "pidx": pidx,
             "payment_url": payment_url,
-            "status": order.status,
-            "is_test": order.is_test,
+            "status": order_status_val,
+            "is_test": order_is_test_val,
         }
         if is_mock:
             payload["is_mock"] = True
@@ -1569,6 +1663,7 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
     throttle_classes = [ScopedRateThrottle]
     throttle_scope = "khalti_verify"
+    atomic_requests = False
 
     _FAILURE_REASON_MAP = {
         KHALTI_STATE_CANCELED: (
@@ -1647,8 +1742,9 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
 
         actor = request.user if request.user.is_authenticated else None
 
-        with transaction.atomic():
-            order = Order.objects.for_store(self.store).select_for_update().filter(id=oid).first()
+        # Phase 1: short read outside row lock to validate reference and check idempotency.
+        with TenantDatabaseContext(self.store.id):
+            order = Order.objects.for_store(self.store).filter(id=oid).first()
             if not order:
                 raise Http404("Order not found for this store.")
 
@@ -1682,12 +1778,52 @@ class StoreKhaltiVerifyView(StorePublicMixin, APIView):
                     payload["token"] = str(order.token)
                 return Response(payload, status=status.HTTP_409_CONFLICT)
 
-            result = verify_khalti_epayment(
-                store=self.store,
-                pidx=pidx,
-                expected_pidx=order.payment_ref,
-                mock_amount_paisa=order.total_minor,
-            )
+            expected_pidx = order.payment_ref
+            expected_total_minor = order.total_minor
+
+        # Outbound Khalti lookup strictly outside any DB transaction/lock.
+        result = verify_khalti_epayment(
+            store=self.store,
+            pidx=pidx,
+            expected_pidx=expected_pidx,
+            mock_amount_paisa=expected_total_minor,
+        )
+
+        # Phase 2: lock order row and apply state transition atomically.
+        with TenantDatabaseContext(self.store.id):
+            order = Order.objects.for_store(self.store).select_for_update().filter(id=oid).first()
+            if not order:
+                raise Http404("Order not found for this store.")
+
+            if not order.payment_ref or pidx != order.payment_ref:
+                return Response(
+                    {"error": "Payment reference does not match this order."},
+                    status=status.HTTP_400_BAD_REQUEST,
+                )
+
+            if order.payment_status == "PAID":
+                return Response({
+                    "success": True,
+                    "order_id": order.id,
+                    "token": str(order.token),
+                    "order_number": order.order_number,
+                    "status": order.status,
+                    "payment_status": order.payment_status,
+                    "is_test": order.is_test,
+                })
+
+            if order.payment_method != "KHALTI" or order.payment_status != "UNPAID":
+                payload = {
+                    "error": "This order is not awaiting Khalti payment verification.",
+                    "state": "failed",
+                    "order_id": order.id,
+                    "payment_status": order.payment_status,
+                    "status": order.status,
+                    "is_test": order.is_test,
+                }
+                if order.payment_method == "KHALTI":
+                    payload["token"] = str(order.token)
+                return Response(payload, status=status.HTTP_409_CONFLICT)
 
             if result.state == KHALTI_STATE_COMPLETED:
                 if result.total_amount_paisa != order.total_minor:

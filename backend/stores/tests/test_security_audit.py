@@ -8,10 +8,11 @@ from django.contrib.auth import get_user_model
 from django.core.cache import cache
 from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
+from django.db import connection
 from django.test import SimpleTestCase
 from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APIRequestFactory, APITestCase
+from rest_framework.test import APIRequestFactory, APITestCase, APITransactionTestCase
 from rest_framework.throttling import ScopedRateThrottle
 
 from accounts.models import EmailOTPChallenge
@@ -507,6 +508,135 @@ class StaffInvitePiiAuditTests(APITestCase):
         self.assertEqual(res_blank.json()["full_name"], "Attacker Label")
         self.blank_victim.refresh_from_db()
         self.assertEqual(self.blank_victim.full_name, "")
+
+
+class KhaltiLockReleaseAuditTests(APITransactionTestCase):
+    """Issue #77: ensure no DB transaction or row lock is held across outbound Khalti HTTP calls."""
+
+    def setUp(self):
+        cache.clear()
+        self.owner = User.objects.create_user("audit77-owner@example.com", full_name="Owner 77")
+        self.store = Store.objects.create(slug="audit77-shop", name="Audit 77 Shop", is_active=True)
+        self.store.set_khalti_secret_key("test_secret_key_audit77")
+        self.store.save(update_fields=["khalti_secret_key_encrypted"])
+        with TenantDatabaseContext(self.store.id):
+            StoreMembership.objects.create(store=self.store, user=self.owner, role="OWNER")
+            self.product = Product.objects.create(
+                store=self.store,
+                name="Audit 77 Mug",
+                slug="audit-77-mug",
+                is_active=True,
+            )
+            self.variant = Variant.objects.create(
+                store=self.store,
+                product=self.product,
+                label="Default",
+                price_minor=150000,
+                stock_quantity=4,
+                in_stock=True,
+                track_inventory=True,
+            )
+            self.discount = Discount.objects.create(
+                store=self.store,
+                code="SAVE77",
+                discount_type="FIXED_AMOUNT",
+                value=10000,
+                max_uses=5,
+                used_count=0,
+                is_active=True,
+            )
+
+    def test_khalti_http_calls_run_outside_db_transaction_and_release_on_failure(self):
+        in_atomic_flags = []
+
+        def _fail_initiate(*, store, order, khalti_body):
+            in_atomic_flags.append(("checkout_fail_initiate", connection.in_atomic_block))
+            return None, None, False, "Khalti gateway timeout"
+
+        payload = {
+            "items": [{"variant_id": self.variant.id, "quantity": 2}],
+            "payment_method": "KHALTI",
+            "discount_code": "SAVE77",
+            "shipping_address": {
+                "recipient_name": "Khalti Tester",
+                "phone": "9812345678",
+                "province": "Bagmati",
+                "district": "Kathmandu",
+                "municipality": "Kathmandu",
+                "ward": "4",
+                "street_landmark": "Lazimpat",
+                "email": "khalti77@example.com",
+            },
+        }
+        with patch("stores.api.initiate_khalti_epayment", side_effect=_fail_initiate):
+            res_fail = self.client.post(f"/api/stores/{self.store.slug}/checkout/place/", payload, format="json")
+        self.assertEqual(res_fail.status_code, status.HTTP_502_BAD_GATEWAY, res_fail.content)
+        with TenantDatabaseContext(self.store.id):
+            self.variant.refresh_from_db()
+            self.discount.refresh_from_db()
+            self.assertEqual(Order.objects.for_store(self.store).count(), 0)
+            self.assertEqual(self.variant.stock_quantity, 4)
+            self.assertEqual(self.discount.used_count, 0)
+
+        def _ok_initiate(*, store, order, khalti_body):
+            in_atomic_flags.append(("checkout_ok_initiate", connection.in_atomic_block))
+            return "pidx_audit_77", "https://test-pay.khalti.com/?pidx=pidx_audit_77", False, None
+
+        with patch("stores.api.initiate_khalti_epayment", side_effect=_ok_initiate):
+            res_ok = self.client.post(f"/api/stores/{self.store.slug}/checkout/place/", payload, format="json")
+        self.assertEqual(res_ok.status_code, status.HTTP_201_CREATED, res_ok.content)
+        order_data = res_ok.json()
+
+        from stores.khalti import KHALTI_STATE_COMPLETED, KhaltiVerifyResult
+
+        def _ok_verify(*, store, pidx, expected_pidx, mock_amount_paisa):
+            in_atomic_flags.append(("verify_khalti", connection.in_atomic_block))
+            return KhaltiVerifyResult(
+                state=KHALTI_STATE_COMPLETED,
+                total_amount_paisa=mock_amount_paisa,
+                transaction_id="txn_77",
+                error=None,
+            )
+
+        with patch("stores.api.verify_khalti_epayment", side_effect=_ok_verify):
+            res_ver = self.client.post(
+                f"/api/stores/{self.store.slug}/checkout/khalti-verify/",
+                {"pidx": "pidx_audit_77", "order_id": order_data["order_id"]},
+                format="json",
+            )
+        self.assertEqual(res_ver.status_code, status.HTTP_200_OK, res_ver.content)
+
+        # Test retry initiate on failed order runs outside DB transaction too.
+        with TenantDatabaseContext(self.store.id):
+            failed_order = Order.objects.for_store(self.store).first()
+            failed_order.status = "PAYMENT_FAILED"
+            failed_order.payment_status = "FAILED"
+            failed_order.inventory_deducted = False
+            failed_order.discount_redeemed = False
+            failed_order.save()
+
+        def _retry_initiate(*, store, order, khalti_body):
+            in_atomic_flags.append(("public_pay_initiate", connection.in_atomic_block))
+            return "pidx_retry_77", "https://test-pay.khalti.com/?pidx=pidx_retry_77", False, None
+
+        with patch("stores.api.initiate_khalti_epayment", side_effect=_retry_initiate):
+            res_retry = self.client.post(
+                f"/api/stores/{self.store.slug}/public-orders/{failed_order.token}/pay/",
+                {"payment_method": "KHALTI"},
+                format="json",
+            )
+        self.assertEqual(res_retry.status_code, status.HTTP_200_OK, res_retry.content)
+
+        self.assertEqual(
+            in_atomic_flags,
+            [
+                ("checkout_fail_initiate", False),
+                ("checkout_ok_initiate", False),
+                ("verify_khalti", False),
+                ("public_pay_initiate", False),
+            ],
+        )
+
 
 
 
