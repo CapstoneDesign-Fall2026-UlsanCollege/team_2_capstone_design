@@ -5,6 +5,7 @@ from django.core.exceptions import ValidationError
 from django.core.validators import validate_email
 from django.db import transaction
 from django.db.models import Count, Q, Sum
+from django.db.models.functions import TruncDate
 from django.http import Http404
 from django.utils import timezone
 from rest_framework import serializers, status
@@ -161,30 +162,34 @@ def build_slice6_views(StoreMerchantMixin):
 
             base_orders = Order.objects.for_store(self.store)
             if cutoff_dt is not None:
-                scoped_orders = list(base_orders.filter(created_at__gte=cutoff_dt).order_by("created_at"))
-            else:
-                scoped_orders = list(base_orders.order_by("created_at"))
+                base_orders = base_orders.filter(created_at__gte=cutoff_dt)
 
-            valid_orders = [
-                o
-                for o in scoped_orders
-                if o.status not in ("CANCELLED", "PAYMENT_FAILED")
-                and not (o.status == "PENDING_PAYMENT" and o.payment_status != "PAID")
-            ]
+            valid_order_q = ~Q(status__in=["CANCELLED", "PAYMENT_FAILED"]) & ~(
+                Q(status="PENDING_PAYMENT") & ~Q(payment_status="PAID")
+            )
+            valid_orders_qs = base_orders.filter(valid_order_q)
 
-            gross_sales_minor = sum(o.total_minor for o in valid_orders)
-            paid_sales_minor = sum(
-                o.total_minor for o in valid_orders if o.payment_status == "PAID"
+            agg = valid_orders_qs.aggregate(
+                gross_sales_minor=Sum("total_minor"),
+                paid_sales_minor=Sum("total_minor", filter=Q(payment_status="PAID")),
+                cod_pending_minor=Sum("total_minor", filter=Q(payment_status="COD_PENDING")),
+                discounts_given_minor=Sum("discount_minor"),
+                orders_count=Count("id"),
+                khalti_count=Count("id", filter=Q(payment_method="KHALTI", total_minor__gt=0)),
+                khalti_rev=Sum("total_minor", filter=Q(payment_method="KHALTI", total_minor__gt=0)),
+                cod_count=Count("id", filter=Q(payment_method="COD")),
+                cod_rev=Sum("total_minor", filter=Q(payment_method="COD")),
             )
-            cod_pending_minor = sum(
-                o.total_minor for o in valid_orders if o.payment_status == "COD_PENDING"
-            )
-            discounts_given_minor = sum(o.discount_minor for o in valid_orders)
-            orders_count = len(valid_orders)
+
+            gross_sales_minor = agg["gross_sales_minor"] or 0
+            paid_sales_minor = agg["paid_sales_minor"] or 0
+            cod_pending_minor = agg["cod_pending_minor"] or 0
+            discounts_given_minor = agg["discounts_given_minor"] or 0
+            orders_count = agg["orders_count"] or 0
             aov_minor = round(gross_sales_minor / orders_count) if orders_count > 0 else 0
 
             # Repeat customer rate across store (excluding cancelled, failed, and unpaid pending orders)
-            cust_order_counts = (
+            annotated_customers = (
                 Customer.objects.for_store(self.store)
                 .annotate(
                     valid_orders=Count(
@@ -199,18 +204,16 @@ def build_slice6_views(StoreMerchantMixin):
                     )
                 )
                 .filter(valid_orders__gt=0)
-                .values_list("valid_orders", flat=True)
             )
-            cust_counts_list = list(cust_order_counts)
-            buying_customers = len(cust_counts_list)
-            repeat_customers = sum(1 for c in cust_counts_list if c >= 2)
+            buying_customers = annotated_customers.count()
+            repeat_customers = annotated_customers.filter(valid_orders__gte=2).count()
             repeat_customer_rate_pct = (
                 round((repeat_customers / buying_customers) * 100)
                 if buying_customers > 0
                 else 0
             )
 
-            # Daily chart series (up to 14 or 30 daily points for crisp Polaris bar chart)
+            # Daily chart series (up to 7 or 14 daily points for crisp Polaris bar chart)
             chart_days = 7 if range_key == "7d" else 14
             daily_map = {}
             for i in range(chart_days - 1, -1, -1):
@@ -221,22 +224,36 @@ def build_slice6_views(StoreMerchantMixin):
                     "revenue_minor": 0,
                     "orders_count": 0,
                 }
-            for o in valid_orders:
-                d_iso = timezone.localtime(o.created_at).date().isoformat()
-                if d_iso in daily_map:
-                    daily_map[d_iso]["revenue_minor"] += o.total_minor
-                    daily_map[d_iso]["orders_count"] += 1
+            chart_start_dt = now - timedelta(days=chart_days + 1)
+            daily_rows = (
+                valid_orders_qs.filter(created_at__gte=chart_start_dt)
+                .annotate(day=TruncDate("created_at", tzinfo=timezone.get_current_timezone()))
+                .values("day")
+                .annotate(
+                    revenue_minor=Sum("total_minor"),
+                    orders_count=Count("id"),
+                )
+            )
+            for row in daily_rows:
+                day_val = row["day"]
+                if day_val is not None:
+                    d_iso = day_val.isoformat()
+                    if d_iso in daily_map:
+                        daily_map[d_iso]["revenue_minor"] = row["revenue_minor"] or 0
+                        daily_map[d_iso]["orders_count"] = row["orders_count"] or 0
             daily_series = list(daily_map.values())
 
-            # Sales by Nepal Province (all 7 provinces represented)
+            # Sales by Nepal Province (all 7 provinces represented; stream only needed columns)
             prov_agg = {
                 p: {"province": p, "orders_count": 0, "revenue_minor": 0}
                 for p in NEPAL_PROVINCES
             }
-            for o in valid_orders:
-                prov = normalize_nepal_province(o.shipping_address_snapshot)
+            for snap, total_minor in valid_orders_qs.values_list(
+                "shipping_address_snapshot", "total_minor"
+            ).iterator(chunk_size=1000):
+                prov = normalize_nepal_province(snap)
                 prov_agg[prov]["orders_count"] += 1
-                prov_agg[prov]["revenue_minor"] += o.total_minor
+                prov_agg[prov]["revenue_minor"] += total_minor or 0
 
             sales_by_province = sorted(
                 prov_agg.values(),
@@ -258,16 +275,11 @@ def build_slice6_views(StoreMerchantMixin):
                 )
 
             # Payment Rail Mix
-            khalti_orders = [o for o in valid_orders if o.payment_method == "KHALTI" and o.total_minor > 0]
-            cod_orders = [o for o in valid_orders if o.payment_method == "COD"]
-
             payment_mix = []
-            for code, label, bucket in [
-                ("KHALTI", "Khalti Digital Wallet", khalti_orders),
-                ("COD", "Cash on Delivery (COD)", cod_orders),
+            for code, label, cnt, rev in [
+                ("KHALTI", "Khalti Digital Wallet", agg["khalti_count"] or 0, agg["khalti_rev"] or 0),
+                ("COD", "Cash on Delivery (COD)", agg["cod_count"] or 0, agg["cod_rev"] or 0),
             ]:
-                rev = sum(o.total_minor for o in bucket)
-                cnt = len(bucket)
                 share_pct = (
                     round((rev / gross_sales_minor) * 100)
                     if gross_sales_minor > 0
@@ -281,11 +293,10 @@ def build_slice6_views(StoreMerchantMixin):
                     "share_pct": share_pct,
                 })
 
-            # Top Products
-            valid_order_ids = [o.id for o in valid_orders]
+            # Top Products (SQL subquery over valid_orders_qs instead of materializing all IDs)
             top_products_qs = (
                 OrderItem.objects.for_store(self.store)
-                .filter(order_id__in=valid_order_ids)
+                .filter(order__in=valid_orders_qs)
                 .values("product_name_snapshot")
                 .annotate(
                     units_sold=Sum("quantity"),

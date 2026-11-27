@@ -733,6 +733,131 @@ class CheckoutEmailAndCustomerProtectionTests(APITestCase):
             self.assertEqual(self.guest_customer.phone, "9811112222")
 
 
+class AnalyticsSqlAggregationTests(APITestCase):
+    """Issue #79: MerchantAnalyticsView aggregates metrics in SQL rather than full Order hydration."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create_user("audit79-owner@example.com", full_name="Owner 79")
+        cls.store = Store.objects.create(slug="audit79-shop", name="Audit 79 Shop", is_active=True)
+        with TenantDatabaseContext(cls.store.id):
+            StoreMembership.objects.create(store=cls.store, user=cls.owner, role="OWNER")
+            c1 = Customer.objects.create(store=cls.store, email="c1@example.com", full_name="Repeat Buyer")
+            c2 = Customer.objects.create(store=cls.store, email="c2@example.com", full_name="OneTime Buyer")
+            p = Product.objects.create(store=cls.store, name="Analytics Tea", slug="analytics-tea", is_active=True)
+            v = Variant.objects.create(store=cls.store, product=p, label="100g", price_minor=50000)
+
+            o1 = Order.objects.create(
+                store=cls.store,
+                customer=c1,
+                order_number="#A79-001",
+                status="PAID",
+                payment_method="KHALTI",
+                payment_status="PAID",
+                subtotal_minor=100000,
+                discount_minor=10000,
+                total_minor=90000,
+                shipping_address_snapshot={"district": "Kathmandu", "province": "Bagmati"},
+            )
+            o2 = Order.objects.create(
+                store=cls.store,
+                customer=c1,
+                order_number="#A79-002",
+                status="CONFIRMED",
+                payment_method="COD",
+                payment_status="COD_PENDING",
+                subtotal_minor=50000,
+                discount_minor=0,
+                total_minor=50000,
+                shipping_address_snapshot={"district": "Kaski", "province": "Gandaki"},
+            )
+            # Cancelled & unpaid pending orders must be excluded from KPIs.
+            o_cancelled = Order.objects.create(
+                store=cls.store,
+                customer=c2,
+                order_number="#A79-003",
+                status="CANCELLED",
+                payment_method="COD",
+                payment_status="UNPAID",
+                subtotal_minor=99900,
+                total_minor=99900,
+                shipping_address_snapshot={"district": "Kathmandu", "province": "Bagmati"},
+            )
+            Order.objects.create(
+                store=cls.store,
+                customer=c2,
+                order_number="#A79-004",
+                status="PENDING_PAYMENT",
+                payment_method="KHALTI",
+                payment_status="UNPAID",
+                subtotal_minor=88800,
+                total_minor=88800,
+            )
+            OrderItem.objects.create(
+                store=cls.store,
+                order=o1,
+                variant=v,
+                product_name_snapshot="Analytics Tea",
+                variant_label_snapshot="100g",
+                unit_price_minor=50000,
+                quantity=2,
+                line_total_minor=100000,
+            )
+            OrderItem.objects.create(
+                store=cls.store,
+                order=o2,
+                variant=v,
+                product_name_snapshot="Analytics Tea",
+                variant_label_snapshot="100g",
+                unit_price_minor=50000,
+                quantity=1,
+                line_total_minor=50000,
+            )
+            OrderItem.objects.create(
+                store=cls.store,
+                order=o_cancelled,
+                variant=v,
+                product_name_snapshot="Cancelled Item",
+                variant_label_snapshot="100g",
+                unit_price_minor=99900,
+                quantity=1,
+                line_total_minor=99900,
+            )
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.owner)
+
+    def test_sql_aggregations_match_expected_kpis_and_breakdowns(self):
+        from django.test.utils import CaptureQueriesContext
+
+        with CaptureQueriesContext(connection) as ctx:
+            res = self.client.get(f"/api/merchant/stores/{self.store.slug}/analytics/?range=30d")
+        self.assertEqual(res.status_code, status.HTTP_200_OK, res.content)
+        self.assertLessEqual(len(ctx), 15)
+        data = res.json()
+        kpis = data["kpis"]
+        self.assertEqual(kpis["gross_sales_minor"], 140000)
+        self.assertEqual(kpis["paid_sales_minor"], 90000)
+        self.assertEqual(kpis["cod_pending_minor"], 50000)
+        self.assertEqual(kpis["discounts_given_minor"], 10000)
+        self.assertEqual(kpis["orders_count"], 2)
+        self.assertEqual(kpis["aov_minor"], 70000)
+        self.assertEqual(kpis["total_customers"], 1)
+        self.assertEqual(kpis["repeat_customers"], 1)
+        self.assertEqual(kpis["repeat_customer_rate_pct"], 100)
+
+        self.assertEqual(len(data["top_products"]), 1)
+        self.assertEqual(data["top_products"][0]["product_name"], "Analytics Tea")
+        self.assertEqual(data["top_products"][0]["units_sold"], 3)
+
+        mix = {row["method"]: row for row in data["payment_mix"]}
+        self.assertEqual(mix["KHALTI"]["revenue_minor"], 90000)
+        self.assertEqual(mix["KHALTI"]["orders_count"], 1)
+        self.assertEqual(mix["COD"]["revenue_minor"], 50000)
+        self.assertEqual(mix["COD"]["orders_count"], 1)
+
+
+
 
 
 
