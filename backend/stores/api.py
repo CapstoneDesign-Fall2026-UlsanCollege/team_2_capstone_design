@@ -2095,29 +2095,81 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
 
         store = self.store
         data = request.data
+        field_errors = {}
 
-        if "name" in data and str(data["name"]).strip():
-            store.name = str(data["name"]).strip()
+        def _parse_shipping_int(raw_val):
+            if isinstance(raw_val, (bool, float)):
+                return None
+            try:
+                val = int(raw_val)
+            except (ValueError, TypeError):
+                return None
+            if val < 0 or val > MAX_DB_POSITIVE_INT:
+                return None
+            return val
+
+        pending_name = None
+        if "name" in data:
+            raw_name = str(data["name"] or "").strip()
+            if raw_name:
+                if len(raw_name) > 120:
+                    field_errors["name"] = ["Store name cannot exceed 120 characters."]
+                else:
+                    pending_name = raw_name
+
+        pending_tagline = None
         if "tagline" in data:
-            store.tagline = str(data["tagline"]).strip()
-        if "category" in data:
-            store.category = str(data["category"] or "").strip()[:64]
-        if "city" in data and str(data["city"]).strip():
-            store.city = str(data["city"]).strip()
-        if "province" in data and str(data["province"]).strip():
-            store.province = str(data["province"]).strip()
+            raw_tagline = str(data["tagline"] or "").strip()
+            if len(raw_tagline) > 200:
+                field_errors["tagline"] = ["Tagline cannot exceed 200 characters."]
+            else:
+                pending_tagline = raw_tagline
+
+        pending_city = None
+        if "city" in data:
+            raw_city = str(data["city"] or "").strip()
+            if raw_city:
+                if len(raw_city) > 64:
+                    field_errors["city"] = ["City cannot exceed 64 characters."]
+                else:
+                    pending_city = raw_city
+
+        pending_province = None
+        if "province" in data:
+            raw_province = str(data["province"] or "").strip()
+            if raw_province:
+                if len(raw_province) > 64:
+                    field_errors["province"] = ["Province cannot exceed 64 characters."]
+                else:
+                    pending_province = raw_province
+
+        pending_contact_phone = None
         if "contact_phone" in data:
-            store.contact_phone = str(data["contact_phone"]).strip()
+            raw_phone = str(data["contact_phone"] or "").strip()
+            if len(raw_phone) > 16:
+                field_errors["contact_phone"] = ["Contact phone cannot exceed 16 characters."]
+            else:
+                pending_contact_phone = raw_phone
+
+        pending_theme_preset = None
         if "theme_preset" in data:
-            preset = str(data["theme_preset"]).strip()
-            if preset in [c[0] for c in Store.THEME_PRESET_CHOICES]:
-                store.theme_preset = preset
+            preset = str(data["theme_preset"] or "").strip()
+            if preset not in [c[0] for c in Store.THEME_PRESET_CHOICES]:
+                field_errors["theme_preset"] = ["Invalid theme preset."]
+            else:
+                pending_theme_preset = preset
+
+        pending_accent_color = None
         if "accent_color" in data:
-            store.accent_color = str(data["accent_color"]).strip()
+            raw_color = str(data["accent_color"] or "").strip()
+            if raw_color and not re.match(r"^#(?:[0-9a-fA-F]{3}|[0-9a-fA-F]{6})$", raw_color):
+                field_errors["accent_color"] = ["Enter a valid hex color code (e.g. #1F2937)."]
+            else:
+                pending_accent_color = raw_color
+
         # Strict CDN host and store folder validation (only if changed)
         cloud_name = getattr(settings, "CLOUDINARY_CLOUD_NAME", "").strip()
         allow_local = is_local_media_allowed()
-        field_errors = {}
 
         old_banner_url = store.banner_url
         old_logo_url = store.logo_url
@@ -2125,7 +2177,7 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
         logo_changed = False
 
         if "banner_url" in data:
-            candidate_banner = str(data["banner_url"]).strip()
+            candidate_banner = str(data["banner_url"] or "").strip()
             if candidate_banner != (store.banner_url or "").strip():
                 banner_changed = True
                 if candidate_banner:
@@ -2142,7 +2194,7 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                         field_errors["banner_url"] = ["Hero cover image URL must be hosted on our CDN within your store's folder."]
 
         if "logo_url" in data:
-            candidate_logo = str(data["logo_url"]).strip()
+            candidate_logo = str(data["logo_url"] or "").strip()
             if candidate_logo != (store.logo_url or "").strip():
                 logo_changed = True
                 if candidate_logo:
@@ -2157,6 +2209,25 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
 
                     if not valid_cdn:
                         field_errors["logo_url"] = ["Store logo URL must be hosted on our CDN within your store's folder."]
+
+        for email_field in ("contact_email", "support_email"):
+            if email_field in data:
+                raw_em = str(data[email_field] or "").strip()
+                if raw_em:
+                    if len(raw_em) > 254:
+                        field_errors[email_field] = ["Email address cannot exceed 254 characters."]
+                    else:
+                        try:
+                            validate_email(raw_em)
+                        except ValidationError:
+                            field_errors[email_field] = ["Enter a valid email address."]
+
+        if "address" in data and len(str(data["address"] or "").strip()) > 255:
+            field_errors["address"] = ["Address cannot exceed 255 characters."]
+        if "story_headline" in data and len(str(data["story_headline"] or "").strip()) > 240:
+            field_errors["story_headline"] = ["Story headline cannot exceed 240 characters."]
+        if "about_text" in data and len(str(data["about_text"] or "").strip()) > 5000:
+            field_errors["about_text"] = ["About text cannot exceed 5000 characters."]
 
         if "instagram_url" in data:
             raw_ig = str(data["instagram_url"] or "").strip()
@@ -2179,23 +2250,75 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
                     except ValidationError:
                         field_errors["facebook_url"] = ["Enter a valid http:// or https:// Facebook URL."]
 
+        pending_inside_shipping = None
+        if "inside_valley_shipping_minor" in data:
+            parsed_in = _parse_shipping_int(data["inside_valley_shipping_minor"])
+            if parsed_in is None:
+                field_errors["inside_valley_shipping_minor"] = [
+                    f"Shipping fee must be an integer between 0 and {MAX_DB_POSITIVE_INT}."
+                ]
+            else:
+                pending_inside_shipping = parsed_in
+
+        pending_outside_shipping = None
+        if "outside_valley_shipping_minor" in data:
+            parsed_out = _parse_shipping_int(data["outside_valley_shipping_minor"])
+            if parsed_out is None:
+                field_errors["outside_valley_shipping_minor"] = [
+                    f"Shipping fee must be an integer between 0 and {MAX_DB_POSITIVE_INT}."
+                ]
+            else:
+                pending_outside_shipping = parsed_out
+
+        free_threshold_set = False
+        pending_free_threshold = None
+        if "free_shipping_threshold_minor" in data:
+            free_threshold_set = True
+            raw_threshold = data["free_shipping_threshold_minor"]
+            if raw_threshold in (None, ""):
+                pending_free_threshold = None
+            else:
+                parsed_thresh = _parse_shipping_int(raw_threshold)
+                if parsed_thresh is None:
+                    field_errors["free_shipping_threshold_minor"] = [
+                        f"Free shipping threshold must be an integer between 0 and {MAX_DB_POSITIVE_INT}."
+                    ]
+                else:
+                    pending_free_threshold = parsed_thresh
+
         if field_errors:
             return Response(field_errors, status=status.HTTP_400_BAD_REQUEST)
 
+        if pending_name is not None:
+            store.name = pending_name
+        if pending_tagline is not None:
+            store.tagline = pending_tagline
+        if "category" in data:
+            store.category = str(data["category"] or "").strip()[:64]
+        if pending_city is not None:
+            store.city = pending_city
+        if pending_province is not None:
+            store.province = pending_province
+        if pending_contact_phone is not None:
+            store.contact_phone = pending_contact_phone
+        if pending_theme_preset is not None:
+            store.theme_preset = pending_theme_preset
+        if pending_accent_color is not None:
+            store.accent_color = pending_accent_color
         if banner_changed:
-            store.banner_url = str(data["banner_url"]).strip()
+            store.banner_url = str(data["banner_url"] or "").strip()
         if logo_changed:
-            store.logo_url = str(data["logo_url"]).strip()
+            store.logo_url = str(data["logo_url"] or "").strip()
         if "contact_email" in data:
-            store.contact_email = str(data["contact_email"]).strip()
+            store.contact_email = str(data["contact_email"] or "").strip()
         if "support_email" in data:
-            store.support_email = str(data["support_email"]).strip()
+            store.support_email = str(data["support_email"] or "").strip()
         if "address" in data:
-            store.address = str(data["address"]).strip()
+            store.address = str(data["address"] or "").strip()
         if "story_headline" in data:
-            store.story_headline = str(data["story_headline"]).strip()
+            store.story_headline = str(data["story_headline"] or "").strip()
         if "about_text" in data:
-            store.about_text = str(data["about_text"]).strip()
+            store.about_text = str(data["about_text"] or "").strip()
         if "instagram_url" in data:
             store.instagram_url = str(data["instagram_url"] or "").strip()
         if "facebook_url" in data:
@@ -2217,32 +2340,14 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
         old_outside_shipping = store.outside_valley_shipping_minor
         old_free_threshold = store.free_shipping_threshold_minor
 
-        if "inside_valley_shipping_minor" in data:
-            try:
-                val = int(data["inside_valley_shipping_minor"])
-                if val >= 0:
-                    store.inside_valley_shipping_minor = val
-            except (ValueError, TypeError):
-                pass
+        if pending_inside_shipping is not None:
+            store.inside_valley_shipping_minor = pending_inside_shipping
 
-        if "outside_valley_shipping_minor" in data:
-            try:
-                val = int(data["outside_valley_shipping_minor"])
-                if val >= 0:
-                    store.outside_valley_shipping_minor = val
-            except (ValueError, TypeError):
-                pass
+        if pending_outside_shipping is not None:
+            store.outside_valley_shipping_minor = pending_outside_shipping
 
-        if "free_shipping_threshold_minor" in data:
-            raw_threshold = data["free_shipping_threshold_minor"]
-            if raw_threshold is None or raw_threshold == "":
-                store.free_shipping_threshold_minor = None
-            else:
-                try:
-                    val = int(raw_threshold)
-                    store.free_shipping_threshold_minor = val if val >= 0 else None
-                except (ValueError, TypeError):
-                    pass
+        if free_threshold_set:
+            store.free_shipping_threshold_minor = pending_free_threshold
 
         shipping_rate_changed = (
             store.inside_valley_shipping_minor != old_inside_shipping

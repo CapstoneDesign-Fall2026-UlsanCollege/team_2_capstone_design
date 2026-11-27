@@ -857,6 +857,92 @@ class AnalyticsSqlAggregationTests(APITestCase):
         self.assertEqual(mix["COD"]["orders_count"], 1)
 
 
+class SettingsAndDiscountBoundsAuditTests(APITestCase):
+    """Issue #80: enforce integer bounds, length limits, hex colors, and emails on settings/discounts."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create_user("audit80-owner@example.com", full_name="Owner 80")
+        cls.store = Store.objects.create(slug="audit80-shop", name="Audit 80 Shop", is_active=True)
+        with TenantDatabaseContext(cls.store.id):
+            StoreMembership.objects.create(store=cls.store, user=cls.owner, role="OWNER")
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.owner)
+
+    def test_settings_rejects_overflow_shipping_invalid_accent_email_and_lengths(self):
+        url = f"/api/merchant/stores/{self.store.slug}/settings/"
+        bad = self.client.patch(
+            url,
+            {
+                "name": "A" * 121,
+                "accent_color": "red; background:url(x)",
+                "contact_email": "not-an-email",
+                "inside_valley_shipping_minor": 2_147_483_648,
+                "free_shipping_threshold_minor": -10,
+                "theme_preset": "nonexistent-preset",
+            },
+            format="json",
+        )
+        self.assertEqual(bad.status_code, status.HTTP_400_BAD_REQUEST, bad.content)
+        err = bad.json()
+        for key in (
+            "name",
+            "accent_color",
+            "contact_email",
+            "inside_valley_shipping_minor",
+            "free_shipping_threshold_minor",
+            "theme_preset",
+        ):
+            self.assertIn(key, err)
+
+        ok = self.client.patch(
+            url,
+            {
+                "name": "Audit 80 Updated",
+                "accent_color": "#1E40AF",
+                "contact_email": "hello@audit80.example.com",
+                "inside_valley_shipping_minor": 15000,
+                "free_shipping_threshold_minor": 250000,
+            },
+            format="json",
+        )
+        self.assertEqual(ok.status_code, status.HTTP_200_OK, ok.content)
+
+    def test_discounts_reject_integer_overflow_and_invalid_bounds(self):
+        create_url = f"/api/merchant/stores/{self.store.slug}/discounts/"
+        for payload in (
+            {"code": "OVERFLOW1", "discount_type": "FIXED_AMOUNT", "value": 2_147_483_648},
+            {"code": "OVERFLOW2", "discount_type": "FIXED_AMOUNT", "value": 500, "min_subtotal_minor": 2_147_483_648},
+            {"code": "OVERFLOW3", "discount_type": "FIXED_AMOUNT", "value": 500, "max_uses": 0},
+            {"code": "BADDATE1", "discount_type": "PERCENTAGE", "value": 10, "expires_at": "not-a-date"},
+        ):
+            res = self.client.post(create_url, payload, format="json")
+            self.assertEqual(res.status_code, status.HTTP_400_BAD_REQUEST, f"{payload}: {res.content}")
+
+        created = self.client.post(
+            create_url,
+            {"code": "VALID80", "discount_type": "FIXED_AMOUNT", "value": 1000},
+            format="json",
+        )
+        self.assertEqual(created.status_code, status.HTTP_201_CREATED, created.content)
+        disc_id = created.json()["id"]
+
+        bad_patch = self.client.patch(
+            f"{create_url}{disc_id}/",
+            {"value": 2_147_483_648},
+            format="json",
+        )
+        self.assertEqual(bad_patch.status_code, status.HTTP_400_BAD_REQUEST, bad_patch.content)
+        bad_patch_min = self.client.patch(
+            f"{create_url}{disc_id}/",
+            {"min_subtotal_minor": -5},
+            format="json",
+        )
+        self.assertEqual(bad_patch_min.status_code, status.HTTP_400_BAD_REQUEST, bad_patch_min.content)
+
+
+
 
 
 

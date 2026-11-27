@@ -17,6 +17,21 @@ from catalog.models import Discount
 from orders.models import Order, OrderItem
 from stores.models import Customer, MerchantAuditLog, StoreMembership
 
+MAX_DB_POSITIVE_INT = 2_147_483_647
+
+
+def _parse_bounded_int(raw_val, *, min_val: int = 0, max_val: int = MAX_DB_POSITIVE_INT) -> int | None:
+    """Parse an integer within [min_val, max_val], rejecting booleans and floats."""
+    if raw_val is None or isinstance(raw_val, (bool, float)):
+        return None
+    try:
+        val = int(raw_val)
+    except (TypeError, ValueError):
+        return None
+    if val < min_val or val > max_val:
+        return None
+    return val
+
 
 DISTRICT_TO_PROVINCE = {
     "kathmandu": "Bagmati",
@@ -373,38 +388,46 @@ def build_slice6_views(StoreMerchantMixin):
                     status=status.HTTP_400_BAD_REQUEST,
                 )
 
-            try:
-                value = int(request.data.get("value", 0))
-            except (TypeError, ValueError):
-                return Response({"error": "Valid discount value is required."}, status=status.HTTP_400_BAD_REQUEST)
-
-            if discount_type == "PERCENTAGE" and not (1 <= value <= 90):
+            value = _parse_bounded_int(
+                request.data.get("value", 0),
+                min_val=1 if discount_type == "PERCENTAGE" else 100,
+                max_val=90 if discount_type == "PERCENTAGE" else MAX_DB_POSITIVE_INT,
+            )
+            if value is None:
+                if discount_type == "PERCENTAGE":
+                    return Response(
+                        {"error": "Percentage discount must be between 1% and 90%."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
                 return Response(
-                    {"error": "Percentage discount must be between 1% and 90%."},
+                    {"error": f"Fixed discount must be between Rs. 1 (100 paisa) and {MAX_DB_POSITIVE_INT}."},
                     status=status.HTTP_400_BAD_REQUEST,
                 )
-            if discount_type == "FIXED_AMOUNT" and value < 100:
-                return Response(
-                    {"error": "Fixed discount must be at least Rs. 1 (100 paisa)."},
-                    status=status.HTTP_400_BAD_REQUEST,
-                )
 
-            try:
-                min_subtotal_minor = max(0, int(request.data.get("min_subtotal_minor") or 0))
-            except (TypeError, ValueError):
+            raw_min_sub = request.data.get("min_subtotal_minor")
+            if raw_min_sub in (None, ""):
                 min_subtotal_minor = 0
+            else:
+                min_subtotal_minor = _parse_bounded_int(raw_min_sub, min_val=0, max_val=MAX_DB_POSITIVE_INT)
+                if min_subtotal_minor is None:
+                    return Response(
+                        {"error": f"min_subtotal_minor must be an integer between 0 and {MAX_DB_POSITIVE_INT}."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
             raw_max = request.data.get("max_uses")
             max_uses = None
             if raw_max not in (None, ""):
-                try:
-                    max_uses = max(1, int(raw_max))
-                except (TypeError, ValueError):
-                    return Response({"error": "Invalid max_uses limit."}, status=status.HTTP_400_BAD_REQUEST)
+                max_uses = _parse_bounded_int(raw_max, min_val=1, max_val=MAX_DB_POSITIVE_INT)
+                if max_uses is None:
+                    return Response(
+                        {"error": f"max_uses must be an integer between 1 and {MAX_DB_POSITIVE_INT}."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
 
             expires_at = None
             raw_exp = request.data.get("expires_at")
-            if raw_exp:
+            if raw_exp not in (None, ""):
                 from django.utils.dateparse import parse_datetime, parse_date
                 dt = parse_datetime(str(raw_exp))
                 if dt is None:
@@ -412,6 +435,8 @@ def build_slice6_views(StoreMerchantMixin):
                     if d is not None:
                         from datetime import datetime, time
                         dt = timezone.make_aware(datetime.combine(d, time(23, 59, 59)))
+                if dt is None:
+                    return Response({"error": "Invalid expires_at date/datetime format."}, status=status.HTTP_400_BAD_REQUEST)
                 expires_at = dt
 
             description = str(request.data.get("description") or "").strip()[:160]
@@ -460,34 +485,45 @@ def build_slice6_views(StoreMerchantMixin):
             if "is_active" in data:
                 disc.is_active = bool(data["is_active"])
             if "value" in data:
-                try:
-                    val = int(data["value"])
-                    if disc.discount_type == "PERCENTAGE" and not (1 <= val <= 90):
+                val = _parse_bounded_int(
+                    data["value"],
+                    min_val=1 if disc.discount_type == "PERCENTAGE" else 100,
+                    max_val=90 if disc.discount_type == "PERCENTAGE" else MAX_DB_POSITIVE_INT,
+                )
+                if val is None:
+                    if disc.discount_type == "PERCENTAGE":
                         return Response(
                             {"error": "Percentage discount must be between 1% and 90%."},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
-                    if disc.discount_type == "FIXED_AMOUNT" and val < 100:
+                    return Response(
+                        {"error": f"Fixed discount must be between Rs. 1 (100 paisa) and {MAX_DB_POSITIVE_INT}."},
+                        status=status.HTTP_400_BAD_REQUEST,
+                    )
+                disc.value = val
+            if "min_subtotal_minor" in data:
+                raw_min_sub = data["min_subtotal_minor"]
+                if raw_min_sub in (None, ""):
+                    disc.min_subtotal_minor = 0
+                else:
+                    parsed_min_sub = _parse_bounded_int(raw_min_sub, min_val=0, max_val=MAX_DB_POSITIVE_INT)
+                    if parsed_min_sub is None:
                         return Response(
-                            {"error": "Fixed discount must be at least Rs. 1."},
+                            {"error": f"min_subtotal_minor must be an integer between 0 and {MAX_DB_POSITIVE_INT}."},
                             status=status.HTTP_400_BAD_REQUEST,
                         )
-                    disc.value = val
-                except (TypeError, ValueError):
-                    return Response({"error": "Invalid discount value."}, status=status.HTTP_400_BAD_REQUEST)
-            if "min_subtotal_minor" in data:
-                try:
-                    disc.min_subtotal_minor = max(0, int(data["min_subtotal_minor"] or 0))
-                except (TypeError, ValueError):
-                    pass
+                    disc.min_subtotal_minor = parsed_min_sub
             if "max_uses" in data:
                 if data["max_uses"] in (None, ""):
                     disc.max_uses = None
                 else:
-                    try:
-                        disc.max_uses = max(1, int(data["max_uses"]))
-                    except (TypeError, ValueError):
-                        pass
+                    parsed_max_uses = _parse_bounded_int(data["max_uses"], min_val=1, max_val=MAX_DB_POSITIVE_INT)
+                    if parsed_max_uses is None:
+                        return Response(
+                            {"error": f"max_uses must be an integer between 1 and {MAX_DB_POSITIVE_INT}."},
+                            status=status.HTTP_400_BAD_REQUEST,
+                        )
+                    disc.max_uses = parsed_max_uses
 
             disc.save()
             MerchantAuditLog.objects.create(
