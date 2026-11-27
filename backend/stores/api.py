@@ -5,6 +5,7 @@ from datetime import timedelta
 from urllib.parse import urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.validators import URLValidator
 from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Prefetch, Q, Sum
@@ -3328,46 +3329,106 @@ class MerchantAuditLogListView(StoreMerchantMixin, APIView):
         return Response(MerchantAuditLogSerializer(logs, many=True).data)
 
 
+def _validate_and_strip_image(
+    uploaded_file,
+    *,
+    max_size: int,
+    size_error: str,
+    allowed_formats: tuple[str, ...],
+    unsupported_error: str,
+) -> tuple[bytes, str, str]:
+    """
+    Validates uploaded image bytes via Pillow, rejects SVGs, re-encodes to strip EXIF/GPS
+    metadata, and returns (cleaned_bytes, extension, mime_type).
+    """
+    if uploaded_file.size > max_size:
+        raise serializers.ValidationError(size_error)
+
+    filename_lower = (uploaded_file.name or "").lower()
+    content_type_lower = getattr(uploaded_file, "content_type", "").lower()
+    if filename_lower.endswith(".svg") or "svg" in content_type_lower:
+        raise serializers.ValidationError("SVG files are not supported. Please upload JPEG, PNG, or WebP.")
+
+    uploaded_file.seek(0)
+    try:
+        with Image.open(uploaded_file) as img:
+            img.verify()
+    except Exception:
+        raise serializers.ValidationError("Invalid or corrupted image file.")
+
+    # Re-open image since verify() invalidates the image state
+    uploaded_file.seek(0)
+    try:
+        with Image.open(uploaded_file) as img:
+            fmt = (img.format or "").upper()
+            if fmt not in allowed_formats:
+                raise serializers.ValidationError(unsupported_error)
+
+            buf = io.BytesIO()
+            if fmt == "JPEG":
+                target = img.convert("RGB") if img.mode in ("RGBA", "P", "LA") else img
+                target.save(buf, format="JPEG", quality=90)
+                ext, mime = ".jpg", "image/jpeg"
+            elif fmt == "PNG":
+                img.save(buf, format="PNG", optimize=True)
+                ext, mime = ".png", "image/png"
+            elif fmt == "WEBP":
+                img.save(buf, format="WEBP", quality=90)
+                ext, mime = ".webp", "image/webp"
+            elif fmt == "GIF":
+                img.save(buf, format="GIF")
+                ext, mime = ".gif", "image/gif"
+            else:
+                raise serializers.ValidationError(unsupported_error)
+    except serializers.ValidationError:
+        raise
+    except Exception:
+        raise serializers.ValidationError("Invalid image format.")
+
+    return buf.getvalue(), ext, mime
+
+
 class MerchantMediaUploadView(StoreMerchantMixin, APIView):
     """
     Store-prefixed and authenticated image upload for merchant product catalog and branding.
-    Scopes uploads strictly to uploads/stores/<store_slug>/products/.
+    Enforces rate limiting, Pillow verification, and EXIF stripping, scoping uploads strictly
+    to uploads/stores/<store_slug>/products/.
     """
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "media_upload"
+
     def post(self, request, store_slug):
         uploaded_file = request.FILES.get("file")
         if not uploaded_file:
             return Response({"error": "No file provided."}, status=status.HTTP_400_BAD_REQUEST)
 
-        if uploaded_file.size > 5 * 1024 * 1024:
-            return Response({"error": "Image size exceeds 5MB limit."}, status=status.HTTP_400_BAD_REQUEST)
-
-        allowed_types = ["image/jpeg", "image/png", "image/webp", "image/gif", "image/avif"]
-        content_type = getattr(uploaded_file, "content_type", "")
-        if content_type not in allowed_types:
-            return Response(
-                {"error": "Unsupported image format. Please upload JPG, PNG, or WebP."},
-                status=status.HTTP_400_BAD_REQUEST,
+        try:
+            cleaned_bytes, ext, mime = _validate_and_strip_image(
+                uploaded_file,
+                max_size=5 * 1024 * 1024,
+                size_error="Image size exceeds 5MB limit.",
+                allowed_formats=("JPEG", "PNG", "WEBP", "GIF"),
+                unsupported_error="Unsupported image format. Please upload JPG, PNG, WebP, or GIF.",
             )
+        except serializers.ValidationError as exc:
+            msg = exc.detail if isinstance(exc.detail, str) else exc.detail[0]
+            return Response({"error": msg}, status=status.HTTP_400_BAD_REQUEST)
 
         import re
         import secrets
-        from pathlib import Path
 
         clean_slug = re.sub(r"[^a-z0-9_-]", "", self.store.slug.lower())
         if not clean_slug:
             return Response({"error": "Invalid store context."}, status=status.HTTP_400_BAD_REQUEST)
 
-        allowed_exts = {".jpg", ".jpeg", ".png", ".webp", ".gif", ".avif"}
-        raw_ext = Path(uploaded_file.name).suffix.lower()
-        ext = raw_ext if raw_ext in allowed_exts else ".jpg"
-
         stem = f"prod_{int(timezone.now().timestamp())}_{secrets.token_hex(8)}"
         filename = f"{stem}{ext}"
 
         if is_cloudinary_configured():
+            sanitized_file = SimpleUploadedFile(filename, cleaned_bytes, content_type=mime)
             try:
                 url = upload_store_image_to_cloudinary(
-                    uploaded_file=uploaded_file,
+                    uploaded_file=sanitized_file,
                     clean_store_slug=clean_slug,
                     public_id=stem,
                     store_id=self.store.id,
@@ -3385,8 +3446,7 @@ class MerchantMediaUploadView(StoreMerchantMixin, APIView):
             file_path = base_dir / filename
 
             with open(file_path, "wb+") as dest:
-                for chunk in uploaded_file.chunks():
-                    dest.write(chunk)
+                dest.write(cleaned_bytes)
 
             url = f"/uploads/stores/{clean_slug}/products/{filename}"
         else:
@@ -3401,7 +3461,7 @@ class MerchantMediaUploadView(StoreMerchantMixin, APIView):
             action="MEDIA_UPLOAD",
             entity_type="MediaAsset",
             entity_id=filename,
-            details={"filename": filename, "url": url, "size": uploaded_file.size},
+            details={"filename": filename, "url": url, "size": len(cleaned_bytes)},
             ip_address=request.META.get("REMOTE_ADDR"),
         )
 
@@ -3420,51 +3480,14 @@ def process_theme_image(uploaded_file, asset_type: str) -> tuple[bytes, str, str
     strips EXIF/GPS metadata, and returns (cleaned_bytes, extension, mime_type).
     """
     max_size = 5 * 1024 * 1024 if asset_type == "hero" else 2 * 1024 * 1024
-    if uploaded_file.size > max_size:
-        limit_mb = 5 if asset_type == "hero" else 2
-        raise serializers.ValidationError(f"{asset_type.capitalize()} image size exceeds {limit_mb}MB limit.")
-
-    filename_lower = (uploaded_file.name or "").lower()
-    content_type_lower = getattr(uploaded_file, "content_type", "").lower()
-    if filename_lower.endswith(".svg") or "svg" in content_type_lower:
-        raise serializers.ValidationError("SVG files are not supported. Please upload JPEG, PNG, or WebP.")
-
-    # Inspect genuine image content using Pillow
-    uploaded_file.seek(0)
-    try:
-        with Image.open(uploaded_file) as img:
-            img.verify()
-    except Exception:
-        raise serializers.ValidationError("Invalid or corrupted image file.")
-
-    # Re-open image since verify() invalidates the image state
-    uploaded_file.seek(0)
-    try:
-        img = Image.open(uploaded_file)
-    except Exception:
-        raise serializers.ValidationError("Invalid image format.")
-
-    fmt = (img.format or "").upper()
-    if fmt not in ("JPEG", "PNG", "WEBP"):
-        raise serializers.ValidationError("Unsupported image format. Please upload JPG, PNG, or WebP.")
-
-    buf = io.BytesIO()
-    if fmt == "JPEG":
-        if img.mode in ("RGBA", "P"):
-            img = img.convert("RGB")
-        img.save(buf, format="JPEG", quality=90)
-        ext = ".jpg"
-        mime = "image/jpeg"
-    elif fmt == "PNG":
-        img.save(buf, format="PNG", optimize=True)
-        ext = ".png"
-        mime = "image/png"
-    elif fmt == "WEBP":
-        img.save(buf, format="WEBP", quality=90)
-        ext = ".webp"
-        mime = "image/webp"
-
-    return buf.getvalue(), ext, mime
+    limit_mb = 5 if asset_type == "hero" else 2
+    return _validate_and_strip_image(
+        uploaded_file,
+        max_size=max_size,
+        size_error=f"{asset_type.capitalize()} image size exceeds {limit_mb}MB limit.",
+        allowed_formats=("JPEG", "PNG", "WEBP"),
+        unsupported_error="Unsupported image format. Please upload JPG, PNG, or WebP.",
+    )
 
 
 class MerchantThemeMediaUploadView(StoreMerchantMixin, APIView):

@@ -1,9 +1,12 @@
+import io
 import re
 from datetime import timedelta
 from unittest.mock import patch
+from PIL import Image
 from django.conf import settings
 from django.contrib.auth import get_user_model
 from django.core.cache import cache
+from django.core.files.uploadedfile import SimpleUploadedFile
 from django.core.management import call_command
 from django.test import SimpleTestCase
 from django.utils import timezone
@@ -360,4 +363,101 @@ class DeactivatedUserAuthAuditTests(APITestCase):
         )
         self.assertEqual(res.status_code, status.HTTP_403_FORBIDDEN, res.content)
         self.assertFalse(Store.objects.filter(slug="blocked-shop-74").exists())
+
+
+class ProductMediaUploadAuditTests(APITestCase):
+    """Issue #75: verify images via Pillow, strip EXIF, and enforce media_upload throttle."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create_user("audit75-owner@example.com", full_name="Owner 75")
+        cls.store = Store.objects.create(slug="audit75-shop", name="Audit 75 Shop", is_active=True)
+        with TenantDatabaseContext(cls.store.id):
+            StoreMembership.objects.create(store=cls.store, user=cls.owner, role="OWNER")
+
+    def setUp(self):
+        cache.clear()
+        self.client.force_authenticate(user=self.owner)
+
+    def _tiny_png(self) -> bytes:
+        buf = io.BytesIO()
+        Image.new("RGB", (4, 4), color="navy").save(buf, format="PNG")
+        return buf.getvalue()
+
+    def test_rejects_svg_and_spoofed_payload_with_image_mime(self):
+        svg_file = SimpleUploadedFile("xss.svg", b"<svg onload=alert(1)></svg>", content_type="image/png")
+        res_svg = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/media/upload/",
+            {"file": svg_file},
+            format="multipart",
+        )
+        self.assertEqual(res_svg.status_code, status.HTTP_400_BAD_REQUEST, res_svg.content)
+
+        spoofed = SimpleUploadedFile("fake.png", b"<script>alert(1)</script>", content_type="image/png")
+        res_spoof = self.client.post(
+            f"/api/merchant/stores/{self.store.slug}/media/upload/",
+            {"file": spoofed},
+            format="multipart",
+        )
+        self.assertEqual(res_spoof.status_code, status.HTTP_400_BAD_REQUEST, res_spoof.content)
+
+    def test_strips_exif_metadata_before_storage(self):
+        buf = io.BytesIO()
+        img = Image.new("RGB", (8, 8), color="teal")
+        exif = img.getexif()
+        exif[0x010F] = "SecretGPSCamera75"
+        img.save(buf, format="JPEG", exif=exif.tobytes())
+        uploaded = SimpleUploadedFile("photo.jpg", buf.getvalue(), content_type="image/jpeg")
+
+        captured = {}
+
+        def _fake_cloudinary_upload(*, uploaded_file, clean_store_slug, public_id, store_id):
+            uploaded_file.seek(0)
+            captured["bytes"] = uploaded_file.read()
+            captured["name"] = uploaded_file.name
+            return f"https://res.cloudinary.com/demo/image/upload/v1/{public_id}.jpg"
+
+        with (
+            patch("stores.api.is_cloudinary_configured", return_value=True),
+            patch("stores.api.upload_store_image_to_cloudinary", side_effect=_fake_cloudinary_upload),
+        ):
+            res = self.client.post(
+                f"/api/merchant/stores/{self.store.slug}/media/upload/",
+                {"file": uploaded},
+                format="multipart",
+            )
+
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.content)
+        self.assertTrue(captured["name"].endswith(".jpg"))
+        self.assertNotIn(b"SecretGPSCamera75", captured["bytes"])
+        with Image.open(io.BytesIO(captured["bytes"])) as cleaned:
+            self.assertEqual(cleaned.format, "JPEG")
+            self.assertEqual(len(cleaned.getexif()), 0)
+
+    def test_media_upload_rate_throttle_enforced(self):
+        with (
+            patch.dict(ScopedRateThrottle.THROTTLE_RATES, {"media_upload": "2/min"}),
+            patch("stores.api.is_cloudinary_configured", return_value=True),
+            patch(
+                "stores.api.upload_store_image_to_cloudinary",
+                return_value="https://res.cloudinary.com/demo/image/upload/v1/ok.png",
+            ),
+        ):
+            for _ in range(2):
+                f = SimpleUploadedFile("ok.png", self._tiny_png(), content_type="image/png")
+                ok = self.client.post(
+                    f"/api/merchant/stores/{self.store.slug}/media/upload/",
+                    {"file": f},
+                    format="multipart",
+                )
+                self.assertEqual(ok.status_code, status.HTTP_201_CREATED, ok.content)
+
+            blocked_file = SimpleUploadedFile("ok3.png", self._tiny_png(), content_type="image/png")
+            blocked = self.client.post(
+                f"/api/merchant/stores/{self.store.slug}/media/upload/",
+                {"file": blocked_file},
+                format="multipart",
+            )
+            self.assertEqual(blocked.status_code, status.HTTP_429_TOO_MANY_REQUESTS, blocked.content)
+
 
