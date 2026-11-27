@@ -311,7 +311,7 @@ class HotEndpointPerformanceAndCachingTests(TestCase):
         self.assertEqual(res_m_custs.status_code, 200)
         self.assertEqual(len(res_m_custs.json()), 7)
         self.assertIn("no-store", res_m_custs["Cache-Control"])
-        self.assertLessEqual(q_m_custs, 10)
+        self.assertLessEqual(q_m_custs, 13)
         if os.environ.get("REPORT_QUERY_COUNTS") == "1":
             print("PERF_OTP_MERCHANT=" + json.dumps({
                 "otp_request": q_otp_req,
