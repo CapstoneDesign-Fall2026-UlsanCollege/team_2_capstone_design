@@ -6,7 +6,7 @@ from urllib.parse import urlparse
 from django.conf import settings
 from django.core.exceptions import ValidationError
 from django.core.files.uploadedfile import SimpleUploadedFile
-from django.core.validators import URLValidator
+from django.core.validators import URLValidator, validate_email
 from django.db import IntegrityError, transaction
 from django.db.models import Count, F, Prefetch, Q, Sum
 from django.http import Http404
@@ -1379,6 +1379,18 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                 {"error": "Customer email is required for order confirmation."},
                 status=status.HTTP_400_BAD_REQUEST,
             )
+        if len(customer_email) > 254:
+            return Response(
+                {"error": "Please enter a valid email address."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
+        try:
+            validate_email(customer_email)
+        except ValidationError:
+            return Response(
+                {"error": "Please enter a valid email address."},
+                status=status.HTTP_400_BAD_REQUEST,
+            )
 
         payment_method = str(request.data.get("payment_method", "KHALTI")).strip().upper()
         if payment_method not in ["KHALTI", "COD"]:
@@ -1419,12 +1431,15 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
                     email=customer_email,
                     defaults={"full_name": recipient_name, "phone": phone},
                 )
-                if not customer.phone and phone:
-                    customer.phone = phone
-                    customer.save(update_fields=["phone"])
-                if not customer.full_name and recipient_name:
-                    customer.full_name = recipient_name
-                    customer.save(update_fields=["full_name"])
+                # Only backfill missing profile fields on unlinked guest records;
+                # never let unauthenticated guest checkout mutate a user-linked Customer profile.
+                if customer.user_id is None:
+                    if not customer.phone and phone:
+                        customer.phone = phone
+                        customer.save(update_fields=["phone"])
+                    if not customer.full_name and recipient_name:
+                        customer.full_name = recipient_name
+                        customer.save(update_fields=["full_name"])
 
             customer_email_val = customer.email
             qty_by_variant_id = _aggregate_variant_quantities(items_data)

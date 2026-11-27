@@ -638,5 +638,101 @@ class KhaltiLockReleaseAuditTests(APITransactionTestCase):
         )
 
 
+class CheckoutEmailAndCustomerProtectionTests(APITestCase):
+    """Issue #78: validate checkout email format and protect user-linked Customer profiles."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.store = Store.objects.create(
+            slug="audit78-shop",
+            name="Audit 78 Shop",
+            cod_enabled=True,
+            is_active=True,
+        )
+        cls.linked_user = User.objects.create_user("linked78@example.com", full_name="Linked User")
+        with TenantDatabaseContext(cls.store.id):
+            cls.product = Product.objects.create(
+                store=cls.store,
+                name="Audit 78 Scarf",
+                slug="audit-78-scarf",
+                is_active=True,
+            )
+            cls.variant = Variant.objects.create(
+                store=cls.store,
+                product=cls.product,
+                label="One Size",
+                price_minor=120000,
+                stock_quantity=10,
+                in_stock=True,
+                track_inventory=True,
+            )
+            cls.linked_customer = Customer.objects.create(
+                store=cls.store,
+                user=cls.linked_user,
+                email=cls.linked_user.email,
+                full_name="",
+                phone="",
+            )
+            cls.guest_customer = Customer.objects.create(
+                store=cls.store,
+                user=None,
+                email="guest78@example.com",
+                full_name="",
+                phone="",
+            )
+
+    def setUp(self):
+        cache.clear()
+
+    def _payload(self, email: str, recipient_name: str = "Guest Name", phone: str = "9812345678"):
+        return {
+            "items": [{"variant_id": self.variant.id, "quantity": 1}],
+            "payment_method": "COD",
+            "shipping_address": {
+                "recipient_name": recipient_name,
+                "phone": phone,
+                "province": "Bagmati",
+                "district": "Kathmandu",
+                "municipality": "Kathmandu",
+                "ward": "5",
+                "street_landmark": "Patan",
+                "email": email,
+            },
+        }
+
+    def test_rejects_invalid_email_and_protects_linked_customer_profile(self):
+        bad_res = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/place/",
+            self._payload("not-a-valid-email"),
+            format="json",
+        )
+        self.assertEqual(bad_res.status_code, status.HTTP_400_BAD_REQUEST, bad_res.content)
+
+        # Unauthenticated guest checkout using linked customer's email must not overwrite profile fields.
+        linked_res = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/place/",
+            self._payload(self.linked_user.email, recipient_name="Spoofed Name", phone="9800001111"),
+            format="json",
+        )
+        self.assertEqual(linked_res.status_code, status.HTTP_201_CREATED, linked_res.content)
+        with TenantDatabaseContext(self.store.id):
+            self.linked_customer.refresh_from_db()
+            self.assertEqual(self.linked_customer.full_name, "")
+            self.assertEqual(self.linked_customer.phone, "")
+
+        # Unlinked guest customer still receives missing profile field backfill.
+        guest_res = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/place/",
+            self._payload("guest78@example.com", recipient_name="Real Guest", phone="9811112222"),
+            format="json",
+        )
+        self.assertEqual(guest_res.status_code, status.HTTP_201_CREATED, guest_res.content)
+        with TenantDatabaseContext(self.store.id):
+            self.guest_customer.refresh_from_db()
+            self.assertEqual(self.guest_customer.full_name, "Real Guest")
+            self.assertEqual(self.guest_customer.phone, "9811112222")
+
+
+
 
 
