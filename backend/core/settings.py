@@ -366,7 +366,6 @@ else:
 
 CORS_ALLOWED_ORIGIN_REGEXES = [
     r"^https://([a-zA-Z0-9-]+\.)*shopcraft\.me$",
-    r"^https://([a-zA-Z0-9-]+\.)*vercel\.app$",
 ]
 
 default_csrf = [
@@ -374,7 +373,6 @@ default_csrf = [
     "https://*.shopcraft.me",
     "https://shop.shopcraft.me",
     "https://api.shopcraft.me",
-    "https://*.vercel.app",
 ]
 if DEBUG:
     default_csrf.extend([
