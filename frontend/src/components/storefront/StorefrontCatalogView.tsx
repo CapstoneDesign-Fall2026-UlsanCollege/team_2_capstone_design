@@ -13,7 +13,7 @@ import {
   SlidersHorizontal,
   X,
 } from "lucide-react";
-import { formatNpr, ProductItem, StorePublicMetadata } from "@/lib/api";
+import { formatNpr, ProductItem, ProductVariant, StorePublicMetadata } from "@/lib/api";
 import {
   buildThemePreviewDemoProducts,
   cleanStoreCategory,
@@ -290,6 +290,15 @@ export function StorefrontCatalogView({
     return null;
   }, [heroMode, safeBannerUrl, featuredProductImageUrl]);
 
+  const storyImageUrl = useMemo(() => {
+    if (!fullCatalog || fullCatalog.length === 0) return null;
+    const withImages = fullCatalog
+      .map((p) => sanitizeStorefrontImageUrl(p.image_url))
+      .filter((u): u is string => Boolean(u));
+    if (withImages.length === 0) return null;
+    return withImages.find((u) => u !== heroImageUrl) || withImages[0] || null;
+  }, [fullCatalog, heroImageUrl]);
+
   const heroImageAlt =
     heroMode === "banner"
       ? `${store.name} cover banner`
@@ -336,6 +345,23 @@ export function StorefrontCatalogView({
       return;
     }
     handleQuickAddProduct(featuredProduct);
+  };
+
+  const handleQuickAddVariant = (product: ProductItem, variant: ProductVariant) => {
+    if (product.id < 0 || !variant.in_stock || !variant.is_active) return;
+    addItem(
+      {
+        productId: product.id,
+        productSlug: product.slug,
+        productName: product.name,
+        variantId: variant.id,
+        variantLabel: variant.label || "Standard",
+        unitPriceMinor: variant.price_minor,
+        quantity: 1,
+        imageUrl: product.image_url || undefined,
+      },
+      false
+    );
   };
 
   const scrollToCollection = () => {
@@ -409,8 +435,12 @@ export function StorefrontCatalogView({
       )}
 
       {/* 2. Hero Section (CSS-driven structural composition per [data-store-theme]) */}
-      <section className="w-full border-b border-[var(--border)] bg-[var(--canvas)] py-8 md:py-16 px-4 sm:px-6 lg:px-8">
-        <div className="max-w-6xl mx-auto">
+      <section
+        data-hero-mode={heroMode}
+        className="sf-hero-section relative w-full border-b border-[var(--border-subtle)] bg-[var(--canvas)] py-8 md:py-16 px-4 sm:px-6 lg:px-8 overflow-hidden"
+      >
+        <div className="sf-hero-scrim pointer-events-none hidden" aria-hidden="true" />
+        <div className="relative z-10 max-w-6xl mx-auto">
           {/* Desktop Hero */}
           <div className="sf-hero-grid hidden md:grid md:grid-cols-2 gap-10 lg:gap-16 items-center text-left">
             <div className="sf-hero-copy space-y-4">
@@ -595,20 +625,24 @@ export function StorefrontCatalogView({
       </section>
 
       {/* 3. Catalog & Products Section */}
-      <section id="collection-section" className="w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-10 flex-1">
+      <section
+        id="collection-section"
+        data-has-banner={heroMode === "banner" ? "true" : "false"}
+        className="sf-catalog-sheet w-full max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 py-12 flex-1"
+      >
         
-        {/* Controls: Desktop Bar (shown when catalog has products) */}
+        {/* Controls: Desktop Bar (underline category links + In-stock + Sort) */}
         {fullCatalog.length > 0 && (
-        <div className="sf-filter-bar hidden sm:flex sm:items-center justify-between gap-4 mb-8 pb-4 border-b border-[var(--border)]">
-          {/* Category Tabs */}
-          <div className="flex flex-wrap items-center gap-2">
+        <div className="sf-filter-bar hidden sm:flex sm:items-end justify-between gap-4 mb-10 pb-3.5 border-b border-[var(--border-subtle)]">
+          {/* Underline Category Tabs */}
+          <div className="flex flex-wrap items-center gap-6">
             <button
               type="button"
               onClick={() => setSelectedCategory("all")}
-              className={`sf-control-radius h-9 px-3.5 border text-xs font-semibold cursor-pointer transition-colors ${
+              className={`pb-1.5 border-b-2 text-xs sm:text-sm cursor-pointer transition-colors ${
                 selectedCategory === "all"
-                  ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
-                  : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:text-[var(--ink)] hover:border-[var(--ink)]"
+                  ? "border-[var(--ink)] text-[var(--ink)] font-semibold"
+                  : "border-transparent text-[var(--ink-2)] hover:text-[var(--ink)]"
               }`}
             >
               All ({fullCatalog.length})
@@ -618,10 +652,10 @@ export function StorefrontCatalogView({
                 key={cat}
                 type="button"
                 onClick={() => setSelectedCategory(cat)}
-                className={`sf-control-radius h-9 px-3.5 border text-xs font-semibold cursor-pointer transition-colors capitalize ${
+                className={`pb-1.5 border-b-2 text-xs sm:text-sm cursor-pointer transition-colors capitalize ${
                   selectedCategory === cat
-                    ? "bg-[var(--primary)] text-[var(--primary-foreground)] border-[var(--primary)]"
-                    : "bg-[var(--surface)] text-[var(--ink-2)] border-[var(--border)] hover:text-[var(--ink)] hover:border-[var(--ink)]"
+                    ? "border-[var(--ink)] text-[var(--ink)] font-semibold"
+                    : "border-transparent text-[var(--ink-2)] hover:text-[var(--ink)]"
                 }`}
               >
                 {cat}
@@ -758,6 +792,7 @@ export function StorefrontCatalogView({
             products={filteredProducts}
             onSelectProduct={handleOpenSheet}
             onQuickAdd={handleQuickAddProduct}
+            onQuickAddVariant={handleQuickAddVariant}
             themePreset={store.theme_preset}
             defaultCategory={store.category}
           />
@@ -765,45 +800,62 @@ export function StorefrontCatalogView({
 
       </section>
 
-      {/* 4. Brand Story Strip (own heading, never repeats hero headline, hidden when no storyText) */}
+      {/* 4. Asymmetric Editorial Story Spread (hidden when no storyText) */}
       {storyText && (
-      <section className="sf-story-section w-full border-t border-[var(--border)] bg-[var(--canvas)] py-12 px-4 sm:px-6 lg:px-8">
-        <div className="sf-story-box max-w-4xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--surface)] p-6 sm:p-10 text-left space-y-4">
-          <div className="space-y-2 max-w-2xl">
-            {store.address && (
-              <div className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-2)]">
-                <MapPin className="w-3.5 h-3.5 text-[var(--ink-2)]" />
-                <span>{store.address}</span>
-              </div>
-            )}
-            <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[var(--ink)]">
-              {storyHeading}
-            </h2>
-            <p className="text-sm text-[var(--ink-2)] leading-relaxed">
-              {storyText}
-            </p>
-          </div>
+      <section className="sf-story-section w-full border-t border-[var(--border-subtle)] bg-[var(--canvas)] py-14 sm:py-20 px-4 sm:px-6 lg:px-8">
+        <div
+          className={`sf-story-box max-w-6xl mx-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] p-6 sm:p-10 text-left ${
+            storyImageUrl ? "grid grid-cols-1 md:grid-cols-12 gap-8 lg:gap-12 items-center" : "space-y-4 max-w-4xl"
+          }`}
+        >
+          {storyImageUrl && (
+            <div className="sf-story-media sf-card-radius md:col-span-6 relative aspect-[4/3] w-full overflow-hidden border border-[var(--border-subtle)] bg-[var(--canvas)]">
+              <StoreImage
+                src={storyImageUrl}
+                alt={`${store.name} story`}
+                sizes="(max-width: 768px) 100vw, 50vw"
+                className="object-cover"
+              />
+            </div>
+          )}
 
-          <div className="pt-2 flex flex-wrap items-center gap-4">
-            <Link
-              href={`/s/${encodeURIComponent(store.slug)}/about`}
-              className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)] underline underline-offset-4 hover:opacity-80 min-h-[44px]"
-            >
-              <span>Read our full story</span>
-              <ArrowRight className="w-3.5 h-3.5" />
-            </Link>
+          <div className={`${storyImageUrl ? "md:col-span-6" : ""} space-y-4`}>
+            <div className="space-y-2 max-w-2xl">
+              {store.address && (
+                <div className="inline-flex items-center gap-1.5 text-xs text-[var(--ink-2)]">
+                  <MapPin className="w-3.5 h-3.5 text-[var(--ink-2)]" />
+                  <span>{store.address}</span>
+                </div>
+              )}
+              <h2 className="font-serif text-2xl sm:text-3xl font-semibold text-[var(--ink)]">
+                {storyHeading}
+              </h2>
+              <p className="text-sm text-[var(--ink-2)] leading-relaxed">
+                {storyText}
+              </p>
+            </div>
 
-            {waUrl && (
-              <a
-                href={waUrl}
-                target="_blank"
-                rel="noopener noreferrer"
-                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-2)] hover:text-[var(--ink)] min-h-[44px]"
+            <div className="pt-2 flex flex-wrap items-center gap-4">
+              <Link
+                href={`/s/${encodeURIComponent(store.slug)}/about`}
+                className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink)] underline underline-offset-4 hover:opacity-80 min-h-[44px]"
               >
-                <MessageCircle className="w-3.5 h-3.5" />
-                <span>Ask on WhatsApp</span>
-              </a>
-            )}
+                <span>Read our full story</span>
+                <ArrowRight className="w-3.5 h-3.5" />
+              </Link>
+
+              {waUrl && (
+                <a
+                  href={waUrl}
+                  target="_blank"
+                  rel="noopener noreferrer"
+                  className="inline-flex items-center gap-1.5 text-xs font-semibold text-[var(--ink-2)] hover:text-[var(--ink)] min-h-[44px]"
+                >
+                  <MessageCircle className="w-3.5 h-3.5" />
+                  <span>Ask on WhatsApp</span>
+                </a>
+              )}
+            </div>
           </div>
         </div>
       </section>
@@ -813,9 +865,9 @@ export function StorefrontCatalogView({
       {(claims.shippingConfigured || claims.hasKhalti || claims.codEnabled) && (
       <section
         aria-label="Delivery and payment summary"
-        className="sf-trust-section w-full border-t border-[var(--border)] bg-[var(--surface)] py-6 px-4 sm:px-6 lg:px-8 text-left"
+        className="sf-trust-section w-full border-t border-[var(--border-subtle)] bg-[var(--surface)] py-6 px-4 sm:px-6 lg:px-8 text-left"
       >
-        <div className="sf-trust-box max-w-6xl mx-auto rounded-xl border border-[var(--border)] bg-[var(--canvas)] px-4 py-3.5 sm:px-6 sm:py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs">
+        <div className="sf-trust-box max-w-6xl mx-auto rounded-xl border border-[var(--border-subtle)] bg-[var(--canvas)] px-4 py-3.5 sm:px-6 sm:py-4 flex flex-col md:flex-row md:items-center md:justify-between gap-3 text-xs">
           <div className="flex flex-wrap items-center gap-x-5 gap-y-2 text-[var(--ink)]">
             {claims.shippingConfigured && (
               <span className="inline-flex items-center gap-1.5 font-medium">
@@ -1011,7 +1063,7 @@ export function StorefrontCatalogView({
       )}
 
       {/* 8. Multi-Column Storefront Footer */}
-      <footer className="w-full border-t border-[var(--border)] bg-[var(--surface)] pt-12 pb-16 px-4 sm:px-6 lg:px-8 text-left">
+      <footer className="w-full border-t border-[var(--border-subtle)] bg-[var(--surface)] pt-12 pb-16 px-4 sm:px-6 lg:px-8 text-left">
         <div className="max-w-6xl mx-auto space-y-10">
           <div className="grid grid-cols-1 md:grid-cols-12 gap-8 items-start">
             

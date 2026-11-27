@@ -528,6 +528,67 @@
     order: -1;
   }
 
+  /* Full-bleed editorial banner hero (ktm-bold lookbook & midnight-obsidian cinema) */
+  :is([data-store-theme="ktm-bold"], [data-store-theme="midnight-obsidian"]) .sf-hero-section[data-hero-mode="banner"] {
+    padding-block: clamp(5rem, 10vw, 8.5rem) clamp(4.5rem, 8vw, 6.5rem);
+    border-bottom: 0;
+  }
+  :is([data-store-theme="ktm-bold"], [data-store-theme="midnight-obsidian"]) .sf-hero-section[data-hero-mode="banner"] > div.relative {
+    position: static;
+  }
+  :is([data-store-theme="ktm-bold"], [data-store-theme="midnight-obsidian"]) .sf-hero-section[data-hero-mode="banner"] .sf-hero-scrim {
+    display: block;
+    position: absolute;
+    inset: 0;
+    background-color: var(--overlay-scrim);
+    z-index: 5;
+  }
+  [data-store-theme="ktm-bold"] .sf-hero-section[data-hero-mode="banner"] .sf-hero-scrim {
+    background-color: var(--ink);
+    opacity: 0.62;
+  }
+  :is([data-store-theme="ktm-bold"], [data-store-theme="midnight-obsidian"]) .sf-hero-section[data-hero-mode="banner"] .sf-hero-grid {
+    grid-template-columns: minmax(0, 1fr);
+    align-items: end;
+    min-height: 22rem;
+  }
+  :is([data-store-theme="ktm-bold"], [data-store-theme="midnight-obsidian"]) .sf-hero-section[data-hero-mode="banner"] .sf-hero-media {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    max-width: none;
+    z-index: 1;
+  }
+  :is([data-store-theme="ktm-bold"], [data-store-theme="midnight-obsidian"]) .sf-hero-section[data-hero-mode="banner"] .sf-hero-frame {
+    width: 100%;
+    height: 100%;
+    max-height: none;
+    aspect-ratio: auto;
+    border: 0;
+    border-radius: 0;
+    margin: 0;
+  }
+  :is([data-store-theme="ktm-bold"], [data-store-theme="midnight-obsidian"]) .sf-hero-section[data-hero-mode="banner"] .sf-hero-copy {
+    position: relative;
+    z-index: 10;
+    max-width: 42rem;
+    border-left: 0;
+    padding-left: 0;
+  }
+  [data-store-theme="ktm-bold"] .sf-hero-section[data-hero-mode="banner"] .sf-hero-copy :is(h1, p, a, span) {
+    color: var(--primary-foreground);
+  }
+  [data-store-theme="midnight-obsidian"] .sf-catalog-sheet[data-has-banner="true"] {
+    position: relative;
+    z-index: 20;
+    margin-top: -1.5rem;
+    border-top-left-radius: 24px;
+    border-top-right-radius: 24px;
+    background-color: var(--canvas);
+    border-top: 1px solid var(--border-subtle);
+  }
+
 }
 
 /* ===== Storefront Personality (Phase C2): CSS only, no DOM changes, no box-shadow, no gradients ===== */
@@ -594,6 +655,39 @@
   border-bottom-width: var(--bw);
 }
 
+/* Desktop Hover 1-Tap Variant Quick-Add Bar */
+[data-store-theme] .sf-quick-bar {
+  position: absolute;
+  left: 0.625rem;
+  right: 0.625rem;
+  bottom: 0.625rem;
+  z-index: 12;
+  opacity: 0;
+  transform: translateY(6px);
+  pointer-events: none;
+  background-color: var(--surface);
+  color: var(--ink);
+  border: 1px solid var(--border);
+  border-radius: var(--radius-control);
+  transition: opacity 180ms ease, transform 200ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+[data-store-theme] .sf-quick-bar button {
+  background-color: var(--canvas);
+  color: var(--ink);
+  border: 1px solid var(--border-subtle);
+}
+[data-store-theme] .sf-quick-bar button:hover {
+  background-color: var(--primary);
+  color: var(--primary-foreground);
+  border-color: var(--primary);
+}
+[data-store-theme] .group:hover .sf-quick-bar,
+[data-store-theme] .group:focus-within .sf-quick-bar {
+  opacity: 1;
+  transform: translateY(0);
+  pointer-events: auto;
+}
+
 @media (max-width: 767px) {
   [data-store-theme] #collection-section .sf-card-radius button,
   [data-store-theme] .sf-hero-media button,
@@ -638,18 +732,18 @@
   letter-spacing: -0.02em;
 }
 [data-store-theme="editorial-warm"] .sf-hero-frame {
-  outline: 1px solid var(--border);
-  outline-offset: 10px;
-  margin: 10px;
+  outline: 1px solid var(--border-subtle);
+  outline-offset: 8px;
+  margin: 8px;
 }
 [data-store-theme="editorial-warm"] .sf-mobile-hero-frame {
-  outline: 1px solid var(--border);
+  outline: 1px solid var(--border-subtle);
   outline-offset: 6px;
   margin: 6px;
 }
 [data-store-theme="editorial-warm"] #collection-section > .grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: clamp(1rem, 2.5vw, 2rem);
+  gap: 2.25rem clamp(1rem, 2.5vw, 2rem);
 }
 @media (min-width: 768px) {
   [data-store-theme="editorial-warm"] #collection-section > .grid {
@@ -666,18 +760,21 @@
 }
 [data-store-theme="editorial-warm"] #collection-section .sf-card-radius {
   background: transparent;
-  border-width: 0 0 var(--bw) 0;
-  border-color: var(--border);
+  border: 0;
 }
 [data-store-theme="editorial-warm"] #collection-section .sf-product-media {
-  border: var(--bw) solid var(--border-subtle);
+  border: 1px solid var(--border-subtle);
+  border-radius: var(--radius-card);
+}
+[data-store-theme="editorial-warm"] #collection-section .sf-card-caption {
+  padding-inline: 0.125rem;
 }
 [data-store-theme="editorial-warm"] #collection-section .sf-card-radius h3 {
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: 1.05rem;
 }
-[data-store-theme="editorial-warm"] #collection-section .sf-card-radius button,
+[data-store-theme="editorial-warm"] #collection-section .sf-card-caption button,
 [data-store-theme="editorial-warm"] .sf-hero-caption button {
   background: var(--surface);
   color: var(--ink);
@@ -686,7 +783,7 @@
   padding-inline: 0.875rem;
   font-weight: 600;
 }
-[data-store-theme="editorial-warm"] #collection-section .sf-card-radius button:hover,
+[data-store-theme="editorial-warm"] #collection-section .sf-card-caption button:hover,
 [data-store-theme="editorial-warm"] .sf-hero-caption button:hover {
   background: var(--primary);
   color: var(--primary-foreground);
@@ -726,7 +823,6 @@
 /* ---------- pahadi-sage: soft botanical boutique (pill controls, origin badges, centered type, framed soft cards) ---------- */
 [data-store-theme="pahadi-sage"] .sf-origin-badge {
   display: inline-flex;
-  margin-inline: auto;
 }
 [data-store-theme="pahadi-sage"] .sf-hero-copy h1,
 [data-store-theme="pahadi-sage"] .sf-mobile-hero h1 {
@@ -741,12 +837,12 @@
   border-color: var(--border-subtle);
 }
 [data-store-theme="pahadi-sage"] #collection-section > .grid {
-  gap: 0.875rem;
+  gap: 1.25rem;
 }
 @media (min-width: 768px) {
   [data-store-theme="pahadi-sage"] #collection-section > .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
-    gap: 1.25rem;
+    gap: 1.75rem;
   }
   [data-store-theme="pahadi-sage"] #collection-section > .grid[data-grid-cols="4"] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -761,27 +857,22 @@
   }
 }
 [data-store-theme="pahadi-sage"] #collection-section .sf-card-radius {
-  border-color: var(--border-subtle);
+  border: 1px solid var(--border-subtle);
 }
-[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius > div:last-child {
-  align-items: center;
-  text-align: center;
-}
-[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius > div:last-child > div:last-child {
-  justify-content: center;
-  gap: 0.75rem;
+[data-store-theme="pahadi-sage"] #collection-section .sf-product-media {
+  border-bottom: 1px solid var(--border-subtle);
 }
 [data-store-theme="pahadi-sage"] #collection-section .sf-card-radius h3 {
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: 1rem;
 }
-[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius button {
+[data-store-theme="pahadi-sage"] #collection-section .sf-card-caption button {
   background: var(--primary);
   color: var(--primary-foreground);
   border-color: transparent;
 }
-[data-store-theme="pahadi-sage"] #collection-section .sf-card-radius button:hover {
+[data-store-theme="pahadi-sage"] #collection-section .sf-card-caption button:hover {
   background: var(--primary-hover);
 }
 [data-store-theme="pahadi-sage"] .sf-story-box {
@@ -883,6 +974,12 @@
   border: var(--bw) solid var(--ink);
   z-index: -1;
   pointer-events: none;
+  opacity: 0;
+  transition: opacity 160ms ease;
+}
+[data-store-theme="ktm-bold"] #collection-section > .grid > *:hover::after,
+[data-store-theme="ktm-bold"] #collection-section > .grid > *:focus-within::after {
+  opacity: 1;
 }
 [data-store-theme="ktm-bold"] #collection-section .sf-card-radius {
   border-color: var(--ink);
@@ -895,12 +992,12 @@
   font-weight: 700;
   font-size: 0.85rem;
 }
-[data-store-theme="ktm-bold"] #collection-section .sf-card-radius button {
+[data-store-theme="ktm-bold"] #collection-section .sf-card-caption button {
   background: var(--ink);
   color: var(--surface);
   border-color: var(--ink);
 }
-[data-store-theme="ktm-bold"] #collection-section .sf-card-radius button:hover {
+[data-store-theme="ktm-bold"] #collection-section .sf-card-caption button:hover {
   background: var(--primary);
   color: var(--primary-foreground);
 }
@@ -956,13 +1053,12 @@
 }
 [data-store-theme="midnight-obsidian"] #collection-section > .grid {
   grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: 0;
-  padding-right: 1px;
-  padding-bottom: 1px;
+  gap: 2.25rem 1.25rem;
 }
 @media (min-width: 768px) {
   [data-store-theme="midnight-obsidian"] #collection-section > .grid {
     grid-template-columns: repeat(3, minmax(0, 1fr));
+    gap: 2.75rem 1.75rem;
   }
   [data-store-theme="midnight-obsidian"] #collection-section > .grid[data-grid-cols="4"] {
     grid-template-columns: repeat(4, minmax(0, 1fr));
@@ -976,19 +1072,23 @@
     justify-content: center;
   }
 }
-[data-store-theme="midnight-obsidian"] #collection-section > .grid > * {
-  margin: 0 -1px -1px 0;
-}
 [data-store-theme="midnight-obsidian"] #collection-section .sf-card-radius {
-  border-color: var(--border-subtle);
-  border-radius: 0;
+  background: transparent;
+  border: 0;
+}
+[data-store-theme="midnight-obsidian"] #collection-section .sf-product-media {
+  border: 1px solid var(--border-subtle);
+  border-radius: 12px;
+}
+[data-store-theme="midnight-obsidian"] #collection-section .sf-card-caption {
+  padding-inline: 0.125rem;
 }
 [data-store-theme="midnight-obsidian"] #collection-section .sf-card-radius h3 {
   font-family: var(--font-serif);
   font-weight: 600;
   font-size: 1rem;
 }
-[data-store-theme="midnight-obsidian"] #collection-section .sf-card-radius button {
+[data-store-theme="midnight-obsidian"] #collection-section .sf-card-caption button {
   background: transparent;
   border-color: var(--ink-2);
   color: var(--ink);

@@ -86,7 +86,7 @@ export function StorefrontHeader({
       )}
 
       {/* 2. Header Bar: Logo/Name (no truncated tagline), Clean Navigation, Search, Account, Bag. */}
-      <header className="sticky top-0 z-30 w-full border-b border-[var(--border)] bg-[var(--surface)]">
+      <header className="sf-site-header sticky top-0 z-30 w-full border-b border-[var(--border-subtle)] bg-[var(--surface)]/95 backdrop-blur-md transition-colors">
         <div className="sf-header-inner max-w-6xl mx-auto px-4 sm:px-6 h-16 flex items-center justify-between gap-4">
           
           {/* Brand Identity */}
@@ -202,20 +202,18 @@ export function StorefrontHeader({
               )}
             </button>
 
-            {/* Bag Button: Bag (count) */}
+            {/* Bag Button: Quiet Boutique Trigger (Hero CTA stays single primary focus) */}
             <button
               type="button"
               onClick={onOpenCart}
-              className="sf-control-radius min-h-[44px] min-w-[44px] px-3.5 py-2 bg-[var(--primary)] text-[var(--primary-foreground)] hover:bg-[var(--primary-hover)] transition-colors cursor-pointer flex items-center gap-2 text-xs sm:text-sm font-medium"
+              className="sf-control-radius min-h-[44px] min-w-[44px] px-3.5 py-2 border border-[var(--border-subtle)] bg-[var(--surface)] text-[var(--ink)] hover:bg-[var(--nav-active)] hover:border-[var(--ink)] transition-colors cursor-pointer flex items-center gap-2 text-xs sm:text-sm font-medium"
               aria-label={`Open shopping bag with ${cartCount} items`}
             >
               <ShoppingBag className="w-4 h-4 shrink-0" />
               <span className="hidden sm:inline">Bag</span>
-              {cartCount > 0 && (
-                <span className="tabular-nums font-semibold">
-                  ({cartCount})
-                </span>
-              )}
+              <span className="tabular-nums font-semibold">
+                ({cartCount})
+              </span>
             </button>
           </div>
 

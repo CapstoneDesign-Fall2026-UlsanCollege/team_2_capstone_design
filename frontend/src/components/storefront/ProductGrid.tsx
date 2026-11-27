@@ -1,9 +1,9 @@
 "use client";
 
-import React from "react";
+import React, { useState } from "react";
 import Link from "next/link";
 import { MapPin, Package } from "lucide-react";
-import { formatNpr, ProductItem } from "@/lib/api";
+import { formatNpr, ProductItem, ProductVariant } from "@/lib/api";
 import { isPlaceholderText, sanitizeStorefrontImageUrl } from "@/lib/storefront-helpers";
 import { Button } from "@/components/ui/button";
 import { StoreImage } from "./StoreImage";
@@ -13,6 +13,7 @@ export interface ProductGridProps {
   products: ProductItem[];
   onSelectProduct: (product: ProductItem) => void;
   onQuickAdd?: (product: ProductItem) => void;
+  onQuickAddVariant?: (product: ProductItem, variant: ProductVariant) => void;
   themePreset?: string;
   defaultCategory?: string;
 }
@@ -22,7 +23,9 @@ export function ProductGrid({
   products,
   onSelectProduct,
   onQuickAdd,
+  onQuickAddVariant,
 }: ProductGridProps) {
+  const [quickAddedId, setQuickAddedId] = useState<number | null>(null);
   if (products.length === 0) {
     return (
       <div className="rounded-xl border border-[var(--border)] bg-[var(--surface)] p-12 text-center my-6">
@@ -98,14 +101,14 @@ export function ProductGrid({
             : null;
 
         const CardContent = (
-          <div className="sf-card-radius flex flex-col h-full bg-[var(--surface)] border border-[var(--border)] overflow-hidden transition-colors hover:border-[var(--ink)]">
-            {/* 1. Product Image Frame (theme aspect ratio + theme card radius, no overlay text) */}
-            <div className="sf-product-media relative w-full bg-[var(--canvas)] border-b border-[var(--border)] overflow-hidden flex items-center justify-center">
+          <div className="sf-card-radius flex flex-col h-full bg-[var(--surface)] border border-[var(--border-subtle)] overflow-hidden transition-colors hover:border-[var(--ink)]">
+            {/* 1. Product Image Frame (theme aspect ratio + theme card radius, hover 1-tap quick-add bar on desktop) */}
+            <div className="sf-product-media relative w-full bg-[var(--canvas)] border-b border-[var(--border-subtle)] overflow-hidden flex items-center justify-center">
               <StoreImage
                 src={sanitizeStorefrontImageUrl(product.image_url)}
                 alt={product.name}
                 sizes="(max-width: 640px) 50vw, (max-width: 1024px) 33vw, 280px"
-                className="object-cover transition-transform duration-300 group-hover:scale-102"
+                className="object-cover transition-transform duration-500 ease-out group-hover:scale-[1.04]"
                 fallback={
                   <div
                     className="w-full h-full flex flex-col items-center justify-center p-4 text-[var(--ink-2)]"
@@ -117,6 +120,42 @@ export function ProductGrid({
                 }
               />
 
+              {/* Desktop Hover 1-Tap Variant Quick-Add Bar */}
+              {!isDemoProduct && hasStock && inStockVariants.length > 0 && onQuickAddVariant && (
+                <div
+                  className="sf-quick-bar hidden md:flex items-center justify-between gap-2 px-2.5 py-2"
+                  onClick={(e) => {
+                    e.preventDefault();
+                    e.stopPropagation();
+                  }}
+                >
+                  <span className="text-[11px] font-medium text-[var(--ink-2)] shrink-0 pl-1">
+                    {quickAddedId === product.id ? "Added ✓" : "Quick add"}
+                  </span>
+                  <div className="flex items-center gap-1 min-w-0 overflow-hidden">
+                    {inStockVariants.slice(0, 3).map((variant) => (
+                      <button
+                        key={variant.id}
+                        type="button"
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                          onQuickAddVariant(product, variant);
+                          setQuickAddedId(product.id);
+                          setTimeout(() => {
+                            setQuickAddedId((prev) => (prev === product.id ? null : prev));
+                          }, 1200);
+                        }}
+                        className="sf-control-radius px-2 py-1 text-[11px] font-semibold text-[var(--ink)] hover:bg-[var(--primary)] hover:text-[var(--primary-foreground)] transition-colors cursor-pointer truncate max-w-[96px]"
+                        title={`Add ${product.name} (${variant.label}) to bag`}
+                      >
+                        {inStockVariants.length === 1 ? "+ Add" : variant.label}
+                      </button>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Clean out-of-stock overlay when no purchasable variants exist */}
               {!hasStock && (
                 <div className="absolute inset-0 bg-[var(--surface)]/85 flex items-center justify-center z-10">
@@ -127,8 +166,8 @@ export function ProductGrid({
               )}
             </div>
 
-            {/* 2. Product Metadata & Direct Quick Add */}
-            <div className="p-3 sm:p-4 flex flex-col flex-1 justify-between gap-3 text-left">
+            {/* 2. Gallery Caption Row: Title + Quiet Subtitle left, NPR Price + Mobile Add right */}
+            <div className="sf-card-caption pt-3 pb-2 px-3 sm:px-4 flex flex-col flex-1 justify-between gap-2 text-left">
               <div className="space-y-1">
                 {cleanOrigin && (
                   <span className="sf-origin-badge hidden items-center gap-1 px-2.5 py-0.5 rounded-full text-[10px] font-semibold tracking-wide bg-[var(--nav-active)] text-[var(--primary)] border border-[var(--border-subtle)] w-fit">
@@ -136,19 +175,19 @@ export function ProductGrid({
                     <span>{cleanOrigin}</span>
                   </span>
                 )}
-                {cleanCategory && (
-                  <p className="text-[11px] text-[var(--ink-2)] font-medium uppercase tracking-wider">
-                    {cleanCategory}
-                  </p>
-                )}
                 <h3 className="text-xs sm:text-sm font-semibold text-[var(--ink)] leading-snug line-clamp-2">
                   {product.name}
                 </h3>
+                {(cleanCategory || cleanOrigin) && (
+                  <p className="sf-card-subtitle text-[11px] text-[var(--ink-2)] truncate">
+                    {cleanCategory || cleanOrigin}
+                  </p>
+                )}
               </div>
 
-              <div className="flex items-center justify-between gap-2 pt-1 border-t border-[var(--border)]/60">
+              <div className="flex items-center justify-between gap-2 pt-1">
                 <div className="flex flex-col">
-                  <span className="text-xs sm:text-sm font-semibold text-[var(--ink)] tabular-nums">
+                  <span className="text-xs sm:text-sm font-medium text-[var(--ink)] tabular-nums">
                     {variants.length === 0
                       ? "Unavailable"
                       : minPrice > 0
@@ -165,7 +204,11 @@ export function ProductGrid({
                   onClick={(e) => handleAddClick(e, product)}
                   disabled={!hasStock || isDemoProduct}
                   title={isDemoProduct ? "Preview demo item" : undefined}
-                  className="sf-control-radius h-8 px-3 text-xs font-semibold shrink-0"
+                  className={`sf-control-radius h-8 px-3 text-xs font-semibold shrink-0 ${
+                    !isDemoProduct && hasStock && inStockVariants.length > 0 && onQuickAddVariant
+                      ? "md:hidden"
+                      : ""
+                  }`}
                   aria-label={`Add ${product.name} to bag`}
                 >
                   Add

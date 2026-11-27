@@ -232,10 +232,10 @@ export function ProductDetailView({
         {/* 2-Column Product Grid */}
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-8 lg:gap-12 items-start text-left">
           
-          {/* Left: Gallery (6 cols) */}
-          <div className="lg:col-span-6 space-y-3">
-            {/* Main Large Image (12px radius, 1px border, no overlay text) */}
-            <div className="relative aspect-square sm:aspect-[4/5] w-full rounded-xl border border-[var(--border)] bg-[var(--surface)] overflow-hidden">
+          {/* Left: Gallery (6 cols, sticky on desktop) */}
+          <div className="lg:col-span-6 space-y-3 lg:sticky lg:top-24">
+            {/* Main Large Image (soft hairline border, zero overlay clutter) */}
+            <div className="sf-card-radius relative aspect-square sm:aspect-[4/5] w-full rounded-xl border border-[var(--border-subtle)] bg-[var(--surface)] overflow-hidden">
               <StoreImage
                 src={images[activeImageIndex] || images[0] || ""}
                 alt={product.name}
@@ -276,7 +276,7 @@ export function ProductDetailView({
           <div className="lg:col-span-6 space-y-6">
             
             {/* Header Info */}
-            <div className="space-y-3 border-b border-[var(--border)] pb-5">
+            <div className="space-y-3 border-b border-[var(--border-subtle)] pb-5">
               <div className="flex items-center justify-between gap-3">
                 {cleanCategory ? (
                   <span className="text-xs font-semibold uppercase tracking-wider text-[var(--ink-2)]">
