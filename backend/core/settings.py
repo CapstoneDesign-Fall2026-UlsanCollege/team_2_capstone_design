@@ -427,6 +427,9 @@ CSRF_COOKIE_SAMESITE = os.getenv("CSRF_COOKIE_SAMESITE", "Lax").strip() or "Lax"
 CSRF_COOKIE_SECURE = not DEBUG
 CSRF_COOKIE_DOMAIN = os.getenv("CSRF_COOKIE_DOMAIN", "").strip() or None
 
+# Pending unpaid Khalti orders expire and release reserved stock/discounts after this window
+PENDING_PAYMENT_EXPIRY_MINUTES = max(5, int(os.getenv("PENDING_PAYMENT_EXPIRY_MINUTES", "30")))
+
 # Django REST Framework
 REST_FRAMEWORK = {
     "DEFAULT_AUTHENTICATION_CLASSES": [
@@ -435,13 +438,24 @@ REST_FRAMEWORK = {
     "DEFAULT_PERMISSION_CLASSES": [
         "rest_framework.permissions.IsAuthenticatedOrReadOnly",
     ],
+    "DEFAULT_THROTTLE_CLASSES": [
+        "rest_framework.throttling.AnonRateThrottle",
+        "rest_framework.throttling.UserRateThrottle",
+    ],
     "DEFAULT_THROTTLE_RATES": {
         "otp_request": "5/min",
         "otp_verify": "10/min",
+        "storefront_otp_request": "1000/min" if IS_TEST_COMMAND else "5/min",
+        "storefront_otp_verify": "1000/min" if IS_TEST_COMMAND else "10/min",
         "auth_google": "15/min",
         "theme_media_upload": "30/min",
-        "anon": "60/min",
-        "user": "120/min",
+        "media_upload": "1000/min" if IS_TEST_COMMAND else "30/min",
+        "checkout_quote": "1000/min" if IS_TEST_COMMAND else "60/min",
+        "checkout_place": "1000/min" if IS_TEST_COMMAND else "20/min",
+        "khalti_verify": "1000/min" if IS_TEST_COMMAND else "30/min",
+        "public_order_pay": "1000/min" if IS_TEST_COMMAND else "15/min",
+        "anon": "10000/min" if IS_TEST_COMMAND else "120/min",
+        "user": "10000/min" if IS_TEST_COMMAND else "300/min",
     },
 }
 

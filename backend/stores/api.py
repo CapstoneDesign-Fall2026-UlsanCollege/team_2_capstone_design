@@ -829,12 +829,72 @@ def _reclaim_order_inventory(store, order) -> str | None:
     return None
 
 
+def _release_expired_pending_orders(
+    store,
+    *,
+    expiry_minutes: int | None = None,
+    limit: int = 25,
+    exclude_order_id: int | None = None,
+) -> int:
+    """
+    Lazy cleanup for abandoned PENDING_PAYMENT orders older than PENDING_PAYMENT_EXPIRY_MINUTES.
+    Releases reserved tracked stock and discount usage so attackers cannot lock inventory with unpaid orders.
+    """
+    minutes = expiry_minutes if expiry_minutes is not None else int(getattr(settings, "PENDING_PAYMENT_EXPIRY_MINUTES", 30))
+    cutoff = timezone.now() - timedelta(minutes=max(1, minutes))
+    qs = Order.objects.for_store(store).filter(
+        status="PENDING_PAYMENT",
+        payment_status="UNPAID",
+        created_at__lt=cutoff,
+    )
+    if exclude_order_id is not None:
+        qs = qs.exclude(id=exclude_order_id)
+    expired_ids = list(qs.order_by("id").values_list("id", flat=True)[:limit])
+    if not expired_ids:
+        return 0
+
+    released_count = 0
+    locked_orders = (
+        Order.objects.select_for_update()
+        .for_store(store)
+        .filter(id__in=expired_ids, status="PENDING_PAYMENT", payment_status="UNPAID")
+        .prefetch_related("items")
+        .order_by("id")
+    )
+    for exp_order in locked_orders:
+        exp_order.status = "PAYMENT_FAILED"
+        exp_order.payment_status = "FAILED"
+        _release_order_discount(store, exp_order)
+        _release_order_inventory(store, exp_order)
+        exp_order.save(
+            update_fields=[
+                "status",
+                "payment_status",
+                "discount_redeemed",
+                "inventory_deducted",
+                "updated_at",
+            ]
+        )
+        OrderEvent.objects.create(
+            store=store,
+            order=exp_order,
+            from_status="PENDING_PAYMENT",
+            to_status="PAYMENT_FAILED",
+            note="Payment session expired automatically; reserved stock and promo usage released.",
+            actor=None,
+        )
+        released_count += 1
+    return released_count
+
+
 class StorePublicOrderPayView(StorePublicMixin, APIView):
     """
     Allows a shopper holding a valid unguessable order access token (e.g. from a
     pay-per-delivery renewal link or failed Khalti return) to pay via Khalti or confirm COD.
     """
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "public_order_pay"
 
     def post(self, request, store_slug, order_id):
         import uuid
@@ -885,6 +945,7 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
 
         if payment_method == "COD":
             with transaction.atomic():
+                _release_expired_pending_orders(self.store, exclude_order_id=order.id)
                 promo_err = _reclaim_order_discount(self.store, order)
                 if promo_err:
                     return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
@@ -931,6 +992,7 @@ class StorePublicOrderPayView(StorePublicMixin, APIView):
         if khalti_cfg_err:
             return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
 
+        _release_expired_pending_orders(self.store, exclude_order_id=order.id)
         promo_err = _reclaim_order_discount(self.store, order)
         if promo_err:
             return Response({"error": promo_err}, status=status.HTTP_400_BAD_REQUEST)
@@ -1076,6 +1138,8 @@ def _validate_checkout_variant(variants: dict[int, Variant], v_id, requested_qty
 
 class StoreCheckoutQuoteView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "checkout_quote"
 
     def post(self, request, store_slug):
         if not isinstance(request.data, dict):
@@ -1084,6 +1148,8 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
         items_data, items_err = _parse_checkout_items(request.data.get("items"))
         if items_err:
             return Response({"error": items_err}, status=status.HTTP_400_BAD_REQUEST)
+
+        _release_expired_pending_orders(self.store)
 
         qty_by_variant_id = _aggregate_variant_quantities(items_data)
         variant_ids = list(qty_by_variant_id.keys())
@@ -1178,6 +1244,8 @@ class StoreCheckoutQuoteView(StorePublicMixin, APIView):
 
 class StoreCheckoutPlaceView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "checkout_place"
 
     def post(self, request, store_slug):
         if not isinstance(request.data, dict):
@@ -1291,6 +1359,8 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
             _, _, khalti_cfg_err = resolve_khalti_initiation_config(self.store)
             if khalti_cfg_err:
                 return Response({"error": khalti_cfg_err}, status=status.HTTP_400_BAD_REQUEST)
+
+        _release_expired_pending_orders(self.store)
 
         qty_by_variant_id = _aggregate_variant_quantities(items_data)
         variant_ids = list(qty_by_variant_id.keys())
@@ -1496,6 +1566,8 @@ class StoreCheckoutPlaceView(StorePublicMixin, APIView):
 
 class StoreKhaltiVerifyView(StorePublicMixin, APIView):
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "khalti_verify"
 
     _FAILURE_REASON_MAP = {
         KHALTI_STATE_CANCELED: (

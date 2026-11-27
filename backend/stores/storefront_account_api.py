@@ -86,6 +86,8 @@ class StorefrontOTPRequestView(StorePublicMixin, APIView):
     """
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "storefront_otp_request"
 
     def post(self, request, store_slug):
         serializer = StorefrontOTPRequestSerializer(data=request.data)
@@ -154,6 +156,8 @@ class StorefrontOTPVerifyView(StorePublicMixin, APIView):
     """
     authentication_classes = []
     permission_classes = [permissions.AllowAny]
+    throttle_classes = [ScopedRateThrottle]
+    throttle_scope = "storefront_otp_verify"
 
     def post(self, request, store_slug):
         serializer = StorefrontOTPVerifySerializer(data=request.data)

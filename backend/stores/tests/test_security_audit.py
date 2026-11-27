@@ -1,14 +1,21 @@
 import re
+from datetime import timedelta
+from unittest.mock import patch
 from django.conf import settings
 from django.contrib.auth import get_user_model
+from django.core.cache import cache
+from django.core.management import call_command
 from django.test import SimpleTestCase
+from django.utils import timezone
 from rest_framework import status
-from rest_framework.test import APITestCase
+from rest_framework.test import APIRequestFactory, APITestCase
+from rest_framework.throttling import ScopedRateThrottle
 
+from catalog.models import Discount, Product, Variant
 from core.tenant_context import TenantDatabaseContext
+from orders.models import Order, OrderItem
 from stores.api import _resolve_safe_khalti_return_url
-from stores.models import Store, StoreMembership
-from rest_framework.test import APIRequestFactory
+from stores.models import Customer, Store, StoreMembership
 
 User = get_user_model()
 
@@ -134,3 +141,148 @@ class KhaltiReturnUrlAuditTests(APITestCase):
     def test_allowlisted_frontend_origin_with_exact_path_is_preserved(self):
         good = "https://shop.shopcraft.me/s/khalti-url-72/checkout/khalti-return/"
         self.assertEqual(_resolve_safe_khalti_return_url(self._req(good), self.store), good)
+
+
+class ThrottlingAndOrderExpiryAuditTests(APITestCase):
+    """Issue #73: DRF throttles active + abandoned PENDING_PAYMENT orders auto-release stock & promos."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.store = Store.objects.create(
+            slug="expiry-shop-73",
+            name="Expiry Shop 73",
+            is_active=True,
+            cod_enabled=True,
+        )
+        with TenantDatabaseContext(cls.store.id):
+            cls.customer = Customer.objects.create(
+                store=cls.store,
+                email="buyer73@example.com",
+                full_name="Buyer 73",
+                phone="9800000073",
+            )
+            cls.product = Product.objects.create(
+                store=cls.store, slug="tea-73", name="Ilam Tea 73", is_active=True
+            )
+            cls.variant = Variant.objects.create(
+                store=cls.store,
+                product=cls.product,
+                sku="SKU-73",
+                label="250g",
+                price_minor=50000,
+                in_stock=False,
+                track_inventory=True,
+                stock_quantity=0,
+                is_active=True,
+            )
+            cls.discount = Discount.objects.create(
+                store=cls.store,
+                code="ONCE73",
+                discount_type="PERCENTAGE",
+                value=10,
+                max_uses=1,
+                used_count=1,
+                is_active=True,
+            )
+            cls.abandoned = Order.objects.create(
+                store=cls.store,
+                customer=cls.customer,
+                order_number="#EX-2026-0001",
+                status="PENDING_PAYMENT",
+                payment_method="KHALTI",
+                payment_status="UNPAID",
+                subtotal_minor=100000,
+                discount=cls.discount,
+                discount_redeemed=True,
+                inventory_deducted=True,
+                total_minor=100000,
+            )
+            OrderItem.objects.create(
+                store=cls.store,
+                order=cls.abandoned,
+                variant=cls.variant,
+                product_name_snapshot=cls.product.name,
+                variant_label_snapshot=cls.variant.label,
+                unit_price_minor=50000,
+                quantity=2,
+                line_total_minor=100000,
+            )
+            Order.objects.filter(id=cls.abandoned.id).update(
+                created_at=timezone.now() - timedelta(minutes=45)
+            )
+
+    def setUp(self):
+        cache.clear()
+
+    def test_drf_global_throttle_classes_configured(self):
+        classes = settings.REST_FRAMEWORK.get("DEFAULT_THROTTLE_CLASSES", [])
+        self.assertIn("rest_framework.throttling.AnonRateThrottle", classes)
+        self.assertIn("rest_framework.throttling.UserRateThrottle", classes)
+
+    def test_storefront_otp_and_checkout_throttles_enforce_429(self):
+        with patch.dict(
+            ScopedRateThrottle.THROTTLE_RATES,
+            {"checkout_quote": "2/min", "storefront_otp_verify": "2/min"},
+        ):
+            cache.clear()
+            for idx in range(3):
+                r = self.client.post(
+                    f"/api/stores/{self.store.slug}/checkout/quote/",
+                    {"items": []},
+                    format="json",
+                )
+                expected = status.HTTP_429_TOO_MANY_REQUESTS if idx == 2 else status.HTTP_400_BAD_REQUEST
+                self.assertEqual(r.status_code, expected)
+
+            cache.clear()
+            for idx in range(3):
+                r = self.client.post(
+                    f"/api/stores/{self.store.slug}/account/otp/verify/",
+                    {"email": "nobody@example.com", "code": "000000"},
+                    format="json",
+                )
+                expected = status.HTTP_429_TOO_MANY_REQUESTS if idx == 2 else status.HTTP_400_BAD_REQUEST
+                self.assertEqual(r.status_code, expected)
+
+    def test_expired_pending_order_releases_stock_and_promo_on_new_checkout(self):
+        res = self.client.post(
+            f"/api/stores/{self.store.slug}/checkout/place/",
+            {
+                "items": [{"variant_id": self.variant.id, "quantity": 1}],
+                "payment_method": "COD",
+                "discount_code": "ONCE73",
+                "shipping_address": {
+                    "recipient_name": "Fresh Shopper",
+                    "phone": "9812345678",
+                    "province": "Bagmati",
+                    "district": "Kathmandu",
+                    "municipality": "Kathmandu",
+                    "ward": "5",
+                    "street_landmark": "Thamel",
+                    "email": "fresh73@example.com",
+                },
+            },
+            format="json",
+        )
+        self.assertEqual(res.status_code, status.HTTP_201_CREATED, res.content)
+        with TenantDatabaseContext(self.store.id):
+            self.abandoned.refresh_from_db()
+            self.variant.refresh_from_db()
+            self.discount.refresh_from_db()
+            self.assertEqual(self.abandoned.status, "PAYMENT_FAILED")
+            self.assertEqual(self.abandoned.payment_status, "FAILED")
+            self.assertFalse(self.abandoned.inventory_deducted)
+            self.assertFalse(self.abandoned.discount_redeemed)
+            # 2 restored from abandoned order, 1 reserved by fresh COD order -> 1 left
+            self.assertEqual(self.variant.stock_quantity, 1)
+            self.assertTrue(self.variant.in_stock)
+            self.assertEqual(self.discount.used_count, 1)
+
+    def test_cleanup_expired_orders_command_releases_pending_orders(self):
+        call_command("cleanup_expired_orders", "--minutes", "30")
+        with TenantDatabaseContext(self.store.id):
+            self.abandoned.refresh_from_db()
+            self.variant.refresh_from_db()
+            self.assertEqual(self.abandoned.status, "PAYMENT_FAILED")
+            self.assertEqual(self.variant.stock_quantity, 2)
+            self.assertTrue(self.variant.in_stock)
