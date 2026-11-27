@@ -13,6 +13,7 @@ from rest_framework.response import Response
 from rest_framework.views import APIView
 
 from accounts.models import User
+from accounts.otp import get_client_ip
 from catalog.models import Discount
 from orders.models import Order, OrderItem
 from stores.models import Customer, MerchantAuditLog, StoreMembership
@@ -465,7 +466,7 @@ def build_slice6_views(StoreMerchantMixin):
                     "discount_type": discount.discount_type,
                     "value": discount.value,
                 },
-                ip_address=request.META.get("REMOTE_ADDR"),
+                ip_address=get_client_ip(request),
             )
             return Response(DiscountSerializer(discount).data, status=status.HTTP_201_CREATED)
 
@@ -533,7 +534,7 @@ def build_slice6_views(StoreMerchantMixin):
                 entity_type="Discount",
                 entity_id=str(disc.id),
                 details={"code": disc.code, "is_active": disc.is_active},
-                ip_address=request.META.get("REMOTE_ADDR"),
+                ip_address=get_client_ip(request),
             )
             return Response(DiscountSerializer(disc).data)
 
@@ -558,7 +559,7 @@ def build_slice6_views(StoreMerchantMixin):
                 entity_type="Discount",
                 entity_id=disc_id,
                 details={"code": code},
-                ip_address=request.META.get("REMOTE_ADDR"),
+                ip_address=get_client_ip(request),
             )
             return Response({"detail": detail_msg, "code": code})
 
@@ -648,7 +649,7 @@ def build_slice6_views(StoreMerchantMixin):
                 entity_type="StoreMembership",
                 entity_id=str(membership.id),
                 details={"email": email, "role": role},
-                ip_address=request.META.get("REMOTE_ADDR"),
+                ip_address=get_client_ip(request),
             )
             return Response(
                 {
@@ -710,7 +711,7 @@ def build_slice6_views(StoreMerchantMixin):
                     entity_type="StoreMembership",
                     entity_id=str(m.id),
                     details={"email": m.user.email, "role": new_role},
-                    ip_address=request.META.get("REMOTE_ADDR"),
+                    ip_address=get_client_ip(request),
                 )
             return Response({
                 "id": m.id,
@@ -754,7 +755,7 @@ def build_slice6_views(StoreMerchantMixin):
                     entity_type="StoreMembership",
                     entity_id=m_id,
                     details={"email": removed_email},
-                    ip_address=request.META.get("REMOTE_ADDR"),
+                    ip_address=get_client_ip(request),
                 )
             return Response({"detail": f"Removed {removed_email} from {self.store.name}."})
 

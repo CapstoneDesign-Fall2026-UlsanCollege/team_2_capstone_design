@@ -2427,7 +2427,7 @@ class MerchantStoreSettingsView(StoreMerchantMixin, APIView):
             entity_type="Store",
             entity_id=str(self.store.id),
             details={"updated_fields": list(data.keys())},
-            ip_address=request.META.get("REMOTE_ADDR"),
+            ip_address=get_client_ip(request),
         )
         return self.get(request, store_slug)
 
@@ -2604,7 +2604,7 @@ class MerchantProductListCreateView(StoreMerchantMixin, APIView):
             entity_type="Product",
             entity_id=str(product.id),
             details={"name": product.name, "slug": product.slug},
-            ip_address=request.META.get("REMOTE_ADDR"),
+            ip_address=get_client_ip(request),
         )
         return Response(ProductSerializer(product).data, status=status.HTTP_201_CREATED)
 
@@ -2678,7 +2678,7 @@ class MerchantProductDetailView(StoreMerchantMixin, APIView):
                     entity_type="Product",
                     entity_id=prod_id,
                     details={"name": prod_name, "slug": prod_slug},
-                    ip_address=request.META.get("REMOTE_ADDR"),
+                    ip_address=get_client_ip(request),
                 )
             return Response(status=status.HTTP_204_NO_CONTENT)
         product.is_active = False
@@ -2809,7 +2809,7 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
                         "in_stock": variant.in_stock,
                     },
                 },
-                ip_address=request.META.get("REMOTE_ADDR"),
+                ip_address=get_client_ip(request),
             )
         if variant.price_minor != old_price_minor:
             Product.objects.for_store(self.store).filter(
@@ -2838,7 +2838,7 @@ class MerchantVariantDetailView(StoreMerchantMixin, APIView):
                     entity_type="Variant",
                     entity_id=var_id,
                     details={"label": var_label, "sku": var_sku, "product_id": product_id},
-                    ip_address=request.META.get("REMOTE_ADDR"),
+                    ip_address=get_client_ip(request),
                 )
             return Response(status=status.HTTP_204_NO_CONTENT)
         variant.is_active = False
@@ -3718,7 +3718,7 @@ class MerchantMediaUploadView(StoreMerchantMixin, APIView):
             entity_type="MediaAsset",
             entity_id=filename,
             details={"filename": filename, "url": url, "size": len(cleaned_bytes)},
-            ip_address=request.META.get("REMOTE_ADDR"),
+            ip_address=get_client_ip(request),
         )
 
         return Response({
@@ -3844,7 +3844,7 @@ class MerchantThemeMediaUploadView(StoreMerchantMixin, APIView):
                 "url": url,
                 "size": len(cleaned_bytes),
             },
-            ip_address=request.META.get("REMOTE_ADDR"),
+            ip_address=get_client_ip(request),
         )
 
         full_public_id = f"shopcraft/stores/{self.store.id}_{clean_slug}/theme/{stem}"

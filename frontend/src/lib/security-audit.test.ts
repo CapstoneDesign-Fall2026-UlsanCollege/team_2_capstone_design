@@ -1,4 +1,5 @@
 import { describe, expect, it } from "vitest";
+import nextConfig from "../../next.config";
 import { sanitizeExternalHttpUrl } from "./storefront-helpers";
 import { sanitizeOptionalRedirectTarget } from "./merchant-guard";
 
@@ -38,5 +39,17 @@ describe("sanitizeOptionalRedirectTarget (#71)", () => {
     expect(sanitizeOptionalRedirectTarget("/foo\nbar")).toBeNull();
     expect(sanitizeOptionalRedirectTarget("")).toBeNull();
     expect(sanitizeOptionalRedirectTarget(null)).toBeNull();
+  });
+});
+
+describe("Content-Security-Policy header (#81)", () => {
+  it("exports Content-Security-Policy with core hardening directives", async () => {
+    const headerRules = await nextConfig.headers?.();
+    expect(headerRules?.length).toBeGreaterThan(0);
+    const rootRule = headerRules?.find((r) => r.source === "/(.*)");
+    const csp = rootRule?.headers.find((h) => h.key === "Content-Security-Policy")?.value ?? "";
+    expect(csp).toContain("object-src 'none'");
+    expect(csp).toContain("frame-ancestors 'self'");
+    expect(csp).toContain("https://accounts.google.com/gsi/client");
   });
 });

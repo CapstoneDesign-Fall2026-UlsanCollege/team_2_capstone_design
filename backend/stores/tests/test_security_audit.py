@@ -942,6 +942,73 @@ class SettingsAndDiscountBoundsAuditTests(APITestCase):
         self.assertEqual(bad_patch_min.status_code, status.HTTP_400_BAD_REQUEST, bad_patch_min.content)
 
 
+class AuditLogClientIpTests(APITestCase):
+    """Issue #81: MerchantAuditLog records real client IP via get_client_ip(request)."""
+
+    @classmethod
+    def setUpTestData(cls):
+        cls.owner = User.objects.create_user("audit81-owner@example.com", full_name="Owner 81")
+        cls.store = Store.objects.create(slug="audit81-shop", name="Audit 81 Shop", is_active=True)
+        with TenantDatabaseContext(cls.store.id):
+            StoreMembership.objects.create(store=cls.store, user=cls.owner, role="OWNER")
+
+    def setUp(self):
+        self.client.force_authenticate(user=self.owner)
+
+    def test_audit_log_stores_forwarded_client_ip(self):
+        from django.test import override_settings
+        from stores.models import MerchantAuditLog
+
+        # Without TRUSTED_PROXY_HEADER configured, spoofed X-Forwarded-For is ignored.
+        untrusted = self.client.patch(
+            f"/api/merchant/stores/{self.store.slug}/settings/",
+            {"tagline": "Untrusted Proxy Tagline"},
+            format="json",
+            HTTP_X_FORWARDED_FOR="198.51.100.77",
+            REMOTE_ADDR="127.0.0.1",
+        )
+        self.assertEqual(untrusted.status_code, status.HTTP_200_OK, untrusted.content)
+
+        # With TRUSTED_PROXY_HEADER configured, rightmost valid X-Forwarded-For entry is recorded.
+        with override_settings(TRUSTED_PROXY_HEADER="HTTP_X_FORWARDED_FOR"):
+            res = self.client.patch(
+                f"/api/merchant/stores/{self.store.slug}/settings/",
+                {"tagline": "Forwarded IP Tagline"},
+                format="json",
+                HTTP_X_FORWARDED_FOR="10.0.0.1, 203.0.113.42",
+                REMOTE_ADDR="127.0.0.1",
+            )
+            self.assertEqual(res.status_code, status.HTTP_200_OK, res.content)
+
+            disc_res = self.client.post(
+                f"/api/merchant/stores/{self.store.slug}/discounts/",
+                {"code": "IPCHECK81", "discount_type": "PERCENTAGE", "value": 10},
+                format="json",
+                HTTP_X_FORWARDED_FOR="10.0.0.2, 203.0.113.99",
+                REMOTE_ADDR="127.0.0.1",
+            )
+            self.assertEqual(disc_res.status_code, status.HTTP_201_CREATED, disc_res.content)
+
+        with TenantDatabaseContext(self.store.id):
+            settings_logs = list(
+                MerchantAuditLog.objects.for_store(self.store)
+                .filter(action="SETTINGS_UPDATE")
+                .order_by("id")
+            )
+            discount_log = (
+                MerchantAuditLog.objects.for_store(self.store)
+                .filter(action="DISCOUNT_CREATE")
+                .order_by("-id")
+                .first()
+            )
+        self.assertEqual(len(settings_logs), 2)
+        self.assertEqual(settings_logs[0].ip_address, "127.0.0.1")
+        self.assertEqual(settings_logs[1].ip_address, "203.0.113.42")
+        self.assertIsNotNone(discount_log)
+        self.assertEqual(discount_log.ip_address, "203.0.113.99")
+
+
+
 
 
 
