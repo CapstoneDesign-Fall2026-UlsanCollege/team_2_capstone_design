@@ -162,7 +162,7 @@ export function HomeInteractiveTop() {
                     type="text"
                     value={storeName}
                     onChange={(e) => setStoreName(e.target.value)}
-                    placeholder="himalayan-roasters"
+                    placeholder="kora-coffee-tea"
                     aria-label="Store name"
                     className="w-full min-h-[46px] bg-transparent font-mono text-[13.5px] text-white placeholder:opacity-45 focus:outline-none"
                   />
@@ -177,7 +177,7 @@ export function HomeInteractiveTop() {
               </form>
 
               <Link
-                href="/s/himalayan-roasters"
+                href="/s/kora-coffee-tea"
                 className="min-h-[48px] px-5 rounded-full platform-hero-btn-secondary text-[14px] font-medium inline-flex items-center justify-center whitespace-nowrap shrink-0 transition-colors"
               >
                 See live store →

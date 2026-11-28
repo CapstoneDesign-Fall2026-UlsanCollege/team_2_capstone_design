@@ -82,7 +82,7 @@ export function StoreNameForm({
           </span>
           <span aria-hidden="true">·</span>
           <Link
-            href="/s/himalayan-roasters"
+            href="/s/kora-coffee-tea"
             className="inline-flex items-center min-h-[44px] py-2 font-medium text-accent underline decoration-[var(--sc-gold)] underline-offset-4 hover:opacity-85 transition-opacity"
           >
             See how a live store runs →
