@@ -3,9 +3,12 @@
 import React, { useEffect, useRef, useState } from "react";
 import Image from "next/image";
 import Link from "next/link";
-import { ArrowRight } from "lucide-react";
+import { AnimatePresence, motion, useReducedMotion } from "framer-motion";
+import { ArrowRight, ArrowUpRight, ChevronDown } from "lucide-react";
+import { PLATFORM_DEMO_STORES } from "@/components/platform/platform-content";
 import { slugifyStoreName } from "@/components/platform/StoreNameForm";
 import { ThemeTemplateStudio } from "@/components/platform/ThemeTemplateStudio";
+import { STOREFRONT_THEME_MAP } from "@/lib/storefront-themes";
 
 const HERO_SCENES = [
   {
@@ -34,10 +37,31 @@ const HERO_SCENES = [
 export function HomeInteractiveTop() {
   const [storeName, setStoreName] = useState("");
   const [activeCut, setActiveCut] = useState(0);
+  const [storesOpen, setStoresOpen] = useState(false);
   const parallaxRef = useRef<HTMLDivElement>(null);
+  const menuRef = useRef<HTMLDivElement>(null);
+  const reduceMotion = useReducedMotion();
 
   const resolvedSlug = slugifyStoreName(storeName);
   const currentScene = HERO_SCENES[activeCut] ?? HERO_SCENES[0];
+
+  useEffect(() => {
+    if (!storesOpen) return;
+    const onMouseDown = (e: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(e.target as Node)) {
+        setStoresOpen(false);
+      }
+    };
+    const onKeyDown = (e: KeyboardEvent) => {
+      if (e.key === "Escape") setStoresOpen(false);
+    };
+    document.addEventListener("mousedown", onMouseDown);
+    document.addEventListener("keydown", onKeyDown);
+    return () => {
+      document.removeEventListener("mousedown", onMouseDown);
+      document.removeEventListener("keydown", onKeyDown);
+    };
+  }, [storesOpen]);
 
   useEffect(() => {
     if (
@@ -78,15 +102,15 @@ export function HomeInteractiveTop() {
       {/* 1. Documentary Multi-Cut Hero */}
       <section
         aria-label="ShopCraft introduction"
-        className="relative overflow-hidden platform-hero-cinema"
+        className="relative platform-hero-cinema"
       >
         <div
           onMouseMove={handleStageMove}
           onMouseLeave={handleStageLeave}
-          className="relative min-h-[660px] sm:min-h-[760px] flex flex-col justify-center overflow-hidden"
+          className="relative min-h-[660px] sm:min-h-[760px] flex flex-col justify-center"
         >
           {/* Animated Multi-Cut Documentary Backdrop */}
-          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden">
+          <div aria-hidden="true" className="pointer-events-none absolute inset-0 overflow-hidden z-0">
             <div
               ref={parallaxRef}
               className="platform-cinema-parallax absolute -inset-4"
@@ -119,7 +143,7 @@ export function HomeInteractiveTop() {
             <div className="platform-hero-scrim-b" />
           </div>
 
-          <div className="relative z-10 max-w-[1180px] w-full mx-auto px-4 sm:px-7 pt-14 sm:pt-20 pb-20 sm:pb-24">
+          <div className="relative z-30 max-w-[1180px] w-full mx-auto px-4 sm:px-7 pt-14 sm:pt-20 pb-20 sm:pb-24">
             <p className="text-[14px] font-medium platform-hero-muted flex items-center gap-2">
               <span className="font-devanagari text-[20px] leading-none platform-hero-accent font-semibold">
                 नमस्ते
@@ -176,12 +200,76 @@ export function HomeInteractiveTop() {
                 </button>
               </form>
 
-              <Link
-                href="/s/kora-coffee-tea"
-                className="min-h-[48px] px-5 rounded-full platform-hero-btn-secondary text-[14px] font-medium inline-flex items-center justify-center whitespace-nowrap shrink-0 transition-colors"
-              >
-                See live store →
-              </Link>
+              <div ref={menuRef} className="relative">
+                <button
+                  type="button"
+                  onClick={() => setStoresOpen((prev) => !prev)}
+                  aria-expanded={storesOpen}
+                  aria-haspopup="menu"
+                  className="min-h-[48px] w-full sm:w-auto px-5 rounded-full platform-hero-btn-secondary text-[14px] font-medium inline-flex items-center justify-center gap-1.5 whitespace-nowrap shrink-0 transition-colors cursor-pointer"
+                >
+                  <span>See live stores</span>
+                  <ChevronDown
+                    className={`w-4 h-4 transition-transform duration-200 ${
+                      storesOpen ? "rotate-180" : ""
+                    }`}
+                  />
+                </button>
+
+                <AnimatePresence>
+                  {storesOpen && (
+                    <motion.div
+                      role="menu"
+                      aria-label="Live demo storefronts"
+                      initial={reduceMotion ? false : { opacity: 0, y: 6, scale: 0.98 }}
+                      animate={{ opacity: 1, y: 0, scale: 1 }}
+                      exit={reduceMotion ? undefined : { opacity: 0, y: 4, scale: 0.98 }}
+                      transition={{ duration: 0.18, ease: [0.16, 1, 0.3, 1] }}
+                      className="absolute left-0 top-full mt-2.5 z-40 w-[300px] sm:w-[328px] rounded-2xl p-2 platform-hero-menu text-left"
+                    >
+                      <p className="px-3 pt-1.5 pb-1 font-mono text-[10.5px] uppercase tracking-[0.1em] platform-hero-muted">
+                        Live demo stores · 4 looks
+                      </p>
+                      <div className="space-y-0.5">
+                        {PLATFORM_DEMO_STORES.map((demo) => {
+                          const preset = STOREFRONT_THEME_MAP[demo.themeId];
+                          return (
+                            <Link
+                              key={demo.slug}
+                              role="menuitem"
+                              href={`/s/${demo.slug}`}
+                              onClick={() => setStoresOpen(false)}
+                              className="flex items-center justify-between gap-3 rounded-xl px-3 py-2.5 platform-hero-menu-item transition-colors"
+                            >
+                              <div className="flex items-center gap-3 min-w-0">
+                                <span
+                                  aria-hidden="true"
+                                  className="w-7 h-7 rounded-lg border border-white/15 flex items-center justify-center shrink-0"
+                                  style={{ backgroundColor: preset?.tokens.canvas }}
+                                >
+                                  <span
+                                    className="w-2.5 h-2.5 rounded-full"
+                                    style={{ backgroundColor: preset?.tokens.primary }}
+                                  />
+                                </span>
+                                <div className="min-w-0">
+                                  <p className="text-[13.5px] font-semibold text-white truncate leading-tight">
+                                    {demo.storeName}
+                                  </p>
+                                  <p className="text-[11.5px] platform-hero-muted truncate mt-0.5">
+                                    {demo.themeName} · {demo.category}
+                                  </p>
+                                </div>
+                              </div>
+                              <ArrowUpRight className="w-4 h-4 platform-hero-muted shrink-0" />
+                            </Link>
+                          );
+                        })}
+                      </div>
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
 
             <p className="mt-4 text-[12.5px] font-mono platform-hero-muted">
