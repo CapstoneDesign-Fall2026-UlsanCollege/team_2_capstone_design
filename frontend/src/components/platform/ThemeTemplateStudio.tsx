@@ -4,8 +4,9 @@ import React, { useState } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { motion, useReducedMotion } from "framer-motion";
-import { ArrowRight } from "lucide-react";
+import { ArrowRight, ArrowUpRight } from "lucide-react";
 import { STOREFRONT_THEMES } from "@/lib/storefront-themes";
+import { PLATFORM_DEMO_STORE_BY_THEME } from "@/components/platform/platform-content";
 import { PlatformReveal } from "@/components/platform/PlatformReveal";
 
 interface ThemeTemplateStudioProps {
@@ -143,27 +144,43 @@ export function ThemeTemplateStudio({ storeName = "" }: ThemeTemplateStudioProps
                     </p>
                   </div>
 
-                  <Link
-                    href={href}
-                    data-look-cta={theme.id}
-                    className="mt-5 min-h-[44px] px-4 rounded-full inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold border transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
-                    style={
-                      isOutline
-                        ? {
-                            backgroundColor: "transparent",
-                            color: theme.tokens.ink,
-                            borderColor: theme.tokens.ink,
-                          }
-                        : {
-                            backgroundColor: theme.tokens.primary,
-                            color: theme.tokens.primaryForeground,
-                            borderColor: theme.tokens.primary,
-                          }
-                    }
-                  >
-                    <span>Use {theme.displayName}</span>
-                    <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
-                  </Link>
+                  <div className="mt-5 space-y-1.5">
+                    <Link
+                      href={href}
+                      data-look-cta={theme.id}
+                      className="w-full min-h-[44px] px-4 rounded-full inline-flex items-center justify-center gap-1.5 text-[13px] font-semibold border transition-all duration-200 hover:opacity-90 active:scale-[0.98]"
+                      style={
+                        isOutline
+                          ? {
+                              backgroundColor: "transparent",
+                              color: theme.tokens.ink,
+                              borderColor: theme.tokens.ink,
+                            }
+                          : {
+                              backgroundColor: theme.tokens.primary,
+                              color: theme.tokens.primaryForeground,
+                              borderColor: theme.tokens.primary,
+                            }
+                      }
+                    >
+                      <span>Use {theme.displayName}</span>
+                      <ArrowRight className="w-3.5 h-3.5 transition-transform duration-200 group-hover:translate-x-0.5" />
+                    </Link>
+
+                    {PLATFORM_DEMO_STORE_BY_THEME[theme.id] && (
+                      <Link
+                        href={`/s/${PLATFORM_DEMO_STORE_BY_THEME[theme.id].slug}`}
+                        data-look-demo={theme.id}
+                        className="w-full min-h-[36px] px-2 inline-flex items-center justify-center gap-1 text-[12px] font-medium opacity-75 hover:opacity-100 transition-opacity"
+                        style={{ color: theme.tokens.ink }}
+                      >
+                        <span className="truncate">
+                          Live demo: {PLATFORM_DEMO_STORE_BY_THEME[theme.id].storeName}
+                        </span>
+                        <ArrowUpRight className="w-3.5 h-3.5 shrink-0" />
+                      </Link>
+                    )}
+                  </div>
                 </div>
 
                 <div className="mt-4 text-center space-y-1">
