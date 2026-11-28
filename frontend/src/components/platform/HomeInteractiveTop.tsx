@@ -125,8 +125,9 @@ export function HomeInteractiveTop() {
                   <Image
                     src={scene.src}
                     alt={scene.alt}
-                    width={1376}
-                    height={768}
+                    width={2240}
+                    height={1250}
+                    unoptimized
                     priority={idx === 0}
                     sizes="100vw"
                     className={`w-full h-full object-cover ${scene.focalClass}`}
