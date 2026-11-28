@@ -42,3 +42,45 @@ export const PLATFORM_STEPS = [
     desc: "Add photos, prices in rupees, sizes and variants. Then share your link.",
   },
 ] as const;
+
+export interface PlatformDemoStore {
+  themeId: "editorial-warm" | "pahadi-sage" | "ktm-bold" | "midnight-obsidian";
+  slug: string;
+  storeName: string;
+  themeName: string;
+  category: string;
+}
+
+export const PLATFORM_DEMO_STORES: readonly PlatformDemoStore[] = [
+  {
+    themeId: "editorial-warm",
+    slug: "kora-coffee-tea",
+    storeName: "Kora Coffee & Tea",
+    themeName: "Editorial Warm",
+    category: "Coffee & Tea",
+  },
+  {
+    themeId: "pahadi-sage",
+    slug: "jadibuti-botanicals",
+    storeName: "Jadibuti Botanicals",
+    themeName: "Pahadi Sage",
+    category: "Botanicals & Spices",
+  },
+  {
+    themeId: "ktm-bold",
+    slug: "chauk-streetwear",
+    storeName: "Chauk Streetwear",
+    themeName: "KTM Bold",
+    category: "Streetwear & Apparel",
+  },
+  {
+    themeId: "midnight-obsidian",
+    slug: "bhir-honey-harvest",
+    storeName: "Bhir Honey & Harvest",
+    themeName: "Midnight Obsidian",
+    category: "Honey & Harvest",
+  },
+] as const;
+
+export const PLATFORM_DEMO_STORE_BY_THEME: Record<string, PlatformDemoStore> =
+  Object.fromEntries(PLATFORM_DEMO_STORES.map((item) => [item.themeId, item]));
